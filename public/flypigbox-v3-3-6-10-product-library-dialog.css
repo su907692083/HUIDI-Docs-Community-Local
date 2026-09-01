@@ -1,0 +1,58 @@
+/* HUIDI V3.3.6.10 — product library, image clarity and dialog scroll convergence */
+body.fp-v3368-workspace.workspace-dialog-open{position:fixed;left:0;right:0;width:100%;overflow:hidden}
+body.fp-v3368-workspace dialog.modal[open]{overscroll-behavior:contain}
+body.fp-v3368-workspace dialog.modal::backdrop{background:rgba(25,39,62,.34);backdrop-filter:blur(3px)}
+body.fp-v3368-workspace #record-form.dialog,
+body.fp-v3368-workspace #detail-modal>.dialog{overscroll-behavior:contain}
+body.fp-v3368-workspace[data-workspace-view="products"] .fp-global-search{display:none!important}
+body.fp-v3368-workspace[data-workspace-view="products"] .topbar-structure-v2{grid-template-columns:minmax(280px,1fr) minmax(260px,.75fr) auto}
+body.fp-v3368-workspace[data-workspace-view="products"] #products>.filter-bar{margin-bottom:10px}
+body.fp-v3368-workspace .product-library-controls-v33610{gap:7px;padding:10px 12px}
+body.fp-v3368-workspace .product-library-summary-v33610{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+body.fp-v3368-workspace .product-library-summary-v33610>span{color:#64748b;font-size:12px;font-weight:800;white-space:nowrap}
+body.fp-v3368-workspace .product-quick-row button.active{border-color:#76a7f6;background:#eaf3ff;color:#174f9c;box-shadow:inset 0 0 0 1px #b9d2fa}
+body.fp-v3368-workspace .product-toolbox-v33610{border-top:1px solid #e7edf5;padding-top:7px}
+body.fp-v3368-workspace .product-toolbox-v33610>summary{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none;color:#315070;font-size:12px;font-weight:900}
+body.fp-v3368-workspace .product-toolbox-v33610>summary::-webkit-details-marker{display:none}
+body.fp-v3368-workspace .product-toolbox-v33610>summary::after{content:'展开';margin-left:auto;color:#6b7d93;font-size:11px}
+body.fp-v3368-workspace .product-toolbox-v33610[open]>summary::after{content:'收起'}
+body.fp-v3368-workspace .product-toolbox-v33610>summary em{font-style:normal;padding:3px 7px;border-radius:999px;background:#eaf3ff;color:#245cac;font-size:10px}
+body.fp-v3368-workspace .product-toolbox-body-v33610{display:grid;gap:8px;padding-top:9px}
+body.fp-v3368-workspace .productflow-compact-v33610{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 14px;border-radius:14px;box-shadow:none}
+body.fp-v3368-workspace .productflow-compact-v33610 h3{margin:2px 0 4px;font-size:16px}
+body.fp-v3368-workspace .productflow-compact-v33610 span{font-size:12px;line-height:1.5}
+body.fp-v3368-workspace .productflow-compact-v33610 .productflow-actions-v1{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:0}
+body.fp-v3368-workspace .productflow-compact-v33610 .btn{padding:8px 10px;font-size:12px}
+body.fp-v3368-workspace #product-list.product-grid{grid-template-columns:repeat(auto-fill,minmax(300px,380px));align-items:start;justify-content:start}
+body.fp-v3368-workspace #product-list .product-card{width:100%;max-width:380px}
+body.fp-v3368-workspace #product-list .product-card-layout{grid-template-columns:84px minmax(0,1fr);gap:12px}
+body.fp-v3368-workspace #product-list .product-asset-thumb{width:84px;height:84px;border-radius:14px}
+body.fp-v3368-workspace #product-list .product-title-clamp{-webkit-line-clamp:2;max-height:3em}
+body.fp-v3368-workspace #product-list .product-primary-actions{gap:6px}
+body.fp-v3368-workspace #product-list .product-primary-actions button{flex:1 1 80px;padding:7px 8px}
+body.fp-v3368-workspace .product-summary-v33610{display:grid;grid-template-columns:minmax(180px,.42fr) minmax(0,1fr);gap:18px;margin-top:18px}
+body.fp-v3368-workspace .product-summary-image-v33610{display:grid;align-content:start;gap:8px;min-height:190px;padding:12px;border:1px solid #e2e8f0;border-radius:14px;background:#f8fafc;text-align:center;color:#64748b}
+body.fp-v3368-workspace .product-summary-image-v33610 img{width:100%;max-height:260px;object-fit:contain;border-radius:10px;background:#fff}
+body.fp-v3368-workspace .product-summary-status-v33610{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+body.fp-v3368-workspace .product-image-editor-v33610{grid-column:1/-1;display:grid;grid-template-columns:112px minmax(0,1fr);gap:12px;margin-top:10px;padding:11px;border:1px solid #dbe7f5;border-radius:12px;background:#f8fbff}
+body.fp-v3368-workspace .product-image-preview-v33610{display:grid;place-items:center;width:112px;height:92px;overflow:hidden;border:1px dashed #cbd8e8;border-radius:10px;background:#fff;color:#718096;font-size:11px;text-align:center}
+body.fp-v3368-workspace .product-image-preview-v33610 img{width:100%;height:100%;object-fit:contain}
+body.fp-v3368-workspace .product-image-editor-copy-v33610{display:grid;align-content:center;gap:6px;min-width:0}
+body.fp-v3368-workspace .product-image-editor-copy-v33610 b{color:#26364b}
+body.fp-v3368-workspace .product-image-editor-copy-v33610 span{color:#64748b;font-size:11px;line-height:1.45}
+body.fp-v3368-workspace .workspace-legal-footer{justify-content:center;gap:8px;opacity:.78}
+body.fp-v3368-workspace .workspace-legal-footer a{font-size:10px}
+@media(max-width:900px){
+  body.fp-v3368-workspace[data-workspace-view="products"] .topbar-structure-v2{grid-template-columns:1fr}
+  body.fp-v3368-workspace .product-library-summary-v33610{align-items:flex-start;flex-direction:column}
+  body.fp-v3368-workspace .product-library-summary-v33610>span{white-space:normal}
+  body.fp-v3368-workspace .productflow-compact-v33610{align-items:flex-start;flex-direction:column}
+  body.fp-v3368-workspace .productflow-compact-v33610 .productflow-actions-v1{justify-content:flex-start}
+  body.fp-v3368-workspace .product-summary-v33610{grid-template-columns:1fr}
+}
+@media(max-width:620px){
+  body.fp-v3368-workspace #product-list.product-grid{grid-template-columns:1fr}
+  body.fp-v3368-workspace #product-list .product-card{max-width:none}
+  body.fp-v3368-workspace .product-image-editor-v33610{grid-template-columns:1fr}
+  body.fp-v3368-workspace .product-image-preview-v33610{width:100%;height:150px}
+}

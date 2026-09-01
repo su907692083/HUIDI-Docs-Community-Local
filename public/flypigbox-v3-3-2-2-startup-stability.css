@@ -1,0 +1,6 @@
+/* HUIDI V3.3.2.2 — startup stability: avoid visible reflow and scroll anchoring while restoring a document. */
+html.fp-startup-stabilizing,html.fp-startup-stabilizing *{scroll-behavior:auto!important}
+html.fp-startup-stabilizing body{overflow:hidden!important}
+html.fp-startup-stabilizing .app{visibility:hidden}
+html.fp-startup-stabilizing #fpLiteToolbar{visibility:visible}
+.form-column,.preview-shell,#piPaper{overflow-anchor:none}

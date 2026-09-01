@@ -1,0 +1,15 @@
+{
+  "version": "V3.3.6.24-R1.3A.18",
+  "runtime": "embedded_schema_runtime+deterministic_rules",
+  "schemas": [
+    "quotation.schema.json",
+    "proforma-invoice.schema.json",
+    "commercial-invoice.schema.json",
+    "packing-list.schema.json",
+    "sales-contract.schema.json"
+  ],
+  "policies": [
+    "field-policy.json",
+    "document-transitions.json"
+  ]
+}

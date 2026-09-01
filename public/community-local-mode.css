@@ -1,0 +1,19 @@
+#huidiLocalModeBar{position:relative;z-index:2147482000;display:flex;gap:10px;align-items:center;padding:9px 16px;background:#eef6ff;border-bottom:1px solid #cfe2ff;color:#173b68;font:13px/1.45 Inter,"Microsoft YaHei",sans-serif}
+#huidiLocalModeBar b{color:#0d63c7}#huidiLocalModeBar span{flex:1}#huidiLocalModeBar button{border:0;background:transparent;font-size:20px;cursor:pointer;color:#60738a}
+.huidi-community-local #memberAuthBtn,.huidi-community-local #memberSignOutBtn,.huidi-community-local #membershipPlansBtn,.huidi-community-local #cloudSaveBtn,.huidi-community-local #cloudHistoryBtn,.huidi-community-local #openLaunchPlans,.huidi-community-local #launchPlansBtn,.huidi-community-local #fp-ai-widget,.huidi-community-local #fp-assistant41-launcher{display:none!important}
+.huidi-community-local .member-badge{background:#e8f5ee!important;color:#18794e!important;border-color:#bde3cf!important}
+
+/* Community Local 1.1 release polish: online-only controls never enter the visible UI. */
+.huidi-community-local .api-card,
+.huidi-community-local #headerTranslateBtn,
+.huidi-community-local #translateAllBtn,
+.huidi-community-local #emailDraftBtn,
+.huidi-community-local .email-draft-toggle,
+.huidi-community-local #cloudSaveBtn,
+.huidi-community-local #cloudHistoryBtn,
+.huidi-community-local #catalogAuthGate,
+.huidi-community-local .catalog-trial-watermark,
+.huidi-community-local .trial-preview-note{display:none!important}
+.huidi-community-local .launch-local-card{background:linear-gradient(135deg,#14324f,#0f6b5b)!important}
+.huidi-community-local .pdf-export-note{color:#18794e!important}
+.huidi-community-local #catalogBrandStyleLock{border-color:#bde3cf!important;background:#edf8f2!important;color:#18794e!important}

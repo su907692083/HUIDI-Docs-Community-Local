@@ -1,6 +1,6 @@
 # Self-hosting / 自托管
 
-Community Local 的默认目标是 **本机运行、数据由使用者自己掌握**。
+Community Local 1.1.0 的默认目标是 **本机运行、数据由使用者自己掌握**。
 
 ## Windows 本机
 

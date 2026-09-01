@@ -6,7 +6,7 @@ title HUIDI Docs Community Local
 
 echo.
 echo ======================================================
-echo   HUIDI Docs Community Local 1.2.0 RC6
+echo   HUIDI Docs Community Local 1.2.0 RC2
 echo   Local-only startup - 127.0.0.1:8765
 echo ======================================================
 echo.

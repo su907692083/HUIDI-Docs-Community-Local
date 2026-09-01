@@ -1,0 +1,482 @@
+
+/* HUIDI V5 editor overlay: reduces first-screen noise and makes document state visible. */
+.fp-editor-context{position:sticky;top:66px;z-index:19;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px max(5%,18px);background:rgba(248,251,255,.96);border-bottom:1px solid #dbe6ef;backdrop-filter:blur(9px)}.fp-editor-context .crumb{font-size:12px;font-weight:800;color:#577083}.fp-editor-context .state{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:12px;font-weight:800}.fp-editor-context .state.ok{color:#13734f}.fp-editor-context .state.warn{color:#985f09}.fp-editor-context select{min-height:34px;width:auto;padding:6px 28px 6px 9px;font-size:12px;font-weight:800}.fp-editor-context button{min-height:34px}.fp-editor-context .fp-back{background:transparent;color:#2a668a;border:0;padding:5px 0;font-size:12px;font-weight:850;cursor:pointer}.fp-editor-context .fp-secondary{background:#edf4fb;color:#2a4b68;border:0;border-radius:7px;padding:0 10px;font-size:12px;font-weight:850;cursor:pointer}.fp-editor-context .fp-primary{background:var(--blue);color:#fff;border:0;border-radius:7px;padding:0 10px;font-size:12px;font-weight:850;cursor:pointer}
+/* The public landing lives at index.html. The editor no longer shows legacy launch/promotion blocks. */
+.intro,.launch-trust-strip,.launch-overview,.launch-operating-card,.launch-protection-card,.support-contact,.payment-promo{display:none!important}.app{padding-top:18px}.site-header .launch-nav{display:none!important}.site-header{min-height:64px}.site-header .header-actions{gap:7px}.site-header #openHistoryBtn{font-size:0}.site-header #openHistoryBtn:after{content:'单据中心';font-size:13px}.site-header #clearDocumentBtn{display:none!important}.site-header #membershipPlansBtn{display:none!important}.site-header #memberAuthBtn{display:none!important}.site-header #memberSignOutBtn{display:none!important}
+/* Top workspace becomes a focused setup line; advanced field visibility is no longer exposed by default. */
+.top-workspace{margin-top:0}.top-workspace .card:first-child .pi-code-panel{display:none}.doc-mode-card .field-visibility{margin-top:8px}.doc-mode-card .field-visibility:not([open]){border-top:0}.doc-mode-card .mode-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.doc-mode-card .mode-tab{min-height:48px}.doc-mode-card .field-visibility{display:none}.doc-mode-card:after{content:'默认版本按当前单据标准字段输出；精细版本可勾选当前单据补充字段。';display:block;margin-top:12px;color:#67798d;font-size:11px;line-height:1.5}.fp-advanced-open .field-visibility{display:block!important}.fp-advanced-open:after{display:none}
+/* payment accounts and payment terms are visually separated; the duplicate bottom selector is removed. */
+[data-optional-section="showPayment"] .section-title h2{font-size:0}[data-optional-section="showPayment"] .section-title h2:after{content:'收款方式与账户';font-size:18px}[data-optional-section="showPayment"] #savePaymentTemplateBtn{display:none!important}[data-optional-section="showPayment"] .payment-template-bar{display:none!important}[data-optional-section="showPayment"] .section-translation-note{margin-bottom:14px;padding:9px 11px;background:#f7fbff;border-left:3px solid #83b3e7;border-radius:0 8px 8px 0}[data-optional-section="showTerms"] .section-title{margin-bottom:10px}.fp-insert-dialog{width:min(620px,calc(100vw - 30px));border:0;border-radius:14px;padding:0;box-shadow:0 28px 70px rgba(14,30,55,.28)}.fp-insert-dialog::backdrop{background:rgba(12,26,48,.55);backdrop-filter:blur(3px)}.fp-insert-dialog .inner{padding:22px;background:#fff}.fp-insert-dialog header{display:flex;justify-content:space-between;gap:15px;padding-bottom:14px;border-bottom:1px solid #e7edf3}.fp-insert-dialog h2{margin:0;font-size:20px}.fp-insert-dialog p{color:#61758a;font-size:13px;line-height:1.6}.fp-clause-target{padding:10px 12px;margin:14px 0;background:#eef6ff;border:1px solid #cee1fa;border-radius:9px;color:#2f5f90;font-size:12px;font-weight:800}.fp-clause-list{display:grid;gap:9px}.fp-clause-card{border:1px solid #d9e5ef;border-radius:10px;padding:12px}.fp-clause-card h3{margin:0;font-size:15px}.fp-clause-card p{margin:6px 0 11px;white-space:pre-line}.fp-clause-actions{display:flex;gap:8px;flex-wrap:wrap}.fp-clause-actions button{border:0;border-radius:7px;padding:7px 10px;font-size:12px;font-weight:800;cursor:pointer}.fp-clause-actions .replace{background:#0f7bdc;color:#fff}.fp-clause-actions .append{background:#ecf1f7;color:#304c68}.fp-clause-actions .copy{background:#fff;border:1px solid #d2e0ed;color:#45637b}.fp-insert-dialog .close{border:0;background:#edf3f8;border-radius:8px;width:34px;height:34px;font-size:20px;cursor:pointer}.fp-status-note{margin:0 0 12px;padding:10px 12px;border-radius:9px;font-size:12px;line-height:1.55}.fp-status-note.warn{background:#fff8e9;border:1px solid #f1d79a;color:#785817}.fp-status-note.ok{background:#edf9f1;border:1px solid #bfe8cc;color:#16633f}
+@media(max-width:980px){.fp-editor-context{top:64px}.fp-editor-context .state{margin-left:0;flex-basis:100%}.doc-mode-card .mode-tabs{grid-template-columns:1fr}.top-workspace{grid-template-columns:1fr}.workbench{grid-template-columns:1fr}.preview-shell{position:static}}@media(max-width:680px){.fp-editor-context{top:60px;padding:9px 14px}.fp-editor-context select{flex:1}.fp-editor-context .fp-back{flex-basis:100%;text-align:left}.fp-editor-context .state{font-size:11px}.site-header{padding:10px 14px}.site-header .brand small{display:none}}
+
+/* V5.1: top language switch is authoritative; form field below is a read-only mirror. */
+.fp-editor-context .fp-quick-control{display:inline-flex;align-items:center;gap:6px;color:#577083;font-size:11px;font-weight:850;white-space:nowrap}.fp-editor-context .fp-quick-control select{margin:0}.fp-language-mirror-note{display:block;margin-top:5px;color:#73869a;font-size:11px;font-weight:650;line-height:1.45}.grid label[data-fp-language-control] select:disabled{opacity:1;color:var(--ink);cursor:default;background:#f6f9fc}.grid label[data-fp-language-control]{position:relative}.grid label[data-fp-language-control]::after{content:'已同步';position:absolute;right:10px;top:4px;color:#16805a;font-size:10px;font-weight:850;pointer-events:none}
+
+.fp-language-support-note{display:inline-block;margin-top:5px;color:#5f7186;font-size:12px;line-height:1.5}.doc-mode-effect{margin:10px 0 0;padding:9px 11px;border:1px solid #d7e6ef;border-radius:9px;background:#f7fbff;color:#426178;font-size:12px;line-height:1.55}.footer-contact-qr{max-width:150px}.support-footer .footer-contact-qr{min-width:0}.footer-qr-button img{display:block;max-width:100%;max-height:100%}@media(max-width:720px){.footer-contact-qr{max-width:128px}.doc-mode-effect{font-size:11.5px}.grid label[data-fp-language-control]::after{position:static;display:inline-block;margin-top:4px}}
+
+/* Document-specific field visibility controls. */
+.doc-mode-card.fp-doc-mode-detailed .field-visibility{display:block!important}.doc-mode-card.fp-doc-mode-detailed:after{display:none}.doc-mode-card.fp-doc-mode-default:after{content:'默认版本按当前单据标准字段输出；需要补充更多当前单据字段时，切换到“精细版本”。';display:block;margin-top:12px;color:#597188;font-size:11.5px;line-height:1.55}.doc-mode-card .mode-tab span{font-size:14px}.doc-mode-card .mode-tab small{line-height:1.38}.doc-mode-card .mode-tab.active span{color:#0f4f96}
+.doc-mode-effect{border-left:4px solid #0f7bdc!important;background:linear-gradient(135deg,#eef7ff,#fbfdff)!important;color:#254b69!important;font-weight:800;box-shadow:0 8px 20px rgba(15,123,220,.08)}.doc-mode-effect[data-mode="b2b"]{border-left-color:#148b67!important;background:linear-gradient(135deg,#eefaf5,#fbfffd)!important;color:#194f3e!important}
+.visibility-grid .fp-visibility-hidden{display:none!important}
+.visibility-grid .switch-line{min-height:34px;padding:7px 9px;border:1px solid #d8e6f2;border-radius:9px;background:#f8fbff;color:#4c6175;transition:background .16s ease,border-color .16s ease,box-shadow .16s ease,color .16s ease}.visibility-grid .switch-line.is-checked{border-color:#74a9ed;background:#eef6ff;color:#163e67;box-shadow:0 0 0 2px rgba(15,123,220,.08)}.visibility-grid .switch-line input:disabled{opacity:.45}.visibility-grid .switch-line span{min-width:0;line-height:1.35}
+.fp-visibility-note{margin:10px 0 0;padding:10px 11px;border:1px solid #bcd7f0;border-left:4px solid #0f7bdc;border-radius:9px;background:#f2f8ff;color:#345c7a;font-size:11.8px;font-weight:750;line-height:1.55}
+.item-row.hide-money .i-price-field{display:none!important}
+@media(min-width:721px){.item-row.hide-money:not(.hide-hs):not(.hide-image){grid-template-columns:1.2fr 1.1fr .75fr .55fr .55fr .7fr auto}.item-row.hide-money.hide-hs:not(.hide-image){grid-template-columns:1.2fr 1.1fr .55fr .55fr .7fr auto}.item-row.hide-money.hide-image:not(.hide-hs){grid-template-columns:1.2fr 1.1fr .75fr .55fr .55fr auto}.item-row.hide-money.hide-hs.hide-image{grid-template-columns:1.2fr 1.1fr .55fr .55fr auto}}
+
+/* V5.2 — one language state, hosted/member AI only, and structured fees. */
+.own-api-toggle,.own-api-settings{display:none!important}.hosted-ai-panel{margin-top:12px}.hosted-ai-panel p{margin:7px 0 0;color:#61758a;line-height:1.55;font-size:12.5px}.fp-translation-dashboard{display:grid;gap:10px;margin:14px 0 6px}.fp-translation-state{display:grid;gap:4px;padding:11px 12px;border-radius:10px;border:1px solid #d7e5f1;font-size:12px;line-height:1.5}.fp-translation-state strong{font-size:13px}.fp-translation-state.ok{background:#eefaf3;border-color:#bfe8ce;color:#176441}.fp-translation-state.warn{background:#fff8e9;border-color:#efd895;color:#775712}.fp-translation-actions{display:flex;gap:8px;flex-wrap:wrap}.fp-translation-actions .btn{min-height:36px}
+.summary-inputs .fp-legacy-fee-field,.summary-inputs #discountControl{display:none!important}.fp-fee-composer{margin-top:16px;padding-top:16px;border-top:1px solid #dbe4ee}.fp-fee-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:13px}.fp-fee-title h3{margin:2px 0 5px;font-size:17px}.fp-fee-title p{margin:0;max-width:650px;color:#64788b;font-size:12px;line-height:1.55}.fp-fee-summary{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px}.fp-fee-summary span{padding:7px 9px;background:#f4f8fc;border:1px solid #dae6ef;border-radius:8px;color:#456078;font-size:12px}.fp-fee-summary b{color:#163047;margin-left:4px}.fp-fee-summary .grand{background:#edf8f3;border-color:#c4e7d7}.fp-fee-summary .grand b{color:#12724f}.fp-fee-list{display:grid;gap:11px}.fp-fee-row{border:1px solid #d8e4ed;border-radius:11px;padding:13px;background:#fbfdff}.fp-fee-row-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px}.fp-fee-row-head strong{font-size:13px}.fp-fee-remove{border:0;background:#fff0f0;color:#af3333;border-radius:7px;padding:6px 9px;font-size:12px;font-weight:800;cursor:pointer}.fp-fee-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.fp-fee-grid label{font-size:11.5px}.fp-fee-grid .span-2{grid-column:span 2}.fp-fee-check{display:flex!important;align-items:center;align-self:end;gap:6px;min-height:42px;color:#465f75!important}.fp-fee-check input{width:auto;min-height:0;margin:0;accent-color:var(--blue)}.fp-fee-row-total{margin:10px 0 0;color:#597187;font-size:11.5px}.fp-fee-row-total b{color:#18344e}.fp-fee-empty{padding:12px;margin:0;background:#f7fafc;border:1px dashed #ccdce9;border-radius:9px;color:#6a7e90;font-size:12px}.fp-fee-footnote{margin:10px 0 0;color:#6a7e90;font-size:11.5px;line-height:1.5}.fp-pdf-fee-row th small{display:block;margin-top:3px;color:#61758a;font-weight:500;line-height:1.35}.fp-pdf-fee-row.is-discount td{color:#b12636}.fp-pdf-fee-excluded{margin:7px 0 14px;padding:8px 10px;border:1px solid #dbe4ee;border-radius:6px;background:#f8fafc;color:#586f83;font-size:11px;line-height:1.45}
+@media(max-width:940px){.fp-fee-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.fp-fee-title{flex-direction:column}.fp-fee-title .btn{width:100%}}@media(max-width:620px){.fp-fee-grid{grid-template-columns:1fr}.fp-fee-grid .span-2{grid-column:auto}.fp-fee-summary{display:grid;grid-template-columns:1fr 1fr}.fp-fee-summary .grand{grid-column:1/-1}}
+
+/* Hotfix 20260703-3: keep the editor header action rail inside the mobile viewport. */
+@media(max-width:680px){
+  .site-header{max-width:100%;overflow:hidden}
+  .site-header .header-actions{width:100%;max-width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;flex-wrap:nowrap;padding-bottom:2px}
+  .site-header .header-actions .btn,.site-header .header-actions summary,.site-header .header-actions .action-menu{flex:0 0 auto}
+}
+.site-header #headerTranslateBtn{display:none!important}.site-header .header-actions{display:none!important}.fp-editor-context .fp-main-action{font-size:13px}.fp-more-tools{position:relative}.fp-more-tools>summary{list-style:none;min-height:34px;display:inline-flex;align-items:center;border:0;border-radius:7px;padding:0 10px;background:#edf4fb;color:#2a4b68;font-size:12px;font-weight:850;cursor:pointer}.fp-more-tools>summary::-webkit-details-marker{display:none}.fp-more-tools-panel{position:absolute;right:0;top:calc(100% + 8px);z-index:80;display:grid;grid-template-columns:1fr;gap:8px;width:min(320px,calc(100vw - 28px));padding:12px;border:1px solid #dbe6ef;border-radius:12px;background:#fff;box-shadow:0 18px 48px rgba(14,30,55,.18)}.fp-more-tools-panel .fp-quick-control{justify-content:space-between}.fp-more-tools-panel .fp-quick-control select{width:100%;margin-top:4px}.fp-more-tools-panel button{width:100%;justify-content:center}.fp-more-tools[open]>summary{box-shadow:0 0 0 3px rgba(15,123,220,.12)}@media(max-width:680px){.fp-more-tools{width:100%}.fp-more-tools>summary{width:100%;justify-content:center}.fp-more-tools-panel{position:static;width:100%;margin-top:8px}.fp-editor-context .fp-main-action{flex:1 1 32%;justify-content:center}.fp-editor-context .fp-primary,.fp-editor-context .fp-secondary{padding:0 8px}}
+
+/* Editor Toolbar + Document UX V1 */
+.fp-document-desc{max-width:460px;color:#52677c;font-size:12px;font-weight:750;line-height:1.45}.fp-export-actions{position:sticky;bottom:-22px;margin:14px -22px -22px;padding:12px 22px;background:#fff;border-top:1px solid #e7edf3}.item-row.item-row-added{animation:fpItemAddedPulse 1s ease-out;box-shadow:0 0 0 3px rgba(15,123,220,.16),0 12px 26px rgba(15,123,220,.12)}@keyframes fpItemAddedPulse{0%{background:#eaf5ff;border-color:#7ab9ef;transform:translateY(-2px)}100%{background:var(--soft);border-color:var(--line);transform:none}}@media(max-width:980px){.fp-document-desc{flex-basis:100%;max-width:none;order:8}.fp-editor-context .state{order:9}}@media(max-width:680px){.fp-document-desc{font-size:11.5px}.fp-export-actions{position:static;margin:12px -22px -22px}.fp-export-actions button{flex:1 1 100%}}
+
+/* Multi-document editor V1: professional document focus and PDF table hardening. */
+.fp-document-focus{display:grid;grid-template-columns:minmax(220px,.34fr) 1fr;gap:16px;align-items:start;padding:14px max(5%,18px);background:linear-gradient(135deg,#f7fbff,#eef7f2);border-bottom:1px solid #dbe6ef}.fp-document-focus-copy h3{margin:2px 0 5px;font-size:17px;color:#14304d}.fp-document-focus-copy p{margin:0;color:#5b7186;font-size:12.5px;line-height:1.55}.fp-document-focus-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}.fp-document-focus-grid span{min-width:0;padding:9px 10px;border:1px solid #d8e5ef;border-radius:10px;background:rgba(255,255,255,.78)}.fp-document-focus-grid b{display:block;margin-bottom:4px;color:#203c59;font-size:11px;line-height:1.25}.fp-document-focus-grid em{display:block;color:#5c7184;font-size:11.5px;font-style:normal;line-height:1.35;overflow-wrap:anywhere}.doc .products{table-layout:fixed}.doc .products tr{break-inside:avoid;page-break-inside:avoid}.doc .products th,.doc .products td{overflow-wrap:normal;word-break:normal;hyphens:none}.doc .products td{overflow-wrap:anywhere}.doc .products th{font-size:10.5px;line-height:1.28}.doc .products td:nth-last-child(-n+2),.doc .products th:nth-last-child(-n+2){text-align:right}.doc[data-fp-document-kind="packing_list"] .products td:nth-last-child(-n+2),.doc[data-fp-document-kind="packing_list"] .products th:nth-last-child(-n+2){text-align:center}.doc .products td:nth-child(3),.doc .products th:nth-child(3){text-align:left}.doc .products .img{display:block;width:54px;height:54px;max-width:54px;max-height:54px;margin:auto;object-fit:contain;background:#f8fafc}.doc .no-image,.doc .fp-pdf-image-placeholder{display:inline-flex;align-items:center;justify-content:center;width:54px;min-height:42px;padding:5px;border:1px dashed #cbd7e4;border-radius:5px;background:#f8fafc;color:#73869a;font-size:9.5px;line-height:1.25;text-align:center}.doc .money-table{break-inside:avoid;page-break-inside:avoid}.doc .money-table th,.doc .money-table td{overflow-wrap:anywhere}.doc .money-table td{font-variant-numeric:tabular-nums}.doc[data-fp-document-kind="packing_list"] .money-table{display:none!important}
+.item-row.item-row-added{animation:fpItemRowAdded 1s ease-out;box-shadow:0 0 0 3px rgba(18,111,209,.16),0 14px 28px rgba(18,111,209,.10);border-color:#7bb8ee}@keyframes fpItemRowAdded{0%{background:#eaf6ff;transform:translateY(-2px)}100%{background:var(--soft);transform:translateY(0)}}
+@media(max-width:980px){.fp-document-focus{grid-template-columns:1fr}.fp-document-focus-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:680px){.fp-document-focus{padding:12px 14px}.fp-document-focus-grid{grid-template-columns:1fr}.fp-document-focus-copy h3{font-size:15px}.fp-document-focus-grid span{padding:8px}.doc .products .img,.doc .no-image,.doc .fp-pdf-image-placeholder{width:42px;height:42px;max-width:42px;max-height:42px}}
+
+/* Clear current document action. */
+.fp-more-tools-divider{height:1px;background:#e4edf5;margin:2px 0}.fp-more-tools-panel .fp-danger-tool{background:#fff4ee;color:#a13a1e;border:1px solid #f0c9bc}.fp-more-tools-panel .fp-danger-tool:hover{background:#ffece4}.clear-document-dialog p{font-size:13px;line-height:1.65;color:#5f7186}.fp-clear-actions{justify-content:flex-end;margin-top:14px}.fp-clear-actions .danger{background:#b94325;color:#fff}@media(max-width:680px){.fp-clear-actions button{width:100%}}
+
+/* Brand/member gate polish V1: make the More Tools entry obvious without changing layout. */
+.fp-more-tools>summary{min-height:40px;padding:0 15px;border:1px solid #93bdf8!important;background:linear-gradient(135deg,#0f7bdc,#2f8df0)!important;color:#fff!important;box-shadow:0 10px 22px rgba(15,123,220,.22);letter-spacing:.01em}
+.fp-more-tools>summary:before{content:'⚙';display:inline-flex;margin-right:6px;font-size:14px;line-height:1}
+.fp-more-tools>summary:hover{filter:brightness(1.04);box-shadow:0 12px 26px rgba(15,123,220,.28)}
+.fp-more-tools[open]>summary{box-shadow:0 0 0 3px rgba(15,123,220,.18),0 12px 26px rgba(15,123,220,.22)}
+@media(max-width:680px){.fp-more-tools>summary{min-height:42px;padding:0 12px}}
+
+/* Independent PDF document templates V1. */
+/* Independent PDF template export/layout cleanup V1. */
+/* PDF Style Templates V2: real document-specific layout rules, not just color skins. */
+.doc[class*="fp-pdf-style-"] .pdf-template{--fp-style-ink:#14213d;--fp-style-soft:#f7fafc;--fp-style-line:#cbd7e4}
+.doc[class*="fp-pdf-style-"] .pdf-meta-grid div{box-shadow:0 1px 0 rgba(15,23,42,.03)}
+.doc[class*="fp-pdf-style-"] .pdf-party-card{background:linear-gradient(180deg,#fff,#fbfdff)}
+.doc[class*="fp-pdf-style-"] .pdf-template-footer{letter-spacing:.04em}
+.doc.fp-pdf-style-classic_business .pdf-template{gap:13px}.doc.fp-pdf-style-classic_business .pdf-meta-grid div{border-radius:9px;background:#f8fbff}.doc.fp-pdf-style-classic_business .pdf-party-card{border-radius:10px;border-color:#cad8e6}.doc.fp-pdf-style-classic_business .pdf-template-proforma .money-table,.doc.fp-pdf-style-classic_business .pdf-template-commercial .money-table{border-top:2px solid var(--fp-brand-color)}
+.doc.fp-pdf-style-minimal_trade .pdf-template{gap:10px;color:#1f2933}.doc.fp-pdf-style-minimal_trade .pdf-meta-grid{gap:0;border-top:1px solid #1f2933;border-bottom:1px solid #1f2933}.doc.fp-pdf-style-minimal_trade .pdf-meta-grid div{border:0!important;border-right:1px solid #d4d4d8!important;border-radius:0!important;background:#fff!important;min-height:42px}.doc.fp-pdf-style-minimal_trade .pdf-party-card{border:0!important;border-top:1px solid #1f2933!important;border-radius:0!important;background:#fff!important;padding:9px 0}.doc.fp-pdf-style-minimal_trade .pdf-template-footer{border-top:1px solid #1f2933}.doc.fp-pdf-style-minimal_trade .signature-zone,.doc.fp-pdf-style-minimal_trade .pdf-contract-signatures>div{border-radius:0!important}
+.doc.fp-pdf-style-formal_contract .pdf-template{gap:14px}.doc.fp-pdf-style-formal_contract .pdf-template-contract{background:linear-gradient(180deg,#fffdf8,#fff)}.doc.fp-pdf-style-formal_contract .pdf-contract-hero{border:3px double var(--fp-brand-color)!important;background:#fffef9!important;padding:18px!important;text-transform:uppercase}.doc.fp-pdf-style-formal_contract .pdf-contract-terms .info{counter-reset:contractTerm}.doc.fp-pdf-style-formal_contract .pdf-contract-terms .info tr{counter-increment:contractTerm}.doc.fp-pdf-style-formal_contract .pdf-contract-terms .info th:before{content:counter(contractTerm,decimal-leading-zero) ' / ';color:var(--fp-brand-color)}.doc.fp-pdf-style-formal_contract .pdf-contract-signatures>div{min-height:170px;border:2px solid #b9a477!important;background:#fffef9}.doc.fp-pdf-style-formal_contract .pdf-template:not(.pdf-template-contract) .doc-section{border-left:5px solid var(--fp-brand-color);background:#fff!important}
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation{display:grid!important;grid-template-columns:1.12fr .88fr;gap:12px;align-items:start}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-quotation-hero{grid-column:1/-1;min-height:96px;align-items:center;background:linear-gradient(135deg,#eef5ff,#fff);border:1px solid #b9cde4!important;border-left:9px solid var(--fp-brand-color)!important;border-radius:16px;padding:18px}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-meta-grid{grid-column:1}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-quotation-customer{grid-column:2}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-quotation-items{grid-column:1/-1}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-quote-total{grid-column:2;width:100%!important}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-quotation-terms{grid-column:1}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .products th{font-size:11.5px}.doc.fp-pdf-style-brand_showcase .pdf-party-card{border-radius:14px;border-top:4px solid var(--fp-brand-color)!important;box-shadow:0 10px 26px rgba(15,23,42,.06)}.doc.fp-pdf-style-brand_showcase .pdf-template-proforma .pdf-pi-hero{border-radius:16px;padding:18px;background:linear-gradient(135deg,#f0f6ff,#fff);border:1px solid #c7d7e8!important}
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-template-quotation{display:grid!important;grid-template-columns:1.12fr .88fr!important}
+.doc.fp-pdf-style-customs_clean .pdf-template-commercial,.doc.fp-pdf-style-customs_clean .pdf-template-packing{gap:8px}.doc.fp-pdf-style-customs_clean .pdf-template-commercial .pdf-meta-grid,.doc.fp-pdf-style-customs_clean .pdf-template-packing .pdf-meta-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid #6f879b}.doc.fp-pdf-style-customs_clean .pdf-template-commercial .pdf-meta-grid div,.doc.fp-pdf-style-customs_clean .pdf-template-packing .pdf-meta-grid div{border:0!important;border-right:1px solid #8da9bf!important;border-radius:0!important;background:#fff!important;min-height:40px}.doc.fp-pdf-style-customs_clean .pdf-commercial-table th,.doc.fp-pdf-style-customs_clean .pdf-commercial-table td,.doc.fp-pdf-style-customs_clean .pdf-packing-table th,.doc.fp-pdf-style-customs_clean .pdf-packing-table td{padding:6px 5px;font-size:9.8px}.doc.fp-pdf-style-customs_clean .pdf-commercial-declaration .info th,.doc.fp-pdf-style-customs_clean .pdf-packing-summary .info th{background:#e8f0f7!important;color:#102235}.doc.fp-pdf-style-customs_clean .pdf-template-packing .money-table,.doc.fp-pdf-style-customs_clean .pdf-template-packing [data-pdf-payment],.doc.fp-pdf-style-customs_clean .pdf-template-packing .pdf-payment{display:none!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-formal_contract .pdf-quote-total{width:58%!important}.doc[data-fp-document-kind="proforma_invoice"].fp-pdf-style-brand_showcase .money-table{width:58%!important;border-radius:12px;overflow:hidden}.doc[data-fp-document-kind="commercial_invoice"].fp-pdf-style-customs_clean .pdf-template-footer{border-top:2px solid #2f5f86}.doc[data-fp-document-kind="sales_contract"].fp-pdf-style-minimal_trade .pdf-contract-hero{background:#fff!important;border:0!important;border-top:2px solid #111!important;border-bottom:2px solid #111!important}.doc[data-fp-document-kind="packing_list"] .pdf-template-packing .money-table,.doc[data-fp-document-kind="packing_list"] .pdf-template-packing .pdf-payment,.doc[data-fp-document-kind="packing_list"] .pdf-template-packing [data-pdf-payment]{display:none!important}
+@media(max-width:720px){.doc.fp-pdf-style-brand_showcase .pdf-template-quotation{display:flex!important;grid-template-columns:none}.doc.fp-pdf-style-customs_clean .pdf-template-commercial .pdf-meta-grid,.doc.fp-pdf-style-customs_clean .pdf-template-packing .pdf-meta-grid{grid-template-columns:1fr}}
+.doc .pdf-split-block{break-inside:auto;page-break-inside:auto}
+.doc .pdf-template-footer,.doc .pdf-signature-section,.doc .pdf-contract-signatures{break-inside:avoid;page-break-inside:avoid}
+.doc .pdf-template-footer{min-height:26px}.doc .pdf-signature-section,.doc .pdf-contract-signatures{overflow:visible}
+.doc.pdf-exporting .pdf-template{min-height:0;display:block;gap:0}
+.doc.pdf-exporting .pdf-template table{margin-bottom:8px}
+.doc.pdf-exporting .pdf-template-footer{margin-top:16px}
+.doc.pdf-exporting .pdf-split-block{break-inside:auto!important;page-break-inside:auto!important}
+.doc.pdf-exporting .pdf-split-block .doc-section{break-after:avoid;page-break-after:avoid}
+.doc.pdf-exporting .products thead{display:table-header-group}
+.doc.pdf-exporting .products tr{break-inside:avoid;page-break-inside:avoid}
+.doc .pdf-quotation-hero,.doc .pdf-commercial-hero,.doc .pdf-packing-hero{border-bottom-color:var(--fp-brand-color,#173b83)!important}
+.doc .pdf-quotation-hero h2,.doc .pdf-commercial-hero h2,.doc .pdf-packing-hero h2,.doc .pdf-contract-hero h2,.doc .pdf-pi-hero h2{color:var(--fp-brand-color,#173b83)!important}
+.doc .pdf-quotation-hero strong,.doc .pdf-commercial-hero strong,.doc .pdf-packing-hero strong,.doc .pdf-contract-hero p,.doc .pdf-pi-hero p{color:var(--fp-brand-color,#b33b2e)!important}
+.doc .pdf-template-quotation .doc-section,.doc .pdf-template-commercial .doc-section,.doc .pdf-template-contract .doc-section,.doc .pdf-template-packing .doc-section,.doc .pdf-template-proforma .doc-section{background:var(--fp-brand-color,#173b83)!important}
+.doc .pdf-contract-hero{border-color:var(--fp-brand-color,#17243c)!important}
+.doc .no-image:empty{display:none}
+.doc .pdf-template{min-height:820px;display:flex;flex-direction:column;gap:12px}.doc .pdf-template table{margin-bottom:10px}.doc .pdf-meta-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin:0 0 8px}.doc .pdf-meta-grid div{border:1px solid #cdd8e4;background:#f8fbff;border-radius:6px;padding:7px 8px;min-height:48px}.doc .pdf-meta-grid b{display:block;margin-bottom:3px;color:#5a6c80;font-size:10px;text-transform:uppercase}.doc .pdf-meta-grid span{display:block;font-size:12px;font-weight:800;color:#16243a}.doc .pdf-party-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.doc .pdf-party-grid.pdf-single-party{grid-template-columns:1fr}.doc .pdf-party-card{border:1px solid #17243c;border-radius:8px;padding:10px;min-height:96px}.doc .pdf-party-card h3{margin:0 0 6px;color:#14213d;font-size:12px;text-transform:uppercase}.doc .pdf-party-card p{margin:0;line-height:1.7}.doc .pdf-template-footer{margin-top:auto;border-top:1px solid #cdd8e4;padding-top:10px;display:flex;justify-content:space-between;gap:10px;color:#65758a;font-size:10px;text-transform:uppercase}.doc .pdf-quotation-hero,.doc .pdf-commercial-hero,.doc .pdf-packing-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;border-bottom:4px solid #173b83;padding-bottom:12px}.doc .pdf-quotation-hero p,.doc .pdf-commercial-hero small,.doc .pdf-packing-hero small{margin:0 0 4px;color:#65758a;font-weight:800;text-transform:uppercase}.doc .pdf-quotation-hero h2,.doc .pdf-commercial-hero h2,.doc .pdf-packing-hero h2,.doc .pdf-contract-hero h2{margin:0;color:#173b83;font-size:26px;letter-spacing:.02em}.doc .pdf-quotation-hero strong,.doc .pdf-commercial-hero strong,.doc .pdf-packing-hero strong{font-size:13px;color:#b33b2e}.doc .pdf-template-quotation .doc-section{background:#173b83}.doc .pdf-template-quotation .money-table{width:52%!important}.doc .pdf-template-proforma .pdf-pi-hero{border-bottom-color:#14213d}.doc .pdf-template-commercial .doc-section{background:#30415b}.doc .pdf-commercial-table th,.doc .pdf-commercial-table td{font-size:10.5px}.doc .pdf-template-contract .doc-section{background:#5a3825}.doc .pdf-contract-hero{border:2px solid #17243c;padding:14px;text-align:center;background:#f8fbff}.doc .pdf-contract-hero p{margin:6px 0 0;color:#b33b2e;font-weight:900}.doc .pdf-contract-signatures{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:20px}.doc .pdf-contract-signatures>div{min-height:150px;border:1px solid #17243c;border-radius:8px;padding:12px;text-align:center}.doc .pdf-contract-signatures h3{margin:0;color:#14213d;font-size:12px;text-transform:uppercase}.doc .pdf-contract-signatures p{margin:10px 0 0;padding-top:8px;border-top:1px solid #17243c;font-weight:800}.doc .pdf-contract-signatures .signature-assets{justify-content:center;height:86px}.doc .pdf-template-packing .doc-section{background:#22543d}.doc .pdf-packing-table th,.doc .pdf-packing-table td{font-size:10px}.doc .pdf-packing-table th:nth-last-child(-n+3),.doc .pdf-packing-table td:nth-last-child(-n+3){text-align:center}.doc[data-fp-pdf-template="packing_list"] .money-table,.doc[data-fp-pdf-template="packing_list"] .pdf-payment,.doc[data-fp-pdf-template="packing_list"] [data-pdf-payment]{display:none!important}@media(max-width:720px){.doc .pdf-meta-grid,.doc .pdf-party-grid,.doc .pdf-contract-signatures{grid-template-columns:1fr}.doc .pdf-quotation-hero,.doc .pdf-commercial-hero,.doc .pdf-packing-hero{align-items:flex-start;flex-direction:column}.doc .pdf-quotation-hero h2,.doc .pdf-commercial-hero h2,.doc .pdf-packing-hero h2,.doc .pdf-contract-hero h2{font-size:20px}}
+
+/* Real multi-template PDF layouts V1: style templates now change section order and document structure. */
+.doc .pdf-template-hero{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;border-bottom:4px solid var(--fp-brand-color,#173b83);padding-bottom:12px}
+.doc .pdf-template-hero small{display:block;margin:0 0 4px;color:#65758a;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
+.doc .pdf-template-hero h2{margin:0;color:var(--fp-brand-color,#173b83);font-size:26px;letter-spacing:.025em}
+.doc .pdf-template-hero strong{font-size:13px;color:var(--fp-brand-color,#b33b2e);text-align:right}
+.doc .pdf-meta-bar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid #c9d6e2;margin:0 0 9px;background:#fff}
+.doc .pdf-meta-bar span{display:grid;gap:3px;padding:8px;border-right:1px solid #d9e3ec;min-height:48px}
+.doc .pdf-meta-bar span:last-child{border-right:0}.doc .pdf-meta-bar b{color:#5b6f83;font-size:9.8px;text-transform:uppercase}.doc .pdf-meta-bar em{font-style:normal;color:#17243c;font-size:12px;font-weight:850}
+.doc .pdf-value-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:10px}.doc .pdf-value-cards article{border:1px solid #d7e2ec;border-radius:12px;background:#fbfdff;padding:10px}.doc .pdf-value-cards small{display:block;color:#697c90;font-size:10px;text-transform:uppercase}.doc .pdf-value-cards strong{display:block;margin-top:4px;color:#14213d;font-size:13px;line-height:1.35}
+.doc .pdf-total-card{border:2px solid var(--fp-brand-color,#173b83);border-radius:14px;background:linear-gradient(135deg,#f5f8fc,#fff);padding:14px;margin:0 0 10px}.doc .pdf-total-card small,.doc .pdf-total-card span{display:block;color:#61758a;font-size:10px;text-transform:uppercase}.doc .pdf-total-card strong{display:block;margin:5px 0;color:var(--fp-brand-color,#173b83);font-size:22px}
+.doc .pdf-proposal-grid{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(220px,.68fr);gap:12px;align-items:start}.doc .pdf-proposal-grid>main,.doc .pdf-proposal-grid>aside{display:grid;gap:10px;min-width:0}
+.doc .pdf-agreement-strip{display:grid;grid-template-columns:1fr 1fr;gap:14px}.doc .pdf-agreement-strip>div{border:1px solid #17243c;border-radius:10px;min-height:76px;padding:12px;text-align:center}.doc .pdf-agreement-strip b,.doc .pdf-agreement-strip span{display:block}.doc .pdf-agreement-strip span{margin-top:18px;border-top:1px solid #17243c;padding-top:7px;font-weight:800}
+.doc.fp-pdf-style-classic_business .pdf-layout-classic .pdf-template-hero{border-bottom-width:4px}.doc.fp-pdf-style-classic_business .pdf-layout-classic .pdf-party-card{box-shadow:0 6px 18px rgba(15,45,80,.05)}
+.doc.fp-pdf-style-minimal_trade .pdf-template-hero{border-top:1px solid #111827!important;border-bottom:1px solid #111827!important;padding:10px 0!important;background:#fff!important;border-left:0!important;border-right:0!important;border-radius:0!important}.doc.fp-pdf-style-minimal_trade .pdf-template-hero h2{font-size:23px;letter-spacing:.12em;color:#111827!important}.doc.fp-pdf-style-minimal_trade .pdf-template-hero strong{color:#111827!important}.doc.fp-pdf-style-minimal_trade .pdf-meta-bar{border-left:0;border-right:0}.doc.fp-pdf-style-minimal_trade .pdf-value-cards article,.doc.fp-pdf-style-minimal_trade .pdf-total-card{border-radius:0;background:#fff;box-shadow:none}
+.doc.fp-pdf-style-formal_contract .pdf-template-hero{display:block;text-align:center;border:3px double var(--fp-brand-color,#173b69)!important;background:#fffef9;padding:16px!important}.doc.fp-pdf-style-formal_contract .pdf-template-hero h2{font-size:27px;letter-spacing:.14em}.doc.fp-pdf-style-formal_contract .pdf-template-hero strong{display:block;margin-top:8px;text-align:center}.doc.fp-pdf-style-formal_contract .pdf-layout-formal-contract .pdf-contract-terms .info{counter-reset:contractArticle}.doc.fp-pdf-style-formal_contract .pdf-layout-formal-contract .pdf-contract-terms .info tr{counter-increment:contractArticle}.doc.fp-pdf-style-formal_contract .pdf-layout-formal-contract .pdf-contract-terms .info th:before{content:'ARTICLE ' counter(contractArticle) ' · ';color:var(--fp-brand-color)}
+.doc.fp-pdf-style-brand_showcase .pdf-template-hero{min-height:108px;align-items:center;border:1px solid #c7d7e8!important;border-left:10px solid var(--fp-brand-color)!important;border-radius:18px;background:linear-gradient(135deg,#f0f6ff,#fff)!important;padding:18px!important}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal{display:flex!important;grid-template-columns:none!important}.doc.fp-pdf-style-brand_showcase .pdf-proposal-grid>aside{position:relative}.doc.fp-pdf-style-brand_showcase .pdf-value-cards article{border-top:4px solid var(--fp-brand-color);box-shadow:0 10px 24px rgba(15,23,42,.06)}
+.doc.fp-pdf-style-customs_clean .pdf-template-hero{border:1px solid #2f5f86!important;border-left:0!important;border-right:0!important;border-radius:0!important;background:#fff!important;padding:10px 0!important}.doc.fp-pdf-style-customs_clean .pdf-template-hero h2{font-size:24px;letter-spacing:.08em}.doc.fp-pdf-style-customs_clean .pdf-meta-bar{grid-template-columns:repeat(4,minmax(0,1fr));border-color:#6f879b}.doc.fp-pdf-style-customs_clean .pdf-meta-bar span{border-color:#8da9bf;min-height:42px}.doc.fp-pdf-style-customs_clean .pdf-value-cards article{border-radius:0;background:#f8fafc;border-color:#8da9bf}.doc.fp-pdf-style-customs_clean .pdf-total-card{border-radius:0;background:#fff}
+.doc[data-fp-pdf-template="packing_list"] .pdf-total-card{display:none!important}.doc[data-fp-pdf-template="packing_list"] .pdf-template-packing table.money-table{display:none!important}
+@media(max-width:720px){.doc .pdf-template-hero{align-items:flex-start;flex-direction:column}.doc .pdf-template-hero strong{text-align:left}.doc .pdf-meta-bar,.doc .pdf-value-cards,.doc .pdf-proposal-grid,.doc .pdf-agreement-strip{grid-template-columns:1fr}.doc .pdf-template-hero h2{font-size:20px}.doc .pdf-total-card strong{font-size:18px}}
+
+/* Unified PDF brand color V1: template styles keep their layout, but visible accents follow one brand color control. */
+.doc[class*="fp-pdf-style-"] .pdf-template-hero,
+.doc[class*="fp-pdf-style-"] .doc-hero,
+.doc[class*="fp-pdf-style-"] .pdf-quotation-hero,
+.doc[class*="fp-pdf-style-"] .pdf-commercial-hero,
+.doc[class*="fp-pdf-style-"] .pdf-contract-hero,
+.doc[class*="fp-pdf-style-"] .pdf-packing-hero{border-color:var(--fp-brand-color,#0f7bdc)!important}
+.doc[class*="fp-pdf-style-"] .pdf-template-hero h2,
+.doc[class*="fp-pdf-style-"] .doc-hero h2,
+.doc[class*="fp-pdf-style-"] .pdf-quotation-hero h2,
+.doc[class*="fp-pdf-style-"] .pdf-commercial-hero h2,
+.doc[class*="fp-pdf-style-"] .pdf-contract-hero h2,
+.doc[class*="fp-pdf-style-"] .pdf-packing-hero h2,
+.doc[class*="fp-pdf-style-"] .pdf-template-hero strong,
+.doc[class*="fp-pdf-style-"] .pdf-total-card strong,
+.doc[class*="fp-pdf-style-"] .money-table .total td{color:var(--fp-brand-color,#0f7bdc)!important}
+.doc[class*="fp-pdf-style-"] .doc-section,
+.doc[class*="fp-pdf-style-"] .products th,
+.doc.fp-pdf-style-formal_contract .products th,
+.doc.fp-pdf-style-minimal_trade .products th{background:var(--fp-brand-color,#0f7bdc)!important;color:#fff!important}
+.doc[class*="fp-pdf-style-"] .pdf-total-card,
+.doc[class*="fp-pdf-style-"] .money-table .total th,
+.doc[class*="fp-pdf-style-"] .money-table .total td,
+.doc[class*="fp-pdf-style-"] .pdf-value-cards article,
+.doc[class*="fp-pdf-style-"] .pdf-party-card,
+.doc[class*="fp-pdf-style-"] .signature-zone,
+.doc[class*="fp-pdf-style-"] .pdf-contract-signatures>div,
+.doc[class*="fp-pdf-style-"] .pdf-meta-bar{border-color:#b9c9db!important}
+.doc.fp-pdf-style-customs_clean .pdf-template-hero,
+.doc.fp-pdf-style-customs_clean .pdf-meta-bar,
+.doc.fp-pdf-style-customs_clean .pdf-meta-bar span,
+.doc.fp-pdf-style-customs_clean .pdf-commercial-declaration .info th,
+.doc.fp-pdf-style-customs_clean .pdf-packing-summary .info th{border-color:#afc2d6!important}
+.doc.fp-pdf-style-customs_clean .pdf-commercial-declaration .info th,
+.doc.fp-pdf-style-customs_clean .pdf-packing-summary .info th{background:#f1f6fb!important;color:#102235!important}
+.doc[data-fp-document-kind="commercial_invoice"].fp-pdf-style-customs_clean .pdf-template-footer,
+.doc[data-fp-document-kind="sales_contract"].fp-pdf-style-minimal_trade .pdf-contract-hero{border-color:var(--fp-brand-color,#0f7bdc)!important}
+
+/* Export-safe solid colors for html2canvas compatibility. */
+.doc.pdf-exporting[class*="fp-pdf-style-"] .products th,
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .products th,
+.doc.pdf-exporting.fp-pdf-style-formal_contract .products th{background:var(--fp-brand-color,#0f7bdc)!important;color:#fff!important}
+.doc.pdf-exporting .pdf-total-card,
+.doc.pdf-exporting .pdf-template-hero,
+.doc.pdf-exporting .doc-hero,
+.doc.pdf-exporting .pdf-quotation-hero,
+.doc.pdf-exporting .pdf-commercial-hero,
+.doc.pdf-exporting .pdf-contract-hero,
+.doc.pdf-exporting .pdf-packing-hero,
+.doc.pdf-exporting .pdf-pi-hero,
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-quotation-hero,
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-template-proforma .pdf-pi-hero{background:#fff!important;border-color:var(--fp-brand-color,#0f7bdc)!important}
+.doc.pdf-exporting[class*="fp-pdf-style-"] .doc-section,
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .doc-section{background:var(--fp-brand-color,#0f7bdc)!important;color:#fff!important}
+.doc.pdf-exporting[class*="fp-pdf-style-"] .pdf-meta-bar,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .pdf-meta-bar span,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .pdf-value-cards article,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .pdf-party-card,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .signature-zone,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .pdf-contract-signatures>div,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .money-table .total th,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .money-table .total td,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .info th,
+.doc.pdf-exporting[class*="fp-pdf-style-"] .info td,
+.doc.pdf-exporting[class*="fp-pdf-style-"] table,
+.doc.pdf-exporting[class*="fp-pdf-style-"] th,
+.doc.pdf-exporting[class*="fp-pdf-style-"] td,
+.doc.pdf-exporting.fp-pdf-style-customs_clean .pdf-commercial-declaration .info th,
+.doc.pdf-exporting.fp-pdf-style-customs_clean .pdf-packing-summary .info th{border-color:#d9e3ec!important}
+.doc.pdf-exporting.fp-pdf-style-customs_clean .pdf-commercial-declaration .info th,
+.doc.pdf-exporting.fp-pdf-style-customs_clean .pdf-packing-summary .info th{background:#f5f8fb!important;color:#102235!important}
+
+/* Quotation brand showcase layout fix V1: keep snapshot cards readable in preview and PDF export. */
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-proposal-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(248px,280px)!important;width:100%;gap:12px;align-items:start}
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-proposal-grid>main{min-width:0;overflow:hidden}
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-proposal-grid>aside{min-width:248px;display:grid;gap:10px;align-content:start}
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-quote-snapshot{grid-template-columns:1fr!important;width:100%}
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-quote-snapshot article{min-width:0;word-break:normal;overflow-wrap:anywhere}
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-total-card{width:100%;box-sizing:border-box}
+@media(max-width:720px){.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-proposal-grid{grid-template-columns:1fr!important}.doc.fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal .pdf-proposal-grid>aside{min-width:0}}
+
+/* Quotation VIP style differentiation V1: five styles must be visibly different, not only color skins. */
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-classic_business .pdf-template-quotation.pdf-layout-classic{display:flex!important;flex-direction:column;gap:12px}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-classic_business .pdf-template-quotation .pdf-template-hero{border:0!important;border-bottom:4px solid var(--fp-brand-color,#0f7bdc)!important;border-radius:0!important;background:#fff!important;padding:0 0 14px!important;min-height:auto}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-classic_business .pdf-template-quotation .pdf-meta-grid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-classic_business .pdf-template-quotation .doc-section{border-radius:8px 8px 0 0!important}
+
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation.pdf-layout-ledger{display:flex!important;flex-direction:column;gap:10px;color:#111827}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .pdf-template-hero{border:0!important;border-top:2px solid #111827!important;border-bottom:2px solid #111827!important;border-radius:0!important;background:#fff!important;padding:12px 0!important;text-align:left;min-height:auto}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .pdf-template-hero h2{font-size:23px!important;letter-spacing:.18em!important;color:#111827!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .pdf-party-card,.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .info th,.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .info td,.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .products th,.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .products td{border-color:#111827!important;border-radius:0!important;background:#fff!important;color:#111827!important;box-shadow:none!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-minimal_trade .pdf-template-quotation .doc-section{background:#fff!important;color:#111827!important;border-top:1px solid #111827!important;border-bottom:1px solid #111827!important;border-radius:0!important}
+
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-formal_contract .pdf-template-quotation.pdf-layout-formal-offer{display:flex!important;flex-direction:column;gap:14px;background:#fffdf8;padding:4px}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-formal_contract .pdf-template-quotation .pdf-template-hero{display:block!important;text-align:center!important;border:4px double var(--fp-brand-color,#173b69)!important;background:#fffef9!important;border-radius:0!important;padding:20px!important;min-height:auto}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-formal_contract .pdf-template-quotation .pdf-template-hero h2{font-size:28px!important;letter-spacing:.16em!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-formal_contract .pdf-template-quotation .doc-section{background:#fff!important;color:var(--fp-brand-color,#173b69)!important;border-left:6px solid var(--fp-brand-color,#173b69)!important;border-radius:0!important;text-transform:uppercase}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-formal_contract .pdf-template-quotation .pdf-party-card{background:#fffef9!important;border-color:#b9a477!important}
+
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-brand_showcase .pdf-template-quotation.pdf-layout-proposal{display:flex!important;flex-direction:column!important;gap:12px;background:linear-gradient(180deg,#f8fbff,#fff 34%)}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-template-hero{min-height:112px!important;border:1px solid #bfd7f4!important;border-left:10px solid var(--fp-brand-color,#0f7bdc)!important;border-radius:18px!important;background:linear-gradient(135deg,#f1f7ff,#fff)!important;padding:18px!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-brand_showcase .pdf-template-quotation .doc-section{border-radius:999px!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-party-card{border-radius:16px!important;box-shadow:0 14px 30px rgba(15,23,42,.08)!important}
+
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation.pdf-layout-customs-quote{display:flex!important;flex-direction:column;gap:8px;color:#102235}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation .pdf-template-hero{border:1px solid #2f5f86!important;border-left:0!important;border-right:0!important;border-radius:0!important;background:#fff!important;padding:10px 0!important;min-height:auto}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation .pdf-meta-bar{grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid #6f879b}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation .pdf-meta-bar span{border-right:1px solid #8da9bf;border-radius:0!important;background:#fff!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation .doc-section{background:#e8f0f7!important;color:#102235!important;border:1px solid #6f879b!important;border-radius:0!important}
+.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation .pdf-party-card,.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation table,.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation th,.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation td{border-color:#6f879b!important;border-radius:0!important;box-shadow:none!important}
+@media(max-width:720px){.doc[data-fp-document-kind="quotation"].fp-pdf-style-classic_business .pdf-template-quotation .pdf-meta-grid,.doc[data-fp-document-kind="quotation"].fp-pdf-style-customs_clean .pdf-template-quotation .pdf-meta-bar{grid-template-columns:1fr!important}}
+
+/* Brand showcase paper/layout fix V1: formal PDF sheet, no squeezed sidebar or horizontal overflow. */
+.doc[data-fp-paper-orientation="l"]{--fp-paper-mode:landscape}
+.doc.fp-pdf-style-brand_showcase{box-sizing:border-box;max-width:100%;overflow-x:hidden}
+.doc.fp-pdf-style-brand_showcase .pdf-template{box-sizing:border-box;max-width:100%;overflow:visible;gap:10px}
+.doc.fp-pdf-style-brand_showcase .pdf-template-hero,
+.doc.fp-pdf-style-brand_showcase .pdf-template-quotation .pdf-template-hero{min-height:auto!important;align-items:center;border-left:8px solid var(--fp-brand-color,#0f7bdc)!important;border-radius:14px!important;padding:13px 15px!important;background:linear-gradient(135deg,#f2f7ff,#fff)!important}
+.doc.fp-pdf-style-brand_showcase .pdf-template-hero h2{font-size:24px!important;line-height:1.15}
+.doc.fp-pdf-style-brand_showcase .pdf-template-hero strong{max-width:42%;font-size:12px!important;line-height:1.35}
+.doc.fp-pdf-style-brand_showcase .pdf-layout-brand-sheet{background:linear-gradient(180deg,#f7faff,#fff 210px)!important}
+.doc.fp-pdf-style-brand_showcase .pdf-proposal-grid{display:flex!important;flex-direction:column!important;grid-template-columns:none!important;width:100%;max-width:100%;gap:10px;min-width:0}
+.doc.fp-pdf-style-brand_showcase .pdf-proposal-grid>main,
+.doc.fp-pdf-style-brand_showcase .pdf-proposal-grid>aside{display:flex!important;flex-direction:column!important;gap:10px;width:100%;min-width:0!important;max-width:100%;overflow:visible}
+.doc.fp-pdf-style-brand_showcase .pdf-value-cards,
+.doc.fp-pdf-style-brand_showcase .pdf-quote-snapshot{grid-template-columns:repeat(4,minmax(0,1fr))!important;width:100%;margin-bottom:0}
+.doc.fp-pdf-style-brand_showcase .pdf-value-cards article{min-width:0;padding:8px 9px;border-top:3px solid var(--fp-brand-color,#0f7bdc);box-shadow:none!important;overflow-wrap:anywhere}
+.doc.fp-pdf-style-brand_showcase .pdf-party-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.doc.fp-pdf-style-brand_showcase .pdf-party-card{min-width:0;min-height:0;border-radius:12px!important;box-shadow:none!important;overflow-wrap:anywhere}
+.doc.fp-pdf-style-brand_showcase .pdf-brand-finance-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(240px,.42fr);gap:12px;align-items:start}
+.doc.fp-pdf-style-brand_showcase .pdf-brand-finance-row>.pdf-keep-block{margin:0}
+.doc.fp-pdf-style-brand_showcase .pdf-brand-finance-row>.pdf-total-card:only-child{grid-column:2}
+.doc.fp-pdf-style-brand_showcase .pdf-total-card,
+.doc.fp-pdf-style-brand_showcase .pdf-quote-total-card{width:100%!important;max-width:none;margin:0;box-sizing:border-box}
+.doc.fp-pdf-style-brand_showcase table{max-width:100%;table-layout:fixed}
+.doc.fp-pdf-style-brand_showcase .products th,
+.doc.fp-pdf-style-brand_showcase .products td{padding:6px 7px;font-size:10.5px;line-height:1.32}
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-template-quotation,
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-proposal-grid{display:flex!important;grid-template-columns:none!important}
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-layout-brand-sheet,
+.doc.pdf-exporting.fp-pdf-style-brand_showcase .pdf-template-hero{background:#fff!important}
+@media(max-width:720px){
+  .doc.fp-pdf-style-brand_showcase .pdf-template-hero{align-items:flex-start;flex-direction:column}
+  .doc.fp-pdf-style-brand_showcase .pdf-template-hero strong{max-width:none;text-align:left}
+  .doc.fp-pdf-style-brand_showcase .pdf-value-cards,
+  .doc.fp-pdf-style-brand_showcase .pdf-quote-snapshot,
+  .doc.fp-pdf-style-brand_showcase .pdf-party-grid,
+  .doc.fp-pdf-style-brand_showcase .pdf-brand-finance-row{grid-template-columns:1fr!important}
+  .doc.fp-pdf-style-brand_showcase .pdf-brand-finance-row>.pdf-total-card:only-child{grid-column:1}
+}
+
+/* Quotation MOQ field fix V2: MOQ is document-level, not logistics Packages or Quantity. */
+
+/* Logistics custom rows V1: optional industry-specific shipping fields, hidden from PDF when blank. */
+.logistics-extra{margin-top:4px;padding:14px;border:1px dashed #cbd9e7;border-radius:12px;background:#f8fbff}
+.logistics-extra-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:10px}
+.logistics-extra-head b{display:block;color:#13233d;font-size:13px}
+.logistics-extra-head span{display:block;margin-top:4px;color:#607286;font-size:11.5px;line-height:1.45}
+.logistics-extra-list{display:grid;gap:10px}
+.logistics-extra-row{display:grid;grid-template-columns:minmax(150px,.85fr) minmax(220px,1.4fr) auto;gap:10px;align-items:end}
+.logistics-extra-row .btn{min-height:42px}
+@media(max-width:680px){
+  .logistics-extra-head{display:grid}
+  .logistics-extra-head .btn{width:100%}
+  .logistics-extra-row{grid-template-columns:1fr}
+  .logistics-extra-row .btn{width:100%}
+}
+@media(min-width:1151px){
+  .item-row{grid-template-columns:1.2fr 1.08fr .72fr .52fr .52fr .64fr .72fr auto}
+  .item-row.hide-hs{grid-template-columns:1.25fr 1.15fr .56fr .56fr .7fr .78fr auto}
+  .item-row.hide-image{grid-template-columns:1.25fr 1.15fr .78fr .56fr .56fr .7fr auto}
+  .item-row.hide-hs.hide-image{grid-template-columns:1.35fr 1.2fr .6fr .6fr .74fr auto}
+  .item-row.hide-money{grid-template-columns:1.25fr 1.12fr .78fr .56fr .56fr .74fr auto}
+  .item-row.hide-money.hide-hs{grid-template-columns:1.28fr 1.18fr .58fr .58fr .78fr auto}
+  .item-row.hide-money.hide-image{grid-template-columns:1.28fr 1.18fr .78fr .58fr .58fr auto}
+  .item-row.hide-money.hide-hs.hide-image{grid-template-columns:1.35fr 1.22fr .62fr .62fr auto}
+}
+@media(max-width:1150px){
+  .item-row{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .item-row .actions{grid-column:1/-1}
+}
+@media(max-width:720px){
+  .item-row,.item-row.hide-hs,.item-row.hide-image,.item-row.hide-money{grid-template-columns:1fr!important}
+  .item-row .actions{grid-column:auto}
+}
+
+/* Packing List item rows: per-line carton/package/weight data only appears for packing lists. */
+.item-row .i-packing-field{display:none!important}
+.item-row.packing-mode .i-packing-field{display:block!important}
+@media(min-width:721px){
+  .item-row.packing-mode,
+  .item-row.packing-mode.hide-money,
+  .item-row.packing-mode.hide-hs,
+  .item-row.packing-mode.hide-image,
+  .item-row.packing-mode.hide-money.hide-hs,
+  .item-row.packing-mode.hide-money.hide-image,
+  .item-row.packing-mode.hide-hs.hide-image,
+  .item-row.packing-mode.hide-money.hide-hs.hide-image{grid-template-columns:repeat(4,minmax(0,1fr)) auto!important}
+  .item-row.packing-mode .actions{grid-column:auto}
+}
+@media(max-width:720px){
+.item-row.packing-mode,
+  .item-row.packing-mode.hide-money,
+  .item-row.packing-mode.hide-hs,
+  .item-row.packing-mode.hide-image{grid-template-columns:1fr!important}
+}
+
+/* Landscape PDF Layout V2: compact paper selector and real page nodes. */
+.paper-layout-compact{display:flex;align-items:center;gap:8px;min-height:40px;max-height:52px;padding:6px 8px;border:1px solid #d8e5ef;border-radius:12px;background:#f8fbff;color:#314f69}
+.paper-layout-compact>span{font-size:12px;font-weight:900;white-space:nowrap}
+.paper-layout-compact small{font-size:11px;font-weight:750;color:#60778d;white-space:nowrap}
+.paper-segment,.paper-dialog-segment{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid #cdddeb;border-radius:999px;background:#fff}
+.paper-segment button,.paper-dialog-segment button{min-height:28px;border:0;border-radius:999px;padding:0 10px;background:transparent;color:#3c5a72;font-size:12px;font-weight:850;white-space:nowrap;cursor:pointer}
+.paper-segment button.active,.paper-dialog-segment button.active{background:#0f7bdc;color:#fff;box-shadow:0 4px 12px rgba(15,123,220,.22)}
+.paper-layout-dialog .paper-dialog-segment{display:flex;margin-top:12px}
+.paper-layout-dialog .paper-dialog-segment button{flex:1;min-height:38px}
+.paper-dialog-status{margin:12px 0 0!important;padding:9px 10px;border:1px solid #dce8f2;border-radius:9px;background:#f7fbff;color:#405b74!important;font-weight:800}
+.doc{background:transparent!important;box-shadow:none!important;padding:0!important;min-height:0!important;overflow:visible!important}
+.pdf-document{display:grid;gap:18px;justify-items:start;max-width:100%}
+.pdf-page{position:relative;box-sizing:border-box;width:var(--fp-paper-width-px,794px);height:var(--fp-paper-height-px,1123px);max-width:none;padding:calc(var(--fp-page-margin-top-mm,13)*3.78px) calc(var(--fp-page-margin-right-mm,12)*3.78px) calc(var(--fp-page-margin-bottom-mm,13)*3.78px) calc(var(--fp-page-margin-left-mm,12)*3.78px);background:#fff;color:#111;box-shadow:0 18px 46px rgba(20,33,61,.16);overflow:hidden;font-family:Arial,"Noto Sans",sans-serif;font-size:12px;line-height:1.48}
+.pdf-page-body{box-sizing:border-box;width:100%;height:100%;overflow:hidden;background:#fff}
+.pdf-page .pdf-template{display:flex;flex-direction:column;gap:10px;min-height:0}
+.pdf-page table{width:100%;border-collapse:collapse}
+.pdf-page tr,.pdf-page .pdf-keep-block,.pdf-page .money-table,.pdf-page .signature-zone,.pdf-page .pdf-contract-signatures{break-inside:avoid;page-break-inside:avoid}
+.doc[data-fp-paper-mode="landscape"] .pdf-page{font-size:10.4px;line-height:1.34}
+.doc[data-fp-paper-mode="landscape"] .pdf-template-hero,.doc[data-fp-paper-mode="landscape"] .doc-hero{min-height:auto!important;margin-bottom:8px!important;padding-bottom:8px!important;align-items:center}
+.doc[data-fp-paper-mode="landscape"] .pdf-template-hero h2,.doc[data-fp-paper-mode="landscape"] .doc-hero h2{font-size:22px!important;line-height:1.12}
+.doc[data-fp-paper-mode="landscape"] .doc-section{margin:8px 0 5px!important;padding:5px 8px!important;font-size:11px!important}
+.doc[data-fp-paper-mode="landscape"] .pdf-meta-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.doc[data-fp-paper-mode="landscape"] .pdf-meta-bar{grid-template-columns:repeat(5,minmax(0,1fr));gap:0}
+.doc[data-fp-paper-mode="landscape"] .pdf-party-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.doc[data-fp-paper-mode="landscape"] .pdf-party-card{padding:8px 9px;min-height:0;overflow-wrap:anywhere}
+.doc[data-fp-paper-mode="landscape"] .products{table-layout:fixed}
+.doc[data-fp-paper-mode="landscape"] .products th,.doc[data-fp-paper-mode="landscape"] .products td{padding:4px 5px;font-size:8.8px;line-height:1.24;word-break:normal;overflow-wrap:anywhere}
+.doc[data-fp-paper-mode="landscape"] .products th{white-space:normal}
+.doc[data-fp-paper-mode="landscape"] .products .img{width:34px;height:34px;max-width:34px;max-height:34px}
+.doc[data-fp-paper-mode="landscape"] .money-table{width:40%!important;margin-top:2px}
+.doc[data-fp-paper-mode="landscape"] .signature-zone{min-height:86px;margin-top:12px}
+.doc[data-fp-paper-mode="landscape"] .signature-block{min-height:82px}
+.doc[data-fp-paper-mode="landscape"] .signature-assets{height:54px}
+.doc[data-fp-paper-mode="landscape"] .signature-assets .stamp{width:50px;height:50px;flex-basis:50px}
+.doc[data-fp-paper-mode="landscape"] .signature-assets .sign{width:106px;height:46px;flex-basis:106px}
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="quotation"] .pdf-brand-finance-row,
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="proforma_invoice"] .pdf-brand-finance-row{grid-template-columns:minmax(0,1fr) minmax(210px,.34fr)}
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="packing_list"] .pdf-packing-table th,
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="packing_list"] .pdf-packing-table td{font-size:7.6px;padding:3px 3.5px}
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="sales_contract"] .pdf-contract-signatures{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.doc[data-fp-paper-mode="portrait"] .pdf-page{font-size:12px}
+@media(max-width:720px){
+  .paper-layout-compact{display:none!important}
+  .preview-shell{overflow:hidden}
+  .pdf-document{transform-origin:top left}
+  .doc[data-fp-paper-mode="landscape"] .pdf-document{transform:scale(.42);width:238%;margin-bottom:-44%}
+  .doc[data-fp-paper-mode="portrait"] .pdf-document{transform:scale(.55);width:182%;margin-bottom:-36%}
+}
+@media print{
+  body.paper-landscape-mode .pdf-page{width:297mm!important;height:210mm!important;box-shadow:none!important;break-after:page}
+  body.paper-portrait-mode .pdf-page{width:210mm!important;height:297mm!important;box-shadow:none!important;break-after:page}
+  .pdf-document{gap:0!important}
+}
+
+/* Landscape PDF Layout V2.1: single horizontal preview toolbar and fit-to-width preview. */
+.preview-toolbar{display:grid!important;grid-template-columns:1fr!important;gap:8px!important;align-items:stretch!important;margin-bottom:12px!important;min-width:0!important}
+.preview-toolbar-row{display:flex;align-items:center;gap:10px;min-width:0;max-width:100%}
+.preview-toolbar-primary{justify-content:space-between;flex-wrap:wrap}
+.preview-toolbar-actions{justify-content:space-between;flex-wrap:wrap}
+.preview-toolbar strong{display:inline-flex;align-items:center;gap:6px;flex:0 0 auto;font-size:17px!important;line-height:1.2;white-space:nowrap;word-break:normal!important;overflow-wrap:normal!important}
+.preview-toolbar .edit-hint{display:inline-flex;align-items:center;flex:0 0 auto;white-space:nowrap;word-break:normal!important;overflow-wrap:normal!important}
+.preview-action-group{display:flex!important;align-items:center;gap:10px;min-width:0;flex:1 1 auto}
+.preview-action-title{flex:0 0 auto;white-space:nowrap;word-break:normal!important;overflow-wrap:normal!important}
+.preview-action-group .toolbar-actions{display:flex!important;align-items:center!important;justify-content:flex-start!important;gap:8px!important;flex-wrap:wrap!important;min-width:0}
+.preview-action-group .toolbar-actions .btn,.preview-action-group .toolbar-actions label{flex:0 0 auto;white-space:nowrap;word-break:normal!important;overflow-wrap:normal!important}
+.preview-toolbar .pdf-export-note{flex:1 1 220px;max-width:360px;margin:0!important;font-size:11px;line-height:1.45;word-break:normal!important;overflow-wrap:anywhere}
+.preview-toolbar .email-draft-hint{margin:0!important;max-width:100%;font-size:11px;line-height:1.45;word-break:normal!important;overflow-wrap:anywhere}
+.paper-layout-compact{flex:0 1 auto;max-width:100%;white-space:nowrap;word-break:normal!important;overflow-wrap:normal!important}
+.paper-layout-compact small{white-space:nowrap}
+.preview-shell{overflow-x:hidden!important}
+.preview-shell #piPaper.doc{max-width:100%;overflow:hidden!important}
+.pdf-document{zoom:var(--fp-preview-scale,1);transform:none!important;transform-origin:top left;max-width:none;overflow:hidden}
+.doc.pdf-exporting .pdf-document{zoom:1!important;overflow:visible!important}
+.doc.pdf-exporting{--fp-preview-scale:1!important;overflow:visible!important}
+.preview-shell #piPaper.doc.pdf-exporting{overflow:visible!important}
+.support-footer{padding:12px 16px!important;margin-bottom:18px!important;grid-template-columns:1fr!important;gap:8px!important}
+.support-footer h2{font-size:16px!important;margin:3px 0 5px!important}
+.support-footer p{max-height:42px;overflow:hidden;font-size:12px!important;line-height:1.45!important}
+.support-footer .footer-contact-qr{display:none!important}
+@media(max-width:720px){
+  .preview-toolbar{gap:7px!important}
+  body.mobile-preview-mode .preview-toolbar{position:sticky;top:58px;z-index:18;padding:9px 0;background:linear-gradient(180deg,#eef6f3 76%,rgba(238,246,243,0));margin-bottom:2px!important}
+  .preview-toolbar-row{align-items:stretch;flex-direction:column}
+  .preview-toolbar-primary .edit-hint,.preview-toolbar-primary .paper-layout-compact{display:none!important}
+  .preview-action-group{align-items:stretch;flex-direction:column;width:100%}
+  .preview-action-group .toolbar-actions{width:100%}
+  .preview-action-group .toolbar-actions .btn,.preview-action-group .toolbar-actions label{width:100%;min-height:40px;justify-content:center}
+  .preview-toolbar .pdf-export-note{max-width:none;width:100%}
+  .preview-shell{overflow-x:hidden!important}
+  .doc[data-fp-paper-mode="landscape"] .pdf-document,
+  .doc[data-fp-paper-mode="portrait"] .pdf-document{transform:none!important;width:auto!important;margin-bottom:0!important;zoom:var(--fp-preview-scale,.42)}
+}
+
+/* V2.2 — real-flow pagination, compact logistics and low-content-tail prevention. */
+.pdf-page .pdf-flow-section{break-inside:auto!important;page-break-inside:auto!important;min-width:0}
+.pdf-page .pdf-flow-section>.doc-section{break-after:avoid;page-break-after:avoid}
+.pdf-page .pdf-flow-section table{margin-bottom:0}
+.pdf-page .pdf-compact-info{table-layout:fixed}
+.pdf-page .pdf-compact-info th{width:18%;white-space:normal;overflow-wrap:anywhere}
+.pdf-page .pdf-compact-info td{width:32%;overflow-wrap:anywhere;word-break:normal}
+.pdf-page .pdf-compact-info .pdf-empty-cell{background:#fff!important;border-color:#e4eaf0!important}
+.pdf-page .info th,.pdf-page .info td{padding:5px 7px;line-height:1.3}
+.pdf-page .pdf-party-card{padding:8px 9px;min-height:0}
+.pdf-page .pdf-party-card h3{margin-bottom:4px}
+.pdf-page .pdf-party-card p{line-height:1.48}
+.pdf-page .doc-section{margin:9px 0 5px;padding:5px 8px}
+.pdf-page .signature-zone{min-height:90px;margin-top:8px}
+.pdf-page .signature-block{min-height:86px}
+.pdf-page .signature-assets{height:58px}
+.pdf-page .signature-assets .stamp{width:56px;height:56px}
+.pdf-page .signature-assets .sign{width:118px;height:52px}
+.pdf-page .pdf-contract-signatures{margin-top:9px;gap:14px}
+.pdf-page .pdf-contract-signatures>div{min-height:104px;padding:9px}
+.pdf-page .pdf-template{gap:7px!important}
+.pdf-page .pdf-meta-grid{margin-bottom:4px}
+.pdf-page .pdf-meta-grid div{min-height:40px;padding:5px 7px}
+.pdf-page .money-table{margin-bottom:4px!important}
+.pdf-page .doc-section[data-continued="1"]::after{content:" (CONT.)";font-size:.82em;opacity:.85}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .info th,.doc[data-fp-paper-mode="landscape"] .pdf-page .info td{padding:3.5px 5px;font-size:8.9px;line-height:1.22}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .pdf-party-card p{line-height:1.35}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-zone{min-height:70px;margin-top:5px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-block{min-height:66px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-assets{height:42px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-assets .stamp{width:42px;height:42px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-assets .sign{width:92px;height:38px}
+.fp-pdf-capture-host{background:#fff!important;max-width:none!important;padding:0!important;margin:0!important}
+.fp-pdf-capture-host .pdf-page{margin:0!important;box-shadow:none!important}
+
+
+/* V2.3 pagination integrity and signature spacing hardening. */
+.pdf-page .signature-zone{
+  box-sizing:border-box;
+  min-height:112px;
+  margin-top:10px;
+  align-items:flex-start;
+  overflow:visible;
+}
+.pdf-page .signature-block{
+  box-sizing:border-box;
+  width:min(350px,52%);
+  min-height:104px;
+  padding:0 4px 2px;
+}
+.pdf-page .signature-assets{
+  box-sizing:border-box;
+  height:68px;
+  min-height:68px;
+  margin-bottom:5px;
+}
+.pdf-page .signature-assets .stamp{width:58px;height:58px;bottom:5px}
+.pdf-page .signature-assets .sign{width:132px;height:56px;top:4px}
+.pdf-page .signature-zone .sig-note{
+  box-sizing:border-box;
+  min-height:32px;
+  padding:7px 8px 0;
+  line-height:1.32;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-zone{min-height:86px;margin-top:7px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-block{min-height:80px;width:min(330px,46%)}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-assets{height:50px;min-height:50px;margin-bottom:4px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-assets .stamp{width:46px;height:46px;bottom:3px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-assets .sign{width:104px;height:43px;top:2px}
+.doc[data-fp-paper-mode="landscape"] .pdf-page .signature-zone .sig-note{min-height:27px;padding-top:5px;font-size:9px}
+.pdf-document[data-fp-pagination-valid="0"] .pdf-page{outline:3px solid #b42318;outline-offset:2px}

@@ -1,0 +1,116 @@
+/* HUIDI V3.3.1.3 — one fixed workspace menu, shared PDF/table actions and lightweight field ordering */
+body.fp-live-document-mode,
+body.fp-live-table-mode{
+  --fp-v33-site-header-h:0px!important;
+}
+body.fp-live-document-mode .site-header,
+body.fp-live-table-mode .site-header,
+body.fp-live-document-mode .fp-editor-context,
+body.fp-live-table-mode .fp-editor-context{
+  display:none!important;
+  height:0!important;
+  min-height:0!important;
+  margin:0!important;
+  padding:0!important;
+}
+body.fp-live-document-mode #fpLiteToolbar,
+body.fp-live-table-mode #fpLiteToolbar{
+  position:sticky!important;
+  top:0!important;
+  margin:0!important;
+  width:100%!important;
+  min-height:64px;
+  z-index:5000!important;
+}
+body.fp-live-document-mode .app,
+body.fp-live-table-mode .app{
+  padding-top:10px!important;
+}
+body.fp-live-document-mode #fpV33LeftDock,
+body.fp-live-table-mode #fpV33LeftDock{
+  top:0!important;
+  z-index:48!important;
+}
+body.fp-live-table-mode #fpV33LeftDock{
+  display:block!important;
+  margin-bottom:10px!important;
+}
+body.fp-live-table-mode #fpV33LeftDock #fpQuickSourceBar,
+body.fp-live-document-mode #fpV33LeftDock #fpQuickSourceBar{
+  display:flex!important;
+}
+body.fp-live-table-mode #fpV33LeftDock #fpPdfSectionNav{
+  display:none!important;
+}
+.fp-lite-toolbar-left,
+.fp-lite-toolbar-actions{min-width:0}
+.fp-lite-toolbar-actions{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+.fp-lite-toolbar-actions::-webkit-scrollbar{display:none}
+.fp-lite-toolbar-actions>*{flex:0 0 auto}
+.fp-lite-toolbar-left strong{max-width:min(420px,34vw)}
+
+/* One shared action bar reused by PDF and table modes. */
+.fp-quick-source-bar{align-items:center!important;gap:10px!important}
+.fp-quick-source-bar>div{flex:0 1 210px}
+.fp-quick-source-bar nav{flex:1 1 auto;display:flex!important;flex-wrap:wrap!important;justify-content:flex-end!important;overflow:visible;scrollbar-width:none;padding:1px}
+.fp-quick-source-bar nav::-webkit-scrollbar{display:none}
+.fp-quick-source-bar button{flex:0 0 auto}
+body.fp-live-table-mode .fp-table-editor-toolbar [data-table-action="brand-template"],
+body.fp-live-table-mode .fp-table-editor-toolbar [data-v331-layout-open]{display:none!important}
+
+/* Lightweight up/down field ordering inside every category. */
+.fp-sheet-field-heading{display:flex;align-items:center;justify-content:space-between;gap:5px;min-width:0}
+.fp-sheet-field-heading .fp-sheet-locate-button{min-width:0;flex:1 1 auto;overflow-wrap:anywhere}
+.fp-inline-field-order{display:inline-flex;align-items:center;gap:2px;flex:0 0 auto;opacity:.42;transition:opacity .15s}
+th:hover .fp-inline-field-order,.fp-inline-field-order:focus-within{opacity:1}
+.fp-inline-field-order button{display:grid;place-items:center;width:22px;height:22px;min-height:22px;padding:0;border:1px solid #cbd8e6;border-radius:6px;background:#fff;color:#315b91;font-size:11px;font-weight:900;cursor:pointer}
+.fp-inline-field-order button:hover:not(:disabled){background:#eaf3ff;border-color:#7da4d8}
+.fp-inline-field-order button:disabled{opacity:.28;cursor:not-allowed}
+.fp-horizontal-entry-table th .fp-sheet-field-heading{min-width:145px}
+
+
+.fp-product-column-heading{display:flex;align-items:center;justify-content:space-between;gap:4px;min-width:0;padding-right:8px}
+.fp-product-column-heading>.fp-sheet-locate-button{min-width:0;flex:1 1 auto}
+.fp-inline-column-order{display:inline-flex;gap:2px;flex:0 0 auto;opacity:.35;transition:opacity .15s}
+th:hover .fp-inline-column-order,.fp-inline-column-order:focus-within{opacity:1}
+.fp-inline-column-order button{display:grid;place-items:center;width:22px;height:22px;min-height:22px;padding:0;border:1px solid #cbd8e6;border-radius:6px;background:#fff;color:#315b91;font-size:11px;font-weight:900;cursor:pointer}
+.fp-inline-column-order button:hover:not(:disabled){background:#eaf3ff;border-color:#7da4d8}
+.fp-inline-column-order button:disabled{opacity:.25;cursor:not-allowed}
+
+/* Shared canonical paste window; parser and canonical fields remain the original ones. */
+.fp-shared-paste-dialog{width:min(620px,calc(100vw - 24px));border:0;border-radius:16px;padding:0;box-shadow:0 28px 80px rgba(15,30,54,.28)}
+.fp-shared-paste-dialog::backdrop{background:rgba(15,30,54,.45);backdrop-filter:blur(3px)}
+.fp-shared-paste-dialog .inner{padding:18px}
+.fp-shared-paste-dialog header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:13px}
+.fp-shared-paste-dialog h3{margin:0;color:#173b83;font-size:18px}
+.fp-shared-paste-dialog header p{margin:5px 0 0;color:#6b7b8f;font-size:12px;line-height:1.5}
+.fp-shared-paste-dialog header button{width:32px;height:32px;border:0;border-radius:8px;background:#eef3f8;color:#42546d;font-size:20px;cursor:pointer}
+.fp-shared-paste-dialog textarea{width:100%;min-height:210px;resize:vertical;border:1px solid #cbd8e6;border-radius:10px;padding:11px;line-height:1.55}
+.fp-shared-paste-dialog footer{display:flex;justify-content:flex-end;gap:8px;margin-top:13px}
+.fp-shared-paste-dialog footer button{min-height:38px;padding:0 13px;border:1px solid #d2ddea;border-radius:8px;background:#f5f8fb;color:#344b67;font-weight:850;cursor:pointer}
+.fp-shared-paste-dialog footer .primary{background:#176fd1;border-color:#176fd1;color:#fff}
+
+@media(max-width:1180px){
+  .fp-quick-source-bar{align-items:flex-start!important;flex-direction:column}
+  .fp-quick-source-bar>div{flex:none}
+  .fp-quick-source-bar nav{width:100%;justify-content:flex-start!important;flex-wrap:wrap!important}
+}
+@media(max-width:900px){
+  .fp-lite-toolbar-left strong{max-width:180px}
+  .fp-lite-toolbar-actions{max-width:66vw}
+}
+@media(max-width:680px){
+  body.fp-live-document-mode #fpLiteToolbar,
+  body.fp-live-table-mode #fpLiteToolbar{min-height:58px;padding:7px 8px!important}
+  .fp-lite-toolbar-left small{display:none!important}
+  .fp-lite-toolbar-left strong{max-width:130px;font-size:13px}
+  .fp-lite-toolbar-actions{max-width:60vw}
+  body.fp-live-document-mode #fpV33LeftDock,
+  body.fp-live-table-mode #fpV33LeftDock{top:0!important;padding:5px!important}
+  .fp-quick-source-bar nav{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible}
+  .fp-quick-source-bar button{width:100%}
+  .fp-inline-field-order,.fp-inline-column-order{opacity:1}
+}
+@media print{
+  .fp-shared-paste-dialog{display:none!important}
+}

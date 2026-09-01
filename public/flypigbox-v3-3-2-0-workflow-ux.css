@@ -1,0 +1,75 @@
+/* HUIDI V3.3.2.0 — document workflow, compact basic section and real mode/field controls. */
+body.fp-v3320-workflow-ux .top-workspace{display:block;margin:0}
+body.fp-v3320-workflow-ux .form-column>#fpV33LeftDock{order:-110}
+body.fp-v3320-workflow-ux .form-column>#editorTop{order:-100;margin:0;min-width:0}
+body.fp-v3320-workflow-ux #editorTop>.card:first-child{padding:16px 18px;border-radius:20px}
+body.fp-v3320-workflow-ux #editorTop>.card:first-child>.section-title{margin-bottom:10px}
+body.fp-v3320-workflow-ux #editorTop>.card:first-child>.hint{margin:0 0 12px;font-size:12px;line-height:1.55;padding:9px 11px;border-radius:12px;background:#f7f9fd;color:#63708a}
+body.fp-v3320-workflow-ux #editorTop>.card:first-child>.grid.four{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px 14px}
+body.fp-v3320-workflow-ux #editorTop>.card:first-child label{gap:6px}
+body.fp-v3320-workflow-ux #editorTop>.card:first-child input,
+body.fp-v3320-workflow-ux #editorTop>.card:first-child select{min-height:44px}
+body.fp-v3320-workflow-ux #editorTop>.doc-mode-card{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;clip-path:inset(50%)!important;white-space:nowrap!important;margin:0!important;padding:0!important;border:0!important}
+body.fp-v3320-workflow-ux .pi-code-panel{margin-top:10px;padding:0;border:0;background:transparent}
+body.fp-v3320-workflow-ux .pi-code-panel>.pi-code-head{min-height:42px;padding:0 2px;border-top:1px solid #e7ebf3;display:flex;align-items:center;margin-top:4px;padding-top:10px}
+body.fp-v3320-workflow-ux .pi-code-panel>.grid,
+body.fp-v3320-workflow-ux .pi-code-panel>.pi-code-note{display:none}
+body.fp-v3320-workflow-ux .pi-code-panel.fp-v3320-open>.grid{display:grid;margin-top:10px}
+body.fp-v3320-workflow-ux .pi-code-panel.fp-v3320-open>.pi-code-note{display:block}
+.fp-v3320-number-toggle{min-height:34px!important;padding:0 12px!important;border:1px solid #d8e0ed!important;border-radius:10px!important;background:#fff!important;color:#38517d!important;font-weight:800!important}
+body.fp-v3320-default .fp-v3320-detailed-only{display:none!important}
+.fp-v3320-mode-summary{font-size:12px;color:#67758d;margin-top:5px}
+
+/* Drawer: field settings becomes a focused page instead of a panel below the fold. */
+#fpV3315ToolsRoot.fp-v3320-fields-view .fp-v3315-drawer>header span{display:none}
+#fpV3315ToolsRoot.fp-v3320-fields-view .fp-v3315-drawer>main>section:not(#fpV3318FieldSettings){display:none!important}
+#fpV3315ToolsRoot.fp-v3320-fields-view #fpV3318FieldSettings{display:block!important;margin:0;border:0;padding:0;background:transparent}
+.fp-v3320-fields-toolbar{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.fp-v3320-fields-toolbar h3{margin:0;font-size:20px;color:#172440}
+.fp-v3320-fields-toolbar p{margin:5px 0 0;color:#69768d;font-size:13px;line-height:1.55}
+.fp-v3320-fields-back{min-height:38px;padding:0 14px;border:1px solid #d7dfec;border-radius:10px;background:#fff;color:#38517d;font-weight:800;white-space:nowrap}
+.fp-v3320-field-list{display:grid;gap:10px}
+.fp-v3320-field-list label{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:13px 14px;border:1px solid #dfe5ef;border-radius:13px;background:#fff;font-weight:800;color:#253858;cursor:pointer}
+.fp-v3320-field-list label span{line-height:1.35}
+.fp-v3320-field-list input{width:20px;height:20px;accent-color:#3e76d7;flex:0 0 auto}
+.fp-v3320-field-empty{padding:18px;border:1px dashed #cdd6e5;border-radius:13px;color:#69768d;background:#f8faff}
+.fp-v3320-fields-more{width:100%;margin-top:14px;min-height:44px;border:1px solid #cfd9ea;border-radius:12px;background:#eef4ff;color:#315caa;font-weight:900}
+
+/* Named save dialog. */
+#fpV3320SaveDialog{border:0;padding:0;background:transparent;max-width:none}
+#fpV3320SaveDialog::backdrop{background:rgba(18,28,48,.52);backdrop-filter:blur(3px)}
+.fp-v3320-save-card{width:min(520px,calc(100vw - 28px));padding:22px;border-radius:20px;background:#fff;box-shadow:0 26px 80px rgba(15,28,52,.28)}
+.fp-v3320-save-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.fp-v3320-save-card h2{margin:0;font-size:22px;color:#172440}
+.fp-v3320-save-card p{margin:6px 0 0;color:#6c788e;line-height:1.55}
+.fp-v3320-save-card label{display:grid;gap:7px;margin:13px 0;font-weight:800;color:#304361}
+.fp-v3320-save-card input,.fp-v3320-save-card textarea{width:100%;box-sizing:border-box;border:1px solid #d6deeb;border-radius:12px;padding:12px 13px;font:inherit;color:#182640;background:#fff}
+.fp-v3320-save-card textarea{min-height:92px;resize:vertical}
+.fp-v3320-save-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.fp-v3320-save-actions button{min-height:42px;padding:0 16px;border-radius:11px;border:1px solid #d2dbea;background:#fff;color:#344c75;font-weight:900}
+.fp-v3320-save-actions .primary{background:#1a2640;border-color:#1a2640;color:#fff}
+
+/* Document center workflow. */
+.fp-v3320-doc-note{display:block;margin-top:5px;color:#6d788c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}
+.fp-v3320-flow-button{border-color:#b9c9e6!important;background:#eef4ff!important;color:#315da9!important;font-weight:800!important}
+#fpV3320FlowDialog{border:0;padding:0;background:transparent;max-width:none}
+#fpV3320FlowDialog::backdrop{background:rgba(18,28,48,.52);backdrop-filter:blur(3px)}
+.fp-v3320-flow-card{width:min(560px,calc(100vw - 28px));padding:22px;border-radius:20px;background:#fff;box-shadow:0 26px 80px rgba(15,28,52,.28)}
+.fp-v3320-flow-card h2{margin:0;color:#172440}
+.fp-v3320-flow-card p{color:#68758c;line-height:1.6}
+.fp-v3320-flow-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:16px 0}
+.fp-v3320-flow-options button{padding:15px;border:1px solid #d4deec;border-radius:13px;background:#f8faff;color:#29466f;font-weight:900;text-align:left}
+.fp-v3320-flow-options button:hover{border-color:#8facda;background:#eef4ff}
+.fp-v3320-flow-actions{display:flex;justify-content:flex-end;margin-top:15px}
+.fp-v3320-flow-actions button{min-height:40px;padding:0 15px;border:1px solid #d5deeb;border-radius:11px;background:#fff;color:#38517d;font-weight:800}
+
+@media(max-width:720px){
+ body.fp-v3320-workflow-ux #editorTop>.card:first-child>.grid.four{grid-template-columns:1fr}
+ .fp-v3320-flow-options{grid-template-columns:1fr}
+ .fp-v3320-fields-toolbar{align-items:stretch;flex-direction:column}
+ .fp-v3320-fields-back{width:100%}
+}
+/* R1.3A.5 — one-click smart save metadata editing */
+.fp-v3320-save-spacer{flex:1 1 auto}
+.fp-v3320-save-actions [data-v3320-save-auto]{margin-right:auto;background:#f5f8fc;color:#3c5f88;border-color:#d7e2ef}
+@media(max-width:620px){.fp-v3320-save-actions{align-items:stretch;flex-direction:column}.fp-v3320-save-spacer{display:none}.fp-v3320-save-actions button{width:100%}}

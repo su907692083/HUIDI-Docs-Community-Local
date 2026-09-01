@@ -1,0 +1,170 @@
+/* HUIDI R1.3A.18.31 — document preparation layout, spacing and interaction closure */
+body[data-fp-doc-start-closure="18.31"]{
+  --fp31-ink:#15233c;--fp31-muted:#6b7890;--fp31-line:#dfe7f2;--fp31-soft:#f5f8fc;
+  --fp31-blue:#245fdb;--fp31-blue-soft:#edf3ff;--fp31-ok:#22824e;--fp31-warn:#9a6500;
+  background:#f3f6fb;color:var(--fp31-ink);min-height:100vh
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-topbar{
+  position:sticky;top:8px;z-index:80;width:min(1480px,calc(100% - 28px));min-height:58px;height:auto;
+  margin:8px auto 0;padding:8px 12px;border:1px solid rgba(222,230,242,.95);border-radius:16px;
+  background:rgba(255,255,255,.97);box-shadow:0 10px 30px rgba(30,55,96,.07);backdrop-filter:blur(14px)
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-brand{display:flex;align-items:center;gap:10px;min-width:0}
+body[data-fp-doc-start-closure="18.31"] .doc-start-back{
+  display:inline-flex;align-items:center;min-height:36px;padding:0 11px;border:1px solid #e0e7f1;border-radius:11px;
+  background:#fff;color:#304c78!important;font-size:12px!important;white-space:nowrap
+}
+body[data-fp-doc-start-closure="18.31"] .bar .logo{font-size:17px;white-space:nowrap;color:#17243d}
+body[data-fp-doc-start-closure="18.31"] .site-logo-icon{width:27px;height:27px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-top-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+body[data-fp-doc-start-closure="18.31"] .doc-start-status{
+  max-width:360px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:7px 10px;border-radius:999px;
+  background:#f7f9fd;color:#6f7e95;font-size:11px
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-top-actions button{min-height:36px;border-radius:11px;padding:0 12px}
+body[data-fp-doc-start-closure="18.31"] #open-templates{background:#1f293b;color:#fff;border-color:#1f293b}
+
+/* Progress bar: constrained to the same desktop canvas, no full-width ribbon. */
+body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start{
+  width:min(1480px,calc(100% - 28px));margin:8px auto 0;padding:8px 10px;border:1px solid #e0e7f1;border-radius:14px;
+  background:rgba(255,255,255,.96);box-shadow:0 7px 22px rgba(30,56,98,.045);display:grid;
+  grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:12px;position:relative;z-index:50
+}
+body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;min-width:0}
+body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-steps span{
+  min-height:30px;display:flex;align-items:center;justify-content:center;padding:5px 8px;border:1px solid #e1e7f0;
+  border-radius:9px;background:#f5f7fb;color:#7a879b;font-size:11px;font-weight:850;overflow:hidden;text-overflow:ellipsis
+}
+body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-steps span.active{background:#eaf1ff;border-color:#cbdcff;color:#205cc8}
+body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-summary{min-width:210px}
+body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start>a{min-height:34px;display:inline-flex;align-items:center}
+
+body[data-fp-doc-start-closure="18.31"] .doc-start-shell{width:min(1480px,calc(100% - 28px));max-width:none;margin:12px auto 0;padding:0 0 94px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero{
+  display:grid;grid-template-columns:minmax(0,1.45fr) minmax(390px,.75fr);gap:14px;align-items:stretch;
+  padding:0!important;background:transparent!important;box-shadow:none!important;color:var(--fp31-ink)!important;border-radius:0!important
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero-copy,
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary{
+  background:#fff;border:1px solid #e0e7f1;border-radius:18px;box-shadow:0 12px 32px rgba(30,56,97,.055)
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero-copy{padding:24px 28px;display:flex;flex-direction:column;justify-content:center;min-height:210px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero #doc-kicker{color:#60738f!important;font-size:11px;letter-spacing:.08em}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero h1{
+  margin:5px 0 8px!important;font-size:clamp(36px,3.15vw,52px)!important;line-height:1.02!important;letter-spacing:-.055em!important;color:#152033!important
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero #doc-desc{max-width:760px;color:#63728b!important;font-size:14px;line-height:1.65}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero .benefits{display:none!important}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero-note{margin-top:13px!important;color:#31415d!important;font-size:12px!important}
+body[data-fp-doc-start-closure="18.31"] .doc-start-hero-note span{display:inline-flex!important;padding:8px 11px;border:1px solid #e2e8f1;border-radius:10px;background:#f8fafc}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary{
+  grid-column:auto!important;padding:16px!important;display:flex;align-items:flex-start!important;align-content:flex-start;gap:10px!important;color:var(--fp31-ink)!important
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary>p{width:100%;font-size:11px;color:#60738f!important}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary #start-summary{display:flex;gap:7px;flex-wrap:wrap;width:100%}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary #start-summary span{
+  margin:0;padding:6px 9px;border:1px solid #dde5ef;border-radius:999px;background:#f8fafc;color:#33435d;font-size:11px
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary #start-summary span[data-state="ready"]{background:#edf8f1;border-color:#d2ecdc;color:#207445}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary #start-summary span[data-state="wait"]{background:#fff8e8;border-color:#f1e2b7;color:#8d6500}
+body[data-fp-doc-start-closure="18.31"] .doc-start-actions{display:grid!important;grid-template-columns:1fr 1fr;gap:8px!important;width:100%}
+body[data-fp-doc-start-closure="18.31"] .doc-start-actions .primary{grid-column:1/-1;width:100%;min-height:46px!important;font-size:14px!important}
+body[data-fp-doc-start-closure="18.31"] .doc-start-actions #direct-empty-editor{grid-column:1/-1;min-height:40px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-actions>a{display:none!important}
+body[data-fp-doc-start-closure="18.31"] .doc-start-summary>span{
+  width:100%;margin-top:auto!important;padding:8px 10px!important;border:1px solid #dce9ee!important;border-radius:10px!important;
+  background:#eff7f9!important;color:#64768a!important;font-size:11px!important;line-height:1.5
+}
+
+/* Fix the screenshot's empty third column and clipped form fields. */
+body[data-fp-doc-start-closure="18.31"] .doc-start-layout{
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:14px;margin-top:14px;align-items:start
+}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card{min-width:0;padding:18px;border:1px solid #e0e7f1;border-radius:17px;background:#fff;box-shadow:0 10px 28px rgba(31,58,100,.05)}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card--profile{grid-column:1}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card--type{grid-column:2}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card--products{grid-column:1/-1;padding:18px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card .head{align-items:center;margin-bottom:13px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card .head h2{font-size:18px;line-height:1.25;margin-top:3px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card .head>span{max-width:52%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body[data-fp-doc-start-closure="18.31"] .doc-start-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-form-grid label{min-width:0}
+body[data-fp-doc-start-closure="18.31"] .doc-start-form-grid label small{min-height:32px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-form-grid select,
+body[data-fp-doc-start-closure="18.31"] .doc-start-type-fields input,
+body[data-fp-doc-start-closure="18.31"] .doc-start-type-fields select{width:100%;min-width:0;height:42px;border-radius:10px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-more-settings{padding:0;overflow:hidden}
+body[data-fp-doc-start-closure="18.31"] .doc-start-more-settings summary{padding:16px 18px;border-bottom:1px solid transparent}
+body[data-fp-doc-start-closure="18.31"] .doc-start-more-settings[open] summary{border-bottom-color:#edf1f6;background:#fbfcfe}
+body[data-fp-doc-start-closure="18.31"] .doc-start-more-settings summary b{color:#315b9f;font-size:11px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-more-settings summary small{max-width:620px;color:#6f7d92}
+body[data-fp-doc-start-closure="18.31"] .doc-start-type-fields{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:16px 18px 18px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-type-fields .type-field.full{grid-column:1/-1}
+
+/* Product picker: clearer selection, images, left-aligned information and better density. */
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(220px,300px);gap:9px;margin-bottom:12px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-tools input,
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-tools select{width:100%;height:42px;border-radius:10px}
+body[data-fp-doc-start-closure="18.31"] .product-picker{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;max-height:430px;overflow:auto;scrollbar-width:thin;padding:1px}
+body[data-fp-doc-start-closure="18.31"] .product{
+  position:relative;display:grid;grid-template-columns:58px minmax(0,1fr) 24px;align-items:center;gap:11px;min-width:0;min-height:88px;
+  padding:11px;text-align:left;border:1px solid #e0e7f1;border-radius:13px;background:#fff;color:#1e2c45;box-shadow:0 3px 10px rgba(31,58,100,.025)
+}
+body[data-fp-doc-start-closure="18.31"] .product:hover{border-color:#aec6f2;background:#f9fbff;transform:translateY(-1px)}
+body[data-fp-doc-start-closure="18.31"] .product.selected{border-color:#6f9ff6;background:#eff5ff;box-shadow:0 0 0 2px rgba(36,95,219,.09)}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-media{width:58px;height:58px;border-radius:11px;border:1px solid #e0e7f1;background:#f5f7fb;overflow:hidden;display:grid;place-items:center;color:#8a97aa;font-size:10px;font-weight:800}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-media img{width:100%;height:100%;object-fit:cover;display:block}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-copy{min-width:0;display:grid;gap:5px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-copy b{font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-copy small{margin:0;color:#708098;font-size:11px;line-height:1.45;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body[data-fp-doc-start-closure="18.31"] .doc-start-product-check{width:22px;height:22px;display:grid;place-items:center;border:1px solid #cfd8e6;border-radius:7px;background:#fff;color:transparent;font-size:13px;font-weight:900}
+body[data-fp-doc-start-closure="18.31"] .product.selected .doc-start-product-check{background:#245fdb;border-color:#245fdb;color:#fff}
+body[data-fp-doc-start-closure="18.31"] .doc-start-products-count{display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border-radius:999px;background:#edf3ff;color:#245fdb;font-size:11px;font-weight:850}
+body[data-fp-doc-start-closure="18.31"] .doc-start-card--products .tip{margin:11px 0 0;padding-top:10px;border-top:1px solid #eef2f7}
+
+/* Replace browser confirm with a native workbench dialog. */
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-dialog{width:min(520px,calc(100vw - 28px));height:auto;margin:auto;border:0;border-radius:18px;padding:0;background:#fff;box-shadow:0 28px 80px rgba(15,31,57,.26)}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-dialog::backdrop{background:rgba(15,29,51,.5);backdrop-filter:blur(3px)}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card{padding:20px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card header{display:flex;justify-content:space-between;gap:14px;padding-bottom:13px;border-bottom:1px solid #e8edf4}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card h2{margin:4px 0 0;font-size:20px}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card p{margin:0;color:#315b9f;font-size:11px;font-weight:900}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card header button{width:34px;height:34px;border:0;border-radius:9px;background:#eef2f7;font-size:20px;cursor:pointer}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-body{padding:16px 0;color:#586981;font-size:13px;line-height:1.65}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-body strong{display:block;margin-bottom:6px;color:#1f2f4a}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card footer{display:flex;justify-content:flex-end;gap:8px;padding-top:13px;border-top:1px solid #e8edf4}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card footer button{min-height:40px;padding:0 14px;border:1px solid #d8e1ed;border-radius:10px;background:#fff;color:#334760;font-weight:850;cursor:pointer}
+body[data-fp-doc-start-closure="18.31"] .doc-start-confirm-card footer .primary{background:#1f293b;border-color:#1f293b;color:#fff}
+
+/* Keep the bottom-center AI capsule from covering legal links. */
+body[data-fp-doc-start-closure="18.31"] .document-legal-links{margin-top:0;padding:18px 18px 86px;background:#fff;border-top:1px solid #e0e7f1}
+
+@media(max-width:1180px){
+  body[data-fp-doc-start-closure="18.31"] .doc-start-status{display:none}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-hero{grid-template-columns:minmax(0,1fr) minmax(340px,.8fr)}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-layout{grid-template-columns:1fr 1fr}
+  body[data-fp-doc-start-closure="18.31"] .product-picker{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  body[data-fp-doc-start-closure="18.31"] .doc-start-topbar{top:0;width:100%;margin:0;border-radius:0}
+  body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start{width:calc(100% - 20px);grid-template-columns:1fr auto;align-items:start}
+  body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-steps{grid-column:1/-1;order:1}
+  body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-summary{order:2;min-width:0}
+  body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start>a{order:3}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-hero,body[data-fp-doc-start-closure="18.31"] .doc-start-layout{grid-template-columns:1fr}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-card--profile,body[data-fp-doc-start-closure="18.31"] .doc-start-card--type{grid-column:1}
+}
+@media(max-width:680px){
+  body[data-fp-doc-start-closure="18.31"] .doc-start-shell{width:calc(100% - 20px)}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-brand{width:100%;justify-content:space-between}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-topbar{align-items:flex-start;flex-wrap:wrap}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-top-actions{width:100%;justify-content:stretch}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-top-actions button{flex:1}
+  body[data-fp-doc-start-closure="18.31"] .fp-xm-doc-start .fp-xm-page-steps{grid-template-columns:1fr 1fr}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-hero-copy{padding:20px;min-height:0}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-hero h1{font-size:36px!important}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-form-grid,body[data-fp-doc-start-closure="18.31"] .doc-start-type-fields{grid-template-columns:1fr}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-type-fields .type-field.full{grid-column:auto}
+  body[data-fp-doc-start-closure="18.31"] .doc-start-product-tools{grid-template-columns:1fr}
+  body[data-fp-doc-start-closure="18.31"] .product-picker{grid-template-columns:1fr}
+}

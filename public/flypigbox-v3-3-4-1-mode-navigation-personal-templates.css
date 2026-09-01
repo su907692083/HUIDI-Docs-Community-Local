@@ -1,0 +1,88 @@
+/* HUIDI V3.3.4.1 — mode visibility, reliable navigation, PDF review scrolling and personal reusable data. */
+#fpLogisticsVisibilityGuidance{display:none!important}
+
+/* The canonical PDF preview pane must remain independently scrollable on desktop. */
+@media (min-width:981px){
+  body.fp-preview-only-switch:not(.fp-preview-table-only) .workbench>.preview-shell,
+  body.fp-live-document-mode .workbench>.preview-shell{
+    height:calc(100vh - var(--fp-v33-lite-toolbar-h,64px) - 20px)!important;
+    max-height:calc(100vh - var(--fp-v33-lite-toolbar-h,64px) - 20px)!important;
+    overflow-y:auto!important;
+    overflow-x:hidden!important;
+    overscroll-behavior:contain!important;
+    scrollbar-gutter:stable!important;
+    padding-right:6px!important;
+  }
+  body.fp-preview-only-switch:not(.fp-preview-table-only) .workbench>.preview-shell::-webkit-scrollbar,
+  body.fp-live-document-mode .workbench>.preview-shell::-webkit-scrollbar{width:9px}
+  body.fp-preview-only-switch:not(.fp-preview-table-only) .workbench>.preview-shell::-webkit-scrollbar-thumb,
+  body.fp-live-document-mode .workbench>.preview-shell::-webkit-scrollbar-thumb{background:#c7d3e1;border-radius:999px}
+}
+
+/* Mode rules: hidden means genuinely unavailable in the current mode; detailed fields remain fully interactive. */
+body.fp-v3341-default-mode [data-fp-v3341-detailed-only="1"]{display:none!important}
+body.fp-v3341-detailed-mode [data-fp-v3341-detailed-only="1"]{display:block!important}
+body.fp-v3341-detailed-mode [data-optional-section]:not(.is-hidden){pointer-events:auto!important;opacity:1!important}
+body.fp-v3341-detailed-mode [data-optional-section]:not(.is-hidden) input,
+body.fp-v3341-detailed-mode [data-optional-section]:not(.is-hidden) select,
+body.fp-v3341-detailed-mode [data-optional-section]:not(.is-hidden) textarea,
+body.fp-v3341-detailed-mode [data-optional-section]:not(.is-hidden) button{pointer-events:auto!important}
+
+/* Reliable navigation feedback. */
+#fpV3321SideNav [data-v3321-section][hidden]{display:none!important}
+.fp-v3341-nav-target{outline:3px solid rgba(47,111,230,.24)!important;box-shadow:0 0 0 1px rgba(47,111,230,.72),0 12px 30px rgba(47,111,230,.14)!important;transition:outline-color .18s ease,box-shadow .18s ease!important}
+
+/* Drawer becomes a non-conflicting reusable-data center. */
+#fpV3315ToolsRoot .fp-v3315-drawer main>section.fp-v3341-hide-legacy{display:none!important}
+.fp-v3341-reuse-center{display:grid;gap:14px}
+.fp-v3341-reuse-center>details{border:1px solid #dbe5ef;border-radius:14px;background:#fbfdff;overflow:hidden}
+.fp-v3341-reuse-center>details>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;cursor:pointer;font-weight:900;color:#233a5a;list-style:none}
+.fp-v3341-reuse-center>details>summary::-webkit-details-marker{display:none}
+.fp-v3341-reuse-center>details>summary:after{content:'展开';font-size:11px;color:#6d8098;font-weight:800}
+.fp-v3341-reuse-center>details[open]>summary:after{content:'收起'}
+.fp-v3341-reuse-body{padding:0 16px 16px;display:grid;gap:12px}
+.fp-v3341-current-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.fp-v3341-current-grid div{padding:9px 10px;border:1px solid #e2e9f1;border-radius:9px;background:#fff;min-width:0}
+.fp-v3341-current-grid small{display:block;color:#718198;font-weight:800;margin-bottom:3px}
+.fp-v3341-current-grid b{display:block;white-space:normal;overflow-wrap:anywhere;color:#23364f;font-size:12px}
+.fp-v3341-check{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;border-radius:10px;background:#eef7ff;color:#345a82;font-size:12px;font-weight:750;line-height:1.5}
+.fp-v3341-check input{width:auto;min-height:0;margin-top:2px}
+.fp-v3341-actions{display:flex;flex-wrap:wrap;gap:8px}
+.fp-v3341-actions button{border:1px solid #cddbeb;background:#fff;color:#274c78;border-radius:9px;min-height:38px;padding:0 12px;font-weight:850;cursor:pointer}
+.fp-v3341-actions button.primary{background:#2f6fe6;border-color:#2f6fe6;color:#fff}
+.fp-v3341-actions button.danger{border-color:#efc4bc;color:#a53d2e;background:#fff8f6}
+.fp-v3341-template-form{display:grid;gap:9px}
+.fp-v3341-template-form label{display:grid;gap:5px;color:#53677f;font-size:12px;font-weight:800}
+.fp-v3341-template-form input,.fp-v3341-template-form select,.fp-v3341-template-form textarea{width:100%;border:1px solid #d7e1ec;border-radius:9px;background:#fff;padding:9px 10px;color:#20334d;font:inherit;box-sizing:border-box}
+.fp-v3341-template-form textarea{min-height:72px;resize:vertical}
+.fp-v3341-template-list{display:grid;gap:9px}
+.fp-v3341-template-card{border:1px solid #dbe5ef;border-radius:11px;background:#fff;padding:11px;display:grid;gap:8px}
+.fp-v3341-template-card header{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.fp-v3341-template-card h4{margin:0;font-size:13px;color:#213a5b}
+.fp-v3341-template-card p{margin:3px 0 0;color:#6b7e95;font-size:11px;line-height:1.5;white-space:pre-wrap}
+.fp-v3341-template-card time{font-size:10px;color:#8b9aae;white-space:nowrap}
+.fp-v3341-empty{padding:14px;border:1px dashed #cedae7;border-radius:10px;color:#71839a;text-align:center;font-size:12px;background:#fff}
+.fp-v3341-note{margin:0;color:#708198;font-size:11px;line-height:1.55}
+
+@media(max-width:680px){
+  .fp-v3341-current-grid{grid-template-columns:1fr}
+}
+
+#fpV3315ToolsRoot.fp-v3320-fields-view #fpV3341ReuseCenter,#fpV3315ToolsRoot.fp-v3339-guide-view #fpV3341ReuseCenter{display:none!important}
+
+/* HUIDI V3.3.6.24-R1.3A.6 — document semantics, mode names, Incoterms builder and context templates */
+.fp-r13a6-governance{margin:12px 0 0;padding:12px;border:1px solid #d9e6f4;border-radius:12px;background:linear-gradient(135deg,#f8fbff,#f4faf7);display:grid;gap:10px}
+.fp-r13a6-governance b{display:block;color:#17385f;font-size:13px}.fp-r13a6-governance p{margin:4px 0 0;color:#60758f;font-size:11px;line-height:1.55}
+.fp-r13a6-governance-meta{display:flex;align-items:center;flex-wrap:wrap;gap:7px}.fp-r13a6-governance-meta span{display:inline-flex;align-items:center;min-height:28px;padding:0 9px;border-radius:999px;background:#fff;border:1px solid #d7e3ef;color:#496681;font-size:10.5px;font-weight:850}
+.fp-r13a6-governance-meta button{min-height:30px;padding:0 10px;border:1px solid #2f6fe6;border-radius:8px;background:#2f6fe6;color:#fff;font-size:11px;font-weight:850;cursor:pointer}
+.fp-r13a6-field-help{display:block;margin-top:4px;color:#71849a;font-size:10.5px;font-weight:600;line-height:1.45}
+.fp-r13a6-sign-note{margin:4px 0 12px;padding:8px 10px;border:1px solid #ead9a7;border-radius:9px;background:#fffaf0;color:#735b22;font-size:11px;line-height:1.5}
+.fp-r13a6-logistics-group{grid-column:1/-1;margin:2px 0 -1px;padding:7px 9px;border-left:3px solid #2f6fe6;border-radius:5px;background:#f1f6ff;color:#2e5482;font-size:11px;font-weight:900;letter-spacing:.02em}
+.fp-r13a6-logistics-group[hidden]{display:none!important}
+.fp-r13a6-incoterms-builder{grid-column:1/-1;margin:-3px 0 4px;padding:11px;border:1px solid #dbe5ef;border-radius:11px;background:#fbfdff;display:grid;gap:9px}
+.fp-r13a6-incoterms-builder>div:first-child b{display:block;color:#203e63;font-size:12px}.fp-r13a6-incoterms-builder>div:first-child small{display:block;margin-top:2px;color:#71849a;font-size:10.5px;line-height:1.45}
+.fp-r13a6-incoterms-grid{display:grid;grid-template-columns:.7fr 1.4fr 1fr auto;gap:8px;align-items:end}.fp-r13a6-incoterms-grid label{display:grid;gap:4px;color:#596d85;font-size:10.5px;font-weight:800}.fp-r13a6-incoterms-grid input,.fp-r13a6-incoterms-grid select{width:100%;min-height:36px;border:1px solid #d2deea;border-radius:8px;background:#fff;padding:0 9px;font:inherit;color:#263d58;box-sizing:border-box}.fp-r13a6-incoterms-grid button{min-height:36px;padding:0 11px;border:1px solid #2f6fe6;border-radius:8px;background:#2f6fe6;color:#fff;font-size:11px;font-weight:850;cursor:pointer}
+#fpR13A6IncotermHint{margin:0;font-size:10.5px;line-height:1.45}#fpR13A6IncotermHint.ok{color:#34725c}#fpR13A6IncotermHint.warn{padding:7px 9px;border-radius:8px;background:#fff4e8;color:#9a541e}
+.fp-r13a6-template-context{display:inline-flex;margin-top:6px;padding:4px 7px;border-radius:7px;background:#eef5ff;color:#3d628c;font-size:10px;font-weight:850}
+@media(max-width:820px){.fp-r13a6-incoterms-grid{grid-template-columns:1fr 1fr}.fp-r13a6-incoterms-grid button{grid-column:1/-1}}
+@media(max-width:560px){.fp-r13a6-incoterms-grid{grid-template-columns:1fr}.fp-r13a6-incoterms-grid button{grid-column:auto}.fp-r13a6-governance-meta{align-items:stretch;flex-direction:column}.fp-r13a6-governance-meta span,.fp-r13a6-governance-meta button{justify-content:center;width:100%;box-sizing:border-box}}

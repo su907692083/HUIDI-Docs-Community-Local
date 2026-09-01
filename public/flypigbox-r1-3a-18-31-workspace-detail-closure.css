@@ -1,0 +1,57 @@
+/* HUIDI R1.3A.18.31 — shared workbench density, space-use and action closure */
+body[data-fp-workspace-detail-closure="18.31"] .topbar{min-height:72px;padding:11px 16px}
+body[data-fp-workspace-detail-closure="18.31"] .topbar-copy{min-width:220px}
+body[data-fp-workspace-detail-closure="18.31"] .topbar-copy h1{font-size:23px}
+body[data-fp-workspace-detail-closure="18.31"] .topbar-actions{min-width:0;overflow-x:auto;scrollbar-width:none;padding-bottom:1px}
+body[data-fp-workspace-detail-closure="18.31"] .topbar-actions::-webkit-scrollbar{display:none}
+body[data-fp-workspace-detail-closure="18.31"] .section-head{padding:14px 16px;margin-bottom:10px;gap:12px}
+body[data-fp-workspace-detail-closure="18.31"] .section-head h2{font-size:19px}
+body[data-fp-workspace-detail-closure="18.31"] .section-head .actions{display:flex;flex-wrap:wrap;align-items:center;gap:7px;max-width:58%}
+body[data-fp-workspace-detail-closure="18.31"] .section-head .actions .btn,
+body[data-fp-workspace-detail-closure="18.31"] .section-head .actions button,
+body[data-fp-workspace-detail-closure="18.31"] .section-head .actions a{min-height:36px;white-space:nowrap}
+
+/* One compact context strip instead of three visually heavy cards. */
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide{
+  display:grid;grid-template-columns:minmax(0,1.25fr) minmax(190px,.55fr) minmax(250px,.7fr);gap:0;
+  margin:0 0 10px;border:1px solid #dfe7f2;border-radius:14px;background:#fff;box-shadow:0 6px 20px rgba(31,58,100,.035);overflow:hidden
+}
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div{
+  min-height:72px;padding:10px 13px;border:0;border-radius:0;background:#fff;align-content:center
+}
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div+div{border-left:1px solid #e8edf4}
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide small{font-size:9px;color:#8996aa}
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide b{font-size:12px;color:#263c62}
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide span{font-size:10px;line-height:1.4;color:#75839a;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide button{margin-top:2px}
+
+body[data-fp-workspace-detail-closure="18.31"] .filter-bar{padding:8px;margin-bottom:10px}
+body[data-fp-workspace-detail-closure="18.31"] .table-wrap{border-radius:15px}
+body[data-fp-workspace-detail-closure="18.31"] .table .tr,
+body[data-fp-workspace-detail-closure="18.31"] .table .thead{min-height:46px}
+body[data-fp-workspace-detail-closure="18.31"] .deal-card,
+body[data-fp-workspace-detail-closure="18.31"] .product-card,
+body[data-fp-workspace-detail-closure="18.31"] .brand-card{min-width:0}
+body[data-fp-workspace-detail-closure="18.31"] .deal-card h3,
+body[data-fp-workspace-detail-closure="18.31"] .product-card h3,
+body[data-fp-workspace-detail-closure="18.31"] .brand-card h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+body[data-fp-workspace-detail-closure="18.31"] .fp31-dense-actions{display:flex!important;flex-wrap:wrap!important;gap:6px!important}
+body[data-fp-workspace-detail-closure="18.31"] .fp31-dense-actions>*{min-height:34px!important;padding-left:10px!important;padding-right:10px!important}
+body[data-fp-workspace-detail-closure="18.31"] .detail-panel,
+body[data-fp-workspace-detail-closure="18.31"] .drawer,
+body[data-fp-workspace-detail-closure="18.31"] .customer-filter-drawer{max-width:min(720px,calc(100vw - 24px))}
+body[data-fp-workspace-detail-closure="18.31"] .workspace-legal-footer{padding-bottom:84px}
+
+@media(max-width:1180px){
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide{grid-template-columns:1fr 1fr}
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div:first-child{grid-column:1/-1;border-bottom:1px solid #e8edf4}
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div:nth-child(2){border-left:0}
+}
+@media(max-width:900px){
+  body[data-fp-workspace-detail-closure="18.31"] .section-head{align-items:flex-start;flex-direction:column}
+  body[data-fp-workspace-detail-closure="18.31"] .section-head .actions{max-width:none;width:100%;justify-content:flex-start}
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide{grid-template-columns:1fr}
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div,
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div:first-child{grid-column:auto;border-left:0;border-bottom:1px solid #e8edf4}
+  body[data-fp-workspace-detail-closure="18.31"] .fp30-module-guide>div:last-child{border-bottom:0}
+}

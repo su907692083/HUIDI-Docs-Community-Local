@@ -1,0 +1,106 @@
+{
+  "version": "V3.3.6.24-R1.3A.18.4-EXTERNAL-GATEWAY.1",
+  "appId": "app.HUIDI.trade-documents",
+  "projectId": "02-APP-FLYPIGBOX",
+  "humanConfirmationRequired": true,
+  "transport": "founder_os_cloud29_external_app_gateway",
+  "parallelSupabaseInboxOutbox": false,
+  "routes": [
+    {
+      "task": "validate_document",
+      "primary": "native_rules",
+      "status": "active",
+      "fallback": null
+    },
+    {
+      "task": "formal_pdf_or_print",
+      "primary": "formal_output_gate",
+      "status": "active",
+      "fallback": "browser_output"
+    },
+    {
+      "task": "formal_xlsx_or_csv",
+      "primary": "formal_output_gate",
+      "status": "active",
+      "fallback": "current_workbook"
+    },
+    {
+      "task": "document_transform",
+      "primary": "document_linkage",
+      "status": "active",
+      "fallback": "manual_new_document"
+    },
+    {
+      "task": "ci_pl_consistency",
+      "primary": "document_linkage",
+      "status": "active",
+      "fallback": "manual_line_review"
+    },
+    {
+      "task": "text_capture",
+      "primary": "local_text_structure",
+      "status": "active",
+      "fallback": "manual_review"
+    },
+    {
+      "task": "capture_and_classify",
+      "primary": "founder_os_external_app_gateway",
+      "status": "cloud29_route_aligned_model_configuration_required",
+      "fallback": "local_text_structure"
+    },
+    {
+      "task": "inquiry_to_quotation",
+      "primary": "founder_os_project_bridge",
+      "status": "not_exposed_by_cloud29_external_gateway",
+      "fallback": "local_text_structure"
+    },
+    {
+      "task": "document_change_request",
+      "primary": "founder_os_project_bridge",
+      "status": "not_exposed_by_cloud29_external_gateway",
+      "fallback": "local_text_structure"
+    },
+    {
+      "task": "translate_document_fields",
+      "primary": "founder_os_external_app_gateway",
+      "status": "cloud29_route_aligned_model_configuration_required",
+      "fallback": "translation_plan_only"
+    },
+    {
+      "task": "translate_catalog_fields",
+      "primary": "founder_os_project_bridge",
+      "status": "not_exposed_by_cloud29_external_gateway",
+      "fallback": "translation_plan_only"
+    },
+    {
+      "task": "spreadsheet_import",
+      "primary": "xlsx_lite",
+      "status": "active",
+      "fallback": "manual_column_mapping"
+    },
+    {
+      "task": "parse_legacy_document",
+      "primary": "founder_os_project_bridge",
+      "status": "not_exposed_by_cloud29_external_gateway",
+      "fallback": "manual_upload_review"
+    },
+    {
+      "task": "ocr_document",
+      "primary": "founder_os_project_bridge",
+      "status": "not_exposed_by_cloud29_external_gateway",
+      "fallback": "manual_entry"
+    },
+    {
+      "task": "render_pdf",
+      "primary": "founder_os_project_bridge",
+      "status": "not_exposed_by_cloud29_external_gateway",
+      "fallback": "browser_pdf"
+    },
+    {
+      "task": "enhanced_xlsx",
+      "primary": "exceljs",
+      "status": "optional_not_bundled",
+      "fallback": "current_workbook"
+    }
+  ]
+}

@@ -1,0 +1,169 @@
+/* HUIDI V3.3.5.2.2 — unified official support QR and stable support dialogs. */
+
+/* Shared QR rendering: keep the original image scannable and never crop it. */
+#support-service-dialog .qr-frame,
+.support-footer .footer-qr-button,
+.support-qr-modal {
+  box-sizing: border-box;
+}
+#support-service-dialog .qr-frame img,
+.support-footer .footer-qr-button img,
+.support-qr-modal img {
+  display: block;
+  object-fit: contain !important;
+  object-position: center;
+  background: #fff;
+}
+
+/* Workspace support dialog: two purposeful columns, no phantom third column. */
+#support-service-dialog.support-service-dialog {
+  width: min(760px, calc(100vw - 32px)) !important;
+  max-width: 760px !important;
+  max-height: calc(100vh - 32px) !important;
+  overflow: hidden !important;
+  overscroll-behavior: contain;
+}
+#support-service-dialog > .dialog {
+  width: 100%;
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-x: hidden !important;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: 22px !important;
+}
+#support-service-dialog .dialog header {
+  min-width: 0;
+}
+#support-service-dialog .dialog header > div {
+  min-width: 0;
+}
+#support-service-dialog .dialog header h2,
+#support-service-dialog .dialog header span,
+#support-service-dialog .support-qr-grid article,
+#support-service-dialog .support-qr-grid span,
+#support-service-dialog .support-policy-card p,
+#support-service-dialog .support-manual-note {
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+#support-service-dialog .support-qr-grid {
+  display: grid !important;
+  grid-template-columns: minmax(250px, .9fr) minmax(0, 1.1fr) !important;
+  gap: 14px !important;
+  align-items: stretch;
+  margin-top: 16px !important;
+  width: 100%;
+  min-width: 0;
+}
+#support-service-dialog .support-qr-grid article {
+  min-width: 0;
+  padding: 16px !important;
+  border-radius: 16px !important;
+  align-content: start;
+}
+#support-service-dialog .support-qr-grid article:first-child {
+  justify-items: center;
+  text-align: center;
+}
+#support-service-dialog .support-qr-grid article:first-child > span {
+  max-width: 280px;
+}
+#support-service-dialog .qr-frame {
+  width: min(100%, 250px) !important;
+  min-height: 0 !important;
+  aspect-ratio: 1 / 1;
+  margin: 4px auto 0;
+  padding: 8px;
+  border: 1px solid #dce6f3;
+  border-radius: 15px !important;
+  background: #fff !important;
+  overflow: hidden;
+}
+#support-service-dialog .qr-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100%;
+  border-radius: 9px;
+}
+#support-service-dialog .support-policy-card {
+  justify-items: start !important;
+  text-align: left !important;
+}
+#support-service-dialog .support-policy-card span {
+  text-align: left !important;
+  line-height: 1.7;
+}
+#support-service-dialog .support-policy-card p {
+  margin: auto 0 0;
+  padding-top: 10px;
+}
+#support-service-dialog .support-manual-note {
+  display: grid;
+  gap: 4px;
+  margin-top: 14px;
+  padding: 12px 14px;
+}
+/* Remove legacy negative margins that created the horizontal scrollbar. */
+#support-service-dialog .dialog footer {
+  position: static !important;
+  width: auto !important;
+  margin: 16px 0 0 !important;
+  padding: 14px 0 0 !important;
+  border-top: 1px solid #e5eaf2;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Editor footer and enlarged QR use the same official image cleanly. */
+.support-footer .footer-qr-button {
+  overflow: hidden;
+  background: #fff;
+}
+.support-footer .footer-qr-button img {
+  width: 100% !important;
+  height: 100% !important;
+  padding: 3px;
+}
+.support-qr-modal {
+  width: min(100%, 520px);
+  margin: 0 auto;
+  overflow: hidden;
+}
+.support-qr-modal img {
+  width: min(100%, 480px) !important;
+  height: auto !important;
+  max-height: 68vh;
+  margin: 0 auto;
+  border-radius: 12px;
+}
+.support-qr-modal p {
+  margin: 10px 0 0;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  #support-service-dialog.support-service-dialog {
+    width: calc(100vw - 18px) !important;
+    max-width: calc(100vw - 18px) !important;
+    max-height: calc(100vh - 18px) !important;
+  }
+  #support-service-dialog > .dialog {
+    max-height: calc(100vh - 18px);
+    padding: 16px !important;
+    scrollbar-gutter: auto;
+  }
+  #support-service-dialog .support-qr-grid {
+    grid-template-columns: 1fr !important;
+  }
+  #support-service-dialog .qr-frame {
+    width: min(100%, 230px) !important;
+  }
+  #support-service-dialog .dialog footer {
+    margin-top: 14px !important;
+    padding-top: 12px !important;
+  }
+  #support-service-dialog .dialog footer .btn {
+    width: 100%;
+  }
+}

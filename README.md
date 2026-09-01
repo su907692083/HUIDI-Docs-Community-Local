@@ -81,7 +81,7 @@
 
 - `LICENSE`
 - `COMMERCIAL-LICENSE.md`
-- `SOURCE-AVAILABLE-SCOPE.md`
+- `LICENSE-MIGRATION-RC6.zh-CN.md`
 
 ## 关于历史 `flypigbox` 内部命名
 

@@ -1,0 +1,14 @@
+/* HUIDI V3.3.4.2 — prelaunch account presentation. */
+.home-balance,
+.membership-quota-grid-v2,
+.membership-plan-grid-v2,
+.workspace-top-membership .top-membership-quota,
+.plan-grid,
+.member-seat-note { display:none !important; }
+.home-account-panel > div[hidden] { display:none !important; }
+.fp-prelaunch-account-card,
+.fp-prelaunch-membership { max-width:720px; }
+.fp-prelaunch-membership .membership-summary-v2 { grid-template-columns:minmax(0,1fr) !important; }
+
+#membershipPlansBtn { display:none !important; }
+.launch-plan-list { display:none !important; }

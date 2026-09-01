@@ -1,0 +1,65 @@
+/* HUIDI R1.3A.18.37 workspace connectivity, mode and density closure */
+html[data-fp37="enabled"] .topbar-copy,
+html[data-fp37="enabled"] .topbar-actions,
+html[data-fp37="enabled"] .view,
+html[data-fp37="enabled"] .view > *{min-width:0}
+
+.fp37-related-flow{
+  margin:16px 0 4px;padding:12px 14px;border:1px solid #dfe7f1;border-radius:14px;background:#fbfdff;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;box-shadow:0 6px 18px rgba(30,41,59,.035)
+}
+.fp37-related-copy{display:grid;gap:2px;min-width:0}.fp37-related-copy small{font-size:10px;font-weight:850;color:#4975bd;letter-spacing:.02em}.fp37-related-copy b{font-size:12px;line-height:1.45;color:#24344d}
+.fp37-related-actions{display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}.fp37-related-actions button{border:1px solid #d9e4f2;background:#fff;color:#315c98;border-radius:9px;padding:8px 10px;font:inherit;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}.fp37-related-actions button:hover{background:#edf4ff;border-color:#b9cef0}
+
+.fp37-display-toggle{display:inline-flex;align-items:center;gap:3px;margin-left:auto;padding:3px;border:1px solid #dde6f1;border-radius:10px;background:#f7f9fc;white-space:nowrap}
+.fp37-display-toggle>span{padding:0 6px;color:#748196;font-size:10px;font-weight:800}.fp37-display-toggle button{border:0;background:transparent;color:#607086;border-radius:7px;padding:6px 9px;font:inherit;font-size:10px;font-weight:850;cursor:pointer}.fp37-display-toggle button.active{background:#fff;color:#2259a8;box-shadow:0 1px 5px rgba(30,64,175,.12)}
+
+/* 商品卡片模式：复用真实商品列表DOM，不建立第二套数据组件 */
+body.fp-v3368-workspace #product-list.fp37-product-card-mode.product-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:stretch}
+body.fp-v3368-workspace #product-list.fp37-product-card-mode>.product-library-controls,
+body.fp-v3368-workspace #product-list.fp37-product-card-mode>.product-flow-strip,
+body.fp-v3368-workspace #product-list.fp37-product-card-mode>.product-list-head,
+body.fp-v3368-workspace #product-list.fp37-product-card-mode>.empty{grid-column:1/-1}
+#product-list.fp37-product-card-mode .product-list-head{display:none!important}
+#product-list.fp37-product-card-mode .product-list-row{
+  grid-column:auto;display:grid;grid-template-columns:auto 74px minmax(0,1fr);align-content:start;gap:10px 11px;padding:13px;min-height:235px
+}
+#product-list.fp37-product-card-mode .product-list-select{grid-column:1;grid-row:1;align-self:start}
+#product-list.fp37-product-card-mode .product-list-thumb{grid-column:2;grid-row:1;width:74px;height:74px}
+#product-list.fp37-product-card-mode .product-list-main{grid-column:3;grid-row:1;align-self:start}
+#product-list.fp37-product-card-mode .product-list-main h3{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:41px}
+#product-list.fp37-product-card-mode .product-list-price,
+#product-list.fp37-product-card-mode .product-list-source,
+#product-list.fp37-product-card-mode .product-list-progress{grid-column:2/-1;display:grid;grid-template-columns:minmax(95px,.65fr) minmax(0,1fr);gap:5px 10px;padding-top:8px;border-top:1px solid #edf1f6}
+#product-list.fp37-product-card-mode .product-list-price>span{justify-self:end}
+#product-list.fp37-product-card-mode .product-list-source>div{justify-self:end;justify-content:flex-end}
+#product-list.fp37-product-card-mode .product-list-progress .product-completeness{min-width:0;width:100%}
+#product-list.fp37-product-card-mode .product-list-actions{grid-column:2/-1;justify-content:flex-start;padding-top:8px;border-top:1px solid #edf1f6;margin-top:auto}
+#product-list.fp37-product-card-mode .product-list-actions button{flex:1 1 74px;text-align:center}
+
+/* 跨页面统一：桌面布局更稳定，按钮不挤压，不让抽屉/弹窗撑出视口 */
+@media (min-width:1100px){
+  html[data-fp37="enabled"] .topbar{gap:16px}
+  html[data-fp37="enabled"] .topbar-actions{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;max-width:min(58vw,760px)}
+  html[data-fp37="enabled"] dialog.modal .dialog{max-height:min(88vh,900px);overflow:auto;overscroll-behavior:contain}
+  html[data-fp37="enabled"] dialog.modal .dialog>footer{position:sticky;bottom:0;z-index:2;background:linear-gradient(180deg,rgba(255,255,255,.92),#fff 30%);padding-top:12px}
+}
+@media (max-width:1360px){
+  body.fp-v3368-workspace #product-list.fp37-product-card-mode.product-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fp37-related-flow{align-items:flex-start}.fp37-related-actions{max-width:48%}
+}
+@media (max-width:900px){
+  body.fp-v3368-workspace #product-list.fp37-product-card-mode.product-grid{grid-template-columns:1fr}
+  .fp37-related-flow{display:grid}.fp37-related-actions{max-width:none;justify-content:flex-start}
+  .fp37-display-toggle{margin-left:0}
+}
+
+/* 订单、飞书等动态板块的操作区在中等桌面宽度仍完整 */
+.fp-order-actions,.fp-feishu-simple-actions,.fp-feishu-actions,.fp-sidecar-section header>div:last-child{flex-wrap:wrap;min-width:0}
+.fp-order-row>*{min-width:0}.fp-order-row h3,.fp-order-row p{overflow-wrap:anywhere}
+
+/* 保留AI底层能力，但前台悬浮入口默认隐藏 */
+html:not([data-fpb-ai-entry="enabled"]) #fp-ai-widget,
+html:not([data-fpb-ai-entry="enabled"]) .fp-ai-launcher,
+html:not([data-fpb-ai-entry="enabled"]) .fp30-ai-label,
+html:not([data-fpb-ai-entry="enabled"]) [data-flypigbox-ai-launcher]{display:none!important;pointer-events:none!important}

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; connect-src 'self'; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUIDI Docs Community Local</title>
+<link rel="icon" href="./assets/brand/favicon-32.png">
+<script src="./community-local-mode.js"></script>
+<link rel="stylesheet" href="./community-local-mode.css">
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--soft:#f7faff;--text:#152235;--muted:#64748b;--line:#dbe4ef;--brand:#1d4ed8;--brand2:#0f2f75;--shadow:0 18px 44px rgba(15,23,42,.08)} html[data-theme='dark']{--bg:#0b1323;--panel:#101b31;--soft:#13203a;--text:#edf4ff;--muted:#a4b2c8;--line:#2b3b55;--brand:#60a5fa;--brand2:#2563eb;--shadow:0 18px 44px rgba(2,6,23,.38)} *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif} img{max-width:100%;display:block}.wrap{width:min(1220px,calc(100% - 32px));margin:auto}.nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 0}.brand{display:flex;align-items:center;gap:14px}.brand .icon{width:54px;height:54px;border-radius:16px;object-fit:contain;background:#fff}.brand .logo{height:40px;width:auto}.tag{padding:8px 12px;border-radius:999px;background:#e9f1ff;color:#1857c8;font-size:12px;font-weight:900}.nav-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.theme-btn,.mini-btn,.btn{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--line);text-decoration:none;background:var(--panel);color:var(--text);font-weight:850;box-shadow:var(--shadow)}.btn.primary{background:var(--brand2);border-color:var(--brand2);color:#fff}.hero{display:grid;grid-template-columns:1.05fr .95fr;gap:24px;align-items:center;padding:34px 0 24px}.hero-copy{background:var(--panel);border:1px solid var(--line);border-radius:28px;padding:32px;box-shadow:var(--shadow)}.hero-copy .kicker{font-size:13px;font-weight:900;color:var(--brand);letter-spacing:.06em}.hero-copy h1{margin:10px 0 16px;font-size:clamp(34px,6vw,66px);line-height:1.04}.hero-copy p{margin:0;color:var(--muted);font-size:17px;line-height:1.8}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}.hero-side{display:grid;gap:16px}.privacy,.plainbox,.support{background:var(--panel);border:1px solid var(--line);border-radius:24px;padding:24px;box-shadow:var(--shadow)}.privacy{background:linear-gradient(135deg,#0f1d39,#102b67);color:#fff;border:none}.privacy h2{margin:0 0 12px;font-size:26px}.privacy ul{padding-left:18px;margin:0}.privacy li{margin:12px 0;line-height:1.65}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:10px 0 18px}.card{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:20px;box-shadow:var(--shadow)}.card h3{margin:0 0 10px}.card p{margin:0;color:var(--muted);line-height:1.7}.plainbox h2,.support h2{margin:0 0 10px;font-size:24px}.plainbox p,.support p{margin:0;color:var(--muted);line-height:1.75}.plain-list{display:grid;gap:10px;margin-top:14px}.plain-item{padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--soft)}.plain-item b{display:block;margin-bottom:4px}.support-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px}.support-card{padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--soft)}.support-card img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:14px;background:#fff;border:1px solid var(--line)}.support-card h3{margin:12px 0 6px}.support-card p{margin:0;color:var(--muted);line-height:1.65;font-size:14px}.wxid{margin-top:8px;padding:10px 12px;border-radius:12px;border:1px dashed var(--line);background:var(--panel);font-weight:900}.foot{padding:24px 0 48px;color:var(--muted);font-size:13px}@media(max-width:960px){.hero{grid-template-columns:1fr}.grid,.support-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="nav">
+    <div class="brand">
+      <img class="icon" src="./assets/brand/huidi-icon-64.png" alt="HUIDI 图标">
+      <img class="logo" src="./assets/brand/huidi-logo-main.png" alt="HUIDI">
+    </div>
+    <div class="nav-actions">
+      <span class="tag">COMMUNITY LOCAL · v1.2.0 RC6</span>
+      <button class="theme-btn" id="themeToggle" type="button">切到夜间</button>
+    </div>
+  </nav>
+  <main class="hero">
+    <section class="hero-copy">
+      <div class="kicker">LOCAL FIRST · SOURCE AVAILABLE</div>
+      <h1>外贸单据，<br>尽量留在自己电脑里做。</h1>
+      <p>这个版本是给担心数据泄露、客户机密、断网可用的人准备的。你可以在本地保存客户、商品、询盘 / 订单、品牌、模板和单据草稿；从客户询盘一路做到产品目录、报价、PI、合同、商业发票和装箱单。PDF、XLSX、CSV 使用包内组件生成。</p>
+      <div class="actions"><a class="btn primary" href="./workspace.html">打开本地工作台</a><a class="btn" href="./document-start.html">直接做单据</a><a class="btn" href="./catalog-studio/index.html">打开产品目录</a><a class="btn" href="./SOURCE.html">看源码与许可证</a></div>
+    </section>
+    <aside class="hero-side">
+      <section class="privacy">
+        <h2>本地版，边界说人话</h2>
+        <ul>
+          <li><b>资料默认在本机：</b>客户、商品、草稿默认保存在当前浏览器。</li>
+          <li><b>断网还能继续做：</b>常用编辑、保存、导出、PDF 这些核心流程照常可用。</li>
+          <li><b>不装“伪离线”：</b>云 AI、邮件、通知、同步这些不在本地源码开放版里。</li>
+          <li><b>适合先落地：</b>先把本地流程跑顺，再考虑以后要不要上云。</li>
+        </ul>
+      </section>
+      <section class="plainbox">
+        <h2>第一次打开，怎么用？</h2>
+        <div class="plain-list">
+          <div class="plain-item"><b>第 1 步</b>先去“本地工作台”录入客户和商品资料。</div>
+          <div class="plain-item"><b>第 2 步</b>客户有明确需求后先“记录新询盘”，把客户和商品关联起来。</div><div class="plain-item"><b>第 3 步</b>从同一条业务继续做产品目录、报价单、PI、合同、CI 和装箱单。</div>
+          <div class="plain-item"><b>第 4 步</b>做完后记得导出本地备份，避免清缓存后丢资料。</div>
+        </div>
+      </section>
+    </aside>
+  </main>
+  <section class="grid">
+    <article class="card"><h3>5 类正式单据</h3><p>Quotation、PI、CI、Packing List、Sales Contract 一套做完，适合外贸业务日常使用。</p></article>
+    <article class="card"><h3>完整业务链</h3><p>客户 / 商品 → 询盘 / 订单 → 产品目录 → 报价 → PI / 合同 → CI / 装箱单，尽量不重复录资料。</p></article>
+    <article class="card"><h3>小白也能上手</h3><p>我把入口和说明都尽量做成大白话。不是技术人员，也能知道先做什么、后做什么。</p></article>
+  </section>
+  <section class="plainbox" style="margin:0 0 18px"><h2>免费自建使用 · 对外收费需授权</h2><p><b>自己用免费，自己公司内部用免费。</b>你可以部署在自己的电脑、服务器、NAS、VPS 或内网里，也可以为了自己的业务修改代码。</p><div class="plain-list"><div class="plain-item"><b>✅ 免费</b>自己的外贸公司用来做报价、PI、合同、CI、装箱单和产品目录。</div><div class="plain-item"><b>❌ 需商业授权</b>给其他客户收费安装/部署/托管/维护/定制，做 SaaS、OEM、白标、转售或其他围绕 HUIDI 收费的服务。</div></div><p style="margin-top:12px">商业授权微信：<b>nuliqingxing8</b> · <a href="./SOURCE.html">查看完整授权</a></p></section>
+  <section class="support">
+    <h2>联系我 / 业务合作 / 赞赏支持</h2>
+    <p>如果你想聊定制开发、项目合作、部署、升级、品牌改造，或者想支持这个源码开放项目继续维护，可以直接加我。</p>
+    <div class="support-grid">
+      <div class="support-card"><img src="./assets/community/wechat-business.jpg" alt="业务微信二维码"><h3>业务微信</h3><p>聊开发、定制、交付、合作都可以。</p><div class="wxid">微信号：nuliqingxing8</div></div>
+      <div class="support-card"><img src="./assets/community/wechat-reward.jpg" alt="微信赞赏码"><h3>微信赞赏码</h3><p>觉得项目有帮助，欢迎赞赏支持，我会继续维护本地版体验和源码与授权说明。</p><div class="wxid">感谢你支持 HUIDI 源码开放项目</div></div>
+    </div>
+  </section>
+  <footer class="foot">HUIDI Docs Community Local · HUIDI Community Source License 1.0 · 本地社区源码开放版。内部保留部分历史兼容命名，不代表对外品牌。</footer>
+</div>
+<script>
+const KEY='huidi_local_theme_v1';function applyTheme(next){const theme=next||localStorage.getItem(KEY)||'light';document.documentElement.dataset.theme=theme;localStorage.setItem(KEY,theme);document.getElementById('themeToggle').textContent=theme==='dark'?'切到白天':'切到夜间';}applyTheme();document.getElementById('themeToggle').onclick=()=>applyTheme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+</script>
+</body>
+</html>

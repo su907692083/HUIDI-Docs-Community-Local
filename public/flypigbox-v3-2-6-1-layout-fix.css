@@ -1,0 +1,46 @@
+/* HUIDI V3.2.6.1 — desktop three-column workbench placement hotfix.
+   Keeps the editor, resize handle and preview in the same grid row. */
+@media (min-width:981px){
+  body.fp-live-document-mode .workbench,
+  body.fp-live-table-mode .workbench{
+    display:grid!important;
+    grid-template-columns:minmax(360px,var(--fp-left-pane-percent,44%)) 10px minmax(360px,1fr)!important;
+    grid-template-rows:minmax(0,auto)!important;
+    grid-auto-flow:row!important;
+    gap:8px!important;
+    align-items:start!important;
+  }
+  body.fp-live-document-mode .workbench>.form-column,
+  body.fp-live-table-mode .workbench>.form-column{
+    grid-column:1!important;
+    grid-row:1!important;
+    min-width:0!important;
+  }
+  body.fp-live-document-mode .workbench>.fp-workbench-resizer,
+  body.fp-live-table-mode .workbench>.fp-workbench-resizer{
+    grid-column:2!important;
+    grid-row:1!important;
+    min-width:10px!important;
+  }
+  body.fp-live-document-mode .workbench>.preview-shell,
+  body.fp-live-table-mode .workbench>.preview-shell{
+    grid-column:3!important;
+    grid-row:1!important;
+    min-width:0!important;
+  }
+}
+@media (max-width:980px){
+  body.fp-live-document-mode .workbench,
+  body.fp-live-table-mode .workbench{
+    grid-template-columns:minmax(0,1fr)!important;
+    grid-template-rows:auto!important;
+  }
+  body.fp-live-document-mode .workbench>.form-column,
+  body.fp-live-table-mode .workbench>.form-column,
+  body.fp-live-document-mode .workbench>.preview-shell,
+  body.fp-live-table-mode .workbench>.preview-shell{
+    grid-column:1!important;
+    grid-row:auto!important;
+  }
+  .fp-workbench-resizer{display:none!important}
+}

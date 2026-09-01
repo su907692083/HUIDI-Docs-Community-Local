@@ -1,0 +1,34 @@
+/* HUIDI V3.3.6.24-R1.3A.18.19.1 — single smart entry runtime isolation. */
+#ai.view #ai-workbench-view,
+#ai #fp-a17-engine-center,
+#ai #fp-a18-job-center,
+#ai #fp-one-click-task-center,
+#ai #fp-task-resume,
+#ai .ai-pending-center-v33612,
+#ai .ai-connection-strip-v33612,
+#ai .ai-capability-grid-v2{
+  display:none!important;
+  visibility:hidden!important;
+}
+#fp-smart-processing-panel-host{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+#fp-founder-os-task-panel{
+  display:block!important;
+  visibility:visible!important;
+  opacity:1!important;
+}
+html[data-fpb-single-entry-runtime="true"] #ai-workbench-view{
+  min-height:0!important;
+  height:0!important;
+  margin:0!important;
+  padding:0!important;
+  overflow:hidden!important;
+}
+@media print{
+  #fp-smart-processing-panel-host{display:none!important}
+}
+/* The floating assistant remains a shortcut only; its former secondary composer stays hidden. */
+#fp-ai-widget .fp-ai-panel{display:none!important}

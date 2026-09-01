@@ -1,0 +1,177 @@
+/* HUIDI V3.3.5.2.4 */
+.pdf-page .pdf-page-body{height:calc(100% - 24px)!important;min-height:0!important;box-sizing:border-box!important;overflow:hidden!important}
+.pdf-page .pdf-template table tr,.pdf-page .pdf-section,.pdf-page .info-section,.pdf-page .doc-section,.pdf-page .money-table,.pdf-page .signature-zone{break-inside:avoid!important;page-break-inside:avoid!important}
+.fp-export-blocker-note{margin:12px 0;padding:11px 13px;border:1px solid #efb6b6;border-radius:10px;background:#fff5f5;color:#8f1d1d;font-size:13px;line-height:1.55}.fp-export-blocker-note b{display:block;margin-bottom:5px}.fp-export-blocker-note ul{margin:0;padding-left:19px}.fp-export-actions button[disabled]{opacity:.55;cursor:not-allowed}
+.member-badge.free,.member-badge.trial,.member-badge.starter{background:#f3f8fd;border-color:#bfd5eb;color:#315474}#fpLiteAccountBtn.account{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.workspace-top-membership{min-width:0}.top-membership-quota{display:grid;align-content:center;gap:1px;min-width:78px;padding:7px 10px;border:1px solid #dbe7f3;border-radius:12px;background:#f8fbff;text-align:center}.top-membership-quota small{font-size:10px;color:#64748b}.top-membership-quota b{font-size:12px;color:#173b83;white-space:nowrap}
+.membership-summary-v2{grid-template-columns:repeat(2,minmax(0,1fr))!important}.membership-quota-grid-v2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:12px 0}.membership-quota-grid-v2 article{padding:12px;border:1px solid #dce7f2;border-radius:12px;background:#fbfdff}.membership-quota-grid-v2 small,.membership-quota-grid-v2 span{display:block;color:#64748b;font-size:11px}.membership-quota-grid-v2 b{display:block;margin:4px 0;color:#17233b;font-size:15px}
+@media(max-width:760px){.top-membership-quota{display:none}.membership-summary-v2,.membership-quota-grid-v2{grid-template-columns:1fr!important}}
+
+/* HUIDI V3.3.6.24-R1.3A.4 — document editor navigation, capture parity and simple-contract density closure */
+/* The left section rail is the single editor navigator. The older duplicate strip below the form stays hidden. */
+#fpPdfSectionNav{display:none!important}
+
+/* html2canvas renders each page in an off-screen viewport whose width equals the page body.
+   That viewport can match mobile media queries even on desktop, so restore the real paper layout explicitly. */
+.fp-pdf-capture-host .pdf-meta-grid,
+.fp-pdf-capture-host .pdf-meta-bar{
+  display:grid!important;
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+}
+.fp-pdf-capture-host .pdf-party-grid,
+.fp-pdf-capture-host .pdf-contract-signatures,
+.fp-pdf-capture-host .pdf-agreement-strip{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+}
+.fp-pdf-capture-host .pdf-party-grid.pdf-single-party{grid-template-columns:1fr!important}
+.fp-pdf-capture-host .pdf-template-hero,
+.fp-pdf-capture-host .pdf-quotation-hero,
+.fp-pdf-capture-host .pdf-commercial-hero,
+.fp-pdf-capture-host .pdf-packing-hero{
+  flex-direction:row!important;
+  align-items:flex-end!important;
+}
+.fp-pdf-capture-host .pdf-template-hero>*,
+.fp-pdf-capture-host .pdf-party-grid>*,
+.fp-pdf-capture-host .pdf-contract-signatures>*{min-width:0!important}
+
+/* A short sales contract should use the A4 page efficiently without shrinking every long contract. */
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-page{
+  font-size:10.4px!important;
+  line-height:1.31!important;
+}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-template{gap:4px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-template-hero,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-hero{
+  min-height:auto!important;
+  margin-bottom:3px!important;
+  padding-top:7px!important;
+  padding-bottom:7px!important;
+}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-template-hero h2,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-hero h2{font-size:20px!important;line-height:1.12!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-grid{gap:5px!important;margin-bottom:1px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-grid div,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-bar span{min-height:34px!important;padding:4px 5px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-grid b,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-bar b{font-size:8.4px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-grid span,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-meta-bar em{font-size:10px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .doc-section{margin:4px 0 3px!important;padding:4px 6px!important;font-size:10px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-party-grid{gap:7px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-party-card{padding:6px 7px!important;min-height:0!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-party-card h3{margin-bottom:2px!important;font-size:9.4px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-party-card p{line-height:1.33!important;font-size:9.1px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .products th,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .products td,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .info th,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .info td,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .money-table th,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .money-table td{
+  padding:3.5px 4.5px!important;
+  font-size:8.9px!important;
+  line-height:1.2!important;
+}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .money-table{margin:1px 0 2px auto!important;width:55%!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .money-table .total th,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .money-table .total td{font-size:10.2px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-signatures{gap:8px!important;margin-top:4px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-signatures>div{min-height:72px!important;padding:6px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-signatures h3{font-size:9px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-signatures .signature-assets{height:39px!important;min-height:39px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-contract-signatures p{margin-top:4px!important;padding-top:4px!important;font-size:8.8px!important}
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-amount-words,
+.doc.fp-simple-contract[data-fp-paper-mode="portrait"] .pdf-template-footer{margin-top:2px!important}
+
+/* Empty brand placeholders should not consume a visible row in the customer preview. */
+[data-fp-brand-header][data-fp-empty-brand="1"],
+[data-fp-brand-footer][data-fp-empty-brand="1"]{display:none!important}
+
+@media(max-width:720px){
+  .fp-pdf-capture-host .pdf-meta-grid,
+  .fp-pdf-capture-host .pdf-meta-bar{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+  .fp-pdf-capture-host .pdf-party-grid,
+  .fp-pdf-capture-host .pdf-contract-signatures,
+  .fp-pdf-capture-host .pdf-agreement-strip{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .fp-pdf-capture-host .pdf-template-hero,
+  .fp-pdf-capture-host .pdf-quotation-hero,
+  .fp-pdf-capture-host .pdf-commercial-hero,
+  .fp-pdf-capture-host .pdf-packing-hero{flex-direction:row!important;align-items:flex-end!important}
+}
+
+/* Keep other multi-column document templates stable inside the export capture viewport. */
+.fp-pdf-capture-host .pdf-value-cards{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.fp-pdf-capture-host .pdf-proposal-grid{display:grid!important;grid-template-columns:minmax(0,1.32fr) minmax(220px,.68fr)!important}
+.fp-pdf-capture-host .pdf-brand-finance-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(210px,.34fr)!important}
+@media(max-width:720px){
+  .fp-pdf-capture-host .pdf-value-cards{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .fp-pdf-capture-host .pdf-proposal-grid{grid-template-columns:minmax(0,1.32fr) minmax(220px,.68fr)!important}
+  .fp-pdf-capture-host .pdf-brand-finance-row{grid-template-columns:minmax(0,1fr) minmax(210px,.34fr)!important}
+}
+
+/* HUIDI V3.3.6.24-R1.3A.6 — document-type and paper-orientation governance */
+.doc[data-fp-r13a6="1"] .pdf-products-section,
+.doc[data-fp-r13a6="1"] .pdf-commercial-declaration,
+.doc[data-fp-r13a6="1"] .pdf-packing-summary,
+.doc[data-fp-r13a6="1"] .pdf-logistics-section,
+.doc[data-fp-r13a6="1"] .pdf-payment-section,
+.doc[data-fp-r13a6="1"] .pdf-terms-section,
+.doc[data-fp-r13a6="1"] .pdf-contract-terms,
+.doc[data-fp-r13a6="1"] .pdf-contract-signatures{
+  break-inside:avoid!important;
+  page-break-inside:avoid!important;
+}
+.doc[data-fp-r13a6="1"] table{table-layout:fixed!important;width:100%!important}
+.doc[data-fp-r13a6="1"] table th,
+.doc[data-fp-r13a6="1"] table td{overflow-wrap:anywhere;word-break:normal;vertical-align:middle}
+.doc[data-fp-r13a6="1"] .products img,
+.doc[data-fp-r13a6="1"] .pdf-commercial-table img,
+.doc[data-fp-r13a6="1"] .pdf-packing-table img{max-width:42px!important;max-height:42px!important;object-fit:contain!important}
+
+/* Dense tables retain readable numeric columns while giving product descriptions the available width. */
+.doc.fp-r13a6-dense-items .products th,
+.doc.fp-r13a6-dense-items .products td,
+.doc.fp-r13a6-dense-items .pdf-commercial-table th,
+.doc.fp-r13a6-dense-items .pdf-commercial-table td,
+.doc.fp-r13a6-dense-items .pdf-packing-table th,
+.doc.fp-r13a6-dense-items .pdf-packing-table td{
+  padding:4px 4.5px!important;
+  font-size:8.8px!important;
+  line-height:1.22!important;
+}
+.doc.fp-r13a6-very-dense-items .products th,
+.doc.fp-r13a6-very-dense-items .products td,
+.doc.fp-r13a6-very-dense-items .pdf-commercial-table th,
+.doc.fp-r13a6-very-dense-items .pdf-commercial-table td,
+.doc.fp-r13a6-very-dense-items .pdf-packing-table th,
+.doc.fp-r13a6-very-dense-items .pdf-packing-table td{font-size:8.1px!important;padding:3px 3.5px!important}
+
+/* Portrait customs documents prioritise declarations and text over decorative product imagery. */
+.doc[data-fp-paper-mode="portrait"][data-fp-document-type="commercial_invoice"] .pdf-commercial-table th,
+.doc[data-fp-paper-mode="portrait"][data-fp-document-type="commercial_invoice"] .pdf-commercial-table td{font-size:9px!important;padding:4px!important}
+.doc[data-fp-paper-mode="portrait"][data-fp-document-type="commercial_invoice"].fp-r13a6-product-images .pdf-commercial-table img{max-width:34px!important;max-height:34px!important}
+.doc[data-fp-paper-mode="portrait"][data-fp-document-type="packing_list"] .pdf-packing-table th,
+.doc[data-fp-paper-mode="portrait"][data-fp-document-type="packing_list"] .pdf-packing-table td{font-size:8.5px!important;padding:3.5px!important}
+
+/* Landscape is the professional default for packing lists and wide product tables. */
+.doc[data-fp-paper-mode="landscape"] .pdf-commercial-table,
+.doc[data-fp-paper-mode="landscape"] .pdf-packing-table,
+.doc[data-fp-paper-mode="landscape"] .pdf-quotation-table,
+.doc[data-fp-paper-mode="landscape"] .pdf-pi-products,
+.doc[data-fp-paper-mode="landscape"] .pdf-contract-goods{table-layout:fixed!important}
+.doc[data-fp-paper-mode="landscape"] .pdf-commercial-table th,
+.doc[data-fp-paper-mode="landscape"] .pdf-commercial-table td,
+.doc[data-fp-paper-mode="landscape"] .pdf-packing-table th,
+.doc[data-fp-paper-mode="landscape"] .pdf-packing-table td,
+.doc[data-fp-paper-mode="landscape"] .pdf-quotation-table th,
+.doc[data-fp-paper-mode="landscape"] .pdf-quotation-table td{padding:4px 5px!important;line-height:1.2!important}
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="packing_list"] .pdf-packing-table th,
+.doc[data-fp-paper-mode="landscape"][data-fp-document-type="packing_list"] .pdf-packing-table td{font-size:8.2px!important}
+.doc[data-fp-paper-mode="landscape"] .pdf-party-card{min-height:76px!important;padding:7px 8px!important}
+.doc[data-fp-paper-mode="landscape"] .pdf-meta-grid div{min-height:38px!important;padding:5px 6px!important}
+
+/* The off-screen capture host must use the same paper rules as the visible preview. */
+.fp-pdf-capture-host.doc[data-fp-r13a6="1"] table{table-layout:fixed!important;width:100%!important}
+.fp-pdf-capture-host.doc.fp-r13a6-dense-items table th,
+.fp-pdf-capture-host.doc.fp-r13a6-dense-items table td{padding:4px 4.5px!important}

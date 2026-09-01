@@ -1,0 +1,20 @@
+
+/* V5 new document start overlay */
+.bar .logo{font-weight:900}.intro{position:relative}.intro:after{content:'新建单据会先带入客户、品牌、语言与商品；进入编辑器后可再调整版式与高级字段。';display:block;margin-top:12px;padding:10px 12px;border:1px solid #d8e6f3;border-radius:10px;background:#f5faff;color:#4d667e;font-size:12px;line-height:1.55}.preview{position:sticky;top:18px}.preview span{display:inline-flex;align-items:center;margin:4px 5px 0 0;padding:6px 8px;border:1px solid #d7e6ef;border-radius:99px;background:#fff;color:#36566d;font-size:12px}@media(max-width:900px){.preview{position:static}}
+/* UX simplification: remove old explanatory overlay and keep launch actions compact. */
+.intro:after{display:none!important}
+.doc-start-login[hidden],.doc-start-shell[hidden]{display:none!important}
+.doc-start-hero .doc-start-flow{display:none!important}
+.doc-start-hero .preview{position:static}
+.doc-start-hero .preview span{background:#eff6f8}
+
+/* HUIDI official logo replacement. */
+.bar .logo{display:inline-flex;align-items:center;gap:7px}
+.site-logo-icon{width:28px;height:28px;object-fit:contain;display:block;border-radius:8px;background:#fff;border:1px solid #d7e6ef;padding:2px}
+
+/* V3.3.2.4 — restore explicit import/preparation flow */
+.doc-start-top-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#open-import-start{background:#eef4fb!important;color:#244a7c!important;border:1px solid #d5e2f0!important}
+.doc-start-actions{display:flex;gap:9px;flex-wrap:wrap}
+.doc-start-actions #direct-empty-editor{border:1px solid #d9e3ee;background:#fff;color:#52677f;border-radius:10px;padding:10px 13px;font-weight:800;cursor:pointer}
+@media(max-width:760px){.doc-start-status{display:none}.doc-start-top-actions{gap:6px}.doc-start-actions>*{width:100%;text-align:center}}

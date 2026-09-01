@@ -1,0 +1,62 @@
+/* HUIDI V3.3.1.4 — contextual section actions, localized workbook and stable live-cell focus */
+#fpQuickSourceBar{display:none!important}
+
+/* PDF and table sections keep actions inside the matching section header. */
+.section-title,.section-collapse-head,.fp-sheet-panel-head{align-items:flex-start!important}
+.section-title>.section-actions,.fp-pdf-base-context-actions,.fp-panel-actions,.fp-product-bulk-actions{margin-left:auto;justify-content:flex-end;flex-wrap:wrap}
+.fp-pdf-base-context-actions{display:flex!important;align-items:center;gap:6px}
+.fp-pdf-base-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.fp-panel-context-actions{display:flex;align-items:center;gap:6px;max-width:min(100%,720px)}
+.fp-panel-context-button,.fp-panel-template-button,.fp-panel-add-field{
+  min-height:32px;padding:0 9px;border:1px solid #cbd8e6;border-radius:8px;background:#fff;color:#315b91;font-size:11px;font-weight:850;white-space:nowrap;cursor:pointer
+}
+.fp-panel-context-button:hover,.fp-panel-template-button:hover,.fp-panel-add-field:hover{background:#eef6ff;border-color:#87aee0}
+.fp-panel-context-button.primary{background:#176fd1;border-color:#176fd1;color:#fff}
+.fp-panel-context-button.danger{background:#fff5f2;border-color:#efc6bc;color:#a73d2b}
+.fp-product-bulk-actions .fp-panel-context-button{min-height:31px}
+
+/* Workbook-specific controls replace PDF paper controls in table mode. */
+body.fp-live-table-mode [data-table-paper]{display:none!important}
+.fp-table-editor-toolbar label>span{display:block;margin-bottom:4px;color:#52667d;font-size:10.5px;font-weight:850}
+.fp-table-editor-toolbar select{min-width:0}
+.fp-workbook-layout-standard .fp-export-sheet{max-width:1180px}
+.fp-workbook-layout-standard .fp-workbook-sheet{min-width:690px}
+.fp-workbook-layout-wide .fp-workbook-sheet{min-width:980px}
+.fp-workbook-layout-wide .fp-export-sheet{min-width:980px}
+
+/* Stable current-cell indicator: no flashing animation and no smooth-scroll bounce. */
+.fp-preview-live-highlight{
+  animation:none!important;
+  outline:3px solid #2f7de1!important;
+  outline-offset:-3px!important;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.85),0 0 0 2px rgba(47,125,225,.16)!important;
+  background:#fff2a8!important;
+  transition:background .08s linear,outline-color .08s linear!important
+}
+.fp-table-output-preview.is-refreshing{opacity:1!important}
+.fp-workbook-sheet{transition:none!important}
+
+/* Keep the action position readable at narrower desktop widths. */
+@media(max-width:1180px){
+  .fp-sheet-panel-head{display:grid!important;grid-template-columns:1fr;gap:9px}
+  .fp-panel-context-actions,.fp-product-bulk-actions{margin-left:0;justify-content:flex-start;max-width:100%}
+}
+@media(max-width:720px){
+  .fp-panel-context-actions,.fp-product-bulk-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
+  .fp-panel-context-actions button,.fp-product-bulk-actions button{width:100%;white-space:normal}
+  .section-title>.section-actions{width:100%;justify-content:flex-start}
+}
+
+/* Make sheet direction visibly different in preview and show the exact active field. */
+.fp-workbook-current-field{display:flex;align-items:center;gap:6px;max-width:260px;padding:5px 9px;border:1px solid #b8cdf0;border-radius:999px;background:#eef5ff;color:#315b91;font-size:10.5px;white-space:nowrap;overflow:hidden}
+.fp-workbook-current-field[hidden]{display:none!important}
+.fp-workbook-current-field span{flex:0 0 auto;color:#657b95;font-weight:750}
+.fp-workbook-current-field b{overflow:hidden;text-overflow:ellipsis}
+.fp-workbook-layout-badge{padding:4px 7px;border:1px solid #cbd8e6;border-radius:7px;background:#fff;color:#48617e;font-size:10px;font-weight:850;white-space:nowrap}
+.fp-workbook-layout-standard .fp-export-workbook-sheet{max-width:820px;margin:0 auto}
+.fp-workbook-layout-standard .fp-export-sheet{min-width:720px!important;max-width:820px!important}
+.fp-workbook-layout-wide .fp-export-workbook-sheet{min-width:1180px}
+.fp-workbook-layout-wide .fp-export-sheet{min-width:1180px!important;max-width:none!important}
+.fp-workbook-layout-wide .fp-workbook-canvas{background:linear-gradient(90deg,#edf3f8,#f7fafc 42%,#edf3f8)}
+.fp-workbook-layout-standard .fp-workbook-canvas{background:#eef2f6}
+@media(max-width:920px){.fp-workbook-current-field{order:3;max-width:100%;width:100%}.fp-workbook-toolbar{flex-wrap:wrap}}

@@ -1,0 +1,31 @@
+(()=>{
+  'use strict';
+  const $=(s,r=document)=>r.querySelector(s);
+  const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+  const config=window.FLYPIGBOX_SUPABASE||{};
+  let client=window.FlypigBOXCloudCore?.getClient?.()||window.FlypigBOXSupabaseClient||null;
+  try{if(!client&&config.url&&config.publishableKey&&window.supabase?.createClient){client=window.supabase.createClient(String(config.url).replace(/\/$/,''),config.publishableKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true,flowType:'pkce'}});window.FlypigBOXSupabaseClient=client;}}catch(e){console.warn('HUIDI account utility unavailable',e);}
+  const dialog=id=>document.getElementById(id);
+  const close=id=>{const d=dialog(id); if(d?.open)d.close();};
+  const show=id=>{const d=dialog(id); if(d&&!d.open)d.showModal();};
+  const text=id=>{const v=document.getElementById(id);return v?.value?.trim()||'';};
+  const showStatus=(id,msg,kind='')=>{const el=document.getElementById(id);if(!el)return;el.textContent=msg;el.dataset.kind=kind;};
+  async function currentUser(){if(!client)return null;await window.FlypigBOXCloudCore?.ready?.();const shared=window.FlypigBOXCloudCore?.getUser?.();if(shared)return shared;const {data}=await client.auth.getUser();return data?.user||null;}
+  function csvValue(v){if(v===null||v===undefined)return '';const value=typeof v==='object'?JSON.stringify(v):String(v);return '"'+value.replaceAll('"','""')+'"';}
+  function downloadText(filename,text){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),3000);}
+  async function exportTable(table){const status='account-export-status';showStatus(status,'正在准备导出…');const user=await currentUser();if(!user){showStatus(status,'请先登录后再导出。','error');return;}const {data,error}=await client.from(table).select('*').eq('user_id',user.id);if(error){showStatus(status,`导出失败：${error.message}`,'error');return;}const rows=data||[];const keys=[...new Set(rows.flatMap(r=>Object.keys(r)))];const csv='\ufeff'+[keys.map(csvValue).join(','),...rows.map(r=>keys.map(k=>csvValue(r[k])).join(','))].join('\n');downloadText(`HUIDI_${table}_${new Date().toISOString().slice(0,10)}.csv`,csv);showStatus(status,`已导出 ${rows.length} 条记录。请妥善保管文件。`,'ok');}
+  function parseCustomer(raw){const lines=String(raw||'').split(/\r?\n|；|;/).map(s=>s.trim()).filter(Boolean);const all=lines.join('\n');const out={};const email=all.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);const phone=all.match(/(?:\+?\d[\d\s().-]{6,}\d)/);const url=all.match(/(?:https?:\/\/|www\.)\S+/i);if(email)out.email=email[0];if(phone)out.phone=phone[0].trim();if(url)out.website=url[0];const country=lines.find(x=>/(United States|USA|China|UAE|United Kingdom|Germany|France|Australia|Canada|Japan|Korea|美国|中国|阿联酋|英国|德国|法国|澳大利亚|加拿大|日本|韩国)/i.test(x));if(country)out.country=country;const named=lines.find(x=>/^(contact|联系人|name|姓名)\s*[:：]/i.test(x));if(named)out.contact_name=named.replace(/^.*?[:：]\s*/,'');const company=lines.find(x=>/(ltd|llc|inc|company|co\.|trading|import|export|有限公司|公司)/i.test(x));if(company)out.company_name=company;out.name=out.company_name||out.contact_name||lines[0]||'';return out;}
+  function applyCustomer(fields){const form=document.getElementById('record-form');if(!form)return false;Object.entries(fields).forEach(([name,value])=>{const input=form.querySelector(`[name="${CSS.escape(name)}"]`);if(input&&value){input.value=value;input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));}});return true;}
+  function injectCustomerPasteButton(){const modal=dialog('record-modal');if(!modal)return;const observer=new MutationObserver(()=>{const title=$('#modal-title',modal)?.textContent||'';const form=$('#record-form',modal);if(!/客户/.test(title)||!form||$('.customer-paste-launch',modal))return;const btn=document.createElement('button');btn.type='button';btn.className='customer-paste-launch';btn.textContent='✦ 从文本识别客户信息';btn.addEventListener('click',()=>{const box=dialog('customer-paste-dialog'); if(box&&!box.open)box.showModal();setTimeout(()=>$('#customer-paste-text')?.focus(),0);});form.insertBefore(btn,form.firstChild);});observer.observe(modal,{subtree:true,childList:true});}
+  document.addEventListener('click',async e=>{const action=e.target.closest('[data-account-action]')?.dataset.accountAction;if(!action)return;
+    if(action==='security'){const user=await currentUser();$('#security-email').textContent=user?.email||'尚未登录';show('account-security-dialog');return;}
+    if(action==='data'){showStatus('account-export-status','');show('account-data-dialog');return;}
+    if(action==='plan'){const user=await currentUser();$('#plan-email').textContent=user?.email||'尚未登录';show('account-plan-dialog');return;}
+    if(action==='signout'){if(!client)return;await client.auth.signOut();location.href='./index.html';return;}
+    if(action==='reset-password'){const user=await currentUser();if(!user?.email){alert('请先登录账号。');return;}const {error}=await client.auth.resetPasswordForEmail(user.email,{redirectTo:`${location.origin}/index.html?mode=reset`});alert(error?`发送失败：${error.message}`:'重设密码邮件已发送，请检查邮箱。');return;}
+    if(action==='parse-customer'){const data=parseCustomer(text('customer-paste-text'));if(!data.name&&!data.email&&!data.phone){showStatus('customer-paste-status','未识别到可预填信息，请按“公司 / 联系人 / 邮箱 / 电话 / 国家”分行粘贴。','error');return;}applyCustomer(data);showStatus('customer-paste-status','已预填当前客户表单；请检查后再保存。','ok');setTimeout(()=>close('customer-paste-dialog'),400);return;}
+  });
+  document.addEventListener('click',e=>{const t=e.target.closest('[data-account-close]');if(t)close(t.dataset.accountClose);const ex=e.target.closest('[data-export]');if(ex)exportTable(ex.dataset.export);});
+  document.addEventListener('click',e=>{const m=document.getElementById('account-menu');if(m?.open&&!m.contains(e.target))m.removeAttribute('open');});
+  injectCustomerPasteButton();
+})();

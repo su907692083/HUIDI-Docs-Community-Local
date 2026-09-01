@@ -1,0 +1,23 @@
+/* HUIDI V2.9 — intelligent sheet import and bilingual field hints */
+.fp-smart-import{margin-top:12px;border:1px solid #bfd3f0;border-radius:12px;background:linear-gradient(135deg,#f8fbff,#eef5ff);overflow:hidden}
+.fp-smart-import>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 13px;cursor:pointer;color:#173f85;font-weight:900}
+.fp-smart-import>summary::-webkit-details-marker{display:none}.fp-smart-import>summary small{color:#607796;font-size:10px;font-weight:700;text-align:right}
+.fp-smart-import[open]>summary{border-bottom:1px solid #d7e4f3}.fp-smart-import-body{padding:12px}
+.fp-smart-import-copy{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;color:#526884;font-size:11px;line-height:1.5}.fp-smart-import-copy b{white-space:nowrap;color:#163f89}
+#fpSmartPasteText{display:block;width:100%;min-height:104px;border:1px dashed #7da0d8;border-radius:10px;background:#fff;padding:11px;color:#243750;outline:none;resize:vertical;font:12px/1.5 ui-monospace,SFMono-Regular,Consolas,"Liberation Mono",monospace}
+#fpSmartPasteText:focus{border-style:solid;border-color:#4677cd;box-shadow:0 0 0 3px rgba(70,119,205,.12)}
+.fp-smart-import-toolbar{display:flex;align-items:end;gap:7px;flex-wrap:wrap;margin-top:9px}.fp-smart-import-toolbar label{display:grid;gap:4px;color:#60728b;font-size:10px;font-weight:850}.fp-smart-import-toolbar select{min-height:36px;border:1px solid #cbd9e8;border-radius:8px;background:#fff;padding:7px 9px;color:#2a405d}
+.fp-smart-import-toolbar .fp-smart-auto{display:flex;align-items:center;gap:5px;min-height:36px;padding:0 8px;border:1px solid #d3e0ef;border-radius:8px;background:#fff;font-size:11px}.fp-smart-auto input{accent-color:#2c64c6}
+.fp-smart-import-status{margin-top:8px;color:#526b8b;font-size:10.5px}.fp-smart-import-result{margin-top:9px;border:1px solid #d9e4f1;border-radius:10px;background:#fff;padding:10px;min-height:54px}
+.fp-smart-empty{color:#8390a1;font-size:11px;text-align:center;padding:8px}.fp-smart-score{display:flex;align-items:baseline;gap:7px}.fp-smart-score b{font-size:22px;color:#174b9f}.fp-smart-score span{font-size:10px;color:#718096}
+.fp-smart-facts{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.fp-smart-facts span{padding:4px 7px;border-radius:999px;background:#eef5ff;color:#345d9a;font-size:10px;font-weight:800}
+.fp-smart-field-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;margin-top:8px}.fp-smart-field-preview span{min-width:0;padding:6px 7px;border:1px solid #e1e8f1;border-radius:7px;color:#56677e;font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fp-smart-field-preview b{color:#263e61}
+.fp-smart-product-preview{overflow:auto;margin-top:8px}.fp-smart-product-preview table{width:100%;border-collapse:collapse;font-size:10px}.fp-smart-product-preview th,.fp-smart-product-preview td{border:1px solid #dde6f0;padding:5px;text-align:left}.fp-smart-product-preview th{background:#edf4fd;color:#31558f}
+.fp-smart-warning{margin-top:7px;padding:6px 8px;border:1px solid #f1d49e;border-radius:7px;background:#fff9ed;color:#8c5c10;font-size:10px}.fp-smart-applied{box-shadow:0 0 0 3px rgba(32,132,86,.09)}
+.fp-field-en{color:#6d7f96;font-size:.88em;font-weight:650}
+@media(max-width:720px){.fp-smart-import>summary{align-items:flex-start;flex-direction:column}.fp-smart-import>summary small{text-align:left}.fp-smart-import-copy{display:block}.fp-smart-import-copy b{display:block;margin-bottom:3px}.fp-smart-import-toolbar{align-items:stretch;flex-direction:column}.fp-smart-import-toolbar>*{width:100%}.fp-smart-field-preview{grid-template-columns:1fr}}
+@media print{.fp-smart-import{display:none!important}}
+.fp-smart-import-toolbar .fp-smart-auto input{width:16px!important;height:16px!important;min-width:16px!important;min-height:16px!important;margin:0!important;box-shadow:none!important}
+
+/* HUIDI V2.9 compact import drawer */
+.fp-smart-import{box-shadow:none}.fp-smart-import:not([open]) .fp-smart-import-body{display:none}.fp-smart-import-copy{margin-bottom:10px}.fp-smart-import-toolbar{align-items:center}.fp-smart-import-toolbar label:first-child{min-width:235px}.fp-smart-import-result{max-height:260px;overflow:auto}

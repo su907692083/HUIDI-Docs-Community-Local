@@ -1,0 +1,169 @@
+/* HUIDI V3.2.2 — restored live PDF workspace and export-faithful workbook preview */
+body.fp-live-document-mode .fp-lite-toolbar,
+body.fp-live-table-mode .fp-lite-toolbar{display:flex}
+body.fp-live-document-mode .site-header,
+body.fp-live-table-mode .site-header,
+body.fp-live-document-mode .floating-help,
+body.fp-live-table-mode .floating-help,
+body.fp-live-document-mode .intro,
+body.fp-live-table-mode .intro,
+body.fp-live-document-mode .launch-trust-strip,
+body.fp-live-table-mode .launch-trust-strip,
+body.fp-live-document-mode .launch-overview,
+body.fp-live-table-mode .launch-overview,
+body.fp-live-document-mode .launch-operating-card,
+body.fp-live-table-mode .launch-operating-card,
+body.fp-live-document-mode .launch-protection-card,
+body.fp-live-table-mode .launch-protection-card,
+body.fp-live-document-mode #fp-document-focus,
+body.fp-live-table-mode #fp-document-focus,
+body.fp-live-document-mode #fpEditorViewSwitcher,
+body.fp-live-table-mode #fpEditorViewSwitcher,
+body.fp-live-document-mode .support-footer,
+body.fp-live-table-mode .support-footer,
+body.fp-live-document-mode>footer,
+body.fp-live-table-mode>footer,
+body.fp-live-document-mode .editor-legal-links,
+body.fp-live-table-mode .editor-legal-links{display:none!important}
+body.fp-live-document-mode .app,
+body.fp-live-table-mode .app{width:min(1540px,100%);padding:12px 16px 34px}
+body.fp-live-document-mode .editor-access-banner,
+body.fp-live-table-mode .editor-access-banner{margin:0 auto 10px;max-width:1240px;padding:8px 12px;border-radius:10px;font-size:11px}
+body.fp-live-document-mode #fpDocumentContextBar,
+body.fp-live-table-mode #fpDocumentContextBar,
+body.fp-live-document-mode #fp-doc-context,
+body.fp-live-table-mode #fp-doc-context{display:none!important}
+
+/* Compact permanent toolbar */
+.fp-primary-workspace-switch{display:flex;gap:3px;padding:3px;border:1px solid #d7e1eb;border-radius:9px;background:#f3f6f9}
+.fp-primary-workspace-switch button{min-height:32px;padding:0 10px;border:0;border-radius:7px;background:transparent;color:#526178;font-size:11px;font-weight:850;cursor:pointer;white-space:nowrap}
+.fp-primary-workspace-switch button.active{background:#fff;color:#174b9f;box-shadow:0 3px 10px rgba(25,66,132,.12)}
+body.fp-live-document-mode .fp-lite-toolbar-actions>#fpLiteImportBtn,
+body.fp-live-table-mode .fp-lite-toolbar-actions>#fpLiteImportBtn{background:#f5f8fb}
+
+/* Restored document workspace: left editor + right live PDF */
+body.fp-live-document-mode .workbench{display:grid!important;grid-template-columns:minmax(455px,.92fr) minmax(610px,1.08fr)!important;gap:18px!important;align-items:start;margin-top:10px}
+body.fp-live-document-mode .form-column{display:grid!important;gap:12px;min-width:0}
+body.fp-live-document-mode .preview-shell{display:block!important;position:sticky!important;top:76px!important;max-height:calc(100vh - 88px)!important;overflow-y:auto!important;padding-right:5px!important}
+body.fp-live-document-mode #piPaper{display:block!important}
+body.fp-live-document-mode #fpTableOutputPreview{display:none!important}
+body.fp-live-document-mode #fpTradeFactoryCenter{display:none!important}
+body.fp-live-document-mode.fp-live-full-mode #fpTradeFactoryCenter{display:block!important;margin:12px 0}
+body.fp-live-document-mode #editorTop{display:block!important;margin:0!important}
+body.fp-live-document-mode #editorTop>.card{margin:0}
+body.fp-live-document-mode #editorTop>.card:first-child{display:block!important}
+body.fp-live-document-mode #editorTop .doc-mode-card{display:none!important}
+body.fp-live-document-mode.fp-show-document-settings #editorTop .doc-mode-card,
+body.fp-live-document-mode.fp-live-full-mode #editorTop .doc-mode-card{display:flex!important;margin-top:12px}
+body.fp-live-document-mode #editorTop .pi-code-panel{display:none}
+body.fp-live-document-mode.fp-live-full-mode #editorTop .pi-code-panel{display:block}
+body.fp-live-document-mode #editorTop .grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}
+body.fp-live-document-mode #editorTop .card{padding:15px 16px}
+body.fp-live-document-mode #editorTop .section-title{margin-bottom:8px}
+body.fp-live-document-mode #editorTop .hint{margin:0 0 10px;font-size:10.5px;line-height:1.45}
+body.fp-live-document-mode .form-column>.card{margin:0;padding:0;overflow:hidden;border-radius:13px;box-shadow:0 8px 24px rgba(26,43,68,.045)}
+body.fp-live-document-mode .form-column>.card:not(.collapsible-card){padding:15px 16px}
+body.fp-live-document-mode .collapsible-card .section-collapse-head{padding:13px 15px}
+body.fp-live-document-mode .collapsible-card .section-collapse-body{padding:13px 15px}
+body.fp-live-document-mode .form-column .section-translation-note{display:none}
+body.fp-live-document-mode .form-column .hint{font-size:10.5px;line-height:1.45}
+body.fp-live-document-mode .form-column .grid{gap:10px}
+body.fp-live-document-mode .form-column label{font-size:11px}
+body.fp-live-document-mode .form-column input,
+body.fp-live-document-mode .form-column select,
+body.fp-live-document-mode .form-column textarea{min-height:39px}
+body.fp-live-document-mode .form-column textarea{min-height:72px}
+body.fp-live-document-mode .preview-toolbar{margin-bottom:9px;padding:10px 11px;border:1px solid #dce5ee;border-radius:11px;background:#fff}
+body.fp-live-document-mode .preview-toolbar-actions,
+body.fp-live-document-mode .email-draft-hint{display:none!important}
+body.fp-live-document-mode .preview-toolbar-primary{justify-content:space-between}
+body.fp-live-document-mode #fpPreviewModeSwitcher{display:none!important}
+body.fp-live-document-mode #piPaper{margin:0 auto;box-shadow:0 12px 36px rgba(20,34,55,.12)}
+
+/* One compact row for customer, brand, item and reusable content */
+.fp-quick-source-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #dbe5ee;border-radius:12px;background:linear-gradient(135deg,#fff,#f7faff);box-shadow:0 7px 20px rgba(30,48,75,.04)}
+.fp-quick-source-bar>div{min-width:0}.fp-quick-source-bar b,.fp-quick-source-bar span{display:block}.fp-quick-source-bar b{font-size:12px;color:#26364c}.fp-quick-source-bar span{margin-top:2px;color:#78869a;font-size:9.5px}
+.fp-quick-source-bar nav{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.fp-quick-source-bar button{min-height:31px;padding:0 9px;border:1px solid #d5e0eb;border-radius:8px;background:#fff;color:#365270;font-size:10.5px;font-weight:820;cursor:pointer;white-space:nowrap}
+.fp-quick-source-bar button:hover{border-color:#7fa2d7;background:#eef5ff;color:#1f56a3}
+
+/* Table mode keeps the same two-column mental model */
+body.fp-live-table-mode .workbench{display:grid!important;grid-template-columns:minmax(690px,1.2fr) minmax(460px,.8fr)!important;gap:16px!important;align-items:start;margin-top:10px}
+body.fp-live-table-mode .form-column{min-width:0}
+body.fp-live-table-mode #editorTop,
+body.fp-live-table-mode #fpQuickSourceBar,
+body.fp-live-table-mode #fpTradeFactoryCenter{display:none!important}
+body.fp-live-table-mode .preview-shell{display:block!important;position:sticky!important;top:76px!important;max-height:calc(100vh - 88px)!important;overflow:hidden!important;padding:0!important}
+body.fp-live-table-mode .preview-toolbar{display:none!important}
+body.fp-live-table-mode #piPaper{display:none!important}
+body.fp-live-table-mode #fpTableOutputPreview{display:block!important}
+body.fp-live-table-mode #fpPreviewModeSwitcher{display:none!important}
+body.fp-live-table-mode .fp-table-editor-headline>div:first-child p:last-child,
+body.fp-live-table-mode .fp-table-flow-strip{display:none}
+body.fp-live-table-mode .fp-table-editor-head{padding:12px 13px 10px}
+body.fp-live-table-mode .fp-table-editor-actions [data-table-action="toggle-detail"],
+body.fp-live-table-mode .fp-table-editor-actions [data-table-action="form-advanced"]{display:none}
+body.fp-live-table-mode .fp-table-editor-toolbar{grid-template-columns:1.25fr 1fr;margin-top:8px}
+body.fp-live-table-mode .fp-table-editor-toolbar label:last-child{display:none}
+body.fp-live-table-mode .fp-sheet-active-panel{padding:9px}
+body.fp-live-table-mode .fp-sheet-panel .fp-sheet-scroll{max-height:calc(100vh - 310px)}
+
+/* Workbook preview: exported customer Excel appearance, no paper pagination */
+.fp-table-output-preview{min-height:0!important;border-radius:12px!important;background:#e8edf2!important}
+.fp-workbook-preview{grid-template-rows:auto auto minmax(0,1fr) auto!important;height:calc(100vh - 88px)!important;min-height:560px!important;background:#e5e9ee!important}
+.fp-workbook-canvas{padding:9px!important;overflow:auto!important;background:#dfe4ea!important}
+.fp-workbook-sheet{min-width:720px!important;background:#fff!important;box-shadow:none!important;border:1px solid #cdd6df;border-radius:7px;overflow:hidden}
+.fp-workbook-tabs{display:flex!important}
+.fp-workbook-formula-bar em{margin-left:auto}
+.fp-workbook-status{border-top:1px solid #cbd5df}
+
+/* Full mode explicitly reveals advanced control areas, never by default. */
+body.fp-live-document-mode:not(.fp-live-full-mode) #fpFactoryCostingPanel{display:none!important}
+body.fp-live-document-mode.fp-live-full-mode .form-column>.card{display:block}
+
+@media(max-width:1180px){
+  body.fp-live-document-mode .workbench{grid-template-columns:minmax(420px,.9fr) minmax(520px,1.1fr)!important}
+  body.fp-live-table-mode .workbench{grid-template-columns:minmax(580px,1.1fr) minmax(400px,.9fr)!important}
+  .fp-quick-source-bar{align-items:flex-start;flex-direction:column}.fp-quick-source-bar nav{justify-content:flex-start}
+}
+@media(max-width:980px){
+  body.fp-live-document-mode .workbench,
+  body.fp-live-table-mode .workbench{grid-template-columns:1fr!important}
+  body.fp-live-document-mode .preview-shell,
+  body.fp-live-table-mode .preview-shell{position:static!important;max-height:none!important;overflow:visible!important}
+  body.fp-live-table-mode .fp-workbook-preview{height:680px!important}
+  .fp-primary-workspace-switch{order:3;width:100%}.fp-primary-workspace-switch button{flex:1}
+  .fp-lite-toolbar{align-items:flex-start;flex-wrap:wrap}
+}
+@media(max-width:720px){
+  body.fp-live-document-mode .app,body.fp-live-table-mode .app{padding:8px 8px 76px}
+  .fp-lite-toolbar{padding:8px;gap:7px}.fp-lite-toolbar-left strong{max-width:150px}
+  .fp-lite-toolbar-actions{flex:1;justify-content:flex-end;gap:4px;flex-wrap:wrap}
+  .fp-lite-toolbar-actions>#fpLiteImportBtn,.fp-lite-toolbar-actions .account,.fp-lite-toolbar-actions .version{display:none}
+  .fp-primary-workspace-switch{width:auto;order:0}.fp-primary-workspace-switch button{padding:0 7px;font-size:10px}
+  body.fp-live-document-mode #editorTop .grid.four{grid-template-columns:1fr}
+  .fp-quick-source-bar span{display:none}.fp-quick-source-bar nav{display:grid;grid-template-columns:repeat(2,1fr);width:100%}.fp-quick-source-bar button{width:100%}
+  body.fp-live-document-mode .preview-shell{display:none!important}
+  body.mobile-preview-mode.fp-live-document-mode .preview-shell{display:block!important}
+  body.fp-live-table-mode .preview-shell{margin-top:8px}
+  body.fp-live-table-mode .fp-workbook-preview{height:580px!important;min-height:520px!important}
+}
+@media print{
+  .fp-lite-toolbar,.fp-quick-source-bar{display:none!important}
+}
+
+/* ===== HUIDI V3.2.2 draggable editor / preview split ===== */
+@media(min-width:981px){
+  body.fp-live-document-mode .workbench,
+  body.fp-live-table-mode .workbench{
+    grid-template-columns:minmax(360px,var(--fp-left-pane-percent,56%)) 10px minmax(360px,1fr)!important;
+    gap:8px!important;
+  }
+  .fp-workbench-resizer{display:flex;align-self:stretch;justify-content:center;min-height:calc(100vh - 120px);cursor:col-resize;touch-action:none;position:relative;z-index:20}
+  .fp-workbench-resizer span{width:4px;min-height:90px;margin:8px 0;border-radius:999px;background:#d5dfeb;transition:.15s}
+  .fp-workbench-resizer:hover span,.fp-split-resizing .fp-workbench-resizer span{background:#4f7fcf;box-shadow:0 0 0 4px rgba(79,127,207,.12)}
+  .fp-workbench-resizer:focus{outline:none}.fp-workbench-resizer:focus span{background:#4f7fcf;box-shadow:0 0 0 4px rgba(79,127,207,.15)}
+  .fp-split-resizing{cursor:col-resize!important;user-select:none!important}
+  .fp-split-resizing *{cursor:col-resize!important}
+}
+@media(max-width:980px){.fp-workbench-resizer{display:none!important}}

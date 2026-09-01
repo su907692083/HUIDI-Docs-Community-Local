@@ -1,0 +1,111 @@
+/* HUIDI V3.3.0 — interface convergence, centered internal workspace, true fullscreen and branded portrait/landscape documents */
+:root{
+  --fp-v33-site-header-h:0px;
+  --fp-v33-lite-toolbar-h:64px;
+  --fp-v33-left-dock-h:86px;
+  --fp-v33-brand:#173b83;
+  --fp-v33-brand-soft:#eaf2fc;
+  --fp-v33-brand-line:#cad9eb;
+}
+html{scroll-padding-top:calc(var(--fp-v33-site-header-h) + var(--fp-v33-lite-toolbar-h) + 12px)}
+.site-header{position:sticky!important;top:0!important;z-index:2400!important}
+.fp-lite-toolbar{position:sticky!important;top:var(--fp-v33-site-header-h)!important;z-index:2300!important}
+body.fp-lite-editor-mode .site-header,body.fp-lite-preview-mode .site-header,body.fp-lite-advanced-mode .site-header{display:flex!important}
+body.fp-lite-editor-mode .app,body.fp-lite-preview-mode .app,body.fp-lite-advanced-mode .app{padding-top:12px!important}
+
+/* One stable left dock: reusable data actions + PDF navigation. */
+#fpV33LeftDock{position:sticky;top:calc(var(--fp-v33-site-header-h) + var(--fp-v33-lite-toolbar-h) + 8px);z-index:1500;display:grid;gap:6px;margin:0 0 10px;padding:7px;border:1px solid #d8e3ee;border-radius:12px;background:rgba(255,255,255,.97);box-shadow:0 10px 30px rgba(25,43,70,.08);backdrop-filter:blur(12px)}
+#fpV33LeftDock .fp-quick-source-bar{position:static!important;margin:0!important;border:0!important;border-radius:8px!important;box-shadow:none!important;background:#f8fbff!important;padding:6px 8px!important}
+#fpV33LeftDock #fpPdfSectionNav{position:static!important;margin:0!important;padding:0 3px!important;border:0!important;background:transparent!important;box-shadow:none!important}
+#fpV33LeftDock .fp-quick-source-bar button.is-active{border-color:#477ad1!important;background:#e9f2ff!important;color:#174d9f!important;box-shadow:0 0 0 3px rgba(71,122,209,.12)}
+body.fp-live-table-mode #fpV33LeftDock #fpPdfSectionNav{display:none!important}
+body.fp-live-document-mode #fpV33LeftDock #fpPdfSectionNav{display:flex!important}
+body.fp-workbook-fullscreen-open #fpV33LeftDock,body.fp-v326-internal-open #fpV33LeftDock{visibility:hidden!important;pointer-events:none!important}
+
+/* Table workspace toolbar and horizontal entry mode. */
+.fp-table-editor-toolbar{grid-template-columns:repeat(3,minmax(150px,1fr))!important}
+.fp-table-brand-button{min-height:42px;align-self:end;border:1px solid #cfddeb;border-radius:9px;background:#fff;color:#244c84;font-size:12px;font-weight:850;cursor:pointer}
+.fp-table-brand-button:hover{background:#eef5ff;border-color:#7fa5dc}
+.fp-horizontal-entry-mode .fp-sheet-tabs{display:none!important}
+.fp-horizontal-entry-toolbar{position:sticky;top:0;z-index:18;background:#fff}
+.fp-horizontal-entry-note{display:flex;align-items:center;gap:9px;min-width:0;color:#607089;font-size:11px}
+.fp-horizontal-entry-note b{color:#173b83;font-size:12px;white-space:nowrap}
+.fp-horizontal-entry-stack{display:grid;gap:14px;padding-top:10px}
+.fp-horizontal-entry-section .fp-sheet-scroll{overflow:auto;scrollbar-gutter:stable both-edges}
+.fp-horizontal-entry-table{min-width:max-content!important;width:max-content!important}
+.fp-horizontal-entry-table th{min-width:150px;max-width:240px;white-space:normal;vertical-align:bottom}
+.fp-horizontal-entry-table td{min-width:150px;vertical-align:top}
+.fp-horizontal-entry-table input,.fp-horizontal-entry-table select,.fp-horizontal-entry-table textarea{min-width:140px;width:100%}
+.fp-horizontal-entry-table textarea{min-height:72px}
+.fp-horizontal-entry-mode .fp-product-panel .fp-sheet-scroll{max-height:min(52vh,560px)}
+
+/* True page-level workbook fullscreen. */
+#fpV33WorkbookFullscreen{position:fixed;inset:0;z-index:99000;display:none;background:#e7ebf0;color:#1f2937}
+#fpV33WorkbookFullscreen.show{display:grid;grid-template-rows:auto minmax(0,1fr)}
+#fpV33WorkbookFullscreen>header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border-bottom:1px solid #cad4df;background:#fff;box-shadow:0 4px 18px rgba(15,23,42,.08)}
+#fpV33WorkbookFullscreen>header strong{font-size:14px;color:#173b83}
+#fpV33WorkbookFullscreen>header button{min-height:36px;padding:0 12px;border:1px solid #ccd8e5;border-radius:9px;background:#fff;color:#334d6d;font-weight:850;cursor:pointer}
+#fpV33WorkbookFullscreen .fp-v33-fullscreen-slot{min-height:0;overflow:hidden;padding:10px}
+#fpV33WorkbookFullscreen .fp-table-output-preview{height:100%!important;min-height:0!important;border-radius:10px!important;overflow:hidden!important}
+#fpV33WorkbookFullscreen .fp-workbook-preview{height:100%!important;min-height:0!important;position:static!important;inset:auto!important;z-index:auto!important;border-radius:10px!important;box-shadow:0 16px 50px rgba(15,23,42,.16)!important}
+body.fp-workbook-fullscreen-open{overflow:hidden!important}
+body.fp-workbook-fullscreen-open>.site-header,body.fp-workbook-fullscreen-open>#fpLiteToolbar,body.fp-workbook-fullscreen-open .app,body.fp-workbook-fullscreen-open .mobile-workspace-switch{visibility:hidden!important;pointer-events:none!important}
+body.fp-workbook-fullscreen-open #fpV33WorkbookFullscreen{visibility:visible!important;pointer-events:auto!important}
+
+/* Centered internal work window. */
+#fpV326InternalRoot[hidden]{display:none!important}
+#fpV326InternalRoot{display:grid;place-items:center;padding:3vh 3vw}
+.fp-v326-internal-backdrop{position:fixed!important;inset:0!important;background:rgba(15,27,48,.58)!important;backdrop-filter:blur(4px)}
+.fp-v326-internal-drawer{position:relative!important;top:auto!important;right:auto!important;width:min(1560px,94vw)!important;height:min(900px,92vh)!important;border:1px solid rgba(255,255,255,.72);border-radius:18px!important;box-shadow:0 36px 110px rgba(7,20,42,.42)!important;transform:translateY(24px) scale(.985)!important;opacity:0;transition:transform .2s ease,opacity .2s ease!important;background:#f4f7fb!important}
+#fpV326InternalRoot.show .fp-v326-internal-drawer{transform:translateY(0) scale(1)!important;opacity:1}
+.fp-v326-internal-body{display:grid!important;grid-template-columns:minmax(430px,1.04fr) minmax(420px,.96fr);gap:12px;padding:12px!important;overflow:hidden!important}
+.fp-v326-internal-slot{min-height:0!important;overflow:auto;padding-right:2px}
+.fp-v33-internal-preview{min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);border:1px solid #d6e1ed;border-radius:14px;background:#eef2f6;overflow:hidden}
+.fp-v33-internal-preview-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 10px;border-bottom:1px solid #d5e0eb;background:#fff}
+.fp-v33-internal-preview-head strong{font-size:12px;color:#173b83}
+.fp-v33-internal-preview-tabs{display:flex;gap:5px}
+.fp-v33-internal-preview-tabs button{min-height:31px;padding:0 10px;border:1px solid #d2ddea;border-radius:8px;background:#fff;color:#50637d;font-size:11px;font-weight:850;cursor:pointer}
+.fp-v33-internal-preview-tabs button.active{background:#173b83;border-color:#173b83;color:#fff}
+.fp-v33-internal-preview-body{min-height:0;overflow:auto;padding:12px}
+.fp-v33-internal-preview-body .fp-v33-sheet-preview{min-width:820px;background:#fff;border:1px solid #cfd9e4;box-shadow:0 8px 24px rgba(15,23,42,.08)}
+.fp-v33-internal-preview-body .fp-v33-sheet-preview table{width:100%;border-collapse:collapse;font-size:10px}
+.fp-v33-internal-preview-body .fp-v33-sheet-preview th,.fp-v33-internal-preview-body .fp-v33-sheet-preview td{border:1px solid #d6e0eb;padding:7px 8px;vertical-align:top}
+.fp-v33-internal-preview-body .fp-v33-sheet-preview th{background:var(--fp-v33-brand);color:#fff;text-align:center}
+.fp-v33-internal-preview-body .fp-v33-pdf-preview{width:1120px;min-height:680px;padding:28px;background:#fff;box-shadow:0 10px 30px rgba(15,23,42,.12);transform-origin:top left}
+.fp-v33-internal-preview-body .fp-internal-pdf-stage{position:static!important;left:auto!important;top:auto!important;width:auto!important;padding:0!important}
+.fp-v33-internal-preview-body .fp-internal-report-title{background:var(--fp-v33-brand)!important}
+.fp-v33-internal-modal-fullscreen .fp-v326-internal-drawer{width:100vw!important;height:100vh!important;border-radius:0!important}
+.fp-v33-internal-window-actions{display:flex;gap:6px;margin-left:auto}
+.fp-v33-internal-window-actions button{min-height:34px;padding:0 10px;border:1px solid #cfdae7;border-radius:8px;background:#fff;color:#405975;font-weight:850;cursor:pointer}
+
+/* Brand-aware customer workbook preview and professional page layouts. */
+.fp-export-faithful-preview{--fp-workbook-brand:var(--fp-v33-brand);--fp-workbook-brand-soft:var(--fp-v33-brand-soft);--fp-workbook-brand-line:var(--fp-v33-brand-line)}
+.fp-export-faithful-preview .fp-xlsx-style-1,.fp-export-faithful-preview .fp-xlsx-style-2,.fp-export-faithful-preview .fp-xlsx-style-8{background:var(--fp-workbook-brand)!important;color:#fff!important}
+.fp-export-faithful-preview .fp-xlsx-style-3,.fp-export-faithful-preview .fp-xlsx-style-6,.fp-export-faithful-preview .fp-xlsx-style-7{background:var(--fp-workbook-brand-soft)!important;color:#17324f!important}
+.fp-export-faithful-preview .fp-export-cell{border-color:var(--fp-workbook-brand-line)!important}
+.fp-v33-workbook-brand-row{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:14px 16px;border-bottom:1px solid var(--fp-workbook-brand-line);background:#fff}
+.fp-v33-workbook-brand-row img{display:block;max-width:180px;max-height:54px;object-fit:contain}
+.fp-v33-workbook-brand-row .fp-v33-brand-copy{margin-left:auto;text-align:right;color:#526176;font-size:11px;line-height:1.5}
+#piPaper{--fp-brand-color:var(--fp-v33-brand)}
+#piPaper[data-fp-paper-mode="portrait"] .pdf-template,#piPaper[data-fp-paper-mode="portrait"] .doc-template{--fp-document-density:.96}
+#piPaper[data-fp-paper-mode="landscape"] .pdf-template,#piPaper[data-fp-paper-mode="landscape"] .doc-template{--fp-document-density:.86}
+#piPaper[data-fp-paper-mode="portrait"] .products th,#piPaper[data-fp-paper-mode="portrait"] .products td{padding-left:5px;padding-right:5px}
+#piPaper[data-fp-paper-mode="landscape"] .products th,#piPaper[data-fp-paper-mode="landscape"] .products td{padding-left:7px;padding-right:7px}
+#piPaper .doc-hero,#piPaper .pdf-quotation-hero,#piPaper .pdf-commercial-hero,#piPaper .pdf-contract-hero,#piPaper .pdf-packing-hero{border-color:var(--fp-brand-color)!important}
+#piPaper .doc th,#piPaper .doc-section-title,#piPaper .pdf-section-title{border-color:color-mix(in srgb,var(--fp-brand-color) 35%,#cbd5e1)!important}
+
+@media(max-width:1180px){
+  .fp-table-editor-toolbar{grid-template-columns:repeat(2,minmax(150px,1fr))!important}
+  .fp-v326-internal-body{grid-template-columns:1fr!important;overflow:auto!important}
+  .fp-v326-internal-slot,.fp-v33-internal-preview{min-height:560px}
+}
+@media(max-width:900px){
+  .site-header{display:none!important}
+  .fp-lite-toolbar{top:0!important}
+  #fpV33LeftDock{top:calc(var(--fp-v33-lite-toolbar-h) + 6px)}
+  .fp-v326-internal-drawer{width:100vw!important;height:100vh!important;border-radius:0!important}
+  .fp-v326-internal-body{display:block!important}
+  .fp-v33-internal-preview{margin-top:10px;min-height:560px}
+}
+@media print{#fpV33WorkbookFullscreen,#fpV326InternalRoot,#fpV33LeftDock{display:none!important}}
+.fp-v33-internal-preview-body input,.fp-v33-internal-preview-body select,.fp-v33-internal-preview-body textarea,.fp-v33-internal-preview-body button{pointer-events:none!important}

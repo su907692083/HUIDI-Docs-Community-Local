@@ -1,0 +1,168 @@
+/* HUIDI R1.3A.18.38 — hidden state, modal/drawer and workspace visual closure */
+:root{--fp38-blue:#2363eb;--fp38-ink:#172033;--fp38-muted:#6b7890;--fp38-line:#dfe6f0;--fp38-soft:#f7f9fc;--fp38-shadow:0 16px 42px rgba(27,45,78,.08)}
+html[data-fp38="enabled"]{scroll-behavior:smooth}
+html[data-fp38="enabled"] *{scrollbar-width:thin;scrollbar-color:#c8d3e3 transparent}
+html[data-fp38="enabled"] *::-webkit-scrollbar{width:9px;height:9px}
+html[data-fp38="enabled"] *::-webkit-scrollbar-thumb{background:#c8d3e3;border-radius:999px;border:2px solid transparent;background-clip:padding-box}
+html[data-fp38="enabled"] *::-webkit-scrollbar-track{background:transparent}
+
+/* 1) 工作台侧栏：品牌、导航、主操作、账号区四段固定，避免扩展模块被挤丢 */
+html[data-fp38="enabled"] body.fp-v3368-workspace .sidebar{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:10px;padding-bottom:14px;overflow:hidden}
+html[data-fp38="enabled"] body.fp-v3368-workspace .sidebar>.brand{padding-bottom:9px}
+html[data-fp38="enabled"] body.fp-v3368-workspace #nav{min-height:0;overflow:auto;padding:2px 2px 8px;align-content:start;overscroll-behavior:contain}
+html[data-fp38="enabled"] body.fp-v3368-workspace .create-doc{margin:0 2px;box-shadow:0 8px 20px rgba(15,27,51,.10)}
+html[data-fp38="enabled"] body.fp-v3368-workspace .sidebar-bottom{margin:0;padding-top:10px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .nav-group{margin-bottom:8px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .nav-group-title{margin-bottom:4px}
+
+/* 2) 首页：去掉重复模块/AI广告区，把首页聚焦到今日业务和下一步 */
+html[data-fp38="enabled"] body.fp-v3368-workspace[data-workspace-view="dashboard"] .topbar{margin-bottom:14px}
+html[data-fp38="enabled"] body.fp-v3368-workspace[data-workspace-view="dashboard"] .topbar-copy #page-title{font-size:25px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-hero-v1{padding:18px 20px;gap:18px;border-radius:16px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-hero-copy h2{font-size:24px;max-width:780px;line-height:1.32}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-hero-copy>span{max-width:780px;line-height:1.55}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-account-panel{min-width:255px;padding:13px 14px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-account-actions{gap:6px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-section-v1{margin-top:12px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-section-v1[data-fp38-redundant="true"],
+html[data-fp38="enabled"] body.fp-v3368-workspace .ai-placeholder-v1{display:none!important}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-quick-start{padding:15px 16px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-quick-start .home-section-head{margin-bottom:10px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-action-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-action-grid article{min-height:132px;padding:12px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .home-action-grid article span{font-size:11px;line-height:1.5}
+html[data-fp38="enabled"] body.fp-v3368-workspace .metric-grid{margin:12px 0;gap:10px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .metric-grid article{padding:14px 15px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .metric-grid strong{font-size:23px;margin:5px 0 2px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .dashboard-grid{gap:12px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .dashboard-grid .panel{padding:16px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .dashboard-status{display:flex;gap:8px;overflow:auto;padding:0;margin:10px 0 0;background:transparent}
+html[data-fp38="enabled"] body.fp-v3368-workspace .dashboard-status article{flex:1 0 210px;padding:9px 11px;border:1px solid var(--fp38-line);border-radius:10px;background:#fff;box-shadow:none}
+html[data-fp38="enabled"] body.fp-v3368-workspace .dashboard-status article b{font-size:11px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .dashboard-status article span{font-size:10px;line-height:1.45}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workflow-panel{padding:13px 15px;margin-top:12px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workflow-panel>p{display:none}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workflow-panel h2{font-size:15px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workflow{margin-top:9px;gap:6px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workflow span{padding:6px 8px;font-size:10px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workspace-footer-v1{margin-top:14px;padding-top:12px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workspace-footer-v1 nav{gap:10px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .workspace-footer-v1 nav [data-fp38-duplicate-support="true"]{display:none!important}
+
+.fp38-home-more{margin-top:12px;display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 13px;border:1px solid var(--fp38-line);border-radius:12px;background:#fbfdff}
+.fp38-home-more>div{min-width:0}.fp38-home-more>div span{display:block;margin-top:2px;color:#728096;font-size:10px;line-height:1.45}.fp38-home-more b{display:block;color:#263851;font-size:12px}.fp38-home-more nav{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}.fp38-home-more nav button{white-space:nowrap}
+
+/* 3) 筛选展开区：默认隐藏时彻底不占点击层，展开后显示状态和数量 */
+html[data-fp38="enabled"] body.fp-v3368-workspace .customer-filter-drawer[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+html[data-fp38="enabled"] body.fp-v3368-workspace .customer-filter-drawer{display:grid;grid-template-columns:repeat(5,minmax(135px,1fr));gap:8px;padding:10px 11px;border-color:#dbe4f0;background:#fbfdff;box-shadow:0 8px 22px rgba(31,55,91,.04)}
+html[data-fp38="enabled"] body.fp-v3368-workspace .customer-filter-drawer select{width:100%;min-width:0}
+html[data-fp38="enabled"] [data-action="toggle-customer-filter"][aria-expanded="true"]{background:#edf4ff;border-color:#b8cff1;color:#245ca8}
+html[data-fp38="enabled"] .fp38-filter-count{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:4px;border-radius:999px;background:#2363eb;color:#fff;font-size:9px;font-weight:900}
+
+/* 4) details / 展开项：所有页面统一开合反馈 */
+html[data-fp38="enabled"] details>summary{cursor:pointer;list-style:none;position:relative;outline:none}
+html[data-fp38="enabled"] details>summary::-webkit-details-marker{display:none}
+html[data-fp38="enabled"] details>summary::after{content:'⌄';display:inline-grid;place-items:center;flex:0 0 auto;width:24px;height:24px;margin-left:auto;border-radius:7px;background:#f2f5f9;color:#65748a;font-size:14px;font-weight:900;transition:transform .16s,background .16s,color .16s}
+html[data-fp38="enabled"] details[open]>summary::after{transform:rotate(180deg);background:#eaf2ff;color:#245bab}
+html[data-fp38="enabled"] details>summary:focus-visible{outline:3px solid rgba(35,99,235,.20);outline-offset:3px;border-radius:9px}
+html[data-fp38="enabled"] details[open]{scroll-margin-top:78px}
+html[data-fp38="enabled"] body.fp-v3368-workspace details.account-menu>summary::after{width:18px;height:18px;background:transparent;color:inherit}
+html[data-fp38="enabled"] body.fp-v3368-workspace details.account-menu[open] .account-dropdown{box-shadow:0 16px 38px rgba(23,32,51,.18)}
+
+/* 编辑器的隐藏/可选内容：标题条更像“可展开设置”，避免像普通文字 */
+html[data-fp38="enabled"] body[data-fp-surface="editor"] details,
+html[data-fp38="enabled"] body.fp-editor details{border-radius:11px}
+html[data-fp38="enabled"] body[data-fp-surface="editor"] details>summary,
+html[data-fp38="enabled"] body.fp-editor details>summary{display:flex;align-items:center;gap:10px;min-height:42px;padding:9px 11px;border:1px solid #dfe5ee;border-radius:10px;background:#f9fbfd;font-weight:780;color:#33435c}
+html[data-fp38="enabled"] body[data-fp-surface="editor"] details[open]>summary,
+html[data-fp38="enabled"] body.fp-editor details[open]>summary{border-color:#bfd2f0;background:#f3f7ff;color:#244f92}
+.fp38-details-tools{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin:6px 0 10px}.fp38-details-tools span{margin-right:auto;color:#748198;font-size:10px}.fp38-details-tools button{border:1px solid #dbe4ef;border-radius:8px;background:#fff;color:#536681;padding:6px 8px;font:inherit;font-size:10px;font-weight:780;cursor:pointer}.fp38-details-tools button:hover{background:#f4f8ff;color:#265ca8}
+
+/* 5) dialog：视口保护、固定标题/操作区、滚动内容、焦点反馈 */
+html[data-fp38="enabled"] dialog.modal,
+html[data-fp38="enabled"] dialog.fpn-modal,
+html[data-fp38="enabled"] dialog#fp-more-dialog{max-height:calc(100vh - 32px);margin:auto;overflow:hidden}
+html[data-fp38="enabled"] dialog.modal>.dialog,
+html[data-fp38="enabled"] dialog.fpn-modal>.fpn-modal-body,
+html[data-fp38="enabled"] dialog#fp-more-dialog>.fp-dialog-box{max-height:calc(100vh - 40px);overflow:auto;overscroll-behavior:contain}
+html[data-fp38="enabled"] dialog.modal>.dialog>header,
+html[data-fp38="enabled"] dialog.fpn-modal .fpn-modal-head{position:sticky;top:0;z-index:8;background:rgba(255,255,255,.98);backdrop-filter:blur(8px)}
+html[data-fp38="enabled"] dialog.modal>.dialog>footer,
+html[data-fp38="enabled"] dialog.fpn-modal .fpn-actions{position:sticky;bottom:0;z-index:8;background:linear-gradient(180deg,rgba(255,255,255,.88),#fff 26%);padding-bottom:2px}
+html[data-fp38="enabled"] dialog.modal .close,
+html[data-fp38="enabled"] dialog.fpn-modal .fpn-close,
+html[data-fp38="enabled"] .modal-close,
+html[data-fp38="enabled"] .dialog-close{min-width:36px;min-height:36px;display:grid;place-items:center;flex:0 0 auto}
+html[data-fp38="enabled"] dialog[open]{overscroll-behavior:contain}
+html[data-fp38="enabled"] dialog[open] :is(button,a,input,select,textarea,summary):focus-visible{outline:3px solid rgba(35,99,235,.22);outline-offset:2px}
+html[data-fp38="enabled"] body.fp38-dialog-open{overflow:hidden!important}
+
+/* 机器人向导：让表单输入和说明不再在窄窗口里互相挤压 */
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-step{min-width:0}
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-field{min-width:0}
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-field input,
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-field textarea,
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-field select{width:100%;min-width:0}
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-actions{margin-top:14px;padding-top:12px;border-top:1px solid #e2e8f1}
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-platform-guide{align-items:stretch}
+html[data-fp38="enabled"] .fpn-guided-modal .fpn-format-card{min-width:0}
+
+/* 6) drawer：真正隐藏、独立滚动、底部操作固定 */
+html[data-fp38="enabled"] .drawer[hidden],
+html[data-fp38="enabled"] .doc-start-drawer[hidden]{display:none!important;visibility:hidden!important;pointer-events:none!important}
+html[data-fp38="enabled"] .drawer,
+html[data-fp38="enabled"] .doc-start-drawer{max-width:min(520px,calc(100vw - 22px));max-height:calc(100vh - 22px);overscroll-behavior:contain}
+html[data-fp38="enabled"] .drawer .drawer-head,
+html[data-fp38="enabled"] .doc-start-drawer .drawer-head{position:sticky;top:0;z-index:5;background:#fff}
+html[data-fp38="enabled"] .drawer .drawer-body,
+html[data-fp38="enabled"] .doc-start-drawer .drawer-body{overflow:auto;min-height:0}
+html[data-fp38="enabled"] .drawer .drawer-foot,
+html[data-fp38="enabled"] .doc-start-drawer .drawer-foot{position:sticky;bottom:0;z-index:5;background:#fff}
+
+/* 7) 表格/动作区：按钮多时不再挤成一团 */
+html[data-fp38="enabled"] body.fp-v3368-workspace .section-head{align-items:flex-start;gap:14px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .section-head>.actions{justify-content:flex-end;max-width:58%;gap:7px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .filter-bar{align-items:stretch}
+html[data-fp38="enabled"] body.fp-v3368-workspace .filter-bar :is(input,select,button){min-height:38px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .row-actions{row-gap:5px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .row-actions button{min-height:30px}
+html[data-fp38="enabled"] body.fp-v3368-workspace .table-wrap{scrollbar-gutter:stable}
+
+/* 8) 文档准备页/目录页：展开项和抽屉保持一套视觉语言 */
+html[data-fp38="enabled"] body[data-fp-surface="document-start"] .doc-start-more-settings>summary{display:flex;align-items:center;gap:10px;padding:12px 14px}
+html[data-fp38="enabled"] body[data-fp-surface="document-start"] .doc-start-more-settings[open]>summary{border-bottom:1px solid #e4e9f1}
+html[data-fp38="enabled"] body[data-fp-surface="catalog"] details>summary{display:flex;align-items:center;gap:10px}
+html[data-fp38="enabled"] body[data-fp-surface="catalog"] .drawer{box-shadow:-18px 0 50px rgba(23,32,51,.16)}
+
+/* 9) ADMIN：弹窗/抽屉视口保护与标题操作区不挤压 */
+html[data-fp38="enabled"] body[data-fp-surface="admin"] :is(.el-dialog,.el-drawer){max-width:calc(100vw - 24px)}
+html[data-fp38="enabled"] body[data-fp-surface="admin"] .el-dialog{max-height:calc(100vh - 28px);overflow:hidden}
+html[data-fp38="enabled"] body[data-fp-surface="admin"] .el-dialog__body{max-height:calc(100vh - 180px);overflow:auto;overscroll-behavior:contain}
+html[data-fp38="enabled"] body[data-fp-surface="admin"] .el-drawer__body{overflow:auto;overscroll-behavior:contain}
+html[data-fp38="enabled"] body[data-fp-surface="admin"] .fp-panel-head,
+html[data-fp38="enabled"] body[data-fp-surface="admin"] .fp-page-head{gap:12px;flex-wrap:wrap}
+
+/* 10) AI前台入口继续严格隐藏，底层脚本和能力保留 */
+html:not([data-fpb-ai-entry="enabled"]) :is(#fp-ai-widget,.fp-ai-launcher,.fp30-ai-label,[data-flypigbox-ai-launcher],.flypigbox-ai-widget,.fp-ai-widget,.ai-float,.ai-capsule,.ai-fab){display:none!important;visibility:hidden!important;pointer-events:none!important}
+
+/* 11) 响应式桌面区间 */
+@media(max-width:1250px){
+  html[data-fp38="enabled"] body.fp-v3368-workspace .home-action-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .customer-filter-drawer{grid-template-columns:repeat(3,minmax(150px,1fr))}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .section-head>.actions{max-width:62%}
+}
+@media(max-width:980px){
+  html[data-fp38="enabled"] body.fp-v3368-workspace .home-hero-v1{grid-template-columns:1fr!important;display:grid!important}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .home-account-panel{min-width:0}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .customer-filter-drawer{grid-template-columns:repeat(2,minmax(150px,1fr))}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .section-head>.actions{max-width:none}
+  .fp38-home-more{align-items:flex-start;display:grid}.fp38-home-more nav{justify-content:flex-start}
+  html[data-fp38="enabled"] .fpn-guided-modal .fpn-form-grid{grid-template-columns:1fr}
+}
+@media(max-width:760px){
+  html[data-fp38="enabled"] body.fp-v3368-workspace .home-action-grid{grid-template-columns:1fr}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .customer-filter-drawer{grid-template-columns:1fr}
+  html[data-fp38="enabled"] body.fp-v3368-workspace .section-head>.actions{width:100%;justify-content:flex-start}
+  html[data-fp38="enabled"] dialog.modal>.dialog>footer{flex-wrap:wrap}
+}

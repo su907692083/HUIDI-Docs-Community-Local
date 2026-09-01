@@ -1,0 +1,51 @@
+{
+  "version": "V3.3.6.24-R1.3A.18",
+  "states": [
+    "required",
+    "conditional_required",
+    "optional",
+    "internal",
+    "forbidden"
+  ],
+  "outputRule": "未填写的可选字段在预览、PDF、Excel和打印中全部隐藏；正式必填缺失时阻止正式输出，不显示占位。",
+  "documentPolicies": {
+    "packing_list": {
+      "forbidden": [
+        "price",
+        "unitPrice",
+        "subtotal",
+        "customsDeclaredValue",
+        "taxAmount",
+        "discountValue",
+        "bankAccount",
+        "bankName",
+        "swiftCode",
+        "bankBeneficiary",
+        "bankSwift",
+        "beneficiaryName"
+      ]
+    },
+    "commercial_invoice": {
+      "warn": [
+        "hs",
+        "originCountry"
+      ],
+      "defaultHidden": [
+        "bankAccount",
+        "bankName",
+        "swiftCode",
+        "bankBeneficiary",
+        "bankSwift",
+        "beneficiaryName"
+      ]
+    },
+    "quotation": {
+      "defaultHidden": [
+        "bankAccount",
+        "shippingExecutionData",
+        "bankBeneficiary",
+        "bankSwift"
+      ]
+    }
+  }
+}

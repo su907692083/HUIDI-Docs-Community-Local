@@ -1,0 +1,149 @@
+/* HUIDI V3.3.6.18 商品与业务横向列表统一版 */
+body.fp-v3368-workspace #deal-list.deal-grid,
+body.fp-v3368-workspace #product-list.product-grid{
+  display:grid;
+  grid-template-columns:1fr;
+  gap:10px;
+  align-items:stretch;
+}
+body.fp-v3368-workspace #deal-list>* ,
+body.fp-v3368-workspace #product-list>*{
+  grid-column:1/-1;
+}
+
+/* 商品资料横向长条：沿用单据中心的列表语言，并保留商品图片 */
+.product-list-row{
+  display:grid;
+  grid-template-columns:auto 72px minmax(210px,1.45fr) minmax(150px,.72fr) minmax(155px,.72fr) minmax(170px,.78fr) minmax(155px,.66fr);
+  gap:14px;
+  align-items:center;
+  min-width:0;
+  padding:13px 14px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 9px 26px rgba(30,41,59,.05);
+  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.product-list-row:hover{border-color:#c8d8f2;box-shadow:0 13px 30px rgba(30,41,59,.075);transform:translateY(-1px)}
+.product-list-select{display:grid;justify-items:center;gap:5px;color:#64748b;font-size:10px;font-weight:800;cursor:pointer}
+.product-list-select input{width:16px;height:16px;margin:0;accent-color:var(--brand)}
+.product-list-thumb{
+  width:72px;height:72px;padding:0;border:1px solid #dbe5f2;border-radius:12px;
+  overflow:hidden;background:linear-gradient(145deg,#f8fafc,#eef3fa);color:#8a98aa;
+  display:grid;place-items:center;font:inherit;font-size:11px;font-weight:800;cursor:pointer;
+}
+.product-list-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.product-list-thumb:hover{border-color:#8eb3f7;box-shadow:0 0 0 3px rgba(35,99,235,.08)}
+.product-list-thumb.failed,.product-list-thumb.missing{background:#f8fafc;color:#94a3b8}
+.product-list-main,.product-list-price,.product-list-source,.product-list-progress{min-width:0}
+.product-list-main h3{margin:0;font-size:15px;line-height:1.38;color:#172033}
+.product-list-sub{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;color:#64748b;font-size:11px;line-height:1.4}
+.product-list-sub span+span:before{content:'·';margin-right:7px;color:#a3afc0}
+.product-list-missing{margin-top:7px;font-size:11px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-list-missing.has-missing{color:#a45a00}.product-list-missing.is-ready{color:#087759}
+.product-list-price,.product-list-source,.product-list-progress{display:grid;gap:5px}
+.product-list-row small{color:#7a8799;font-size:10px;font-weight:750}
+.product-list-price b,.product-list-source b,.product-list-progress b{font-size:12px;line-height:1.35;color:#172033;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.product-list-price>span,.product-list-updated{font-size:11px;color:#64748b}
+.product-list-source>div{display:flex;gap:5px;align-items:center;flex-wrap:wrap}
+.product-list-progress .product-completeness{height:6px;margin:1px 0 0}
+.product-list-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;min-width:0}
+.product-list-actions button{
+  border:0;background:#eef4ff;color:#275599;border-radius:7px;padding:7px 9px;
+  font:inherit;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;
+}
+.product-list-actions button:hover{background:#dfeaff}
+
+/* 业务横向长条 */
+.deal-list-row{
+  display:grid;
+  grid-template-columns:minmax(230px,1.35fr) minmax(270px,1fr) minmax(190px,.88fr) minmax(180px,.78fr) minmax(190px,.72fr);
+  gap:15px;
+  align-items:center;
+  min-width:0;
+  padding:14px 15px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:12px;
+  box-shadow:0 9px 26px rgba(30,41,59,.05);
+  transition:border-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+.deal-list-row:hover{border-color:#c8d8f2;box-shadow:0 13px 30px rgba(30,41,59,.075);transform:translateY(-1px)}
+.deal-list-main,.deal-list-money,.deal-list-next,.deal-list-status{min-width:0}
+.deal-list-title-line{display:flex;gap:8px;align-items:center;min-width:0}
+.deal-list-title-line h3{margin:0;min-width:0;font-size:15px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deal-list-sub{margin-top:5px;color:#64748b;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deal-list-note{margin-top:6px;color:#64748b;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deal-list-money{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.deal-list-money span,.deal-list-status>span{display:grid;gap:3px;min-width:0}
+.deal-list-money small,.deal-list-next small,.deal-list-status small{font-size:10px;color:#7a8799;font-weight:750}
+.deal-list-money b,.deal-list-status b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deal-list-money b.is-ready{color:#087759}.deal-list-money b.is-warning{color:#b65e00}
+.deal-list-next{display:grid;gap:4px;padding:9px 10px;border-radius:9px;background:#f7f9fd;border:1px solid #e6ebf3}
+.deal-list-next b{font-size:12px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deal-list-next span{font-size:11px;color:#526174}.deal-list-next.is-overdue{background:#fff7ed;border-color:#fed7aa}.deal-list-next.is-overdue small,.deal-list-next.is-overdue b{color:#a44b00}
+.deal-list-status{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.deal-list-updated{grid-column:1/-1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.deal-list-actions{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap}
+.deal-list-actions button{border:0;background:#eef4ff;color:#275599;border-radius:7px;padding:7px 9px;font:inherit;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap}
+.deal-list-actions button:hover{background:#dfeaff}.deal-list-actions button.danger{background:#fff0f0;color:#b42318}
+
+@media(max-width:1320px){
+  .product-list-row{grid-template-columns:auto 68px minmax(210px,1.3fr) minmax(145px,.8fr) minmax(150px,.8fr) minmax(160px,.8fr)}
+  .product-list-actions{grid-column:3/-1;justify-content:flex-start;padding-top:2px}
+  .product-list-thumb{width:68px;height:68px}
+  .deal-list-row{grid-template-columns:minmax(230px,1.25fr) minmax(250px,1fr) minmax(180px,.85fr) minmax(170px,.75fr)}
+  .deal-list-actions{grid-column:1/-1;justify-content:flex-end;border-top:1px solid #edf1f6;padding-top:9px}
+}
+@media(max-width:980px){
+  .product-list-row{grid-template-columns:auto 64px minmax(0,1fr) minmax(145px,.7fr)}
+  .product-list-thumb{width:64px;height:64px}
+  .product-list-source,.product-list-progress{grid-column:3/-1;grid-template-columns:auto 1fr;align-items:center}
+  .product-list-source>div{justify-content:flex-end}
+  .product-list-progress .product-completeness{min-width:150px}
+  .product-list-actions{grid-column:3/-1}
+  .deal-list-row{grid-template-columns:minmax(0,1.2fr) minmax(240px,1fr)}
+  .deal-list-next,.deal-list-status{min-height:64px}
+  .deal-list-actions{grid-column:1/-1}
+}
+@media(max-width:720px){
+  .product-list-row{grid-template-columns:auto 62px minmax(0,1fr);gap:10px;padding:12px}
+  .product-list-select span{display:none}
+  .product-list-main{align-self:start}
+  .product-list-price,.product-list-source,.product-list-progress,.product-list-actions{grid-column:2/-1}
+  .product-list-price{grid-template-columns:auto 1fr auto;align-items:center}
+  .product-list-source{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .product-list-progress{grid-template-columns:auto 1fr;align-items:center}
+  .product-list-progress .product-completeness{grid-column:1/-1;width:100%}
+  .product-list-actions{justify-content:flex-start}
+  .deal-list-row{grid-template-columns:1fr;gap:10px;padding:12px}
+  .deal-list-money{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .deal-list-next,.deal-list-status{min-height:0}
+  .deal-list-actions{grid-column:auto;justify-content:flex-start;padding-top:9px}
+}
+@media(max-width:430px){
+  .product-list-row{grid-template-columns:auto 56px minmax(0,1fr)}
+  .product-list-thumb{width:56px;height:56px}
+  .product-list-price{grid-template-columns:1fr}.product-list-price small{display:none}
+  .product-list-source{align-items:flex-start;flex-direction:column}
+  .product-list-progress{grid-template-columns:1fr}.product-list-progress small{display:none}
+  .product-list-actions button,.deal-list-actions button{flex:1 1 92px}
+  .deal-list-money{grid-template-columns:1fr 1fr}.deal-list-money span:first-child{grid-column:1/-1}
+  .deal-list-status{grid-template-columns:1fr 1fr}.deal-list-status>span:last-of-type{grid-column:1/-1}
+}
+
+/* 与单据中心一致的列标题 */
+.product-list-head{
+  display:grid;
+  grid-template-columns:auto 72px minmax(210px,1.45fr) minmax(150px,.72fr) minmax(155px,.72fr) minmax(170px,.78fr) minmax(155px,.66fr);
+  gap:14px;align-items:center;padding:9px 14px;color:#718096;background:#f8fafc;
+  border:1px solid var(--line);border-radius:11px;font-size:11px;font-weight:850;
+}
+.deal-list-head{
+  display:grid;
+  grid-template-columns:minmax(230px,1.35fr) minmax(270px,1fr) minmax(190px,.88fr) minmax(180px,.78fr) minmax(190px,.72fr);
+  gap:15px;align-items:center;padding:9px 15px;color:#718096;background:#f8fafc;
+  border:1px solid var(--line);border-radius:11px;font-size:11px;font-weight:850;
+}
+@media(max-width:1320px){.product-list-head,.deal-list-head{display:none}}

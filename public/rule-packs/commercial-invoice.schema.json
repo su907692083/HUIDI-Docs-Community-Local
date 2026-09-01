@@ -1,0 +1,181 @@
+{
+  "$schema": "https://json-schema.org/draft/2019-09/schema",
+  "$id": "https://schemas.HUIDI.local/commercial-invoice.schema.json",
+  "title": "commercial-invoice",
+  "type": "object",
+  "required": [
+    "fields",
+    "items"
+  ],
+  "properties": {
+    "fields": {
+      "type": "object",
+      "required": [
+        "sellerName",
+        "buyerName",
+        "issueDate",
+        "invoiceNo",
+        "currency",
+        "originCountry"
+      ],
+      "properties": {
+        "documentType": {
+          "const": "commercial_invoice"
+        },
+        "sellerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "buyerName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "issueDate": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$"
+        },
+        "invoiceNo": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "quoteNo": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "paymentTerms": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "deliveryTime": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "originCountry": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "tradeTerms": {
+          "type": "string",
+          "maxLength": 300
+        },
+        "buyerEmail": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 200
+        },
+        "packageCount": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "netWeight": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "grossWeight": {
+          "type": [
+            "number",
+            "string"
+          ]
+        },
+        "cbm": {
+          "type": [
+            "number",
+            "string"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "qty",
+          "unit",
+          "price"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "sku": {
+            "type": "string",
+            "maxLength": 160
+          },
+          "qty": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "price": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "hs": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "netWeight": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "grossWeight": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "cbm": {
+            "type": [
+              "number",
+              "string"
+            ]
+          },
+          "cartons": {
+            "type": [
+              "number",
+              "string"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true,
+  "x-flypigbox": {
+    "version": "V3.3.6.24-R1.3A.18",
+    "emptyOptionalFields": "hide_on_preview_and_export",
+    "formalValidationRequired": true,
+    "humanConfirmationRequired": true
+  }
+}

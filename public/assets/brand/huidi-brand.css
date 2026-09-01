@@ -1,0 +1,10 @@
+:root{--huidi-brand-blue:#087cf0;--huidi-brand-ink:#102b4e}
+.brand img,.logo img,.site-logo-icon{object-fit:contain}
+.huidi-brand-lockup{max-width:260px;height:auto;object-fit:contain}
+img[src*="huidi-icon"]{object-fit:contain}
+
+/* CF1.3 brand-icon + ICP compliance closure */
+.huidi-icp-link{display:inline-flex;align-items:center;gap:4px;color:inherit!important;text-decoration:none!important;font-size:12px;font-weight:600;opacity:.72;white-space:nowrap;transition:opacity .18s ease}
+.huidi-icp-link:hover{opacity:1;text-decoration:underline!important}
+.brand-mark-logo img,.site-logo-icon,.fp-pilot-logo img,.fp-v8-logo img,.mark img{border-radius:10px;box-shadow:0 1px 5px rgba(15,43,78,.14)}
+@media(max-width:720px){.huidi-icp-link{font-size:11px}}

@@ -1,0 +1,65 @@
+/* HUIDI V3.3.6.24-R1.3A.14 — Commercial Invoice financial parity, pagination and workbook readability candidate. */
+
+/* Page density and visible page numbering. */
+.doc[data-fp-document-type="commercial_invoice"] .pdf-template{gap:7px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-flow-section{margin:0!important}
+.doc[data-fp-document-type="commercial_invoice"] .doc-section{min-height:22px!important;padding:4px 7px!important;font-size:9.3px!important;line-height:1.2!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-meta-grid{gap:5px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-meta-grid>div{min-height:36px!important;padding:5px 6px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-party-grid{gap:6px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-party-card{min-height:0!important;padding:6px 7px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-party-card h3{margin:0 0 3px!important;font-size:9.4px!important;line-height:1.2!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-party-card p{margin:0!important;font-size:8.9px!important;line-height:1.32!important;overflow-wrap:anywhere}
+.doc[data-fp-document-type="commercial_invoice"] .info th,
+.doc[data-fp-document-type="commercial_invoice"] .info td{padding:3.6px 5px!important;font-size:8.7px!important;line-height:1.22!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-commercial-table th,
+.doc[data-fp-document-type="commercial_invoice"] .pdf-commercial-table td{padding:4px!important;line-height:1.2!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-commercial-table thead{display:table-header-group}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-declared-total{margin-top:2px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-amount-words{margin-top:2px!important}
+.doc[data-fp-document-type="commercial_invoice"] .pdf-signature-section{margin-top:4px!important}
+.doc[data-fp-document-type="commercial_invoice"] .signature-zone{min-height:82px!important;padding:6px 8px!important}
+.doc[data-fp-document-type="commercial_invoice"] .signature-assets{min-height:46px!important;height:46px!important}
+
+/* Unified Notify Party / Bill To / Ship To presentation. */
+.doc .pdf-extra-party-grid{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+.doc .pdf-extra-party-grid[data-party-count="1"]{grid-template-columns:1fr!important}
+.doc .pdf-extra-party-grid[data-party-count="2"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.doc .pdf-address-party p{min-height:32px}
+.doc[data-fp-paper-mode="portrait"] .pdf-extra-party-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.doc[data-fp-paper-mode="portrait"] .pdf-extra-party-grid[data-party-count="3"]>.pdf-party-card:last-child{grid-column:1/-1}
+
+/* Financial rows come from the same structured fee source as customer Excel. */
+.doc .pdf-fee-row th{font-weight:700}
+.doc .pdf-fee-row td{font-variant-numeric:tabular-nums}
+.doc .pdf-fee-discount td{color:#9f2838}
+.doc .pdf-fee-excluded{display:inline-block;margin-left:4px;color:#64748b;font-size:.86em;font-weight:600}
+
+/* Continuation and page footer semantics. */
+.doc .doc-section[data-continued="1"]::after{content:" · 续 / CONT.";font-size:.84em;opacity:.78}
+.doc .pdf-page{position:relative}
+.doc .pdf-page::after{content:"Page " attr(data-page-no) " of " attr(data-page-total) " / 第 " attr(data-page-no) " 页，共 " attr(data-page-total) " 页";position:absolute;left:18mm;right:18mm;bottom:5.2mm;text-align:center;color:#64748b;font:600 7.5px/1.2 Arial,"Microsoft YaHei",sans-serif;letter-spacing:.01em;pointer-events:none}
+.doc .pdf-page-body{padding-bottom:12mm!important}
+
+/* Trial watermark remains visible but no longer obscures declarations. */
+.doc .fp-trial-watermark{opacity:.075!important;align-items:center!important;justify-content:center!important}
+.doc .fp-trial-watermark-inner{padding:20px 30px!important;border-width:2px!important;font-size:26px!important}
+.doc .fp-trial-watermark-inner small{font-size:13px!important}
+
+/* Customer workbook preview: labels remain readable and values can wrap. */
+.fp-export-sheet .fp-xlsx-style-3{white-space:normal!important;word-break:keep-all!important;overflow-wrap:normal!important;line-height:1.25!important;min-width:72px}
+.fp-export-sheet .fp-xlsx-style-4,
+.fp-export-sheet .fp-xlsx-style-9{white-space:pre-wrap!important;word-break:normal!important;overflow-wrap:anywhere!important;line-height:1.32!important}
+.fp-export-sheet .fp-xlsx-style-8{white-space:normal!important;word-break:keep-all!important;line-height:1.22!important}
+.fp-export-sheet td{vertical-align:middle!important}
+.fp-export-faithful-preview .fp-workbook-canvas{background:#e7ebf0!important}
+.fp-export-faithful-preview .fp-export-workbook-sheet{box-shadow:0 8px 24px rgba(15,23,42,.14)!important}
+
+@media(max-width:900px){
+  .doc .pdf-extra-party-grid{grid-template-columns:1fr!important}
+  .doc[data-fp-paper-mode="portrait"] .pdf-extra-party-grid[data-party-count="3"]>.pdf-party-card:last-child{grid-column:auto}
+}
+
+@media print{
+  .doc .pdf-page::after{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}

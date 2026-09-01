@@ -1,0 +1,279 @@
+/* HUIDI V3.2.5 — compact PDF editor column, sticky section navigation and preview follow */
+body.fp-live-document-mode .workbench{
+  grid-template-columns:minmax(500px,.94fr) minmax(610px,1.06fr)!important;
+  gap:14px!important;
+}
+body.fp-live-document-mode .form-column{
+  position:sticky;
+  top:74px;
+  align-self:start;
+  max-height:calc(100vh - 86px);
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:0 5px 14px 0;
+  scrollbar-gutter:stable;
+  overscroll-behavior:contain;
+  scroll-behavior:smooth;
+}
+body.fp-live-document-mode .preview-shell{
+  top:74px!important;
+  max-height:calc(100vh - 86px)!important;
+  scrollbar-gutter:stable;
+}
+body.fp-live-document-mode .section-fold-toolbar{display:none!important}
+
+/* Compact quick-source strip */
+body.fp-live-document-mode .fp-quick-source-bar{
+  min-height:48px;
+  padding:7px 9px;
+  gap:8px;
+  border-radius:10px;
+  position:sticky;
+  top:0;
+  z-index:14;
+}
+body.fp-live-document-mode .fp-quick-source-bar>div span{display:none}
+body.fp-live-document-mode .fp-quick-source-bar>div b{font-size:11.5px;white-space:nowrap}
+body.fp-live-document-mode .fp-quick-source-bar nav{gap:4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+body.fp-live-document-mode .fp-quick-source-bar nav::-webkit-scrollbar{display:none}
+body.fp-live-document-mode .fp-quick-source-bar button{min-height:30px;padding:0 8px;font-size:10px;border-radius:7px}
+
+/* Sticky compact section navigation */
+#fpPdfSectionNav{
+  position:sticky;
+  top:50px;
+  z-index:13;
+  display:flex;
+  align-items:center;
+  gap:4px;
+  min-height:40px;
+  padding:5px 6px;
+  margin:0;
+  border:1px solid #dce6ef;
+  border-radius:9px;
+  background:rgba(255,255,255,.96);
+  box-shadow:0 5px 18px rgba(25,43,70,.055);
+  backdrop-filter:blur(10px);
+}
+#fpPdfSectionNav button,
+#fpPdfSectionNav summary{
+  min-height:28px;
+  padding:0 9px;
+  border:0;
+  border-radius:7px;
+  background:transparent;
+  color:#53647a;
+  font-size:10.5px;
+  font-weight:850;
+  white-space:nowrap;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+#fpPdfSectionNav button:hover,
+#fpPdfSectionNav button.active,
+#fpPdfSectionNav details[open]>summary{background:#edf4ff;color:#1c58aa}
+#fpPdfSectionNav details{position:relative}
+#fpPdfSectionNav details>summary{list-style:none}
+#fpPdfSectionNav details>summary::-webkit-details-marker{display:none}
+#fpPdfSectionNav .fp-pdf-nav-menu{
+  position:absolute;
+  top:calc(100% + 7px);
+  right:0;
+  min-width:178px;
+  padding:6px;
+  border:1px solid #d8e3ed;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 14px 34px rgba(20,36,60,.14);
+  display:grid;
+  gap:3px;
+}
+#fpPdfSectionNav .fp-pdf-nav-menu button{justify-content:flex-start;width:100%}
+
+/* Compact base card */
+body.fp-live-document-mode #editorTop>.fp-pdf-base-card{
+  padding:0!important;
+  overflow:hidden;
+  border-radius:12px;
+}
+.fp-pdf-base-card .section-title{
+  min-height:46px;
+  margin:0!important;
+  padding:9px 12px;
+  border-bottom:1px solid #edf1f5;
+  cursor:pointer;
+  background:linear-gradient(180deg,#fff,#fbfdff);
+}
+.fp-pdf-base-card .section-title h2{font-size:16px!important;line-height:1.2}
+.fp-pdf-base-head-actions{display:flex;align-items:center;gap:7px;margin-left:auto}
+.fp-pdf-completion{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  padding:0 7px;
+  border-radius:999px;
+  background:#eff6ff;
+  color:#31669e;
+  font-size:10px;
+  font-weight:850;
+}
+.fp-pdf-base-toggle{
+  width:27px;
+  min-width:27px;
+  height:27px;
+  padding:0;
+  border:1px solid #d8e3ed;
+  border-radius:7px;
+  background:#fff;
+  color:#3f5872;
+  font-size:12px;
+  font-weight:900;
+}
+.fp-pdf-base-body{padding:10px 12px 12px}
+.fp-pdf-base-card.is-collapsed .fp-pdf-base-body{display:none}
+.fp-pdf-base-card.is-collapsed .section-title{border-bottom:0}
+.fp-base-help{margin:0 0 8px;border:0;background:transparent}
+.fp-base-help>summary{
+  display:inline-flex;
+  align-items:center;
+  min-height:24px;
+  margin:0!important;
+  color:#688097;
+  font-size:10px;
+  font-weight:760;
+}
+.fp-base-help .hint{
+  margin:5px 0 7px!important;
+  padding:7px 8px;
+  border-radius:7px;
+  background:#f6f9fc;
+  color:#66798c;
+  font-size:9.5px!important;
+  line-height:1.45!important;
+}
+body.fp-live-document-mode #editorTop .grid.four{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:8px 10px!important;
+}
+body.fp-live-document-mode #editorTop label{gap:3px;font-size:10.5px!important;line-height:1.25}
+body.fp-live-document-mode #editorTop input,
+body.fp-live-document-mode #editorTop select{min-height:36px!important;height:36px;padding:6px 9px;border-radius:7px;font-size:12px}
+body.fp-live-document-mode #editorTop small{font-size:9px}
+
+/* Compact collapsible cards */
+body.fp-live-document-mode .form-column>.collapsible-card{border-radius:11px!important}
+body.fp-live-document-mode .collapsible-card .section-collapse-head{
+  min-height:46px;
+  padding:8px 11px!important;
+  gap:8px;
+  cursor:pointer!important;
+}
+body.fp-live-document-mode .collapsible-card .section-collapse-head .section-title{min-width:0;margin:0!important}
+body.fp-live-document-mode .collapsible-card .section-collapse-head h2{font-size:15px!important;white-space:nowrap}
+body.fp-live-document-mode .section-collapse-summary{
+  flex:1;
+  min-width:0;
+  max-width:none!important;
+  font-size:10px!important;
+  line-height:1.25;
+  text-align:right;
+}
+body.fp-live-document-mode .section-collapse-toggle{
+  position:relative;
+  width:27px;
+  min-width:27px;
+  height:27px;
+  min-height:27px;
+  padding:0!important;
+  font-size:0!important;
+  border-radius:7px!important;
+}
+body.fp-live-document-mode .section-collapse-toggle::after{content:'⌃';font-size:12px;line-height:1}
+body.fp-live-document-mode .section-collapse-toggle[aria-expanded="false"]::after{content:'⌄'}
+body.fp-live-document-mode .collapsible-card .section-collapse-body{padding:10px 12px 12px!important}
+body.fp-live-document-mode .form-column .grid{gap:8px 10px!important}
+body.fp-live-document-mode .form-column label{gap:3px;font-size:10.5px!important;line-height:1.25}
+body.fp-live-document-mode .form-column input,
+body.fp-live-document-mode .form-column select{min-height:36px!important;height:36px;padding:6px 9px;border-radius:7px;font-size:12px}
+body.fp-live-document-mode .form-column textarea{min-height:58px!important;padding:7px 9px;font-size:12px}
+body.fp-live-document-mode .form-column .hint,
+body.fp-live-document-mode .form-column .subhint{margin-bottom:7px!important;font-size:9.5px!important;line-height:1.4!important}
+body.fp-live-document-mode .customer-tools,
+body.fp-live-document-mode .payment-template-bar{margin-top:8px!important}
+
+/* AI settings are a one-line optional status when closed */
+body.fp-live-document-mode .api-card.fp-compact-ai-card{
+  padding:0!important;
+  border-left:0!important;
+  border-radius:10px!important;
+}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>details>summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:40px;
+  margin:0!important;
+  padding:8px 11px;
+  font-size:11px;
+  color:#465c73;
+}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>details>summary::after{
+  content:attr(data-status);
+  max-width:54%;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  color:#3c9a72;
+  font-size:9.5px;
+  font-weight:760;
+}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>details[open]{padding-bottom:10px}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>details[open]>summary{border-bottom:1px solid #edf2f6;margin-bottom:9px!important}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>details>*:not(summary){margin-left:11px;margin-right:11px}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>#status:empty{display:none}
+body.fp-live-document-mode .api-card.fp-compact-ai-card>#status{margin:0;padding:0 11px 8px;min-height:0;font-size:9.5px}
+
+/* Focused editor section and PDF preview highlight */
+body.fp-live-document-mode .fp-pdf-editor-active{
+  border-color:#8db3ea!important;
+  box-shadow:0 0 0 3px rgba(56,122,213,.09),0 8px 24px rgba(26,43,68,.045)!important;
+}
+#fpPdfFollowToggle{
+  min-height:27px;
+  padding:0 8px;
+  border:1px solid #d8e3ed;
+  border-radius:7px;
+  background:#fff;
+  color:#54697f;
+  font-size:9.5px;
+  font-weight:850;
+  cursor:pointer;
+  white-space:nowrap;
+}
+#fpPdfFollowToggle[aria-pressed="true"]{background:#edf6ff;border-color:#9dbce6;color:#225ca7}
+#piPaper .fp-pdf-field-highlight{
+  position:relative;
+  z-index:2;
+  background:#fff8cf!important;
+  outline:3px solid rgba(66,133,225,.42)!important;
+  outline-offset:2px;
+  box-shadow:0 0 0 7px rgba(66,133,225,.12)!important;
+  transition:background .2s,outline-color .2s,box-shadow .2s;
+}
+
+@media(max-width:1180px){
+  body.fp-live-document-mode .workbench{grid-template-columns:minmax(420px,.9fr) minmax(500px,1.1fr)!important}
+  #fpPdfSectionNav button,#fpPdfSectionNav summary{padding:0 7px;font-size:10px}
+}
+@media(max-width:920px){
+  body.fp-live-document-mode .form-column{position:static;max-height:none;overflow:visible;padding-right:0}
+  body.fp-live-document-mode .fp-quick-source-bar,#fpPdfSectionNav{position:static}
+}
+@media(max-width:720px){
+  #fpPdfSectionNav{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+  #fpPdfSectionNav::-webkit-scrollbar{display:none}
+  body.fp-live-document-mode #editorTop .grid.four{grid-template-columns:1fr}
+  .fp-pdf-base-head-actions .fp-pdf-completion{display:none}
+}

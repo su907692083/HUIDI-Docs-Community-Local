@@ -1,0 +1,18 @@
+/* HUIDI V3.3.6.11 — business follow-up, payment and delivery convergence */
+.deal-key-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0}
+.deal-key-metrics article{min-width:0;border:1px solid #dfe8f3;border-radius:12px;background:#fff;padding:12px;display:grid;gap:4px}
+.deal-key-metrics small{color:#66758b;font-size:11px;font-weight:750}
+.deal-key-metrics strong{color:#11243e;font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.deal-key-metrics strong.is-warning{color:#b65e00}.deal-key-metrics strong.is-ready{color:#187653}
+.deal-key-metrics span{color:#7a8799;font-size:11px;line-height:1.45;overflow-wrap:anywhere}
+.deal-suggestion-actions{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:7px}
+.deal-card-metrics{grid-template-columns:repeat(4,minmax(0,1fr))}
+.detail-section-heading{display:flex;justify-content:space-between;gap:12px;margin-bottom:10px}
+.detail-section-heading h3{margin:0 0 4px}.detail-section-heading p{margin:0;color:#66758b;font-size:12px;line-height:1.5}
+.customer-followup-form{margin-top:14px;padding-top:14px;border-top:1px solid #e2e8f0}
+.customer-followup-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.customer-followup-grid label{display:grid;gap:5px;color:#31445f;font-size:11px;font-weight:750}
+.customer-followup-form textarea{min-height:92px}
+.priority-row .flag{white-space:nowrap}
+@media(max-width:1120px){.deal-key-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.deal-card-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){.deal-key-metrics,.customer-followup-grid,.deal-card-metrics{grid-template-columns:1fr}.deal-suggestion-actions{justify-content:stretch}.deal-suggestion-actions .btn{width:100%}}

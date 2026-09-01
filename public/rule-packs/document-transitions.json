@@ -1,0 +1,31 @@
+{
+  "version": "V3.3.6.24-R1.3A.18",
+  "transitions": {
+    "quotation": [
+      "proforma_invoice",
+      "sales_contract"
+    ],
+    "proforma_invoice": [
+      "sales_contract",
+      "commercial_invoice",
+      "packing_list"
+    ],
+    "sales_contract": [
+      "commercial_invoice",
+      "packing_list"
+    ],
+    "commercial_invoice": [
+      "packing_list"
+    ],
+    "packing_list": [
+      "commercial_invoice"
+    ]
+  },
+  "rules": {
+    "preserveSource": true,
+    "neverOverwriteSource": true,
+    "humanConfirmationBeforeSave": true,
+    "packingListRemovesMoneyFields": true,
+    "commercialInvoiceHidesBankByDefault": true
+  }
+}

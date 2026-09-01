@@ -1,0 +1,57 @@
+/* HUIDI V3.3.2.1 — no second header: controls live in the existing fixed toolbar. */
+#fpLiteToolbar .fp-lite-toolbar-actions{gap:7px!important;align-items:center!important;flex-wrap:nowrap!important}
+.fp-v3321-head-action{min-height:38px;padding:0 12px;border:1px solid #d7e1eb;border-radius:9px;background:#fff;color:#2b496f;font-size:12px;font-weight:850;white-space:nowrap;cursor:pointer}
+.fp-v3321-head-action:hover{border-color:#8fb2df;background:#eef5ff;color:#1e5ba7}
+.fp-v3321-head-modes{display:inline-flex;gap:2px;padding:3px;border:1px solid #d7e1eb;border-radius:10px;background:#eef2f7;flex:0 0 auto}
+.fp-v3321-head-modes button{min-height:30px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:#607089;font-size:11px;font-weight:850;cursor:pointer;white-space:nowrap}
+.fp-v3321-head-modes button.active{background:#fff;color:#235db1;box-shadow:0 2px 8px rgba(31,65,112,.14)}
+#fpV3321SaveHeader{background:#edf5ff;color:#1e5aa5;border-color:#cbdcf1}
+#fpV3321TemplateHeader{background:#f5f1ff;color:#6044a6;border-color:#ded3f4}
+#fpV3321FieldsHeader{background:#f7fafc}
+#fpPdfSectionNav.fp-v3321-original-nav-hidden{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip-path:inset(50%)!important;pointer-events:none!important;margin:0!important;padding:0!important}
+#fpV3321SideNav{position:fixed;z-index:150;left:max(8px,calc((100vw - 1500px)/2 - 78px));top:calc(var(--fp-v33-lite-toolbar-h,64px) + 18px);width:68px;display:grid;gap:7px;padding:8px;border:1px solid #d8e3ee;border-radius:14px;background:rgba(255,255,255,.96);backdrop-filter:blur(12px);box-shadow:0 12px 34px rgba(32,55,91,.13)}
+#fpV3321SideNav>button,#fpV3321SideNav summary{min-height:42px;display:grid;place-items:center;padding:6px;border:0;border-radius:9px;background:transparent;color:#53677f;font-size:11px;font-weight:850;text-align:center;cursor:pointer;list-style:none;line-height:1.2}
+#fpV3321SideNav summary::-webkit-details-marker{display:none}
+#fpV3321SideNav>button:hover,#fpV3321SideNav>button.active,#fpV3321SideNav details[open]>summary{background:#eaf2ff;color:#1f5cac}
+#fpV3321SideMore{position:relative}
+#fpV3321SideMore>div{position:absolute;left:calc(100% + 10px);top:0;width:148px;display:grid;gap:5px;padding:8px;border:1px solid #d8e3ee;border-radius:11px;background:#fff;box-shadow:0 14px 36px rgba(27,48,79,.17)}
+#fpV3321SideMore>div button{min-height:36px;border:0;border-radius:8px;background:#f5f8fc;color:#405b7e;font-size:11px;font-weight:800;text-align:left;padding:0 10px;cursor:pointer}
+#fpV3321SideMore>div button:hover{background:#eaf2ff;color:#1f5cac}
+@media(max-width:1620px){#fpV3321SideNav{left:8px}}
+@media(max-width:1320px){
+ #fpV3321SideNav{position:fixed;top:calc(var(--fp-v33-lite-toolbar-h,64px) + 6px);left:10px;right:10px;width:auto;display:flex;align-items:center;gap:5px;margin:0;padding:6px;overflow:visible;border-radius:11px}
+ #fpV3321SideNav>button,#fpV3321SideNav summary{min-height:34px;padding:0 11px;white-space:nowrap}
+ #fpV3321SideMore>div{left:auto;right:0;top:calc(100% + 6px)}
+ body.fp-live-document-mode .app,body.fp-live-table-mode .app{padding-top:58px!important}
+}
+@media(max-width:1080px){
+ #fpLiteToolbar .fp-lite-toolbar-actions{overflow-x:auto!important;scrollbar-width:none}
+ #fpLiteToolbar .fp-lite-toolbar-actions::-webkit-scrollbar{display:none}
+ .fp-v3321-head-action{padding:0 10px}
+}
+@media(max-width:720px){
+ #fpV3321SideNav{margin:0 8px 8px;overflow-x:auto;overflow-y:visible;scrollbar-width:none}
+ #fpV3321SideNav::-webkit-scrollbar{display:none}
+ #fpV3321TemplateHeader,#fpV3321FieldsHeader{display:none}
+ .fp-v3321-head-modes button{padding:0 7px}
+}
+@media print{#fpV3321SideNav,.fp-v3321-head-action,.fp-v3321-head-modes{display:none!important}}
+
+/* V3.3.2.4 — direct navigation for business sections; only AI/internal remain under More. */
+#fpV3321SideNav{width:78px;gap:5px;padding:7px}
+#fpV3321SideNav>button,#fpV3321SideNav summary{min-height:38px;padding:5px 4px;font-size:10.5px}
+#fpV3321SideMore>div{width:132px}
+.fp-v3323-shared-open{overflow:hidden!important}
+#fpV3323SharedPanel{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:18px}
+#fpV3323SharedPanel[hidden]{display:none!important}
+.fp-v3323-shared-backdrop{position:absolute;inset:0;background:rgba(12,25,45,.48);backdrop-filter:blur(4px)}
+.fp-v3323-shared-window{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr);width:min(760px,calc(100vw - 28px));max-height:min(860px,calc(100vh - 28px));overflow:hidden;border:1px solid #d6e0eb;border-radius:16px;background:#fff;box-shadow:0 28px 90px rgba(15,35,66,.28);opacity:0;transform:translateY(14px) scale(.99);transition:.15s ease}
+#fpV3323SharedPanel.show .fp-v3323-shared-window{opacity:1;transform:none}
+.fp-v3323-shared-window>header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:17px 18px;border-bottom:1px solid #e0e7ef;background:#f8fbff}
+.fp-v3323-shared-window h2{margin:0;color:#1d3557;font-size:18px}.fp-v3323-shared-window header p{margin:4px 0 0;color:#718096;font-size:11px}
+.fp-v3323-shared-window header button{width:36px;height:36px;border:0;border-radius:9px;background:#eaf0f7;color:#465b74;font-size:22px;cursor:pointer}
+.fp-v3323-shared-body{min-height:0;overflow:auto;padding:16px}
+.fp-v3323-shared-body>.api-card{display:block!important;margin:0!important;max-width:none!important}
+.fp-v3323-shared-body>.api-card details{display:block!important}
+@media(max-height:760px){#fpV3321SideNav{top:calc(var(--fp-v33-lite-toolbar-h,64px) + 7px);gap:3px;padding:5px}#fpV3321SideNav>button,#fpV3321SideNav summary{min-height:32px;font-size:10px}}
+@media(max-width:1320px){#fpV3321SideNav{width:auto}#fpV3321SideNav>button,#fpV3321SideNav summary{min-height:34px;padding:0 10px}}

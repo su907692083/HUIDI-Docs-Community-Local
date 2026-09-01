@@ -1,0 +1,228 @@
+/* HUIDI V3.3.5.2 — compact auth, official support QR and launch-page readability. */
+
+body.fp-auth-open{overflow:hidden}
+
+/* Keep the home message readable on wide screens and avoid awkward single-character wraps. */
+.hero{max-width:1280px;grid-template-columns:minmax(0,1.12fr) minmax(360px,.88fr);gap:42px}
+.hero-copy{min-width:0}
+.hero h1{
+  max-width:650px;
+  font-size:clamp(40px,3.8vw,56px);
+  line-height:1.08;
+  letter-spacing:-.04em;
+  word-break:normal;
+  overflow-wrap:normal;
+  text-wrap:balance;
+}
+.hero-copy>p:not(.eyebrow):not(.trust-line){max-width:700px}
+
+/* The login view remains compact; registration expands only when the QR card is needed. */
+dialog#auth-dialog.modal{
+  width:min(500px,calc(100vw - 32px));
+  max-width:min(500px,calc(100vw - 32px));
+  max-height:min(90vh,820px);
+  overflow:hidden;
+  border-radius:22px;
+  background:rgba(255,255,255,.98);
+  box-shadow:0 30px 100px rgba(15,23,42,.24);
+}
+dialog#auth-dialog.modal[data-auth-mode="register"]{
+  width:min(820px,calc(100vw - 32px));
+  max-width:min(820px,calc(100vw - 32px));
+}
+dialog#auth-dialog.modal form{
+  padding:30px 32px 28px;
+  max-height:min(90vh,820px);
+  overflow:auto;
+  scrollbar-gutter:stable;
+}
+.auth-heading{padding-right:32px}
+.auth-heading .eyebrow{margin-bottom:9px}
+.auth-heading h2{font-size:26px;line-height:1.2;margin:0 0 8px}
+.modal .auth-heading>p:not(.eyebrow){margin:0;color:var(--muted);font-size:14px;line-height:1.6}
+.auth-layout{margin-top:22px;display:grid;grid-template-columns:minmax(0,1fr);gap:24px;align-items:start}
+dialog#auth-dialog[data-auth-mode="register"] .auth-layout{grid-template-columns:minmax(0,1fr) 286px}
+.auth-fields{min-width:0}
+
+/* Inputs are intentionally scoped so the legal checkbox never inherits full width. */
+dialog#auth-dialog.modal .auth-fields>label:not(.auth-legal),
+dialog#auth-dialog.modal #auth-confirm-wrap label{
+  display:grid;
+  gap:7px;
+  margin:0 0 14px;
+  color:#526178;
+  font-size:13px;
+  font-weight:800;
+}
+dialog#auth-dialog.modal .auth-fields input:not([type="checkbox"]){
+  width:100%;
+  height:46px;
+  min-height:46px;
+  padding:0 13px;
+  border-radius:12px;
+  background:#fff;
+}
+.auth-password-rule{margin:-6px 0 13px!important;font-size:12px!important;line-height:1.5!important}
+
+.auth-legal{
+  display:grid!important;
+  grid-template-columns:20px minmax(0,1fr);
+  align-items:start;
+  gap:10px;
+  margin:4px 0 12px!important;
+  padding:12px 13px;
+  border:1px solid rgba(15,23,42,.09);
+  border-radius:12px;
+  background:#f8fafc;
+  color:#536279!important;
+  font-size:12px!important;
+  font-weight:650!important;
+  line-height:1.65!important;
+}
+.auth-legal.hidden{display:none!important}
+dialog#auth-dialog.modal .auth-legal input[type="checkbox"]{
+  appearance:auto;
+  width:18px!important;
+  min-width:18px!important;
+  max-width:18px!important;
+  height:18px!important;
+  min-height:18px!important;
+  margin:2px 0 0!important;
+  padding:0!important;
+  border-radius:4px;
+  accent-color:#4f86e8;
+}
+.auth-legal span{display:block!important;min-width:0}
+.auth-legal a{display:inline;white-space:nowrap;font-weight:800}
+
+#auth-status:empty{min-height:8px;margin:0!important}
+#auth-status:not(:empty){margin:7px 0 0!important;padding:9px 11px;border-radius:10px;background:#f8fafc}
+#auth-status.error{background:#fff1f2}
+#auth-status.ok{background:#ecfdf5}
+
+dialog#auth-dialog.modal #auth-submit{width:100%;min-height:46px;margin-top:8px;border-radius:12px}
+.auth-links{
+  margin-top:12px!important;
+  display:flex!important;
+  justify-content:center;
+  align-items:center;
+  gap:6px 14px!important;
+  flex-wrap:wrap!important;
+}
+dialog#auth-dialog.modal .auth-links button{
+  flex:0 0 auto!important;
+  width:auto!important;
+  min-height:34px!important;
+  padding:5px 7px!important;
+  border:0!important;
+  background:transparent!important;
+  color:#2456a8!important;
+  font-size:12px!important;
+  font-weight:800!important;
+  white-space:nowrap!important;
+}
+.auth-links button[hidden]{display:none!important}
+
+/* Official support card shown only while registering. */
+.trial-cta{
+  margin:0!important;
+  padding:18px!important;
+  border:1px solid rgba(91,141,239,.22)!important;
+  border-radius:18px!important;
+  background:linear-gradient(180deg,#f7faff 0%,#f2f7ff 100%)!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.9);
+}
+.trial-cta.hidden{display:none!important}
+.trial-badge{
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  padding:0 9px;
+  border-radius:999px;
+  background:#e9f2ff;
+  color:#3169b8;
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.trial-cta h3{margin:10px 0 6px;color:#15213a;font-size:18px;line-height:1.3}
+.modal .trial-cta-copy p{margin:0 0 13px;color:#607089;font-size:12px;line-height:1.65}
+.trial-qr-card{margin:0;padding:12px;border-radius:16px;background:#fff;border:1px solid rgba(15,23,42,.08);text-align:center}
+.trial-qr-card img{
+  display:block;
+  width:min(100%,220px);
+  height:auto;
+  aspect-ratio:1;
+  object-fit:contain;
+  margin:0 auto;
+  border-radius:10px;
+  background:#fff;
+}
+.trial-qr-card figcaption{margin-top:8px;color:#65748a;font-size:11px;line-height:1.55}
+.modal .trial-safety-note{margin:10px 1px 0!important;color:#7a8798!important;font-size:10.5px!important;line-height:1.55!important}
+
+@media(max-width:900px){
+  dialog#auth-dialog.modal[data-auth-mode="register"]{width:min(620px,calc(100vw - 28px));max-width:min(620px,calc(100vw - 28px))}
+  dialog#auth-dialog[data-auth-mode="register"] .auth-layout{grid-template-columns:1fr}
+  .trial-cta{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:14px;align-items:center}
+  .trial-qr-card img{width:145px}
+  .trial-safety-note{grid-column:1/-1}
+}
+
+@media(max-width:640px){
+  .hero{grid-template-columns:1fr;padding-top:42px}
+  .hero h1{font-size:clamp(36px,11vw,46px);word-break:normal;text-wrap:pretty}
+  dialog#auth-dialog.modal,
+  dialog#auth-dialog.modal[data-auth-mode="register"]{
+    width:calc(100vw - 20px);
+    max-width:calc(100vw - 20px);
+    max-height:calc(100dvh - 20px);
+    border-radius:18px;
+  }
+  dialog#auth-dialog.modal form{padding:24px 18px 20px;max-height:calc(100dvh - 20px)}
+  .auth-heading{padding-right:24px}
+  .auth-heading h2{font-size:22px}
+  .auth-layout{margin-top:18px;gap:18px}
+  .trial-cta{display:block;padding:15px!important}
+  .trial-qr-card{max-width:220px;margin:12px auto 0}
+  .trial-qr-card img{width:180px}
+  .auth-links{gap:4px 8px!important}
+}
+
+/* Premium UI has stronger launch-page selectors; these final rules intentionally win. */
+body > main .hero{
+  max-width:1280px;
+  margin:0 auto;
+  padding:72px 0 60px;
+  grid-template-columns:minmax(0,1.08fr) minmax(380px,.92fr);
+  gap:22px;
+}
+body > main .hero-copy h1{
+  max-width:none;
+  width:max-content;
+  font-size:clamp(42px,3.7vw,56px);
+  line-height:1.08;
+  letter-spacing:-.045em;
+  white-space:nowrap;
+  word-break:normal;
+}
+body > main .hero-copy>p:not(.eyebrow):not(.trust-line){max-width:720px;font-size:17px}
+@media(max-width:1100px){
+  body > main .hero{padding-left:12px;padding-right:12px;grid-template-columns:1fr}
+  body > main .hero-copy h1{width:auto;white-space:normal;max-width:15ch}
+}
+@media(max-width:640px){
+  body > main .hero{padding:36px 4px 44px}
+  body > main .hero-copy h1{font-size:clamp(35px,11vw,46px);line-height:1.04;max-width:11ch}
+  body > main .hero-copy h1 br{display:none}
+}
+
+
+/* R1.3A.4-H2: auth mode visibility must win over the scoped input layout rules above. */
+dialog#auth-dialog.modal .auth-fields>label.hidden,
+dialog#auth-dialog.modal .auth-fields>label[hidden],
+dialog#auth-dialog.modal .auth-links.hidden,
+dialog#auth-dialog.modal .auth-links[hidden],
+dialog#auth-dialog.modal #auth-confirm-wrap.hidden{
+  display:none!important;
+}

@@ -1,0 +1,42 @@
+/* HUIDI V3.3.6.24-R1.3A.12 — Chinese operator editing and multilingual output separation. */
+.fp-v3318-english-assist,.fp-table-english-assist,[data-fp-english-assist],[data-table-english-assist]{display:none!important}
+.form-column .fp-sheet-panel-head h3,.form-column .fp-sheet-tabs button,.form-column button,.form-column label,.form-column .fp-table-editor-toolbar span{letter-spacing:0!important}
+.form-column .fp-panel-context-actions button{white-space:nowrap}
+#piForm[data-fp-operator-language="zh"] label{line-height:1.55}
+#piForm [data-fp-zh-label],#piForm [data-r13a6-label][data-fp-zh-label]{font-weight:inherit}
+.fp-r13a9-language-separation{grid-column:1/-1;margin:2px 0 14px;padding:12px 14px;border:1px solid rgba(38,72,118,.16);border-radius:14px;background:rgba(247,250,255,.86);font-size:13px;line-height:1.65}
+.fp-r13a9-language-separation p{margin:6px 0 0;color:#526174}
+.fp-r13a9-language-separation details{margin-top:7px}
+.fp-r13a9-language-separation summary{cursor:pointer;font-weight:700;color:#30435b}
+.fp-r13a9-language-state{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fp-r13a9-language-state span{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.88);border:1px solid rgba(38,72,118,.12)}
+body.dark .fp-r13a9-language-separation,.dark .fp-r13a9-language-separation{background:rgba(24,32,46,.78);border-color:rgba(183,203,231,.18)}
+body.dark .fp-r13a9-language-separation p,.dark .fp-r13a9-language-separation p{color:#b8c4d4}
+body.dark .fp-r13a9-language-separation summary,.dark .fp-r13a9-language-separation summary{color:#e3ebf5}
+body.dark .fp-r13a9-language-state span,.dark .fp-r13a9-language-state span{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}
+@media(max-width:760px){.fp-r13a9-language-state{align-items:stretch}.fp-r13a9-language-state span{width:100%;justify-content:space-between}}
+@media print{.fp-v3318-english-assist,.fp-table-english-assist,.fp-r13a9-language-separation{display:none!important}}
+
+/* V3.3.6.24-R1.3A.10 — operator labels stay Chinese; output-language labels remain on the right preview only. */
+#piForm .fp-field-en,
+.form-column .fp-field-en{
+  display:none!important;
+}
+
+
+/* R1.3A.11 — language status is a compact control, not a full-screen instruction card. */
+.fp-r13a9-language-separation{margin:0 0 8px!important;padding:7px 10px!important;border-radius:10px!important;font-size:11px!important;line-height:1.4!important}
+.fp-r13a9-language-separation p,.fp-r13a9-language-separation details{display:none!important}
+.fp-r13a9-language-state{gap:6px!important}
+.fp-r13a9-language-state span{padding:2px 7px!important;font-size:10.5px!important}
+.fp-local-preview-banner{margin:5px 12px 6px!important;padding:6px 10px!important;min-height:34px!important;border-radius:10px!important;gap:10px!important}
+.fp-local-preview-banner>div{gap:7px!important}
+.fp-local-preview-banner span{font-size:11px!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.fp-local-preview-banner a{font-size:12px!important}
+.fp-local-preview-banner button{font-size:17px!important}
+
+
+/* R1.3A.12 — operator-language controls remain compact at all desktop zoom levels. */
+.fp-r13a9-language-separation{max-width:100%;box-sizing:border-box}
+#piForm[data-fp-operator-language="zh"] #moqControl{font-weight:700}
+#piForm[data-fp-operator-language="zh"] [data-fp-section="payment"] h2{letter-spacing:0!important}

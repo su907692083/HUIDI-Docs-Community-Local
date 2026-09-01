@@ -1,0 +1,35 @@
+/* HUIDI V3.3.2.6 — keep the editor for filling; keep management in the fixed header. */
+#fpLiteToolbar .fp-lite-toolbar-actions{gap:5px!important;min-width:0!important}
+.fp-v3325-head-action{min-height:36px;padding:0 10px;border:1px solid #d6e0eb;border-radius:9px;background:#fff;color:#2b496f;font-size:11px;font-weight:850;white-space:nowrap;cursor:pointer;flex:0 0 auto}
+.fp-v3325-head-action:hover{background:#eef5ff;border-color:#91b2dc;color:#1e5ba7}
+.fp-v3325-head-action.danger{background:#fff4f1;border-color:#efc1b6;color:#a43b2a}
+.fp-v3325-head-action.danger:hover{background:#ffe9e4;border-color:#e79c8d}
+.fp-v3325-doc-select{height:36px;display:inline-flex;align-items:center;gap:5px;padding:0 7px;border:1px solid #d6e0eb;border-radius:9px;background:#f8fbff;color:#61718a;font-size:10px;font-weight:800;flex:0 0 auto}
+.fp-v3325-doc-select select{width:104px;min-width:0;border:0!important;outline:0;background:transparent;color:#29456d;font-size:11px;font-weight:850;padding:0!important;height:32px!important}
+#fpV3325EmailExportToggle{display:flex!important;align-items:flex-start;gap:8px;padding:10px 12px;border-top:1px solid #e2e8f0;background:#f8fbff;cursor:pointer;text-align:left}
+#fpV3325EmailExportToggle input{width:auto!important;margin-top:2px}
+#fpV3325EmailExportToggle span{display:grid;gap:2px}#fpV3325EmailExportToggle b{font-size:12px;color:#2d4668}#fpV3325EmailExportToggle small{font-size:10px;color:#728198;font-weight:600}
+.fp-v3325-drawer-migrated,.fp-v3325-duplicate-control{display:none!important}
+.form-column>.api-card.fp-v3325-embedded-ai-card{display:none!important}
+#fpV3323SharedPanel .api-card.fp-v3325-embedded-ai-card{display:block!important}
+#fpV3315ToolsRoot .fp-v3315-drawer-actions{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+#fpV3315ToolsRoot .fp-v3315-drawer-actions button{min-height:48px!important}
+/* Use the remaining page before opening a new sheet; keep the visual page gap compact. */
+#piPaper .pdf-document{gap:10px!important}
+#piPaper .pdf-page{scroll-margin-top:10px}
+#fpV3321SideNav{max-height:calc(100vh - var(--fp-v33-lite-toolbar-h,64px) - 28px);overflow:visible}
+#fpV3321SideNav>button{flex:0 0 auto}
+@media(max-width:1480px){
+ #fpLiteToolbar .fp-lite-toolbar-actions{overflow-x:auto!important;scrollbar-width:none;padding-bottom:1px}
+ #fpLiteToolbar .fp-lite-toolbar-actions::-webkit-scrollbar{display:none}
+ .fp-v3325-doc-select span{display:none}.fp-v3325-doc-select select{width:92px}
+ .fp-v3321-head-action,.fp-v3325-head-action{padding:0 8px!important}
+}
+@media(max-width:1120px){
+ .fp-v3325-doc-select select{width:82px}.fp-v3321-head-modes button{padding:0 6px!important}
+ #fpV3321SideNav{overflow-x:auto;overflow-y:visible;max-height:none}
+}
+@media(max-width:720px){
+ #fpV3325DocSelect,#fpV3325LayoutHeader,#fpV3325ClearHeader{display:none}
+}
+@media print{.fp-v3325-head-action,.fp-v3325-doc-select{display:none!important}}
