@@ -1,0 +1,11 @@
+{
+  "name": "huidi-docs-community-local",
+  "version": "1.2.0-rc6",
+  "private": false,
+  "license": "SEE LICENSE IN LICENSE",
+  "scripts": {
+    "check": "node ./tools/validate-local.cjs",
+    "serve": "node ./tools/local-server.cjs"
+  },
+  "description": "HUIDI Docs Community Local — source-available local-first foreign trade workflow for personal and own-organization internal use"
+}
