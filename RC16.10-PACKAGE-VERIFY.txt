@@ -1,0 +1,81 @@
+HUIDI Docs Community Local V1.2.0 RC16.10
+Validation date: 2026-09-03
+Status: TEST CANDIDATE — real Windows visual/business-flow acceptance still required
+Theme: Compact / Standard Density Simplification
+
+ARTIFACTS
+- WINDOWS: HUIDI-Docs-Community-Local-V1.2.0-RC16.10-WINDOWS.zip
+  SHA256: 3aff4473e535a72a75bb60356d764ac5fc00bbb75f816985cba28175c12f6667
+  Files: 328
+- SOURCE: HUIDI-Docs-Community-Local-V1.2.0-RC16.10-SOURCE.zip
+  SHA256: 20329180e838b3f5a97d2efcfef2988ef5f417c2f5cdb60aeb7ba96ebf331ccd
+  Files: 335
+
+PACKAGE INTEGRITY
+- SOURCE ZIP CRC: PASS
+- WINDOWS ZIP CRC: PASS
+- SOURCE re-extract: 335 files; missing 0; extra 0; SHA mismatch 0
+- WINDOWS re-extract: 328 files; missing 0; extra 0; SHA mismatch 0
+- SOURCE/WINDOWS public runtime: 239 / 239 exact relative-path + SHA parity
+- config/feishu.local.json: NOT PACKAGED
+- PowerShell tools/local-server.ps1 UTF-8 BOM: PASS (EF BB BF)
+- START-HUIDI-LOCAL.cmd version identity: RC16.10
+- START-HUIDI-LOCAL.cmd PowerShell ExecutionPolicy Bypass contract: PASS
+- START-HUIDI-LOCAL.cmd Node/Python fallback contract: PASS
+
+STATIC / RELEASE GATES
+- npm run check on final SOURCE re-extract: PASS
+- npm run check:layout on final SOURCE re-extract: PASS
+- RC16.10 compact/standard layout validator: PASS
+- public JavaScript syntax scan: PASS
+- HTML local references: PASS
+- Community Local CSP / local-mode guard: PASS
+
+RC16.10 COMPACT / STANDARD CLOSURE
+- Visible density surface contains exactly two choices: 紧凑 / 标准
+- Removed visible 内容适配 label, 优先一页 choice and 标准分页 status text
+- QT / PI / SC / CI / PL use per-document compact / standard preferences
+- legacy one-page state migrates to compact once, but force-one-page behavior is neutralized
+- compact mode never adds huidi-document-one-page or fp-quotation-one-page
+- compact mode leaves legacy data-huidi-page-fit at standard to prevent old force-fit helpers from activating
+- compact mode changes only content density: font size, line height, table padding, section spacing, signature footprint and non-essential whitespace
+- compact mode does not override physical PDF page width, height, orientation, page padding or margins
+- product images in compact mode use object-fit: contain
+- Workbook Preview follows compact / standard state
+- XLSX fitToHeight is fixed to 0; compact no longer means one-page worksheet fitting
+- RC16.9 single pagination authority, nested showcase safe fallback, summary adjacency and orientation fixes remain active
+
+DYNAMIC CHROMIUM ACCEPTANCE
+- visible toolbar check: only 紧凑 / 标准: PASS
+- visible legacy 内容适配 / 优先一页 / 标准分页 nodes: 0
+- 5 document types switch compact -> standard: PASS
+- per-mode active-button state: PASS
+- compact paper class: PASS
+- legacy one-page classes after compact: NOT PRESENT
+- repeated type/density switch: one control instance, no duplicated toolbar: PASS
+- repeated switch does not re-enable force-one-page markers: PASS
+
+WINDOWS / LOOPBACK SMOKE ON FINAL WINDOWS RE-EXTRACT
+- Occupied base port 8790 -> automatic fallback to 8791: PASS
+- / : HTTP 200
+- /workspace.html : HTTP 200
+- /document-start.html : HTTP 200
+- /editor.html?type=quotation&local=1 : HTTP 200
+- /catalog-studio/index.html : HTTP 200
+- /huidi-public-config.json : HTTP 200
+- /api/feishu/status : HTTP 200
+
+PROTECTED PDF CORE (UNCHANGED)
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+  SHA256: abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+  SHA256: 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+
+REAL WINDOWS ACCEPTANCE STILL REQUIRED
+1. Confirm the Preview toolbar shows only 紧凑 / 标准, with no extra label/status text.
+2. Switch QT -> PI -> SC -> CI -> PL; confirm each document keeps its own compact/standard preference.
+3. Compare the same 8-20 product document in 紧凑 vs 标准: compact should visibly reduce whitespace while remaining readable.
+4. Confirm compact does not attempt to force a one-page PDF; long documents should paginate normally.
+5. Switch all PDF styles and portrait / landscape / auto; confirm no page-count drift, clipping or duplicated rows.
+6. Export actual PDFs and compare totals, packing summary, signatures and product image proportions against Preview.
+7. Keep RC16.10 on release/test branch until real-machine acceptance passes; do not promote to stable main solely from sandbox gates.
