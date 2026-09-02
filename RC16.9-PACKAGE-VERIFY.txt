@@ -1,0 +1,85 @@
+HUIDI Docs Community Local V1.2.0 RC16.9
+Validation date: 2026-09-03
+Status: TEST CANDIDATE — real Windows visual/business-flow acceptance still required
+Theme: Pagination Stability & Unified Layout Closure
+
+ARTIFACTS
+- WINDOWS: HUIDI-Docs-Community-Local-V1.2.0-RC16.9-WINDOWS.zip
+  SHA256: 50c7f2675eadc9332fbc7ee9396b15dfc8249d33ba0e8f7da5605a0ca114cda4
+  Files: 323
+- SOURCE: HUIDI-Docs-Community-Local-V1.2.0-RC16.9-SOURCE.zip
+  SHA256: 980ac9112d818f98e86cf5a130d1d6c1537cad9465252b9d252213b44f7e469b
+  Files: 330
+
+PACKAGE INTEGRITY
+- SOURCE ZIP CRC: PASS
+- WINDOWS ZIP CRC: PASS
+- SOURCE re-extract: 330 files; missing 0; extra 0; SHA mismatch 0
+- WINDOWS re-extract: 323 files; missing 0; extra 0; SHA mismatch 0
+- SOURCE/WINDOWS public runtime: 237 / 237 exact relative-path + SHA parity
+- config/feishu.local.json: NOT PACKAGED
+- PowerShell tools/local-server.ps1 UTF-8 BOM: PASS (EF BB BF)
+- START-HUIDI-LOCAL.cmd PowerShell ExecutionPolicy Bypass contract: PASS
+- START-HUIDI-LOCAL.cmd Node/Python fallback contract: PASS
+
+STATIC / RELEASE GATES
+- npm run check on final SOURCE re-extract: PASS
+- npm run check:layout on final SOURCE re-extract: PASS
+- RC16.9 unified pagination/layout validator: PASS
+- editor inline JavaScript syntax: PASS (7 executable inline blocks)
+- public JavaScript syntax scan: PASS
+- HTML local references: PASS
+- Community Local CSP / local-mode guard: PASS
+
+RC16.9 PAGINATION / LAYOUT CLOSURE
+- One active layout owner: public/huidi-layout-policy-rc169.js
+- Legacy RC16.8 layout owner removed from release tree
+- QT / PI / SC / CI / PL use per-document standard / prefer-one-page state
+- Document type, fit mode, PDF style and orientation changes converge to one main Preview rebuild
+- editor.html is the Community Local pagination authority
+- legacy flypigbox-editor-unified post-pagination pass is validation-only under RC16.9
+- nested brand-showcase product tables are not handed to the generic top-level table splitter
+- oversized brand-showcase two-column layouts degrade to safe linear multipage flow
+- Product + Total / Packing + Summary semantic adjacency is repaired before final validation
+- generic low-content rebalance no longer runs after semantic summary repair
+- logical footer reserve is shared by pagination and export clipping checks
+- prefer-one-page only tightens content density; it does not overwrite physical PDF page width/height/padding
+
+DYNAMIC CHROMIUM ACCEPTANCE (LOOPBACK, RICH TEST DATA)
+- 5 document types: Quotation / PI / Sales Contract / Commercial Invoice / Packing List
+- 5 PDF styles: classic_business / brand_showcase / minimal_trade / formal_contract / customs_clean
+- fit modes: standard + prefer-one-page
+- orientations: portrait / landscape / auto
+- 12-item full-style matrix: PASS for all five document types
+- 20-item stress: PASS for all five document types on classic + brand showcase plus portrait/landscape/auto and standard/prefer-one-page checks
+- row conservation: PASS; no missing or duplicated table rows in accepted matrix
+- pagination report overflowPages: empty in accepted matrix
+- pagination semanticViolations: empty in accepted matrix
+- Product/Total and Packing/Summary orphan regression: PASS
+- repeated short switch sequence across document/style/fit/orientation: PASS
+- return-to-baseline page/row drift: PASS
+- settled render-generation loop: NOT DETECTED
+
+WINDOWS / LOOPBACK SMOKE ON FINAL WINDOWS RE-EXTRACT
+- Occupied base port 8790 -> automatic fallback to 8791: PASS
+- / : HTTP 200
+- /workspace.html : HTTP 200
+- /document-start.html : HTTP 200
+- /editor.html : HTTP 200
+- /catalog-studio/index.html : HTTP 200
+- /api/feishu/status : HTTP 200
+
+PROTECTED PDF CORE (UNCHANGED)
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+  SHA256: abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+  SHA256: 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+
+REAL WINDOWS ACCEPTANCE STILL REQUIRED
+1. Repeatedly switch QT -> PI -> SC -> CI -> PL and confirm no layout/page-count drift.
+2. For every type switch Standard <-> Prefer one page and verify controls/status remain consistent.
+3. Switch all PDF styles, especially Brand Showcase, and verify no duplicate product rows or clipped content.
+4. Switch portrait / landscape / auto and verify page boundaries and workspace geometry remain stable.
+5. Test 1 / 3 / 8 / 15 / 20 product rows with real business text/images.
+6. Export actual PDF files and compare final files against Preview for row count, totals, packing summary and signatures.
+7. Keep RC16.9 on release/test branch until real-machine acceptance passes; do not promote to stable main solely from sandbox gates.
