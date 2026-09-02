@@ -1,0 +1,42 @@
+/* HUIDI Docs Community Local RC16.9 — stable compact mode. Page size/margins stay owned by the PDF paper engine. */
+.huidi-page-fit-control{display:flex;align-items:center;gap:7px;min-height:40px;padding:6px 8px;border:1px solid #d8e5ef;border-radius:12px;background:#f8fbff;color:#314f69;white-space:nowrap}
+.huidi-page-fit-control>span{font-size:12px;font-weight:900}.huidi-page-fit-control small{font-size:10.5px;font-weight:750;color:#60778d}
+.huidi-page-fit-segment{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid #cdddeb;border-radius:999px;background:#fff}
+.huidi-page-fit-segment button{min-height:28px;border:0;border-radius:999px;padding:0 10px;background:transparent;color:#3c5a72;font-size:12px;font-weight:850;white-space:nowrap}
+.huidi-page-fit-segment button.active{background:#176fd1;color:#fff;box-shadow:0 4px 12px rgba(23,111,209,.20)}
+/* Compact only content geometry. Never override .pdf-page width/height/padding after paper resolution. */
+#piPaper.huidi-document-one-page .pdf-template{gap:5px!important}
+#piPaper.huidi-document-one-page .pdf-page{font-size:10.15px!important;line-height:1.28!important}
+#piPaper.huidi-document-one-page .pdf-template-hero,#piPaper.huidi-document-one-page .doc-hero{padding-top:8px!important;padding-bottom:7px!important;margin-bottom:3px!important;min-height:0!important}
+#piPaper.huidi-document-one-page .pdf-template-hero h2,#piPaper.huidi-document-one-page .doc-hero h2{font-size:19px!important;line-height:1.12!important}
+#piPaper.huidi-document-one-page .pdf-meta-grid{gap:4px!important;margin-bottom:2px!important}
+#piPaper.huidi-document-one-page .pdf-meta-grid>div{min-height:30px!important;padding:4px 6px!important}
+#piPaper.huidi-document-one-page .pdf-meta-bar{gap:4px!important;margin-bottom:2px!important}
+#piPaper.huidi-document-one-page .pdf-meta-bar>span{padding:4px 6px!important}
+#piPaper.huidi-document-one-page .pdf-party-grid{gap:6px!important}
+#piPaper.huidi-document-one-page .pdf-party-card{padding:6px 7px!important;min-height:0!important}
+#piPaper.huidi-document-one-page .pdf-party-card p{line-height:1.3!important;margin-block:1px!important}
+#piPaper.huidi-document-one-page .doc-section{margin:5px 0 3px!important;padding:4px 7px!important;font-size:9.8px!important}
+#piPaper.huidi-document-one-page table{margin-bottom:3px!important}
+#piPaper.huidi-document-one-page th,#piPaper.huidi-document-one-page td{padding:3px 4px!important;line-height:1.2!important}
+#piPaper.huidi-document-one-page .products .img{width:36px!important;height:36px!important}
+#piPaper.huidi-document-one-page .money-table{margin-bottom:2px!important}
+#piPaper.huidi-document-one-page .signature-zone{min-height:58px!important;margin-top:4px!important}
+#piPaper.huidi-document-one-page .signature-block{min-height:56px!important}
+#piPaper.huidi-document-one-page .signature-assets{height:46px!important}
+#piPaper.huidi-document-one-page .pdf-contract-signatures{gap:10px!important;margin-top:6px!important}
+#piPaper.huidi-document-one-page .pdf-contract-signatures>div{min-height:82px!important;padding:7px!important}
+#piPaper.huidi-document-one-page.fp-pdf-style-brand_showcase .pdf-template-hero{min-height:82px!important;padding:10px!important}
+#piPaper.huidi-document-one-page .pdf-value-cards{gap:6px!important}
+#piPaper.huidi-document-one-page .pdf-value-cards article{padding:7px!important}
+#piPaper.huidi-document-one-page[data-fp-document-kind="packing_list"] .pdf-packing-table th,#piPaper.huidi-document-one-page[data-fp-document-kind="packing_list"] .pdf-packing-table td,#piPaper.huidi-document-one-page[data-fp-document-type="packing_list"] .pdf-packing-table th,#piPaper.huidi-document-one-page[data-fp-document-type="packing_list"] .pdf-packing-table td{font-size:9.45px!important;padding:3px!important}
+.fp-workbook-preview.huidi-layout-one-page .fp-workbook-grid{font-size:9.7px}
+.fp-workbook-preview.huidi-layout-one-page .fp-workbook-grid th,.fp-workbook-preview.huidi-layout-one-page .fp-workbook-grid td{height:27px;padding:3px 5px;line-height:1.2}
+.fp-workbook-preview.huidi-layout-one-page .fp-workbook-total-strip{padding:7px 10px;gap:9px}
+@media(max-width:1380px){.huidi-page-fit-control small,.paper-layout-compact small{display:none}.preview-toolbar-primary{flex-wrap:wrap}}
+@media(max-width:980px){.huidi-page-fit-control{display:none!important}}
+
+/* Safe multipage fallback for nested showcase layouts. */
+#piPaper .pdf-template.fp-paginated-linear-layout{display:flex!important;flex-direction:column!important;grid-template-columns:none!important;gap:8px!important}
+#piPaper .pdf-template.fp-paginated-linear-layout>.pdf-value-cards{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:6px!important}
+#piPaper .pdf-template.fp-paginated-linear-layout>.pdf-total-card{width:100%!important;max-width:none!important}
