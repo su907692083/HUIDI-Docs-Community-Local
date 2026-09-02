@@ -1,0 +1,21 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),pub=path.join(root,'public');
+const read=f=>fs.readFileSync(path.join(pub,f),'utf8');
+const html=read('editor.html'),js=read('huidi-layout-policy-rc168.js'),css=read('huidi-layout-policy-rc168.css'),table=read('flypigbox-editor-table-output.js');
+const errors=[];const ok=(c,m)=>{if(!c)errors.push(m)};
+ok(html.includes('huidi-layout-policy-rc168.css'),'editor missing RC16.8 css');
+ok(html.includes('huidi-layout-policy-rc168.js'),'editor missing RC16.8 js');
+ok(!html.includes('<script src="./huidi-page-fit-workspace-rc1665.js'),'RC16.6.5 quotation-only controller is still active');
+['quotation','proforma_invoice','sales_contract','commercial_invoice','packing_list'].forEach(t=>ok(js.includes(`'${t}'`),`missing supported type ${t}`));
+ok(!js.includes("box.hidden=!quotation"),'quotation-only visibility gate still present');
+ok(!js.includes("type()==='quotation'&&enabled()"),'quotation-only state gate still present');
+ok(js.includes('huidi-document-one-page'),'shared one-page class missing');
+ok(js.includes('HUIDI:layout-policy-changed'),'shared layout policy event missing');
+ok(css.includes('data-fp-document-kind="sales_contract"'),'sales contract density profile missing');
+ok(css.includes('data-fp-document-kind="packing_list"'),'packing list density profile missing');
+ok(table.includes('pageFit:currentLayoutPolicy()'),'workbook render signature does not include layout policy');
+ok(table.includes("'HUIDI:layout-policy-changed'"),'workbook does not listen to layout policy change');
+ok(table.includes("preferOnePage()?'huidi-layout-one-page':''"),'workbook preview density class missing');
+ok(table.includes("(sheet.rows?.length||0)<=48?1:0"),'bounded XLSX fit-to-height rule missing');
+if(errors.length){console.error('RC16.8 unified layout validation FAIL');errors.forEach(e=>console.error(' - '+e));process.exit(1)}
+console.log('RC16.8 unified layout validation PASS');
