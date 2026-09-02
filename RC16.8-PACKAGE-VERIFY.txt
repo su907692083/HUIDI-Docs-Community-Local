@@ -1,0 +1,38 @@
+HUIDI Docs Community Local V1.2.0 RC16.8
+PACKAGE VERIFY
+Date: 2026-09-03
+Baseline: HUIDI-Docs-Community-Local-V1.2.0-RC16.7-WINDOWS(1).zip
+Theme: Unified Document Layout Policy
+Status: TEST CANDIDATE — real Windows Edge/Chrome acceptance still required before public release promotion.
+
+Scope:
+- Replaced active RC16.6.5 quotation-only page-fit controller with RC16.8 unified layout policy.
+- QT / PI / SC / CI / PL all expose the same 标准 / 优先一页 control.
+- Workbook/Table preview reads the same layout policy.
+- XLSX uses bounded fitToHeight=1 only for prefer-one-page sheets <=48 rows.
+
+Automatic gates:
+PASS: RC16.8 JS syntax and unified layout validator
+PASS: five-document browser unit gate (QT / PI / SC / CI / PL)
+PASS: WINDOWS/SOURCE public runtime parity 237/237, 0 SHA mismatch
+PASS: WINDOWS ZIP CRC and SOURCE ZIP CRC
+PASS: both packages re-extract with 0 missing / 0 extra / 0 mismatch
+PASS: Windows launcher contract and PowerShell UTF-8 BOM
+PASS: loopback HTTP smoke for /, workspace, document-start, editor and catalog-studio
+
+Package tree:
+WINDOWS files: 321
+SOURCE files: 328
+
+SHA256:
+WINDOWS b9280505c4b046e21fa966eab570d9ac90f46636adb09380e64719d69155d0b1
+SOURCE  9ae88c90c6c57be59378436a846edefb988f1c624989c8579aa74a71666421ad
+
+Required real Windows acceptance before public release:
+- Edge/Chrome: all five document types show 标准 / 优先一页.
+- Preview and Workbook follow the selected layout.
+- Formal PDF follows the selected layout.
+- 1/3/8/15 product rows remain readable and paginate safely.
+- Product + Total / Contract total / Packing summary blocks stay intact.
+
+Do not promote RC16.8 to public main/release before the above real-machine acceptance passes.
