@@ -1,0 +1,31 @@
+--- rex1614_source/public/huidi-local-editor-bridge-v120.js	2026-09-02 20:09:46.000000000 +0000
++++ rc1615_source/public/huidi-local-editor-bridge-v120.js	2026-09-03 07:48:26.261867209 +0000
+@@ -25,7 +25,27 @@
+ async function mirrorSnapshot(showToast=false){const coordinator=window.HUIDILocalSaveCoordinator;if(coordinator?.saveCurrent){const result=await coordinator.saveCurrent({silent:!showToast,reason:showToast?'manual':'autosave'});if(result?.ok){setSavedState(showToast?'已保存到本机':'已自动保存');return true}return false}console.warn('HUIDI local save coordinator unavailable');if(showToast)alert('本地保存组件尚未准备好，请刷新后重试。');return false}
+ async function restoreMirrorFromQuery(){try{const id=new URLSearchParams(location.search).get('localDoc');if(!id)return null;const staged=JSON.parse(sessionStorage.getItem('huidi_local_open_document_v1')||'null');if(staged?.id===id&&staged?.payload?.state){sessionStorage.removeItem('huidi_local_open_document_v1');sessionStorage.setItem('huidi_local_doc_id_v1',id);return {target:staged.document_type||staged.summary?.document_type||staged.payload?.documentType||'quotation',state:staged.payload.state,at:new Date().toISOString()}}const row=await window.HUIDILocalDB?.getDocument?.(id);if(!row?.payload?.state)return null;sessionStorage.setItem('huidi_local_doc_id_v1',id);return {target:row.document_type||row.summary?.document_type||row.payload?.documentType||'quotation',state:row.payload.state,at:new Date().toISOString()}}catch(error){console.warn('HUIDI local document restore failed',error);return null}}
+ function cleanupLegacy(){document.body.classList.add('huidi-local-editor-rc5');document.body.classList.remove('huidi-local-editor-rc4');['#fp-xm-editor','#fp30EditorContext','#fpV3321SideNav','#fp-pilot-header','#fp-assistant41-launcher','#fp-assistant41-dialog','#memberAuthBtn','#memberSignOutBtn','#membershipPlansBtn'].forEach(sel=>$$(sel).forEach(el=>{if(!el.hidden)el.hidden=true}));$('#huidiLocalEditorBar')?.remove();$$('.fp-trial-watermark').forEach(el=>{if(!el.hidden)el.hidden=true});try{window.FlypigBOXDocumentGate?.setTrialWatermark?.(false)}catch(_){} }
+-function scheduleCleanup(){cleanupTimers.forEach(clearTimeout);cleanupTimers=[0,180,520,1100,2200].map(ms=>setTimeout(()=>{cleanupLegacy();ensureCanonicalToolbar();syncToolbar()},ms))}
++let toolbarObserver=null,toolbarSettleTimer=0;
++function stabilizeToolbar(){
++  toolbarObserver?.disconnect?.();
++  cleanupLegacy();ensureCanonicalToolbar();syncToolbar();
++  const actions=$('#fpLiteToolbar .fp-lite-toolbar-actions');
++  if(actions&&toolbarObserver)toolbarObserver.observe(actions,{childList:true});
++}
++function scheduleCleanup(){
++  cleanupTimers.forEach(clearTimeout);cleanupTimers=[];
++  if(!toolbarObserver){
++    toolbarObserver=new MutationObserver(records=>{
++      // Only react when another module really inserts/removes a top-level toolbar control.
++      if(!records.some(r=>r.addedNodes?.length||r.removedNodes?.length))return;
++      clearTimeout(toolbarSettleTimer);toolbarSettleTimer=setTimeout(stabilizeToolbar,55);
++    });
++  }
++  stabilizeToolbar();
++  // One bounded late settle is enough for deferred template-center code; the old
++  // 0/180/520/1100/2200ms loop visibly re-ordered the fixed header five times.
++  cleanupTimers=[setTimeout(stabilizeToolbar,360)];
++}
+ function setSavedState(text){lastSaveState=text||'已保存';const state=$('#fpLiteSaveState');if(state)state.textContent=`左侧填写与资料复用 · 右侧实时 PDF · ${lastSaveState}`;const badge=$('#huidiLocalStateBadge');if(badge)badge.textContent=lastSaveState.includes('未保存')?'本地 · 待保存':'本地 · 已保存'}
+ function createHeaderButton(id,text,handler,cls='fp-v3325-head-action'){let b=document.getElementById(id);if(b)return b;b=document.createElement('button');b.type='button';b.id=id;b.className=cls;b.textContent=text;b.addEventListener('click',handler);return b}
+ function ensureLocalExportItems(){const menu=$('#fpLiteExportMenu>div');if(!menu)return;const specs=[['data-xlsx','数据版 Excel (.xlsx)','适合采购、财务、仓库与 ERP 数据处理'],['print','打印 / 另存 PDF','使用浏览器打印能力']];for(const [kind,title,tip] of specs){if(menu.querySelector(`[data-local-export="${kind}"]`))continue;const b=document.createElement('button');b.type='button';b.dataset.localExport=kind;b.innerHTML=`<b>${title}</b><small>${tip}</small>`;menu.appendChild(b)}}
