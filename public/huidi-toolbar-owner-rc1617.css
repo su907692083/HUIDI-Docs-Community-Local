@@ -1,0 +1,10 @@
+/* RC16.17 fixed toolbar geometry. */
+@media (min-width: 901px){
+  body.huidi-local-editor-rc5 #fpLiteToolbar{align-items:center!important;flex-wrap:nowrap!important;gap:10px!important;}
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left{flex:0 0 220px!important;width:220px!important;min-width:220px!important;max-width:220px!important;}
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left>div{min-width:0!important;}
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions{flex:1 1 auto!important;width:auto!important;min-width:0!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:none!important;}
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions>*{flex:0 0 auto!important;}
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions::-webkit-scrollbar{display:none!important;}
+}
+#fpLiteToolbar[data-huidi-toolbar-stable="1"] .fp-lite-toolbar-actions{contain:layout style;}
