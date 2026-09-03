@@ -1,0 +1,26 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),pub=path.join(root,'public');
+const read=f=>fs.readFileSync(path.join(pub,f),'utf8');
+const pkg=JSON.parse(fs.readFileSync(path.join(root,'package.json'),'utf8'));
+const manifest=JSON.parse(fs.readFileSync(path.join(root,'RELEASE-MANIFEST.json'),'utf8'));
+const html=read('editor.html');
+const errors=[]; const ok=(c,m)=>{if(!c)errors.push(m)};
+ok(pkg.version==='1.2.0-rc16.13','package version is not RC16.13');
+ok(manifest.version==='1.2.0-RC16.13'&&manifest.release==='RC16.13','release manifest is not RC16.13');
+ok(html.includes('RC16.13 Page Composer'),'primary-flow composer marker missing');
+ok(html.includes("slots.primary||''")&&html.indexOf("slots.primary||''")<html.indexOf("slots.supplement||''"),'primary goods are not ordered before supplemental fields');
+ok(html.includes('function rebalanceSparseIntermediatePages(documentShell)'),'intermediate-page composer missing');
+ok(html.includes('function rebalanceSparseProductContinuationPages(documentShell)'),'product-continuation balancer missing');
+ok(html.includes('function pullLeadingProductRowsBackward(previous,next,targetUtilization=.74)'),'leading product row backfill missing');
+ok(html.includes('qualityViolations'),'pagination quality gate missing');
+ok(html.includes('sparse-nonfinal'),'sparse non-final page gate missing');
+ok(html.includes('core-products-delayed'),'delayed core goods gate missing');
+ok(html.includes('firstProductPageNumber(documentShell)'),'first product page measurement missing');
+ok(html.includes("target.page.dataset.fpSummaryContinuation='1'"),'explicit summary continuation policy missing');
+ok(html.includes("if(page.dataset.fpSummaryContinuation==='1')return;"),'summary continuation is not recognized by semantic validator');
+const split=html.slice(html.indexOf('function splitTableSection'),html.indexOf('const PDF_PRODUCT_FLOW_SELECTOR'));
+ok(!split.includes(".pdf-quotation-items,.pdf-pi-goods,.pdf-contract-goods-section,.pdf-commercial-goods,.pdf-packing-goods"),'short product tables are still forced atomic');
+ok(html.includes('balancePass<3'),'stability composer is not bounded to multi-pass balance');
+ok(html.includes('schedulePaginationStabilityCheck(generation,stabilityPass,balancePass+1)'),'balance pass is not advanced deterministically');
+if(errors.length){console.error('RC16.13 unified PDF Page Composer validation FAIL');errors.forEach(e=>console.error(' - '+e));process.exit(1)}
+console.log('RC16.13 unified PDF Page Composer validation PASS');
