@@ -1,0 +1,26 @@
+--- rex1614_source/public/editor.html	2026-09-03 07:16:48.000000000 +0000
++++ rc1615_source/public/editor.html	2026-09-03 07:53:45.923031702 +0000
+@@ -1,6 +1,6 @@
+ <!DOCTYPE html>
+ <html lang="zh-CN">
+-<head><script src="./community-local-mode.js"></script>
++<head><script>document.documentElement.classList.add('huidi-rc1615-boot');setTimeout(function(){document.documentElement.classList.remove('huidi-rc1615-boot')},3200);</script><style id="huidi-rc1615-critical">html.huidi-rc1615-boot{background:#f5f8fb}html.huidi-rc1615-boot body{overflow:hidden!important}html.huidi-rc1615-boot body>*{visibility:hidden!important}html.huidi-rc1615-boot:before{content:"正在准备单据…";position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:2147483647;color:#30435f;font:700 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;letter-spacing:.02em}html.huidi-rc1615-boot:after{content:"";position:fixed;left:50%;top:calc(46% + 28px);width:110px;height:3px;transform:translateX(-50%);z-index:2147483647;border-radius:99px;background:linear-gradient(90deg,#dbe7f2 0 20%,#0f7bdc 45% 60%,#dbe7f2 80% 100%);background-size:220% 100%;animation:huidiRc1615Boot 1.05s linear infinite}@keyframes huidiRc1615Boot{to{background-position:-220% 0}}html.huidi-rc1615-boot #fpA12PreviewReadiness,[data-huidi-preview-hidden="1"]{visibility:hidden!important}</style><script src="./community-local-mode.js"></script>
+ <script src="./huidi-local-db-rc165.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.8"></script><script src="./huidi-local-core-rc167.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.8"></script><link rel="stylesheet" href="./community-local-mode.css"><link rel="stylesheet" href="./huidi-local-rc5.css">
+ <script src="./assets/vendor/html2canvas.min.js"></script><script src="./assets/vendor/jspdf.umd.min.js"></script>
+   <meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; connect-src 'self'; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+@@ -5431,7 +5431,7 @@
+ <script src="./flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js?v=20260729-r1-3a-18-3-integration-3"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-schema-runtime.js?v=20260729-r1-3a-18"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-rules.js?v=20260729-r1-3a-18"></script>
+-<script src="./huidi-issue-navigator-rc1614.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.14"></script>
++<script src="./huidi-issue-navigator-rc1615.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.15"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js?v=20260731-r1-3a-18-23-3-issue-navigation-rc1614"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-document-linkage.js?v=20260729-r1-3a-18"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-router-upgrade.js?v=20260729-r1-3a-18"></script>
+@@ -5452,5 +5452,6 @@
+ <script src="./huidi-local-editor-rc15.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
+ <script src="./huidi-doc-i18n-surface-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
+ <script src="./huidi-layout-policy-rc1610.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.10"></script>
++<script src="./huidi-runtime-stability-rc1615.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.15"></script>
+ </body>
+ </html>
