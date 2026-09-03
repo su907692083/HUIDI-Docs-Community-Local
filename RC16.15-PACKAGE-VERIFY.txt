@@ -1,0 +1,75 @@
+HUIDI Docs Community Local V1.2.0 RC16.15 — PACKAGE VERIFY
+Theme: First Paint + Runtime Stabilization
+Date: 2026-09-03
+Status: TEST CANDIDATE — real Windows visual acceptance still required
+
+PACKAGE IDENTITY
+- WINDOWS: HUIDI-Docs-Community-Local-V1.2.0-RC16.15-WINDOWS.zip
+  SHA256: 79fe1913276a0975ea7eb33f433eff04563916ef7eff0264b78e247acc9bcb19
+  Files: 346
+- SOURCE: HUIDI-Docs-Community-Local-V1.2.0-RC16.15-SOURCE.zip
+  SHA256: 9ae277efb0ef402b05395ef8eaf186ea25a2fabdb5bd695e634b1c470bc76f2e
+  Files: 353
+- SOURCE-only files: 7 (.gitignore, CODE_OF_CONDUCT.md, CONTRIBUTING.md, SELF-HOSTING.md, SOURCE-PACKAGE.md, package.json, tools/validate-local.cjs)
+- SOURCE/WINDOWS public runtime: 242 / 242 exact path + SHA parity
+
+RC16.15 RUNTIME FIXES
+- Critical first-paint gate installed before editor body paints.
+- Editor stays on one neutral “正在准备单据…” state until canonical toolbar + stable paginated preview are ready; bounded fallback prevents a hidden-page dead end.
+- RC16.14 Issue Navigator document.body subtree observer removed.
+- Issue Navigator discovery now watches body direct children only; after the formal dialog exists, only that small dialog subtree is observed.
+- Local editor toolbar 0/180/520/1100/2200 ms five-pass reordering removed.
+- Toolbar now uses one immediate stabilization + one bounded 360 ms late settle, then reacts only to actual top-level toolbar child changes.
+- Layout Policy 250/900 ms startup resync timers removed; one double-requestAnimationFrame settled sync remains.
+- RC16.14 Clip-Aware Pagination + Issue Navigator retained.
+- RC16.13 Page Composer, RC16.12 Template Family, RC16.11 Pagination Stability, RC16.10 Compact/Standard retained.
+
+STATIC / RELEASE GATES
+- npm run check: PASS (executed from final re-extracted SOURCE ZIP)
+- RC16.10 compact/standard retained gate: PASS
+- RC16.11 pagination stability retained gate: PASS
+- RC16.12 unified template family retained gate: PASS
+- RC16.13 Page Composer retained gate: PASS
+- RC16.14 clip/navigation retained gate: PASS
+- RC16.15 first-paint/runtime stability gate: PASS
+- JS/CJS syntax scan: PASS
+- Inline JS syntax: editor 8 blocks / 0 fail; document-start 1 / 0; catalog-studio 2 / 0
+- HTML local references: PASS
+- CSP/local-only guard presence: PASS
+- config/feishu.local.json: NOT INCLUDED
+
+PROTECTED PDF CORE
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+  SHA256: abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+  SHA256: 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+- Both protected files unchanged: PASS
+
+ZIP INTEGRITY
+- SOURCE ZIP CRC: PASS
+- WINDOWS ZIP CRC: PASS
+- SOURCE re-extract: 0 missing / 0 extra / 0 SHA mismatch
+- WINDOWS re-extract: 0 missing / 0 extra / 0 SHA mismatch
+
+WINDOWS CONTRACT / LOOPBACK SMOKE
+- START-HUIDI-LOCAL.cmd: CRLF, no UTF-8 BOM
+- tools/local-server.ps1: UTF-8 BOM + CRLF
+- Normal local-server start: 127.0.0.1:8765 PASS
+- HTTP 200: /
+- HTTP 200: /workspace.html
+- HTTP 200: /document-start.html
+- HTTP 200: QT editor route
+- HTTP 200: PI editor route
+- HTTP 200: SC editor route
+- HTTP 200: CI editor route
+- HTTP 200: PL editor route
+- HTTP 200: /catalog-studio/index.html
+- HTTP 200: /huidi-public-config.json
+- HTTP 200: /api/feishu/status
+- Port collision: 8765 occupied -> auto fallback 8766 -> CI editor HTTP 200 PASS
+
+GUI ACCEPTANCE BOUNDARY
+The container Chromium environment cannot provide a trustworthy real-Windows first-paint visual acceptance for this local editor session. Do NOT treat GUI flicker/unresponsive symptoms as automatically verified here. Real Windows acceptance is still required for:
+1) opening QT/PI/SC/CI/PL without repeated fixed-toolbar flashes;
+2) Preview appears atomically instead of showing transient red/intermediate content before the document;
+3) repeated template/type/density/export interactions do not trigger Chrome “页面无响应”.
