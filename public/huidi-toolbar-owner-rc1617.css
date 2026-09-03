@@ -1,10 +1,81 @@
-/* RC16.17 fixed toolbar geometry. */
-@media (min-width: 901px){
-  body.huidi-local-editor-rc5 #fpLiteToolbar{align-items:center!important;flex-wrap:nowrap!important;gap:10px!important;}
-  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left{flex:0 0 220px!important;width:220px!important;min-width:220px!important;max-width:220px!important;}
-  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left>div{min-width:0!important;}
-  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions{flex:1 1 auto!important;width:auto!important;min-width:0!important;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:visible!important;scrollbar-width:none!important;}
-  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions>*{flex:0 0 auto!important;}
-  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions::-webkit-scrollbar{display:none!important;}
+/* RC16.20 toolbar interaction stability.
+   Preserve RC16.17 canonical order, but never put dropdown menus inside a clipping scroll box. */
+body.huidi-local-editor-rc5 #fpLiteToolbar{
+  box-sizing:border-box!important;
+  position:sticky!important;
+  top:0!important;
+  z-index:9900!important;
+  display:grid!important;
+  grid-template-columns:minmax(176px,204px) minmax(0,1fr)!important;
+  align-items:center!important;
+  gap:8px!important;
+  min-height:64px!important;
+  height:auto!important;
+  padding:9px 12px!important;
+  overflow:visible!important;
+  backdrop-filter:none!important;
+  contain:none!important;
 }
-#fpLiteToolbar[data-huidi-toolbar-stable="1"] .fp-lite-toolbar-actions{contain:layout style;}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left{
+  display:flex!important;
+  align-items:center!important;
+  min-width:0!important;
+  width:auto!important;
+  max-width:none!important;
+  flex:0 0 auto!important;
+}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left>div{min-width:0!important;}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:flex-start!important;
+  gap:5px!important;
+  min-width:0!important;
+  width:100%!important;
+  min-height:40px!important;
+  flex-wrap:wrap!important;
+  overflow:visible!important;
+  padding:0!important;
+  contain:none!important;
+}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions>*{
+  flex:0 0 auto!important;
+  align-self:center!important;
+  margin:0!important;
+}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-menu,
+body.huidi-local-editor-rc5 #fpLiteToolbar #huidiLocalNextHeader,
+body.huidi-local-editor-rc5 #fpLiteToolbar #huidiMasterSyncHeader{
+  position:relative!important;
+  overflow:visible!important;
+  contain:none!important;
+}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-menu>div,
+body.huidi-local-editor-rc5 #fpLiteToolbar #huidiLocalNextHeader>div,
+body.huidi-local-editor-rc5 #fpLiteToolbar #huidiMasterSyncHeader>div{
+  z-index:20050!important;
+  max-height:min(68vh,520px)!important;
+  overflow:auto!important;
+}
+@media (min-width:901px){
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions>button,
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-menu>summary,
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-v3321-head-action,
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-v3325-head-action{
+    min-height:36px!important;
+    padding-left:8px!important;
+    padding-right:8px!important;
+    font-size:11px!important;
+  }
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left strong{font-size:15px!important;}
+}
+@media (max-width:900px){
+  body.huidi-local-editor-rc5 #fpLiteToolbar{
+    display:flex!important;
+    align-items:flex-start!important;
+    flex-wrap:wrap!important;
+    padding:8px 10px!important;
+  }
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left{min-width:150px!important;}
+  body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions{width:100%!important;}
+}
