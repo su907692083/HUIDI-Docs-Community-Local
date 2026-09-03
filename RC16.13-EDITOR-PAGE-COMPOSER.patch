@@ -1,0 +1,262 @@
+--- rc1612_fresh/public/editor.html	2026-09-03 05:29:47.632125960 +0000
++++ rc1613_source/public/editor.html	2026-09-03 05:21:56.129044290 +0000
+@@ -1978,10 +1978,13 @@
+       hero,
+       meta,
+       slots.parties||'',
+-      slots.supplement||'',
++      // RC16.13 Page Composer: primary business flow owns the first-page capacity.
++      // Supplemental/reference/compliance fields must not push the product table to
++      // a later page while usable space remains above it.
+       slots.primary||'',
+       slots.summary||'',
+       slots.amountWords||'',
++      slots.supplement||'',
+       slots.logistics||'',
+       slots.payment||'',
+       slots.terms||'',
+@@ -2213,8 +2216,8 @@
+     // rule to every 1-4 row business table. The old blanket rule pushed short
+     // quotation/PI terms onto an almost empty second page.
+     const keepWholeShort=Boolean(
+-      section.matches?.('.pdf-quotation-items,.pdf-pi-goods,.pdf-contract-goods-section,.pdf-commercial-goods,.pdf-packing-goods,.pdf-contract-signatures,.pdf-signature-section') ||
+-      section.querySelector?.('.products,.signature-zone,.pdf-contract-signatures')
++      section.matches?.('.pdf-contract-signatures,.pdf-signature-section') ||
++      section.querySelector?.('.signature-zone,.pdf-contract-signatures')
+     );
+     if(keepWholeShort&&rows.length<=4){
+       current.template.appendChild(section);
+@@ -2266,9 +2269,10 @@
+       return appendFlowChunk(tail,createPage,current);
+     }
+ 
+-    // RC16.6.4: product rows and their business summary are one semantic flow.
+-    // Keep the final product row adjacent to totals/carton summary instead of
+-    // allowing the summary to become an orphan first block on the next page.
++    // RC16.13: product rows are primary flow. Keep the final row with Summary when
++    // the pair fits, but never evict a row that already fits merely to force a very
++    // tall Summary onto the same physical page. In that case Summary gets an explicit
++    // continuation page and the product row stays where the available space is.
+     let target=current;
+     let group=null;
+@@ -2281,32 +2285,39 @@
+       const isLast=rowIndex===rows.length-1;
+       const clone=row.cloneNode(true);
+       group.tbody.appendChild(clone);
+-      if(isLast)target.template.appendChild(tail);
+-      if(!pageOverflows(target.body))return;
++      if(!isLast){
++        if(!pageOverflows(target.body))return;
++        clone.remove();
++        if(!group.tbody.children.length)group.frame.remove();
++        target=createPage();
++        group=cloneSectionFrame(section,table);
++        const title=group.frame.querySelector('.doc-section');if(title&&rowIndex>0)title.dataset.continued='1';
++        target.template.appendChild(group.frame);
++        group.tbody.appendChild(clone);
++        return;
++      }
++
++      if(pageOverflows(target.body,1)){
++        clone.remove();
++        if(!group.tbody.children.length)group.frame.remove();
++        target=createPage();
++        group=cloneSectionFrame(section,table);
++        const title=group.frame.querySelector('.doc-section');if(title&&rowIndex>0)title.dataset.continued='1';
++        target.template.appendChild(group.frame);
++        group.tbody.appendChild(clone);
++      }
+ 
+-      if(isLast)tail.remove();
+-      clone.remove();
+-      const groupHasRows=group.tbody.children.length>0;
+-      if(!groupHasRows)group.frame.remove();
++      target.template.appendChild(tail);
++      if(!pageOverflows(target.body,1))return;
+ 
++      tail.remove();
+       target=createPage();
+-      group=cloneSectionFrame(section,table);
+-      const title=group.frame.querySelector('.doc-section');
+-      if(title&&rowIndex>0)title.dataset.continued='1';
+-      target.template.appendChild(group.frame);
+-      group.tbody.appendChild(clone);
+-      if(isLast){
+-        target.template.appendChild(tail);
+-        if(pageOverflows(target.body,1)){
+-          tail.remove();
+-          target=createPage();
+-          target.template.appendChild(tail);
+-          target.page.dataset.fpSemanticDegraded='product-tail';
+-        }
+-      }
++      target.template.appendChild(tail);
++      target.page.dataset.fpSummaryContinuation='1';
+     });
+     return target;
+   }
+@@ -2373,6 +2384,141 @@
+     const safeHeight=Math.max(1,(body.clientHeight||0)-logicalPdfFooterReserve(body));
+     return measuredContentHeight(body)/safeHeight;
+   }
++  function visiblePdfBusinessChildren(template){
++    return [...(template?.children||[])].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
++  }
++  function firstProductPageNumber(documentShell){
++    const pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
++    const index=pages.findIndex(page=>Boolean(page.querySelector(PDF_PRODUCT_FLOW_SELECTOR)));
++    return index<0?0:index+1;
++  }
++  function pullLeadingProductRowsBackward(previous,next,targetUtilization=.74){
++    const previousBody=previous?.querySelector('.pdf-page-body'),nextBody=next?.querySelector('.pdf-page-body');
++    const previousTemplate=previousBody?.querySelector('.pdf-template'),nextTemplate=nextBody?.querySelector('.pdf-template');
++    if(!previousBody||!nextBody||!previousTemplate||!nextTemplate||previous.dataset.fpCoreProductFitBlocked==='1')return false;
++    const nextVisible=visiblePdfBusinessChildren(nextTemplate);
++    const sourceSection=nextVisible.find(isProductFlowChunk);
++    if(!sourceSection||nextVisible[0]!==sourceSection)return false;
++    const sourceTable=sourceSection.querySelector?.(':scope > table')||sourceSection.querySelector?.('table');
++    const sourceBody=sourceTable?.querySelector?.('tbody');
++    if(!sourceTable||!sourceBody||!sourceBody.children.length)return false;
++    const summary=sourceSection.nextElementSibling&&isProductSummaryTail(sourceSection.nextElementSibling)?sourceSection.nextElementSibling:null;
++    const previousFlows=visiblePdfBusinessChildren(previousTemplate).filter(isProductFlowChunk);
++    const existingSection=previousFlows[previousFlows.length-1];
++    const existingTable=existingSection?.querySelector?.(':scope > table')||existingSection?.querySelector?.('table');
++    const existingBody=existingTable?.querySelector?.('tbody');
++    const continuation=existingBody?{frame:existingSection,table:existingTable,tbody:existingBody,reused:true}:cloneSectionFrame(sourceSection,sourceTable);
++    if(!continuation.reused){const title=continuation.frame.querySelector('.doc-section');if(title)title.dataset.continued='1';previousTemplate.appendChild(continuation.frame);}
++    let moved=0;
++    while(sourceBody.children.length>1&&pageUtilizationRatio(previousBody)<targetUtilization){
++      const row=sourceBody.firstElementChild;
++      continuation.tbody.appendChild(row);
++      if(pageOverflows(previousBody,1)){sourceBody.insertBefore(row,sourceBody.firstElementChild);break;}
++      moved+=1;
++    }
++    if(sourceBody.children.length===1&&summary&&pageUtilizationRatio(previousBody)<targetUtilization){
++      const row=sourceBody.firstElementChild;
++      continuation.tbody.appendChild(row);
++      previousTemplate.appendChild(summary);
++      if(pageOverflows(previousBody,1)){
++        nextTemplate.insertBefore(summary,sourceSection.nextElementSibling);
++        sourceBody.appendChild(row);
++      }else moved+=1;
++    }
++    if(!moved){if(!continuation.reused)continuation.frame.remove();previous.dataset.fpCoreProductFitBlocked='1';return false;}
++    if(!sourceBody.children.length)sourceSection.remove();
++    if(!continuation.reused&&!continuation.tbody.children.length)continuation.frame.remove();
++    previous.dataset.fpPrimaryFlowPulled='1';next.dataset.fpPrimaryFlowPulled='1';
++    return true;
++  }
++  function rebalanceSparseProductContinuationPages(documentShell){
++    const pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
++    if(pages.length<3)return false;
++    let changed=false;
++    const TRIGGER=.36,TARGET=.52,MIN_PREVIOUS=.48;
++    for(let index=1;index<pages.length-1;index+=1){
++      const current=pages[index],previous=pages[index-1];
++      const currentBody=current.querySelector('.pdf-page-body'),previousBody=previous.querySelector('.pdf-page-body');
++      const currentTemplate=currentBody?.querySelector('.pdf-template'),previousTemplate=previousBody?.querySelector('.pdf-template');
++      if(!currentBody||!previousBody||!currentTemplate||!previousTemplate||pageUtilizationRatio(currentBody)>=TRIGGER)continue;
++      const currentFlows=visiblePdfBusinessChildren(currentTemplate).filter(isProductFlowChunk);
++      const previousFlows=visiblePdfBusinessChildren(previousTemplate).filter(isProductFlowChunk);
++      const targetSection=currentFlows[0],sourceSection=previousFlows[previousFlows.length-1];
++      if(!targetSection||!sourceSection)continue;
++      const targetTable=targetSection.querySelector(':scope > table')||targetSection.querySelector('table');
++      const sourceTable=sourceSection.querySelector(':scope > table')||sourceSection.querySelector('table');
++      const targetBody=targetTable?.querySelector('tbody'),sourceBody=sourceTable?.querySelector('tbody');
++      if(!targetBody||!sourceBody||!sourceBody.children.length)continue;
++      let moved=0;
++      while(sourceBody.children.length>1&&pageUtilizationRatio(currentBody)<TARGET&&pageUtilizationRatio(previousBody)>MIN_PREVIOUS){
++        const row=sourceBody.lastElementChild;
++        targetBody.insertBefore(row,targetBody.firstElementChild);
++        if(pageOverflows(currentBody,1)){sourceBody.appendChild(row);break;}
++        moved+=1;
++      }
++      if(moved){current.dataset.fpProductContinuationBalanced='1';previous.dataset.fpProductContinuationBalanced='1';changed=true;}
++    }
++    if(changed)documentShell.dataset.fpProductContinuationBalanced='1';
++    return changed;
++  }
++  function rebalanceSparseIntermediatePages(documentShell){
++    let changed=false;
++    let pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
++    const TARGET=.74,TRIGGER=.66;
++    for(let index=0;index<pages.length-1;index+=1){
++      const current=pages[index],next=pages[index+1];
++      const currentBody=current.querySelector('.pdf-page-body'),nextBody=next.querySelector('.pdf-page-body');
++      const currentTemplate=currentBody?.querySelector('.pdf-template'),nextTemplate=nextBody?.querySelector('.pdf-template');
++      if(!currentBody||!nextBody||!currentTemplate||!nextTemplate)continue;
++      if(current.dataset.fpProductContinuationBalanced==='1'||next.dataset.fpProductContinuationBalanced==='1')continue;
++      if(pageUtilizationRatio(currentBody)>=TRIGGER)continue;
++      let pairChanged=false;
++      for(let pass=0;pass<8&&pageUtilizationRatio(currentBody)<TARGET;pass+=1){
++        const visible=visiblePdfBusinessChildren(nextTemplate);
++        const node=visible[0];
++        if(!node)break;
++        if(isProductFlowChunk(node)){
++          if(!pullLeadingProductRowsBackward(current,next,TARGET))break;
++          pairChanged=true;changed=true;continue;
++        }
++        if(isProductSummaryTail(node)){
++          if(next.dataset.fpSummaryContinuation==='1')break;
++          if(!currentTemplate.querySelector(PDF_PRODUCT_FLOW_SELECTOR))break;
++          currentTemplate.appendChild(node);
++          if(pageOverflows(currentBody,1)){nextTemplate.insertBefore(node,nextTemplate.firstElementChild);break;}
++          pairChanged=true;changed=true;continue;
++        }
++        if(node.matches?.('.pdf-template-hero,.doc-hero'))break;
++        currentTemplate.appendChild(node);
++        if(pageOverflows(currentBody,1)){nextTemplate.insertBefore(node,nextTemplate.firstElementChild);break;}
++        pairChanged=true;changed=true;
++      }
++      if(pairChanged&&!pageHasContent(next)){next.remove();pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);index-=1;}
++    }
++    if(changed)documentShell.dataset.fpIntermediateBalanced='1';
++    return changed;
++  }
+@@ -2521,18 +2667,35 @@
+       const first=visible[0];
+       if(!isProductSummaryTail(first))return;
++      if(page.dataset.fpSummaryContinuation==='1')return;
+       const previousTemplate=pages[index-1]?.querySelector('.pdf-template');
+@@
+-    const report={
+-      valid:overflowPages.length===0&&actual.rowCount===(expected?.rowCount||0)&&missingModules.length===0&&semanticViolations.length===0,
++    const utilization=pages.map(page=>pageUtilizationRatio(page.querySelector('.pdf-page-body')));
++    const qualityViolations=[];
++    utilization.forEach((ratio,index)=>{
++      if(index<pages.length-1&&ratio<.34)qualityViolations.push(`page-${index+1}:sparse-nonfinal-${Math.round(ratio*100)}`);
++    });
++    const firstProductPage=firstProductPageNumber(documentShell);
++    if(firstProductPage>1){
++      const prior=utilization.slice(0,firstProductPage-1);
++      const sparsePrior=prior.findIndex(ratio=>ratio<.66);
++      if(sparsePrior>=0)qualityViolations.push(`page-${sparsePrior+1}:core-products-delayed`);
++    }
++    const report={
++      valid:overflowPages.length===0&&actual.rowCount===(expected?.rowCount||0)&&missingModules.length===0&&semanticViolations.length===0&&qualityViolations.length===0,
+@@
+       semanticViolations,
++      qualityViolations,
++      pageUtilization:utilization.map(ratio=>Math.round(ratio*100)),
++      firstProductPage,
+@@ -2630,6 +2793,11 @@
+     rebalanceLowContentTail(documentShell);
++    rebalanceSparseProductContinuationPages(documentShell);
++    rebalanceSparseIntermediatePages(documentShell);
++    repairOrphanProductSummaries(documentShell);
+@@
+-      page.dataset.fpUtilization=String(Math.round((measuredContentHeight(body)/Math.max(1,body?.clientHeight||1))*100));
++      page.dataset.fpUtilization=String(Math.round(pageUtilizationRatio(body)*100));
+@@ -2734,19 +2902,22 @@
+-      if(shell&&!overflowPages.length&&balancePass<1){
++      if(shell&&!overflowPages.length&&balancePass<3){
++        const movedContinuation=rebalanceSparseProductContinuationPages(shell);
++        const movedIntermediate=rebalanceSparseIntermediatePages(shell);
++        repairOrphanProductSummaries(shell);
+         const movedSparse=rebalanceSparseFinalPage(shell);
+@@
+-        if(movedSparse||movedProduct){
++        if(movedContinuation||movedIntermediate||movedSparse||movedProduct){
+@@
+-          schedulePaginationStabilityCheck(generation,stabilityPass,1);
++          schedulePaginationStabilityCheck(generation,stabilityPass,balancePass+1);
