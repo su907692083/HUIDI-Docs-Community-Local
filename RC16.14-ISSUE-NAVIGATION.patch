@@ -1,0 +1,96 @@
+--- /tmp/r13s/public/flypigbox-v3-3-6-24-r1-3a-17-rule-packs.js	2026-09-02 16:34:36.000000000 +0000
++++ rc1614_source/public/flypigbox-v3-3-6-24-r1-3a-17-rule-packs.js	2026-09-03 07:16:11.816117207 +0000
+@@ -1,7 +1,7 @@
+ /* HUIDI V3.3.6.24-R1.3A.17 — unified document rule packs and deterministic validation. */
+ (()=>{
+   'use strict';
+-  const VERSION='V3.3.6.24-R1.3A.17-RULES.1';
++  const VERSION='V3.3.6.24-R1.3A.17-RULES.1-RC16.14-LOCATORS';
+   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
+   const num=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
+   const unique=rows=>[...new Map((rows||[]).filter(Boolean).map(row=>[`${row.code}|${row.path}|${row.message}`,row])).values()];
+@@ -77,8 +77,8 @@
+       forbidden:['smtpPassword'],outputs:['pdf','xlsx','print']
+     }
+   });
+-  function issue(severity,code,path,message,source='rule_pack'){
+-    return{severity,code,path,message,source};
++  function issue(severity,code,path,message,source='rule_pack',locator={}){
++    return{severity,code,path,message,source,...(locator&&typeof locator==='object'?locator:{})};
+   }
+   function validateRequired(fields,required,formal){
+     if(!formal)return[];
+@@ -153,7 +153,17 @@
+       const rows=[];
+       const map=(list,severity)=>{
+         (Array.isArray(list)?list:[]).forEach((entry,index)=>{
+-          rows.push(issue(severity,`trade_factory_${index}`,'document',clean(entry?.message||entry?.text||entry)||'单据仍有待核对内容。','trade_factory'));
++          const locator=entry&&typeof entry==='object'?{fieldId:clean(entry.fieldId),selector:clean(entry.selector),section:clean(entry.section),itemIndex:entry.itemIndex,itemField:clean(entry.itemField)}:{};
++          let path=clean(entry?.path||entry?.target);
++          if(!path&&window.HUIDIIssueNavigator?.pathFromTradeIssue)path=window.HUIDIIssueNavigator.pathFromTradeIssue(locator);
++          if(!path&&locator.fieldId)path=`fields.${locator.fieldId}`;
++          if(!path&&locator.selector){
++            const nth=locator.selector.match(/\.item-row:nth-child\((\d+)\)/);
++            const field=locator.selector.match(/\.i-([a-z-]+)/)?.[1]||'';
++            const aliases={'net-weight':'netWeight','gross-weight':'grossWeight','carton-no':'cartonNo','package-desc':'packageDescription','item-marks':'shippingMarks'};
++            if(nth&&field)path=`items.${Math.max(0,Number(nth[1])-1)}.${aliases[field]||field}`;
++          }
++          rows.push(issue(severity,`trade_factory_${index}`,path||'document',clean(entry?.message||entry?.text||entry)||'单据仍有待核对内容。','trade_factory',locator));
+         });
+       };
+       map(result.blockers||result.errors,'blocker');map(result.warnings,'warning');
+--- /tmp/r13s/public/flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js	2026-09-02 16:34:36.000000000 +0000
++++ rc1614_source/public/flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js	2026-09-03 07:16:11.816732541 +0000
+@@ -1,7 +1,7 @@
+ /* HUIDI V3.3.6.24-R1.3A.18.3 — formal rule, router, workbench and document-save integration. */
+ (()=>{
+   'use strict';
+-  const VERSION='V3.3.6.24-R1.3A.18.15-INTEGRATION.1';
++  const VERSION='V3.3.6.24-R1.3A.18.15-INTEGRATION.2-RC16.14';
+   const $=(selector,root=document)=>root.querySelector(selector);
+   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
+   const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
+@@ -61,14 +61,18 @@
+   function ensureDialog(){
+     let dialog=$('#fp-a17-engine-dialog');if(dialog)return dialog;
+     dialog=document.createElement('dialog');dialog.id='fp-a17-engine-dialog';dialog.className='fp-a17-dialog';dialog.innerHTML='<section class="fp-a17-dialog-card"><header><div><p data-fp-a17-eyebrow>处理结果</p><h2 data-fp-a17-title>系统检查</h2></div><button class="fp-a17-dialog-close" type="button" aria-label="关闭">×</button></header><div data-fp-a17-body></div><div class="fp-a17-dialog-actions"><button type="button" class="primary" data-fp-a17-close>知道了</button></div></section>';
+-    dialog.addEventListener('click',event=>{if(event.target===dialog||event.target.closest('[data-fp-a17-close],.fp-a17-dialog-close'))dialog.close();});
++    dialog.addEventListener('click',event=>{
++      if(event.target===dialog||event.target.closest('[data-fp-a17-close],.fp-a17-dialog-close')){dialog.close();return;}
++      const issueButton=event.target.closest('[data-fp-a17-issue-index]');if(issueButton){const issue=dialog.__huidiIssues?.[Number(issueButton.dataset.fpA17IssueIndex)];dialog.close();if(issue)setTimeout(()=>window.HUIDIIssueNavigator?.locate?.(issue),40);}
++    });
+     document.body.appendChild(dialog);return dialog;
+   }
+   function showDialog({title='系统检查',eyebrow='处理结果',summary='',tone='ok',issues=[],html=''}={}){
+     const dialog=ensureDialog();$('[data-fp-a17-title]',dialog).textContent=title;$('[data-fp-a17-eyebrow]',dialog).textContent=eyebrow;
+     const body=$('[data-fp-a17-body]',dialog);
++    dialog.__huidiIssues=issues;
+     if(html)body.innerHTML=html;
+-    else body.innerHTML=`<div class="fp-a17-result-summary ${tone}">${escapeHTML(summary)}</div>${issues.length?`<div class="fp-a17-issue-list">${issues.map(row=>`<div class="fp-a17-issue ${row.severity==='blocker'?'blocker':'warning'}">${escapeHTML(row.message||row)}</div>`).join('')}</div>`:''}`;
++    else body.innerHTML=`<div class="fp-a17-result-summary ${tone}">${escapeHTML(summary)}</div>${issues.length?`<div class="fp-a17-issue-list">${issues.map((row,index)=>`<div class="fp-a17-issue ${row.severity==='blocker'?'blocker':'warning'}"><span>${escapeHTML(row.message||row)}</span>${(row.path||row.fieldId||row.selector||row.itemField)?`<button type="button" data-fp-a17-issue-index="${index}">定位修改</button>`:''}</div>`).join('')}</div>`:''}`;
+     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+   }
+   function stateLabel(state){return({active:'可使用',connected:'服务可用',waiting:'暂未开放',available:'后续可用',loading:'正在准备'}[state]||'待确认');}
+--- /tmp/r13s/public/flypigbox-empty-item-readiness-hotfix.js	2026-09-03 02:21:00.000000000 +0000
++++ rc1614_source/public/flypigbox-empty-item-readiness-hotfix.js	2026-09-03 07:16:11.816385946 +0000
+@@ -127,8 +127,8 @@
+     },true);
+     document.addEventListener('click',event=>{
+       if(event.target.closest('[data-fp-clean-empty]')){event.preventDefault();cleanup({announce:true,render:true});schedulePatch(120);return;}
+-      if(event.target.closest('[data-fp-first-issue]')){const banner=event.target.closest('#fpA12PreviewReadiness');const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const path=result?.blockers?.[0]?.path||banner?.dataset.fpFirstIssuePath||'items';focusPath(path);return;}
+-      const issueButton=event.target.closest('[data-fp-readiness-issue]');if(issueButton){const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const index=Number(issueButton.dataset.fpReadinessIssue||0);focusPath(result?.blockers?.[index]?.path||result?.blockers?.[0]?.path||'items');}
++      if(event.target.closest('[data-fp-first-issue]')){const banner=event.target.closest('#fpA12PreviewReadiness');const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const issue=result?.blockers?.[0]||{path:banner?.dataset.fpFirstIssuePath||'items'};if(!window.HUIDIIssueNavigator?.locate?.(issue))focusPath(issue.path||'items');return;}
++      const issueButton=event.target.closest('[data-fp-readiness-issue]');if(issueButton){const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const index=Number(issueButton.dataset.fpReadinessIssue||0);const issue=result?.blockers?.[index]||result?.blockers?.[0]||{path:'items'};if(!window.HUIDIIssueNavigator?.locate?.(issue))focusPath(issue.path||'items');}
+     });
+     document.addEventListener('HUIDI:preview-rendered',()=>schedulePatch(150));
+     document.addEventListener('HUIDI:formal-validation',()=>schedulePatch(90));
+--- /tmp/r13s/public/flypigbox-trade-factory-upgrade.js	2026-09-02 16:34:36.000000000 +0000
++++ rc1614_source/public/flypigbox-trade-factory-upgrade.js	2026-09-03 07:16:11.816624541 +0000
+@@ -248,6 +248,7 @@
+   function scheduleReadiness(delay=150){clearTimeout(readinessTimer);readinessTimer=setTimeout(evaluateReadiness,delay);}
+   function focusIssue(issue){
+     if(!issue)return;
++    if(window.HUIDIIssueNavigator?.locate?.(issue))return;
+     let target=issue.fieldId?$(issue.fieldId):null;if(!target&&issue.selector)target=document.querySelector(issue.selector);
+     if(!target)return;
+     qsa('details').forEach(details=>{if(details.contains(target))details.open=true;});
