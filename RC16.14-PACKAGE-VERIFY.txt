@@ -1,0 +1,59 @@
+HUIDI Docs Community Local V1.2.0 RC16.14
+PACKAGE VERIFY
+Validation date: 2026-09-03
+Status: TEST CANDIDATE
+Theme: Clip-Aware Pagination + Issue Navigator
+
+PACKAGE IDENTITY
+- WINDOWS ZIP: HUIDI-Docs-Community-Local-V1.2.0-RC16.14-WINDOWS.zip
+  SHA256: 027fcc495d21de4a70bbb9770a73db9fc1a3c45f4077dbb78e5011aa3bc8d467
+- SOURCE ZIP: HUIDI-Docs-Community-Local-V1.2.0-RC16.14-SOURCE.zip
+  SHA256: 3c48c39fca8482b183a5c255f65fc115a4a6205ab224945b56475be30a07bfeb
+
+FILE TREE / ZIP
+- SOURCE files: 349
+- WINDOWS files: 342
+- SOURCE-only files: 7
+- SOURCE public runtime: 241 files
+- WINDOWS public runtime: 241 files
+- public runtime exact path + SHA parity: PASS (241/241)
+- SOURCE ZIP CRC: PASS
+- WINDOWS ZIP CRC: PASS
+- SOURCE re-extract: 0 missing / 0 extra / 0 SHA mismatch
+- WINDOWS re-extract: 0 missing / 0 extra / 0 SHA mismatch
+
+STATIC RELEASE GATES
+- npm run check: PASS
+- RC16.10 retained gate: PASS
+- RC16.11 retained gate: PASS
+- RC16.12 retained gate: PASS
+- RC16.13 retained gate: PASS
+- RC16.14 clip/navigation gate: PASS
+- JS syntax / HTML local refs / local CSP guard: PASS
+
+RC16.14
+- Preview report records clipBoundaryPages / clipBoundaryNodes.
+- Pagination valid only when overflowPages=[] and clipBoundaryPages=[].
+- Clip boundary triggers bounded repagination (max 2 stability passes).
+- Canonical Issue Navigator retains Trade Factory fieldId / selector and canonical item paths.
+- Preview “查看第一个问题”、Formal “去补充/返回补充”、top Check locator actions use the common navigation layer.
+- Invalid first-row CI HS Code runtime unit check -> items.0.hs + selector retained: PASS.
+
+PROTECTED PDF CORE
+- flypigbox-v3-3-2-3-pdf-flow-fix.js SHA256 abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js SHA256 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+- Protected core unchanged: PASS
+
+WINDOWS
+- CMD CRLF: PASS
+- PowerShell UTF-8 BOM + CRLF: PASS
+- Normal startup 8765: PASS
+- 11 loopback pages/APIs HTTP 200: PASS
+- 8765 occupied -> automatic 8766 fallback -> CI editor HTTP 200: PASS
+
+SECURITY
+- config/feishu.local.json: NOT INCLUDED
+
+BROWSER GUI LIMITATION
+- Container Chromium is blocked by administrator policy (ERR_BLOCKED_BY_ADMINISTRATOR), so RC16.14 GUI/PDF visual automation is not falsely reported as PASS.
+- Real Windows acceptance remains required for clip-boundary visuals and exact field-focus/highlight behavior.
