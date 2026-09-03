@@ -1,0 +1,116 @@
+--- /tmp/r13s/public/editor.html	2026-09-03 05:21:56.000000000 +0000
++++ rc1614_source/public/editor.html	2026-09-03 07:16:48.727403943 +0000
+@@ -2169,7 +2169,7 @@
+     const logicalReserve=logicalPdfFooterReserve(body);
+     const displayScale=(body.clientHeight||0)>0?bodyRect.height/body.clientHeight:1;
+     const safeBottom=bodyRect.bottom-(logicalReserve*displayScale);
+-    return [...body.querySelectorAll('tr,.pdf-section,.info-section,.doc-section,.money-table,.signature-zone')].filter(node=>{
++    return [...body.querySelectorAll('tr,.pdf-section,.info-section,.doc-section,.money-table,.signature-zone,.pdf-logistics-section,.pdf-payment-section,.pdf-terms-section')].filter(node=>{
+       if(node.hidden||node.classList?.contains('is-hidden'))return false;
+       const style=window.getComputedStyle?.(node);
+       if(style&&(style.display==='none'||style.visibility==='hidden'))return false;
+@@ -2654,10 +2654,12 @@
+   function validatePaginatedDocument(documentShell,expected){
+     const pages=[...documentShell.querySelectorAll('.pdf-page')];
+     const actual=paginationSnapshot(documentShell);
+-    const overflowPages=[];
++    const overflowPages=[],clipBoundaryPages=[],clipBoundaryNodes={};
+     pages.forEach((page,index)=>{
+       const body=page.querySelector('.pdf-page-body');
+       if(pageOverflows(body,1))overflowPages.push(index+1);
++      const clips=clippedPdfNodes(body);
++      if(clips.length){clipBoundaryPages.push(index+1);clipBoundaryNodes[index+1]=clips.length;}
+     });
+     const missingModules=Object.entries(expected?.modules||{}).filter(([key,required])=>required&&!actual.modules[key]).map(([key])=>key);
+     const semanticViolations=[];
+@@ -2687,10 +2689,12 @@
+       if(sparsePrior>=0)qualityViolations.push(`page-${sparsePrior+1}:core-products-delayed`);
+     }
+     const report={
+-      valid:overflowPages.length===0&&actual.rowCount===(expected?.rowCount||0)&&missingModules.length===0&&semanticViolations.length===0&&qualityViolations.length===0,
++      valid:overflowPages.length===0&&clipBoundaryPages.length===0&&actual.rowCount===(expected?.rowCount||0)&&missingModules.length===0&&semanticViolations.length===0&&qualityViolations.length===0,
+       expectedRows:expected?.rowCount||0,
+       actualRows:actual.rowCount,
+       overflowPages,
++      clipBoundaryPages,
++      clipBoundaryNodes,
+       missingModules,
+       semanticViolations,
+       qualityViolations,
+@@ -2871,34 +2875,46 @@
+       if(token!==paginationStabilityToken||!paper.isConnected||String(paper.dataset.fpRenderGeneration||'')!==String(generation||''))return;
+       const pages=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page));
+       const overflowPages=[];
++      const clipBoundaryPages=[];
++      const clipOvershootByPage={};
+       const geometryDriftPages=[];
+       pages.forEach((page,index)=>{
+         const body=page.querySelector('.pdf-page-body');
+         const measured=Math.round(measuredContentHeight(body));
+         const recorded=Number(page.dataset.fpContentHeight||0);
+         if(pageOverflows(body,1))overflowPages.push(index+1);
++        const clips=clippedPdfNodes(body);
++        if(clips.length){
++          clipBoundaryPages.push(index+1);
++          const bodyRect=body.getBoundingClientRect();
++          const scale=(body.clientHeight||0)>0?bodyRect.height/body.clientHeight:1;
++          const safeBottom=bodyRect.bottom-(logicalPdfFooterReserve(body)*scale);
++          clipOvershootByPage[index+1]=Math.max(...clips.map(node=>Math.max(0,(node.getBoundingClientRect().bottom-safeBottom)/Math.max(.01,scale))));
++        }
+         // Geometry drift is diagnostic only. A font/label can legitimately settle
+         // by a few pixels without invalidating pagination; retrying on every benign
+         // delta caused duplicate render generations and page-count instability.
+         if(recorded&&Math.abs(measured-recorded)>8)geometryDriftPages.push(index+1);
+       });
+-      if(overflowPages.length&&stabilityPass<2){
+-        // Convert the observed late layout growth into a bounded logical safety
+-        // guard. The next pagination therefore places one fewer row/block when
+-        // necessary instead of repeatedly trusting pre-font geometry.
++      if((overflowPages.length||clipBoundaryPages.length)&&stabilityPass<2){
++        // RC16.14: preview and formal export share the same safety contract. A
++        // complete row/section crossing the footer boundary is a hard pagination
++        // defect even when the aggregate measured height still fits. Convert both
++        // late overflow and clip-boundary overshoot into one bounded logical guard.
+         let requiredGuard=0;
+-        pages.forEach(page=>{
++        pages.forEach((page,index)=>{
+           const body=page.querySelector('.pdf-page-body');if(!body)return;
+           const baseReserve=Math.max(32,Math.round((body.clientHeight||0)*0.03));
+           const currentGuard=Math.max(0,Number(paper.dataset.fpPaginationGuardPx||0)||0);
+           const excess=measuredContentHeight(body)-Math.max(0,body.clientHeight-baseReserve-currentGuard);
+           const recorded=Number(page.dataset.fpContentHeight||0);
+           const drift=recorded?Math.max(0,measuredContentHeight(body)-recorded):0;
+-          requiredGuard=Math.max(requiredGuard,currentGuard+Math.ceil(Math.max(12,excess+8,drift+4)));
++          const clipOvershoot=Math.max(0,Number(clipOvershootByPage[index+1]||0));
++          if(overflowPages.includes(index+1)||clipBoundaryPages.includes(index+1))requiredGuard=Math.max(requiredGuard,currentGuard+Math.ceil(Math.max(12,excess+8,drift+4,clipOvershoot+10)));
+         });
+         paper.dataset.fpPaginationGuardPx=String(Math.min(72,requiredGuard));
+         paper.dataset.fpPaginationStable='retry';
+-        renderPreview({stabilityPass:stabilityPass+1,stabilitySource:'post-layout-overflow'});
++        renderPreview({stabilityPass:stabilityPass+1,stabilitySource:clipBoundaryPages.length?'post-layout-clip':'post-layout-overflow'});
+         return;
+       }
+       const shell=paper.querySelector('.pdf-document');
+@@ -2923,9 +2939,10 @@
+       }
+       let expected={rowCount:0,modules:{}};
+       try{expected=JSON.parse(shell?.dataset.fpPaginationExpected||'{}')}catch(_){ }
+-      const finalReport=shell?validatePaginatedDocument(shell,expected):{valid:false,overflowPages};
++      const finalReport=shell?validatePaginatedDocument(shell,expected):{valid:false,overflowPages,clipBoundaryPages};
+       finalReport.stabilityDriftPages=geometryDriftPages;
+-      if(overflowPages.length||!finalReport.valid){
++      finalReport.stabilityClipBoundaryPages=clipBoundaryPages;
++      if(overflowPages.length||clipBoundaryPages.length||!finalReport.valid){
+         paper.dataset.fpPaginationStable='0';
+         window.__fpLastPaginationReport=finalReport;
+         if(shell){shell.dataset.fpPaginationValid='0';shell.dataset.fpPaginationReport=JSON.stringify(finalReport);}
+@@ -5414,7 +5431,8 @@
+ <script src="./flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js?v=20260729-r1-3a-18-3-integration-3"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-schema-runtime.js?v=20260729-r1-3a-18"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-rules.js?v=20260729-r1-3a-18"></script>
+-<script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js?v=20260731-r1-3a-18-23-3-issue-navigation"></script>
++<script src="./huidi-issue-navigator-rc1614.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.14"></script>
++<script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js?v=20260731-r1-3a-18-23-3-issue-navigation-rc1614"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-document-linkage.js?v=20260729-r1-3a-18"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-router-upgrade.js?v=20260729-r1-3a-18"></script>
+ <script src="./flypigbox-v3-3-6-24-r1-3a-18-job-center.js?v=20260729-r1-3a-18-3"></script>
