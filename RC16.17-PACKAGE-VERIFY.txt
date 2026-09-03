@@ -1,0 +1,69 @@
+HUIDI Docs Community Local V1.2.0 RC16.17 — PACKAGE VERIFY
+
+Theme: Single Toolbar Owner / Fixed Header Stabilization
+Status: TEST CANDIDATE
+Generated: 2026-09-03
+
+PACKAGES
+- WINDOWS: HUIDI-Docs-Community-Local-V1.2.0-RC16.17-WINDOWS.zip
+  SHA256: 4d57027a4ea0c20d51ecaa284a565858eb3fefbc046e9d3e90c2fd025142c9fb
+  Files: 355
+  ZIP CRC: PASS
+  Re-extract: missing 0 / extra 0 / SHA mismatch 0
+- SOURCE: HUIDI-Docs-Community-Local-V1.2.0-RC16.17-SOURCE.zip
+  SHA256: aa35d150637e205e8b33af0e3ca712e9a5e37661a48fd21d35d0d1b10b8ecb3d
+  Files: 362
+  ZIP CRC: PASS
+  Re-extract: missing 0 / extra 0 / SHA mismatch 0
+
+RUNTIME PARITY
+- SOURCE/WINDOWS public/: 245 / 245 exact paths + SHA
+- Missing: 0
+- Extra: 0
+- SHA mismatch: 0
+
+RC16.17 TOOLBAR OWNER GATE
+- One canonical toolbar owner: PASS
+- Canonical fixed slot order: PASS
+- Local Bridge competing toolbar MutationObserver removed: PASS
+- Local Bridge 360ms late toolbar settle removed: PASS
+- Document-type change no longer calls bulk toolbar reorder: PASS
+- Legacy Editor Shell respects RC16.17 lock: PASS
+- Legacy 600ms second header rebuild removed: PASS
+- Late payment entry uses fixed toolbar slot: PASS
+- Desktop title block fixed-width + actions nowrap: PASS
+
+RETAINED GATES
+- RC16.10 compact/standard layout: PASS
+- RC16.11 pagination stability: PASS
+- RC16.12 unified template family: PASS
+- RC16.13 Page Composer: PASS
+- RC16.14 clip + issue navigation: PASS
+- RC16.15 runtime stability / first paint: PASS
+- RC16.16 advisory export: PASS
+- Final SOURCE npm run check: PASS
+- JS syntax scan: PASS
+- HTML local references: PASS
+- CSP/local guard: PASS
+
+WINDOWS CONTRACT
+- START-HUIDI-LOCAL.cmd: CRLF PASS
+- tools/local-server.ps1: UTF-8 BOM + CRLF PASS
+- Normal loopback start: 127.0.0.1:8765 PASS
+- Workspace / Document Start / QT / PI / SC / CI / PL / Catalog Studio / public config / Feishu status: HTTP 200 PASS
+- Port collision: 8765 occupied -> 8766 PASS
+
+PROTECTED PDF CORE
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+  abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+  570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+
+SENSITIVE FILES
+- config/feishu.local.json: NOT INCLUDED
+
+REAL-WINDOWS ACCEPTANCE STILL REQUIRED
+- Refresh editor repeatedly: toolbar must not change slot order after first paint.
+- Switch QT -> PI -> SC -> CI -> PL and back: toolbar nodes must not jump/reorder.
+- Payment entry may appear/disappear by document type without moving neighboring controls.
+- Resize normal desktop widths and confirm title/action geometry remains stable.
