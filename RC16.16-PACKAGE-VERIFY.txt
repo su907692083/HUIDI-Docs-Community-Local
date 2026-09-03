@@ -1,0 +1,110 @@
+HUIDI Docs Community Local V1.2.0 RC16.16
+Theme: Advisory Export + Responsive Export Pipeline
+Status: TEST CANDIDATE
+Validation date: 2026-09-03
+
+FINAL PACKAGE IDENTITY
+- WINDOWS ZIP SHA256: 31771e3d2c987a816646db5add00d6e51a285d89a4c0d53e30caf186e53c43e6
+- SOURCE  ZIP SHA256: 35dc1c2a2dc3d086c21a1592ba3c0aeea6836dab9f10f8c5e6bd8d3b78656d88
+
+PACKAGE TREES
+- SOURCE: 357 files
+- WINDOWS: 350 files
+- SOURCE-only files: 7
+  .gitignore
+  CODE_OF_CONDUCT.md
+  CONTRIBUTING.md
+  SELF-HOSTING.md
+  SOURCE-PACKAGE.md
+  package.json
+  tools/validate-local.cjs
+- public runtime parity: 243 / 243 exact path + SHA parity
+
+ZIP / RE-EXTRACT
+- SOURCE ZIP CRC: PASS
+- WINDOWS ZIP CRC: PASS
+- SOURCE re-extract: 0 missing / 0 extra / 0 SHA mismatch
+- WINDOWS re-extract: 0 missing / 0 extra / 0 SHA mismatch
+
+STATIC / RELEASE GATES
+- npm run check: PASS on final SOURCE re-extract
+- RC16.10 compact/standard retained gate: PASS
+- RC16.11 pagination stability retained gate: PASS
+- RC16.12 template-family retained gate: PASS
+- RC16.13 Page Composer retained gate: PASS
+- RC16.14 clip/navigation retained gate: PASS
+- RC16.15 runtime-stability retained gate: PASS
+- RC16.16 advisory-export gate: PASS
+- JS/CJS syntax scan: PASS
+- HTML local references: PASS
+- local CSP/network guard: PASS
+
+RC16.16 OUTPUT POLICY
+- PDF completeness/readiness checks: advisory-only
+- Customer XLSX completeness/readiness checks: advisory-only
+- Data XLSX completeness/readiness checks: advisory-only
+- CSV completeness/readiness checks: advisory-only
+- Print / Save as PDF completeness/readiness checks: advisory-only
+- Checks, red reminders, Issue Navigator and field location remain available
+- "still export current version" remains available even when issues exist
+- Empty/partial table exports are allowed as working templates
+
+PDF RESPONSIVENESS CHANGES
+- one window-capture output owner for local output actions
+- duplicate PDF click busy guard
+- fixed scale=2 capture removed
+- adaptive page capture scale: 1.25–1.50
+- page-to-page main-thread yield added
+- synchronous canvas.toDataURL JPEG page encoding removed
+- asynchronous canvas.toBlob -> Uint8Array JPEG path used
+- internal-tool PDF capture also reduced and async-encoded
+
+DYNAMIC EVENT-ROUTING TEST
+Chromium/CDP isolated runtime stub:
+- formal validation result contained blocker(s)
+- two rapid PDF clicks -> PDF export task count: 1
+- CSV click -> CSV export task count: 1
+- XLSX click -> XLSX export task count: 1
+- protected document-level Formal Gate capture intercept count: 0
+- busy state returned to false
+PASS
+
+FULL LOCAL EDITOR GUI NOTE
+- Container-managed Chromium blocks this environment's localhost editor with a managed neterror policy.
+- Therefore full real Editor GUI export/download timing was NOT falsely marked PASS here.
+- Real Windows Chrome/Edge acceptance remains required for final UX timing and actual file download behavior.
+
+FINAL WINDOWS LOOPBACK SMOKE
+Normal start from final re-extracted WINDOWS tree:
+- 127.0.0.1:8765: PASS
+- /: HTTP 200
+- /workspace.html: HTTP 200
+- /document-start.html: HTTP 200
+- quotation editor: HTTP 200
+- proforma invoice editor: HTTP 200
+- sales contract editor: HTTP 200
+- commercial invoice editor: HTTP 200
+- packing list editor: HTTP 200
+- /catalog-studio/index.html: HTTP 200
+- /huidi-public-config.json: HTTP 200
+- /api/feishu/status: HTTP 200
+
+Port collision from final re-extracted WINDOWS tree:
+- 8765 deliberately occupied: confirmed listening before launch
+- HUIDI automatically selected 8766: PASS
+- commercial invoice editor on 8766: HTTP 200
+
+WINDOWS ENCODING CONTRACT
+- START-HUIDI-LOCAL.cmd: CRLF PASS
+- tools/local-server.ps1: UTF-8 BOM + CRLF PASS
+
+PROTECTED CORE
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+  SHA256 abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+  SHA256 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+- Both remain unchanged.
+- Formal Output Gate continues to power explicit Check/reminder UI; RC16.16's earlier output owner prevents it from becoming an export blocker.
+
+SENSITIVE CONFIG
+- config/feishu.local.json absent from SOURCE and WINDOWS packages.
