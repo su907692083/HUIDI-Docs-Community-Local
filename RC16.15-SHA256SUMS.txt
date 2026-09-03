@@ -1,0 +1,2 @@
+79fe1913276a0975ea7eb33f433eff04563916ef7eff0264b78e247acc9bcb19  HUIDI-Docs-Community-Local-V1.2.0-RC16.15-WINDOWS.zip
+9ae277efb0ef402b05395ef8eaf186ea25a2fabdb5bd695e634b1c470bc76f2e  HUIDI-Docs-Community-Local-V1.2.0-RC16.15-SOURCE.zip
