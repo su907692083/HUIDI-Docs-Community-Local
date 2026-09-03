@@ -1,0 +1,184 @@
+--- a/README-FIRST.zh-CN.md
++++ b/README-FIRST.zh-CN.md
+@@ -1,4 +1,4 @@
+-# HUIDI Docs Community Local V1.2.0 RC16.11
++# HUIDI Docs Community Local V1.2.0 RC16.12
+ 
+ 这是一个 **本地优先 + 源码开放** 的外贸业务与单据工作台。完整业务链为：
+ 
+--- a/README.md
++++ b/README.md
+@@ -6,7 +6,7 @@
+ 
+ ## Windows 用户
+ 
+-当前候选版本：**v1.2.0 RC16.11**。
++当前候选版本：**v1.2.0 RC16.12**。
+ 
+ 下载 Windows 包后：
+ 
+@@ -47,6 +47,17 @@
+ - 本地备份 / 恢复
+ - Windows 一键本地启动
+ - 自有服务器静态部署参考
++
++## RC16.12 主要变化
++
++- PDF 样式重构为 **5 套统一 Template Family**：经典商务、极简外贸、正式合同、品牌展示、清关实用。
++- QT / PI / 销售合同 / CI / 装箱单不再各自维护同名样式分支；同一个 `pdfStyle` 在五类单据中共享同一 Hero、Meta、Party、Section、Table、Summary、Signature 视觉语言。
++- 单据类型与 PDF 样式状态彻底拆开：切换单据不会改模板，切换模板不会改当前单据或字段。
++- 品牌状态不再持久化 `documentType`；`HUIDI:branding-updated` 仅刷新预览，不再触发单据 Profile 切换。
++- 下线报价单专属样式权威与旧 25 组合布局分支，统一由 `huidi-pdf-template-family-rc1612.css` 控制 PDF 视觉。
++- 修复 CI / PL 等单据顶部仍显示“这张报价单还有内容需要补充”的语义残留，提示会按当前单据类型显示。
++- 保留 RC16.11 分页几何、稳定复检、尾页均衡和 RC16.10 紧凑 / 标准密度模型；模板统一不重新引入强制一页。
++- Chromium 长字段动态验收：12 商品 150/150 组合 PASS，20 商品 50/50 压力组合 PASS；五个模板家族跨五类单据的核心设计 Token 一致性 25/25 PASS。
+ 
+ ## RC16.11 主要变化
+ 
+--- a/RELEASE-MANIFEST.json
++++ b/RELEASE-MANIFEST.json
+@@ -1,6 +1,6 @@
+ {
+   "product": "HUIDI Docs Community Local",
+-  "version": "1.2.0-RC16.11",
++  "version": "1.2.0-RC16.12",
+   "edition": "community-local",
+   "defaultMode": "local-only",
+   "strictNetworkGuard": true,
+@@ -12,17 +12,17 @@
+   "license": "HUIDI-Community-Source-License-1.0",
+   "sourceBaseline": "HUIDI Docs Community Local 1.1.1 + CF1.2 production workflow audit",
+   "generatedAt": "2026-09-03",
+-  "release": "RC16.11",
+-  "fileCount": 338,
++  "release": "RC16.12",
++  "fileCount": 342,
+   "windowsOneClick": true,
+   "windowsPrimaryRuntime": "Windows PowerShell / loopback TCP server",
+   "localAddress": "http://127.0.0.1:8765/",
+-  "display_name": "HUIDI Docs Community Local V1.2.0 RC16.11",
+-  "updated_at": "2026-09-03T08:49:00+08:00",
++  "display_name": "HUIDI Docs Community Local V1.2.0 RC16.12",
++  "updated_at": "2026-09-03T10:31:00+08:00",
+   "licenseModel": "source-available",
+   "freeUse": "personal-and-own-organization-internal-use",
+   "commercialUse": "requires-separate-written-authorization",
+   "commercialAuthorizationContact": "WeChat nuliqingxing8",
+-  "releaseTheme": "Pagination Geometry & Template Distribution Stability",
++  "releaseTheme": "Unified PDF Template Family",
+   "packageKind": "SOURCE"
+ }
+--- a/SOURCE-PACKAGE.md
++++ b/SOURCE-PACKAGE.md
+@@ -1,12 +1,14 @@
+ # HUIDI Docs Community Local Source Package
+ 
+-RC16.11 的源码包以本目录为可审计 release tree。布局/分页本轮关键入口：
++RC16.12 的源码包以本目录为可审计 release tree。模板/布局/分页关键入口：
+ 
+-- `public/editor.html` — 延续 RC16.9 的单一分页权威、嵌套展示安全降级、Product + Total / Packing + Summary 语义闭包。
++- `public/editor.html` — RC16.12 使用统一 Template Family Shell；五类单据只提供业务语义 slot，不再各自维护同名 PDF 样式布局分支。
+ - `public/huidi-layout-policy-rc1610.js` — QT / PI / SC / CI / PL 按单据独立的 **紧凑 / 标准** 密度状态；兼容迁移旧 one-page 状态，但不再保留 force-one-page 语义。
+ - `public/huidi-layout-policy-rc1610.css` — 紧凑模式只调整内容密度，不重写物理 PDF 页尺寸、方向或页边距。
+ - `public/flypigbox-editor-table-output.js` — Workbook 预览同步 compact/standard，XLSX 不再执行 fitToHeight=1。
+-- `public/flypigbox-editor-unified.js` — 继续让 `editor.html` 保持唯一分页权威。
++- `public/huidi-pdf-template-family-rc1612.css` — 5 套统一 PDF Template Family 的唯一视觉 authority；同一 styleId 在 QT / PI / SC / CI / PL 共享设计语言。
++- `public/flypigbox-v8-template-center.js` — PDF 样式状态与当前单据类型解耦；品牌状态不再持久化 `documentType`。
++- `public/flypigbox-editor-unified.js` — 继续让 `editor.html` 保持唯一分页权威，并停止把单据类型写回 Branding。
+ - `public/flypigbox-quotation-quick-flow.js` — 报价单兼容层服从 RC16.10 Layout Policy，不再拥有独立密度/重建权。
+ - `tools/validate-unified-layout-rc1610.cjs` — 检查仅有“紧凑 / 标准”两个可见模式，并禁止旧一页拟合重新激活。
+ 
+@@ -14,3 +16,5 @@
+ 
+ 
+ RC16.11 新增分页几何稳定层：分页测量使用逻辑 PDF 坐标，最终字体/模板稳定后复检，并隔离分页后的非 PDF MutationObserver。`紧凑 / 标准` 控制器继续沿用 RC16.10 组件。
++
++RC16.12 新增统一模板家族门禁：`tools/validate-template-family-rc1612.cjs`。RC16.11 分页稳定门禁继续保留。
+--- a/START-HUIDI-LOCAL.cmd
++++ b/START-HUIDI-LOCAL.cmd
+@@ -8,11 +8,11 @@
+ set "HUIDI_LOG_DIR=%~dp0logs"
+ set "HUIDI_LOG=%HUIDI_LOG_DIR%\launcher-last.log"
+ if not exist "%HUIDI_LOG_DIR%" mkdir "%HUIDI_LOG_DIR%" >nul 2>nul
+->"%HUIDI_LOG%" echo [%date% %time%] HUIDI Docs Community Local 1.2.0 RC16.11 launcher
++>"%HUIDI_LOG%" echo [%date% %time%] HUIDI Docs Community Local 1.2.0 RC16.12 launcher
+ 
+ echo.
+ echo ======================================================
+-echo   HUIDI Docs Community Local 1.2.0 RC16.11
++echo   HUIDI Docs Community Local 1.2.0 RC16.12
+ echo   Local-first startup - 127.0.0.1
+ echo ======================================================
+ echo.
+--- a/package.json
++++ b/package.json
+@@ -1,13 +1,14 @@
+ {
+   "name": "huidi-docs-community-local",
+-  "version": "1.2.0-rc16.11",
++  "version": "1.2.0-rc16.12",
+   "private": false,
+   "license": "SEE LICENSE IN LICENSE",
+   "scripts": {
+     "check": "node ./tools/validate-local.cjs",
+     "check:layout": "node ./tools/validate-unified-layout-rc1610.cjs",
+     "serve": "node ./tools/local-server.cjs",
+-    "check:pagination": "node ./tools/validate-pagination-stability-rc1611.cjs"
++    "check:pagination": "node ./tools/validate-pagination-stability-rc1611.cjs",
++    "check:templates": "node ./tools/validate-template-family-rc1612.cjs"
+   },
+   "description": "HUIDI Docs Community Local — source-available local-first foreign trade document workspace"
+ }
+--- a/public/assets/brand/huidi-brand.js
++++ b/public/assets/brand/huidi-brand.js
+@@ -11,5 +11,5 @@
+ }
+ apply();
+ new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(insidePdf(n))return;if(n.nodeType===1)apply(n);else if(n.nodeType===3){const next=text(n.nodeValue);if(next!==n.nodeValue)n.nodeValue=next}}))).observe(document.documentElement,{childList:true,subtree:true});
+-window.HUIDIBrandRuntime={version:'1.2.0-RC16.11',apply,preparePdf:(root=document.querySelector('#piPaper'))=>root&&apply(root,{allowPdf:true})};
++window.HUIDIBrandRuntime={version:'1.2.0-RC16.12',apply,preparePdf:(root=document.querySelector('#piPaper'))=>root&&apply(root,{allowPdf:true})};
+ })();
+--- a/public/editor.html
++++ b/public/editor.html
+@@ -228,6 +228,7 @@
+   <link rel="stylesheet" href="./huidi-pdf-product-layout-rc166.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4">
+   <link rel="stylesheet" href="./huidi-preview-runtime-rc1662.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4">
+   <link rel="stylesheet" href="./huidi-layout-policy-rc1610.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.10">
++  <link rel="stylesheet" href="./huidi-pdf-template-family-rc1612.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.12">
+ </head>
+ <body class="editor-premium-page" data-fp-release="v3.3.6.24-r1.3a.18.38-workspace-hidden-interaction-visual-closure-candidate">
+ <header class="site-header">
+@@ -1959,89 +1960,92 @@
+     const goodsTitle=isPacking?docLabel('packingContents'):isCommercial?docLabel('goodsDeclaredValue'):isContract?docLabel('contractGoods'):isQuotation?docLabel('quotedGoods'):docLabel('products');
+     return {lang,cur,pdfStyle,paperSpec,documentType,isPacking,isContract,isCommercial,isQuotation,pdfItems,pricedItems,hasPricedItems,showMoneyColumns,sub,discount,extra,tax,total,feeItems,words,showImage,showHs,productDescription,productColgroup,productHTML,productHeader,logistics,logisticsHTML,bankRows,bankHTML,paymentTermsValue,terms,termsHTML,infoEntries,infoRows,quoteLine,showMoneyTable,totalRows,signatureHTML,contractIntro,partyTitle,goodsTitle};
+   }
++  const PDF_TEMPLATE_FAMILY_IDS=new Set(['classic_business','minimal_trade','formal_contract','brand_showcase','customs_clean']);
++  const PDF_TEMPLATE_DOCUMENT_TYPES=new Set(['proforma_invoice','quotation','commercial_invoice','sales_contract','packing_list']);
++  function pdfTemplateFamilyMeta(style,entries){
++    const rows=(entries||[]).filter(([,value])=>pdfHasValue(value));
++    if(!rows.length)return '';
++    if(style==='minimal_trade'||style==='customs_clean')return pdfMetaBar(rows);
++    if(style==='brand_showcase')return pdfValueCards(rows,'pdf-family-meta');
++    return pdfMetaGrid(rows);
++  }
++  function renderPdfTemplateFamily(ctx,slots={}){
++    const style=PDF_TEMPLATE_FAMILY_IDS.has(ctx.pdfStyle)?ctx.pdfStyle:'classic_business';
++    const type=PDF_TEMPLATE_DOCUMENT_TYPES.has(ctx.documentType)?ctx.documentType:'proforma_invoice';
++    const hero=pdfTemplateHero(type,slots.heroLabel||docLabel('invoiceControl'),slots.heroClass||'doc-hero');
++    const meta=pdfTemplateFamilyMeta(style,slots.metaEntries||ctx.infoEntries||[]);
++    const ordered=[
++      hero,
++      meta,
++      slots.parties||'',
++      slots.supplement||'',
++      slots.primary||'',
++      slots.summary||'',
++      slots.amountWords||'',
++      slots.logistics||'',
++      slots.payment||'',
++      slots.terms||'',
++      slots.signature||''
++    ].filter(Boolean).join('');
++    return `<div class="pdf-template pdf-template-${type.replace(/_invoice$/,'').replace('sales_contract','contract').replace('packing_list','packing')} pdf-template-family pdf-family-${style}" data-pdf-family="${style}" data-pdf-family-version="1" data-pdf-family-document="${type}">${ordered}</div>`;
++  }
+   function renderQuotationPdfTemplate(ctx){
