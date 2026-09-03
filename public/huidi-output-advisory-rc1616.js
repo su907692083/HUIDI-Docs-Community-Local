@@ -1,9 +1,9 @@
-/* HUIDI Docs Community Local RC16.16 — advisory-only output owner + responsive export routing. */
+/* HUIDI Docs Community Local RC16.18 — advisory-only output owner + live-preview snapshot export routing. */
 (()=>{
   'use strict';
   if(!window.HUIDI_LOCAL_ONLY?.localOnly)return;
   if(window.__HUIDIOutputAdvisoryRC1616)return;window.__HUIDIOutputAdvisoryRC1616=true;
-  const VERSION='HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.16-OUTPUT-ADVISORY';
+  const VERSION='HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.18-OUTPUT-ADVISORY';
   const $=(s,r=document)=>r?.querySelector?.(s)||null;
   let pdfBusy=false;
   function kindOf(el){
@@ -43,12 +43,13 @@
       await new Promise(resolve=>setTimeout(resolve,0));
       return (await app.exportPdf({source,advisoryOnly:true}))!==false;
     }catch(error){
-      console.error('HUIDI RC16.16 PDF export failed',error);
+      console.error('HUIDI RC16.18 PDF export failed',error);
       app?.setStatus?.(`PDF 导出失败：${error?.message||error}`,'error');
       return false;
     }finally{
       state.allowCurrentPdfExport=false;state.approvedOnce=false;pdfBusy=false;
       delete document.documentElement.dataset.huidiPdfExportBusy;
+      try{document.dispatchEvent(new CustomEvent('HUIDI:pdf-export-settled',{detail:{source}}));}catch(_){ }
     }
   }
   function doTable(kind){
@@ -66,9 +67,6 @@
     if(kind==='print'){advisory('print');window.print();return true;}
     try{doTable(kind);return true;}catch(error){console.error(error);window.FlypigBOXApp?.setStatus?.(`导出失败：${error?.message||error}`,'error');return false;}
   }
-  // Window capture is intentionally the earliest export owner. It runs before the
-  // protected document-level formal gate, so validation remains available as an
-  // advisory/check surface without being able to block a user-requested export.
   window.addEventListener('click',event=>{
     const el=event.target?.closest?.('#exportPdfBtn,#headerExportPdfBtn,[data-sheet-export],[data-local-export],[data-lite-export],[data-fp-print],[data-action="print-document"],#printDocumentBtn,#printPdfBtn');
     const kind=kindOf(el);if(!kind)return;
@@ -78,5 +76,5 @@
   },true);
   window.HUIDIOutputPolicy=Object.freeze({version:VERSION,advisoryOnly:true,neverBlockForCompleteness:true});
   window.HUIDIOutputController=Object.freeze({version:VERSION,run,exportPdf:options=>doPdf(options?.source||'api'),check:advisory,isBusy:()=>pdfBusy});
-  document.documentElement.dataset.huidiOutputPolicy='rc16.16-advisory';
+  document.documentElement.dataset.huidiOutputPolicy='rc16.18-advisory';
 })();
