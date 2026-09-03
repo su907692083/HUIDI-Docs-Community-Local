@@ -1,0 +1,18 @@
+--- public/huidi-output-advisory-rc1616.js (RC16.17)
++++ public/huidi-output-advisory-rc1616.js (RC16.18)
+@@
+-/* HUIDI Docs Community Local RC16.17 — advisory-only output owner + responsive export routing. */
++/* HUIDI Docs Community Local RC16.18 — advisory-only output owner + live-preview snapshot export routing. */
+@@
+-  const VERSION='HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.17-OUTPUT-ADVISORY';
++  const VERSION='HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.18-OUTPUT-ADVISORY';
+@@
+-      console.error('HUIDI RC16.17 PDF export failed',error);
++      console.error('HUIDI RC16.18 PDF export failed',error);
+@@
+       state.allowCurrentPdfExport=false;state.approvedOnce=false;pdfBusy=false;
+       delete document.documentElement.dataset.huidiPdfExportBusy;
++      try{document.dispatchEvent(new CustomEvent('HUIDI:pdf-export-settled',{detail:{source}}));}catch(_){ }
+@@
+-  document.documentElement.dataset.huidiOutputPolicy='rc16.16-advisory';
++  document.documentElement.dataset.huidiOutputPolicy='rc16.18-advisory';
