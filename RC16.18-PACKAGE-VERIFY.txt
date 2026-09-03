@@ -1,0 +1,63 @@
+HUIDI Docs Community Local V1.2.0 RC16.18 PACKAGE VERIFY
+
+Release theme: Live Preview Snapshot Export
+Status: TEST CANDIDATE
+Date: 2026-09-03
+
+FINAL PACKAGE SHA256
+WINDOWS a73ac684edc6029e40838f413405c7bb3789a0a4ed5fdb258da4a3b6e7184853
+SOURCE  8805339bf0e68790145473a979eadaa3e173581a552d2a85c3bbf2a894a0dacb
+
+PACKAGE CONTENT
+SOURCE files: 365
+WINDOWS files: 358
+SOURCE/WINDOWS public runtime: 245 / 245 exact path + SHA parity
+
+ZIP / RE-EXTRACT
+SOURCE ZIP CRC: PASS
+WINDOWS ZIP CRC: PASS
+SOURCE re-extract: 0 missing / 0 extra / 0 SHA mismatch
+WINDOWS re-extract: 0 missing / 0 extra / 0 SHA mismatch
+
+STATIC / RELEASE GATES
+- npm run check: PASS
+- RC16.10 compact/standard retained gate: PASS
+- RC16.11 pagination stability retained gate: PASS
+- RC16.12 unified template family retained gate: PASS
+- RC16.13 page composer retained gate: PASS
+- RC16.14 clip/navigation retained gate: PASS
+- RC16.15 runtime stability retained gate: PASS
+- RC16.16 advisory export retained gate: PASS
+- RC16.17 single toolbar owner retained gate: PASS
+- RC16.18 live-preview snapshot export gate: PASS
+- Editor inline JS syntax: 8/8 PASS
+- Document Start inline JS syntax: 1/1 PASS
+- Catalog Studio inline JS syntax: 2/2 PASS
+- HTML local references: PASS
+- local CSP/network guard presence: PASS
+
+RC16.18 WYSIWYG EXPORT FIX
+- Export no longer rasterizes an off-screen page clone outside the real #piPaper scope.
+- Live .pdf-page DOM is the only export geometry/layout authority.
+- Preview generation is frozen while capture runs; rerenders are deferred.
+- Generation, page count and DOM connection are checked during every capture.
+- If Preview changes during export, export aborts instead of producing a mixed-state PDF.
+- Preview zoom is compensated in capture scale only; layout itself is not recomputed.
+
+PROTECTED PDF CORE
+public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+SHA256 abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+
+public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+SHA256 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+
+WINDOWS CONTRACT
+- START-HUIDI-LOCAL.cmd: CRLF PASS
+- tools/local-server.ps1: UTF-8 BOM + CRLF PASS
+- config/feishu.local.json: NOT INCLUDED
+- Final WINDOWS ZIP loopback normal start on 8765: PASS
+- Workspace / Document Start / QT / PI / SC / CI / PL / Catalog Studio / public config / Feishu status: HTTP 200
+- Port collision: 8765 occupied -> automatic fallback to 8766: PASS
+
+VALIDATION BOUNDARY
+Container Chromium could not complete a full local Editor visual PDF-download comparison reliably, so real Windows Chrome/Edge WYSIWYG acceptance remains required. The release does not claim a fabricated GUI/PDF-save PASS.
