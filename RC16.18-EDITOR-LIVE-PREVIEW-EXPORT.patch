@@ -1,0 +1,49 @@
+--- public/editor.html (RC16.17)
++++ public/editor.html (RC16.18)
+@@
++  function pdfSnapshotExportActive(){return document.documentElement.dataset.huidiPdfExportBusy==='1'||document.documentElement.dataset.huidiPdfSnapshotExport==='1';}
+@@
++    if(pdfSnapshotExportActive()){if(paper)paper.dataset.fpPreviewDeferredDuringExport='1';return;}
+@@
++    if(pdfSnapshotExportActive()&&!options?.allowDuringExport){paper.dataset.fpPreviewDeferredDuringExport='1';return true;}
+@@
+-  async function capturePdfPageCanvas(page,paper,geometry=null,pageCount=1){
+-    // RC16.17 used an off-screen cloned page. Because the clone was no longer under
+-    // the real #piPaper scope, #piPaper-scoped density/template rules could disappear.
+-    // This could change content height and page boundaries during export.
+-  }
++  async function captureLivePdfPageCanvas(page,paper,pageCount=1){
++    // RC16.18 WYSIWYG export authority: capture the live paginated page that the
++    // user is actually looking at. The Preview DOM remains the only layout owner.
++    if(!page?.isConnected)throw new Error('PDF 预览页已更新，请重试导出。');
++    const rect=page.getBoundingClientRect();
++    const logicalWidth=Math.max(1,Number(page.offsetWidth)||parseFloat(getComputedStyle(page).width)||rect.width||1);
++    const renderedWidth=Math.max(1,rect.width||logicalWidth);
++    const renderedHeight=Math.max(1,rect.height||Number(page.offsetHeight)||parseFloat(getComputedStyle(page).height)||1);
++    const zoomCompensation=Math.max(.25,Math.min(4,logicalWidth/renderedWidth));
++    const scale=Math.max(1.2,Math.min(4,pdfCaptureScale(pageCount)*zoomCompensation));
++    await Promise.all([...page.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2400);}))); 
++    try{await document.fonts?.ready;}catch(_){ }
++    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
++    await exportYield();
++    return html2canvas(page,{scale,useCORS:true,allowTaint:false,backgroundColor:'#fff',scrollX:-(window.scrollX||0),scrollY:-(window.scrollY||0),width:renderedWidth,height:renderedHeight,logging:false,imageTimeout:2200,removeContainer:true});
++  }
+@@
+-    const frozenPages=currentPages.map(page=>({node:page.cloneNode(true),width:...,height:...}));
++    const snapshotPages=currentPages.slice();
++    const snapshotGeneration=paper.dataset.fpRenderGeneration||'';
++    const snapshotCount=snapshotPages.length;
++    document.documentElement.dataset.huidiPdfSnapshotExport='1';
++    paper.dataset.fpExportFrozen='1';
+@@
+-        const canvas=await capturePdfPageCanvas(frozenPages[index].node,paper,frozenPages[index],previewPageCount);
++        if((paper.dataset.fpRenderGeneration||'')!==snapshotGeneration||!snapshotPages[index]?.isConnected)throw new Error('导出期间预览发生更新，已停止本次导出，请重试。');
++        const liveCount=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page)).length;
++        if(liveCount!==snapshotCount)throw new Error(`导出期间页数发生变化（${snapshotCount} → ${liveCount}），已停止本次导出。`);
++        const canvas=await captureLivePdfPageCanvas(snapshotPages[index],paper,previewPageCount);
++        if((paper.dataset.fpRenderGeneration||'')!==snapshotGeneration)throw new Error('页面在截图期间发生重绘，已停止本次导出。');
+@@
++      delete document.documentElement.dataset.huidiPdfSnapshotExport;
++      delete paper.dataset.fpExportFrozen;
+@@
++  document.addEventListener('HUIDI:pdf-export-settled',()=>{const paper=$('piPaper');if(paper?.dataset.fpPreviewDeferredDuringExport==='1'){delete paper.dataset.fpPreviewDeferredDuringExport;window.setTimeout(()=>renderPreview({source:'post-export'}),0);}});
