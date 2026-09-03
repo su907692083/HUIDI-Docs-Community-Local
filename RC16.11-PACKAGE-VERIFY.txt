@@ -1,0 +1,47 @@
+HUIDI Docs Community Local V1.2.0 RC16.11
+Validation date: 2026-09-03
+Status: TEST CANDIDATE — real Windows visual/business-flow acceptance still required
+Theme: Pagination Geometry & Template Distribution Stability
+
+ARTIFACTS
+- WINDOWS: HUIDI-Docs-Community-Local-V1.2.0-RC16.11-WINDOWS.zip
+  SHA256: f6e029a07389b70758e83711997d9c2f77d8b57cd54e2a99af020030c472a341
+  Files: 331
+- SOURCE: HUIDI-Docs-Community-Local-V1.2.0-RC16.11-SOURCE.zip
+  SHA256: 70f9c6de7387c2aa5fefa95a60730d38347dad524f5ae631223d9d48c433b865
+  Files: 338
+
+PACKAGE INTEGRITY
+- SOURCE ZIP CRC: PASS
+- WINDOWS ZIP CRC: PASS
+- SOURCE re-extract: 338 files; missing 0; extra 0; SHA mismatch 0
+- WINDOWS re-extract: 331 files; missing 0; extra 0; SHA mismatch 0
+- SOURCE/WINDOWS public runtime: 239 / 239 exact relative-path + SHA parity
+- config/feishu.local.json: NOT PACKAGED
+- PowerShell tools/local-server.ps1 UTF-8 BOM: PASS (EF BB BF)
+- START-HUIDI-LOCAL.cmd version identity: RC16.11
+- START-HUIDI-LOCAL.cmd PowerShell ExecutionPolicy Bypass contract: PASS
+- START-HUIDI-LOCAL.cmd Node/Python fallback contract: PASS
+
+STATIC / RELEASE GATES
+- npm run check on final SOURCE re-extract: PASS
+- npm run check:layout on final SOURCE re-extract: PASS
+- npm run check:pagination on final SOURCE re-extract: PASS
+- RC16.10 compact/standard retained component gate: PASS
+- RC16.11 pagination stability validator: PASS
+- public JavaScript syntax scan: PASS
+- HTML local references: PASS
+- Community Local CSP / local-mode guard: PASS
+
+DYNAMIC CHROMIUM ACCEPTANCE
+- 12-product long-field full matrix: 150 / 150 PASS
+- 20-product pressure matrix: 50 / 50 PASS
+- Real UI continuous-switch regression using FlypigBOXApp.applyDocumentProfile(): PASS
+- Same state after QT -> PI -> SC -> CI -> PL round-trip: page count / product rows / overflow / semantic / clipping signatures unchanged
+
+PROTECTED PDF CORE (UNCHANGED)
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js SHA256 abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js SHA256 570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583
+
+REAL WINDOWS ACCEPTANCE STILL REQUIRED
+- Keep RC16.11 on release/test branch until real Windows acceptance passes.
