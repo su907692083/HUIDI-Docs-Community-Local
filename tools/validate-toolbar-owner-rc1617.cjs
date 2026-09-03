@@ -1,0 +1,20 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');let fail=[];const need=(v,m)=>{if(!v)fail.push(m)};
+const pkg=JSON.parse(read('package.json')),manifest=JSON.parse(read('RELEASE-MANIFEST.json'));
+const editor=read('public/editor.html'),owner=read('public/huidi-toolbar-owner-rc1617.js'),bridge=read('public/huidi-local-editor-bridge-v120.js'),shell=read('public/flypigbox-v3-3-2-5-editor-shell-cleanup.js'),rc11=read('public/huidi-local-editor-rc11.js'),css=read('public/huidi-toolbar-owner-rc1617.css');
+need(pkg.version==='1.2.0-rc16.17','package identity');
+need(manifest.version==='1.2.0-RC16.17'&&manifest.release==='RC16.17','manifest identity');
+need(editor.includes('huidi-toolbar-owner-rc1617.js')&&editor.includes('huidi-toolbar-owner-rc1617.css'),'toolbar owner assets loaded');
+need(editor.indexOf('huidi-toolbar-owner-rc1617.js')<editor.indexOf('huidi-local-editor-bridge-v120.js'),'toolbar owner loads before local bridge');
+need(owner.includes("huidiToolbarOwner='rc1617'")&&owner.includes('ORDER=['),'single toolbar owner lock + canonical order');
+['#fpLiteImportBtn','.fp-primary-workspace-switch','#fpV3325DocSelect','#fpV3321SaveHeader','#huidiMasterSyncHeader','#huidiLocalCheckHeader','#fpV3321TemplateHeader','#fpV3321ModeHeader','#huidiLocalPaymentHeader','#fpV3321FieldsHeader','#fpV3325LayoutHeader','#fpLiteExportMenu','#huidiLocalNextHeader','#fpV3325ClearHeader','#fpLiteMoreMenu','#huidiLocalStateBadge'].forEach(sel=>need(owner.includes(`'${sel}'`),`missing canonical slot ${sel}`));
+need(!bridge.includes('toolbarObserver'),'legacy bridge toolbar observer removed');
+need(!bridge.includes('setTimeout(stabilizeToolbar,360)'),'late toolbar reshuffle removed');
+need(bridge.includes('window.HUIDIToolbarOwner?.lock?.()'),'bridge delegates toolbar ownership');
+need(!bridge.includes("syncToolbar();ensureCanonicalToolbar()},40"),'document type switch no longer bulk-reorders toolbar');
+need(shell.includes("actions.dataset.huidiToolbarOwner==='rc1617'"),'legacy shell respects toolbar lock');
+need(!shell.includes('updateAll();setTimeout(updateAll,600);'),'legacy delayed second header rebuild removed');
+need(rc11.includes('window.HUIDIToolbarOwner?.isLocked?.()'),'late payment control uses toolbar owner slot');
+need(css.includes('flex:0 0 220px')&&css.includes('flex-wrap:nowrap'),'desktop toolbar geometry is stable');
+if(fail.length){console.error('RC16.17 TOOLBAR OWNER VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('RC16.17 SINGLE TOOLBAR OWNER VALIDATION PASSED');
