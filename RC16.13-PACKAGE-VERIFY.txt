@@ -1,0 +1,68 @@
+HUIDI Docs Community Local V1.2.0 RC16.13 — PACKAGE VERIFY
+Validation date: 2026-09-03
+Status: TEST CANDIDATE
+Theme: Unified PDF Page Composer
+
+PACKAGE SHA256
+- WINDOWS: 83c500d6e5ebc422509d0255d72d5ecfef587decf526fab1ff2fd70aaced8659  HUIDI-Docs-Community-Local-V1.2.0-RC16.13-WINDOWS.zip
+- SOURCE : 39f7f9387ca52adc7c0604760607868995c6dd1412f8fe607cbeddd4e90b0edb  HUIDI-Docs-Community-Local-V1.2.0-RC16.13-SOURCE.zip
+
+PACKAGE STRUCTURE
+- SOURCE files: 345
+- WINDOWS files: 338
+- SOURCE-only developer/source files: 7
+- public runtime parity: 240/240 exact paths and SHA256
+- ZIP CRC: SOURCE PASS / WINDOWS PASS
+- re-extract: SOURCE 0 missing / 0 extra / 0 SHA mismatch
+- re-extract: WINDOWS 0 missing / 0 extra / 0 SHA mismatch
+- config/feishu.local.json: ABSENT from both packages
+
+WINDOWS RELEASE CONTRACT
+- START-HUIDI-LOCAL.cmd: CRLF PASS
+- tools/local-server.ps1: UTF-8 BOM + CRLF PASS
+- Node loopback fallback smoke: base 8765 occupied -> 8766 PASS
+- HTTP 200: /, workspace, document-start, QT, PI, SC, CI, PL editor routes, Catalog Studio, public config, Feishu local status
+
+STATIC / RELEASE GATES
+- npm run check: PASS
+- npm run check:layout: PASS
+- npm run check:pagination: PASS
+- npm run check:templates: PASS
+- npm run check:composer: PASS
+- JS/CJS syntax scan: PASS
+- inline editor JS syntax: PASS during RC16.13 construction
+- HTML local references: PASS
+- local CSP/network guard presence: PASS
+- RC16.10 compact/standard retained gate: PASS
+- RC16.11 pagination stability retained gate: PASS
+- RC16.12 unified template-family retained gate: PASS
+- RC16.13 Page Composer gate: PASS
+
+RC16.13 PAGE COMPOSER QUALITY CONTRACT
+- Unified business order: Hero/Meta/Parties -> Products -> Total/Summary -> supplemental/compliance -> logistics/payment/terms -> signature.
+- Small product tables are no longer forced into one atomic block.
+- Product rows use remaining page capacity row-by-row; a row that fits is not pushed merely to keep a large Summary on the same page.
+- Explicit Summary continuation pages are allowed when Summary itself cannot safely fit.
+- Sparse intermediate pages receive business-block backfill where safe.
+- Sparse product continuation pages receive ordered full-row balancing; no row splitting.
+- Page-quality report includes pageUtilization, firstProductPage and qualityViolations.
+- sparse-nonfinal and core-products-delayed are release-quality violations, not silent PASS conditions.
+- RC16.12 Template Family, RC16.11 geometry/font stabilization and RC16.10 compact/standard density remain retained.
+
+CONSTRUCTION-STAGE DYNAMIC CHROMIUM
+- 2-item full matrix: 150/150 PASS
+- 12-item long-field matrix: 150/150 PASS
+- 20-item stress matrix: 50/50 PASS
+- Total dynamic matrix results recorded during Page Composer construction: 350/350 PASS
+- Checked: row count, clipping, overflowPages, semanticViolations, qualityViolations, pageUtilization, firstProductPage and pagination stability.
+- Final ZIP GUI/print-save automation was not re-claimed as PASS; the final ZIP itself was validated by CRC, exact re-extract SHA, retained/static gates and Windows loopback HTTP smoke. Real Windows visual/PDF print-driver acceptance remains required.
+
+PROTECTED PDF CORE
+- public/flypigbox-v3-3-2-3-pdf-flow-fix.js
+  abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36  PASS
+- public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js
+  570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583  PASS
+
+BOUNDARY
+- RC16.13 remains TEST CANDIDATE until real Windows visual/PDF acceptance.
+- Public main must not be advanced before acceptance.
