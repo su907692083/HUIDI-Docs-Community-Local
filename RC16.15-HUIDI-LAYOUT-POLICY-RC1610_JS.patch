@@ -1,0 +1,11 @@
+--- rex1614_source/public/huidi-layout-policy-rc1610.js	2026-09-02 23:31:52.000000000 +0000
++++ rc1615_source/public/huidi-layout-policy-rc1610.js	2026-09-03 07:48:26.261941118 +0000
+@@ -129,7 +129,7 @@
+     ['HUIDI:document-type-changed','HUIDI:document-type-change'].forEach(name=>document.addEventListener(name,event=>{const t=event.detail?.type||type();prepareDocumentType(t,name)}));
+     document.addEventListener('click',event=>{if(event.target.closest('[data-paper-choice]'))setTimeout(()=>applyOrientationSplit({force:true}),60)},true);
+     window.addEventListener('storage',event=>{if(event.key?.startsWith(KEY_PREFIX)||event.key?.startsWith(LEGACY_PREFIX)||event.key===LEGACY_QUOTATION)sync({source:'storage'})});
+-    [250,900].forEach(ms=>setTimeout(()=>sync({source:`boot-${ms}`}),ms));
++    requestAnimationFrame(()=>requestAnimationFrame(()=>sync({source:'boot-settled'})));
+     window.HUIDILayoutPolicy=Object.freeze({version:VERSION,getMode,isCompact,isOnePage:()=>false,setMode,sync,prepareDocumentType,supportedTypes:[...TYPES]});
+     // Legacy helper stays callable but maps to compact/standard, never to force-one-page behavior.
+     window.HUIDIPageFitWorkspace=Object.freeze({version:VERSION,setOnePage:on=>setMode(on?'compact':'standard',{documentType:'quotation',source:'compat'}),sync});
