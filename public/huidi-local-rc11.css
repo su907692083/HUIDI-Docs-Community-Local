@@ -1,0 +1,44 @@
+/* HUIDI Docs Community Local 1.2.0 RC11 — readable linked workbook preview + WYSIWYG PDF closure */
+/* The live paginator owns page boundaries. RC10 preserves each complete preview page without a second pagination pass. */
+.fp-pdf-capture-host .pdf-page,.fp-pdf-capture-host .pdf-page-body{overflow:hidden!important}
+.fp-pdf-capture-host .pdf-page-body{max-width:100%!important}
+.fp-pdf-capture-host th,.fp-pdf-capture-host td{box-sizing:border-box!important;overflow-wrap:anywhere!important}
+/* The original fixed header already has Save / Check / Export. The duplicate bottom bar blocks fields and drawers. */
+#fpQuotationBottomActions,.fp-qf-bottom{display:none!important}
+.fp-quotation-quick-mode .preview-shell{padding-bottom:12px!important}
+/* Keep drawer disclosure controls readable instead of wrapping vertically. */
+.fp-v3341-reuse-center>details>summary:after{white-space:nowrap!important;flex:0 0 auto!important}
+.huidi-local-drawer-quick{display:grid;gap:10px!important;padding:12px!important;border:1px solid #dbe5ef!important;border-radius:14px!important;background:#f8fbff!important}
+.huidi-local-drawer-quick-head{display:grid;gap:3px}.huidi-local-drawer-quick-head b{font-size:13px;color:#203a61}.huidi-local-drawer-quick-head span{font-size:10.5px;color:#718197;line-height:1.45}
+.huidi-local-drawer-quick-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.huidi-local-drawer-quick-grid button{min-height:40px;border:1px solid #cad7e5;border-radius:10px;background:#fff;color:#31567f;font-weight:850;cursor:pointer}.huidi-local-drawer-quick-grid button:hover{background:#eef6ff;border-color:#87aee0}.huidi-local-drawer-quick-grid button[hidden]{display:none!important}
+
+
+/* RC11 — table preview: readable by default, overview on demand. */
+body.fp-table-preview-mode .preview-shell,
+body.fp-preview-table-only .preview-shell{min-width:0!important;overflow:hidden!important}
+#fpTableOutputPreview{min-height:0!important;background:#edf2f7!important}
+#fpTableOutputPreview>.fp-workbook-preview{height:calc(100vh - var(--fp-v33-lite-toolbar-h,64px) - 40px)!important;min-height:520px!important;max-height:900px!important}
+#fpTableOutputPreview .fp-workbook-canvas{padding:14px!important;display:block!important;overflow:auto!important;background:#e8edf3!important;scroll-behavior:smooth}
+#fpTableOutputPreview .fp-workbook-sheet{margin-left:auto!important;margin-right:auto!important;transform-origin:top center!important}
+#fpTableOutputPreview .fp-workbook-toolbar{position:relative;z-index:4;gap:8px!important;flex-wrap:wrap!important;min-height:52px}
+#fpTableOutputPreview .fp-workbook-file{flex:1 1 220px;min-width:0}
+#fpTableOutputPreview .fp-workbook-tools{flex:0 1 auto;margin-left:auto;max-width:100%;display:flex!important;align-items:center;gap:6px!important;overflow:visible!important}
+#fpTableOutputPreview .fp-v3340-paper-switch{display:none!important}
+#fpTableOutputPreview .fp-v3340-zoom-controls{display:flex!important;align-items:center;gap:4px!important;white-space:nowrap}
+#fpTableOutputPreview [data-workbook-action="fit"]{background:#eef6ff!important;border-color:#91b3df!important;color:#205da8!important}
+#fpTableOutputPreview [data-huidi-workbook-action="overview"]{background:#fff!important;border-color:#d4deea!important;color:#4b5f79!important}
+#fpTableOutputPreview .fp-workbook-preview[data-huidi-preview-mode="width"] [data-workbook-action="fit"],
+#fpTableOutputPreview .fp-workbook-preview[data-huidi-preview-mode="overview"] [data-huidi-workbook-action="overview"]{box-shadow:inset 0 0 0 1px #6b9edc!important;background:#e8f3ff!important;color:#174f96!important}
+.huidi-rc11-current-field{display:flex;align-items:center;gap:6px;min-width:0;max-width:240px;padding:5px 9px;border:1px solid #b9cff0;border-radius:999px;background:#eef5ff;color:#315b91;font-size:10px;white-space:nowrap}
+.huidi-rc11-current-field[hidden]{display:none!important}.huidi-rc11-current-field span{color:#71829a;font-weight:750;flex:0 0 auto}.huidi-rc11-current-field b{overflow:hidden;text-overflow:ellipsis}
+#fpTableOutputPreview .huidi-rc11-preview-focus{position:relative!important;z-index:18!important;outline:3px solid #2474df!important;outline-offset:-3px!important;background:#fff0a6!important;box-shadow:inset 0 0 0 1px rgba(255,255,255,.88),0 0 0 2px rgba(36,116,223,.16)!important;transition:background .14s ease,outline-color .14s ease}
+#fpTableOutputPreview tr.huidi-rc11-preview-focus>td{background:#fff4bb!important}
+#fpTableOutputPreview .fp-workbook-tabs{display:flex!important;align-items:center;gap:5px!important;overflow:visible!important;white-space:nowrap;position:relative;z-index:7}
+#fpTableOutputPreview .fp-workbook-tabs>.huidi-rc11-tab-hidden{display:none!important}
+.huidi-rc11-more-sheets{position:relative;flex:0 0 auto}
+.huidi-rc11-more-sheets>summary{list-style:none;cursor:pointer;border:1px solid #d6e0eb;border-radius:999px;background:#fff;padding:7px 10px;color:#52657c;font-size:10px;font-weight:850}
+.huidi-rc11-more-sheets>summary::-webkit-details-marker{display:none}.huidi-rc11-more-sheets>summary span{color:#245faa}
+.huidi-rc11-more-sheets>div{position:absolute;right:0;bottom:calc(100% + 7px);display:grid;min-width:190px;max-width:270px;padding:7px;border:1px solid #dbe4ef;border-radius:12px;background:#fff;box-shadow:0 12px 32px rgba(15,23,42,.16);z-index:30}
+.huidi-rc11-more-sheets:not([open])>div{display:none}.huidi-rc11-more-sheets>div button{border:0;background:transparent;text-align:left;padding:8px 10px;border-radius:8px;color:#334b69;font-size:11px;font-weight:800;cursor:pointer}.huidi-rc11-more-sheets>div button:hover{background:#eef5ff;color:#1f5ca6}
+@media(max-width:1280px){#fpTableOutputPreview>.fp-workbook-preview{min-height:480px!important}.huidi-rc11-current-field{order:3;max-width:100%}}
+@media(max-width:980px){#fpTableOutputPreview>.fp-workbook-preview{height:min(760px,calc(100vh - 110px))!important;min-height:480px!important}.huidi-rc11-current-field{display:none!important}}

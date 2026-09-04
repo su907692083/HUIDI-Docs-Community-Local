@@ -1,0 +1,130 @@
+/* HUIDI Docs Community Local RC16.12 — Unified PDF Template Family Authority.
+   One style id owns one visual language across QT / PI / SC / CI / PL.
+   Document type changes business semantics only; density and pagination remain separate. */
+.doc .pdf-template-family{
+  display:flex!important;grid-template-columns:none!important;grid-template-rows:none!important;
+  flex-direction:column!important;align-items:stretch!important;min-height:0!important;
+  gap:12px!important;background:#fff;color:#172235;
+}
+.doc .pdf-template-family>*{grid-column:auto!important;grid-row:auto!important}
+.doc .pdf-template-family .pdf-template-hero,
+.doc .pdf-template-family .doc-hero,
+.doc .pdf-template-family .pdf-quotation-hero,
+.doc .pdf-template-family .pdf-commercial-hero,
+.doc .pdf-template-family .pdf-contract-hero,
+.doc .pdf-template-family .pdf-packing-hero,
+.doc .pdf-template-family .pdf-pi-hero{
+  display:flex!important;justify-content:space-between!important;align-items:flex-end!important;
+  gap:14px!important;margin:0!important;min-height:0!important;border-radius:0!important;
+  box-shadow:none!important;text-align:left!important;background:#fff!important;
+}
+.doc .pdf-template-family .pdf-template-hero h2,
+.doc .pdf-template-family .doc-hero h2,
+.doc .pdf-template-family .pdf-quotation-hero h2,
+.doc .pdf-template-family .pdf-commercial-hero h2,
+.doc .pdf-template-family .pdf-contract-hero h2,
+.doc .pdf-template-family .pdf-packing-hero h2,
+.doc .pdf-template-family .pdf-pi-hero h2{margin:0!important;font-size:25px!important;line-height:1.16!important;color:var(--fp-brand-color,#173b83)!important}
+.doc .pdf-template-family .pdf-meta-grid,
+.doc .pdf-template-family .pdf-meta-bar,
+.doc .pdf-template-family .pdf-value-cards{margin:0!important}
+.doc .pdf-template-family .pdf-party-grid{display:grid!important;grid-template-columns:1fr 1fr!important;gap:12px!important}
+.doc .pdf-template-family .pdf-party-card{min-height:0!important;box-shadow:none!important}
+.doc .pdf-template-family .doc-section{margin:0 0 6px!important;min-height:0!important;line-height:1.25!important;font-weight:800!important;letter-spacing:.02em!important;text-transform:none!important}
+.doc .pdf-template-family table{width:100%!important;margin:0!important}
+.doc .pdf-template-family .money-table{width:100%!important;max-width:none!important;margin:0!important}
+.doc .pdf-template-family .pdf-proposal-grid,.doc .pdf-template-family .pdf-order-dashboard,.doc .pdf-template-family .pdf-brand-finance-row{display:block!important;grid-template-columns:none!important}
+
+/* Classic Business — same blue business language for every document type. */
+.doc .pdf-template-family.pdf-family-classic_business{gap:12px!important;background:#fff!important}
+.doc .pdf-template-family.pdf-family-classic_business .pdf-template-hero,
+.doc .pdf-template-family.pdf-family-classic_business .doc-hero,
+.doc .pdf-template-family.pdf-family-classic_business .pdf-quotation-hero,
+.doc .pdf-template-family.pdf-family-classic_business .pdf-commercial-hero,
+.doc .pdf-template-family.pdf-family-classic_business .pdf-contract-hero,
+.doc .pdf-template-family.pdf-family-classic_business .pdf-packing-hero,
+.doc .pdf-template-family.pdf-family-classic_business .pdf-pi-hero{padding:0 0 12px!important;border:0!important;border-bottom:4px solid var(--fp-brand-color,#173b83)!important}
+.doc .pdf-template-family.pdf-family-classic_business .pdf-meta-grid div{background:#f7faff!important;border:1px solid #cedbea!important;border-radius:7px!important}
+.doc .pdf-template-family.pdf-family-classic_business .pdf-party-card{background:#fff!important;border:1px solid #c9d8e7!important;border-radius:8px!important;padding:10px!important}
+.doc .pdf-template-family.pdf-family-classic_business .doc-section{padding:7px 9px!important;border:0!important;border-radius:4px!important;background:var(--fp-brand-color,#173b83)!important;color:#fff!important}
+.doc .pdf-template-family.pdf-family-classic_business .products th{background:var(--fp-brand-color,#173b83)!important;color:#fff!important}
+
+/* Minimal Trade — monochrome and print first across all document types. */
+.doc .pdf-template-family.pdf-family-minimal_trade{gap:10px!important;background:#fff!important;color:#171717!important}
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-template-hero,
+.doc .pdf-template-family.pdf-family-minimal_trade .doc-hero,
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-quotation-hero,
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-commercial-hero,
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-contract-hero,
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-packing-hero,
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-pi-hero{padding:8px 0!important;border:0!important;border-top:2px solid #171717!important;border-bottom:2px solid #171717!important}
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-template-hero h2,
+.doc .pdf-template-family.pdf-family-minimal_trade h2{color:#171717!important;letter-spacing:.045em!important}
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-meta-grid,.doc .pdf-template-family.pdf-family-minimal_trade .pdf-meta-bar{border-color:#555!important;background:#fff!important}
+.doc .pdf-template-family.pdf-family-minimal_trade .pdf-meta-grid div,.doc .pdf-template-family.pdf-family-minimal_trade .pdf-party-card{background:#fff!important;border:0!important;border-radius:0!important;border-top:1px solid #555!important;padding:8px 0!important}
+.doc .pdf-template-family.pdf-family-minimal_trade .doc-section{padding:5px 0!important;background:#fff!important;color:#171717!important;border:0!important;border-top:1px solid #171717!important;border-bottom:1px solid #171717!important;border-radius:0!important;letter-spacing:.06em!important;text-transform:uppercase!important}
+.doc .pdf-template-family.pdf-family-minimal_trade .products th{background:#f2f2f2!important;color:#171717!important;border-color:#777!important}
+.doc .pdf-template-family.pdf-family-minimal_trade table,.doc .pdf-template-family.pdf-family-minimal_trade th,.doc .pdf-template-family.pdf-family-minimal_trade td{border-color:#777!important}
+
+/* Formal Contract — one formal document family, regardless of QT/PI/SC/CI/PL. */
+.doc .pdf-template-family.pdf-family-formal_contract{gap:13px!important;background:#fffdf8!important;color:#24201a!important}
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-template-hero,
+.doc .pdf-template-family.pdf-family-formal_contract .doc-hero,
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-quotation-hero,
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-commercial-hero,
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-contract-hero,
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-packing-hero,
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-pi-hero{padding:14px 16px!important;border:3px double var(--fp-brand-color,#9a6a4b)!important;background:#fffdf8!important;text-align:center!important;align-items:center!important}
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-template-hero h2,
+.doc .pdf-template-family.pdf-family-formal_contract h2{color:var(--fp-brand-color,#9a6a4b)!important;letter-spacing:.09em!important}
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-meta-grid div{background:#fff!important;border:1px solid #d6c7b8!important;border-radius:3px!important}
+.doc .pdf-template-family.pdf-family-formal_contract .pdf-party-card{background:#fffefb!important;border:1px solid #cbb79f!important;border-radius:5px!important;padding:10px!important}
+.doc .pdf-template-family.pdf-family-formal_contract .doc-section{padding:7px 9px!important;border:0!important;border-radius:0!important;background:var(--fp-brand-color,#9a6a4b)!important;color:#fff!important;text-transform:uppercase!important;letter-spacing:.055em!important}
+.doc .pdf-template-family.pdf-family-formal_contract .products th{background:var(--fp-brand-color,#9a6a4b)!important;color:#fff!important;border-color:#77543e!important}
+.doc .pdf-template-family.pdf-family-formal_contract table,.doc .pdf-template-family.pdf-family-formal_contract th,.doc .pdf-template-family.pdf-family-formal_contract td{border-color:#8f7a69!important}
+.doc .pdf-template-family.pdf-family-formal_contract .signature-zone,.doc .pdf-template-family.pdf-family-formal_contract .pdf-contract-signatures>div{background:#fffef9!important;border:1px solid #bfa78e!important;border-radius:5px!important;min-height:0!important}
+
+/* Brand Showcase — branded cards and soft geometry, same skeleton for all documents. */
+.doc .pdf-template-family.pdf-family-brand_showcase{display:flex!important;gap:12px!important;background:linear-gradient(180deg,#fffdfa 0,#fff 28%)!important}
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-template-hero,
+.doc .pdf-template-family.pdf-family-brand_showcase .doc-hero,
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-quotation-hero,
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-commercial-hero,
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-contract-hero,
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-packing-hero,
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-pi-hero{padding:15px 16px!important;border:1px solid #cbd8e6!important;border-left:7px solid var(--fp-brand-color,#9a6a4b)!important;border-radius:12px!important;background:linear-gradient(135deg,#f6f9fc,#fff)!important}
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-meta-grid div,.doc .pdf-template-family.pdf-family-brand_showcase .pdf-value-card{background:#fff!important;border:1px solid #d8e1ea!important;border-radius:10px!important}
+.doc .pdf-template-family.pdf-family-brand_showcase .pdf-party-card{background:#fff!important;border:1px solid #d8e1ea!important;border-top:4px solid var(--fp-brand-color,#9a6a4b)!important;border-radius:10px!important;padding:10px!important}
+.doc .pdf-template-family.pdf-family-brand_showcase .doc-section{display:inline-block!important;width:auto!important;padding:6px 11px!important;background:var(--fp-brand-color,#9a6a4b)!important;color:#fff!important;border:0!important;border-radius:999px!important}
+.doc .pdf-template-family.pdf-family-brand_showcase .products th{background:var(--fp-brand-color,#9a6a4b)!important;color:#fff!important}
+
+/* Customs Clean — dense, neutral and auditable across all document types. */
+.doc .pdf-template-family.pdf-family-customs_clean{gap:8px!important;background:#fff!important;color:#102235!important}
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-template-hero,
+.doc .pdf-template-family.pdf-family-customs_clean .doc-hero,
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-quotation-hero,
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-commercial-hero,
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-contract-hero,
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-packing-hero,
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-pi-hero{padding:9px 0!important;border:1px solid #2f5f86!important;border-left:0!important;border-right:0!important;background:#fff!important}
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-meta-grid,.doc .pdf-template-family.pdf-family-customs_clean .pdf-meta-bar{border:1px solid #6f879b!important;background:#fff!important}
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-meta-grid div{background:#fff!important;border:0!important;border-right:1px solid #8da9bf!important;border-radius:0!important;min-height:0!important}
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-party-card{background:#fff!important;border:1px solid #8da9bf!important;border-radius:0!important;padding:8px!important}
+.doc .pdf-template-family.pdf-family-customs_clean .doc-section{padding:5px 7px!important;background:#eef4f8!important;color:#163b59!important;border:1px solid #8da9bf!important;border-radius:0!important;text-transform:uppercase!important}
+.doc .pdf-template-family.pdf-family-customs_clean .products th{background:#e8f0f7!important;color:#102235!important;border-color:#6f879b!important}
+.doc .pdf-template-family.pdf-family-customs_clean table,.doc .pdf-template-family.pdf-family-customs_clean th,.doc .pdf-template-family.pdf-family-customs_clean td{border-color:#6f879b!important}
+.doc .pdf-template-family.pdf-family-customs_clean .products th,.doc .pdf-template-family.pdf-family-customs_clean .products td{font-size:9.8px!important;padding:5px!important}
+
+/* Density is independent from family identity. */
+.doc .pdf-template-family.huidi-document-compact,.doc.huidi-document-compact .pdf-template-family{gap:8px!important}
+.doc.huidi-document-compact .pdf-template-family .pdf-party-card{padding:7px!important}
+.doc.huidi-document-compact .pdf-template-family .doc-section{margin-bottom:4px!important;padding-top:5px!important;padding-bottom:5px!important}
+
+@media(max-width:720px){
+  .doc .pdf-template-family .pdf-party-grid{grid-template-columns:1fr!important}
+  .doc .pdf-template-family .pdf-template-hero,.doc .pdf-template-family .doc-hero,.doc .pdf-template-family .pdf-quotation-hero,.doc .pdf-template-family .pdf-commercial-hero,.doc .pdf-template-family .pdf-contract-hero,.doc .pdf-template-family .pdf-packing-hero,.doc .pdf-template-family .pdf-pi-hero{align-items:flex-start!important;flex-direction:column!important}
+}
+/* Packing List carries more logistics fields than other schemas; keep the same Customs family
+   while using denser semantic rows so the final product row can stay with its carton summary. */
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-packing-summary th,
+.doc .pdf-template-family.pdf-family-customs_clean .pdf-packing-summary td{padding:3px 4px!important;font-size:9px!important;line-height:1.16!important}

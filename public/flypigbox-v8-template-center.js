@@ -95,11 +95,11 @@
   };
 
   const PDF_STYLES = {
-    classic_business: { label: '商务标准模板', note: '标准外贸单据版式，信息卡片、表格、金额和签署区均衡排列。' },
-    minimal_trade: { label: '极简黑白模板', note: '黑白打印友好，使用账单式信息条和低装饰表格，适合正式往来。' },
-    formal_contract: { label: '正式合同模板', note: '强化合同标题、条款顺序和签署区，销售合同会呈现合同文书结构。' },
-    brand_showcase: { label: '品牌展示模板', note: '使用提案式左右分栏、摘要卡和品牌标题区，报价单变化最明显。' },
-    customs_clean: { label: '清关报关模板', note: '使用报关/装箱核对式结构，强化申报、运输、箱规和表格边界。' }
+    classic_business: { label: '商务标准模板', note: '统一商务蓝视觉家族；QT、PI、合同、CI、PL 只改变业务字段，不改变模板语言。' },
+    minimal_trade: { label: '极简黑白模板', note: '统一黑白打印视觉家族；五类单据使用相同标题、分区、表格和签署语言。' },
+    formal_contract: { label: '正式合同模板', note: '统一正式文书视觉家族；双线标题、正式分区、表格和签署风格在五类单据保持一致。' },
+    brand_showcase: { label: '品牌展示模板', note: '统一品牌卡片视觉家族；五类单据共享品牌标题、卡片、圆角分区和表格风格。' },
+    customs_clean: { label: '清关报关模板', note: '统一清关核对视觉家族；五类单据共享高密度信息条、明确边界和打印友好表格。' }
   };
   const PDF_PAPER_SPECS = {
     classic_business: { format: 'a4', orientation: 'p', widthMm: 210, heightMm: 297, label: 'A4 Portrait' },
@@ -147,11 +147,11 @@
   ];
 
   const PDF_STYLE_DEMOS = [
-    styleDemo('pub_style_classic_business', 'PDF 样式：经典商务', 'classic_business', 'business_blue', ['通用外贸'], ['全球'], ['PI', '报价单', '商业发票'], '稳重页眉、清晰表格，适合大多数日常商务单据。'),
-    styleDemo('pub_style_minimal_trade', 'PDF 样式：极简外贸', 'minimal_trade', 'minimal_black', ['通用外贸'], ['全球'], ['合同', '商业发票', '装箱单'], '低干扰、打印友好，适合正式往来。'),
-    styleDemo('pub_style_formal_contract', 'PDF 样式：正式合同', 'formal_contract', 'navy_gold', ['通用外贸'], ['全球'], ['销售合同', '订单确认'], '强化合同结构、条款和签署区，销售合同会呈现合同文书结构。'),
-    styleDemo('pub_style_brand_showcase', 'PDF 样式：品牌展示', 'brand_showcase', 'fragrance_ivory', ['品牌出海', '美妆与香水', '服饰与配饰'], ['全球'], ['报价单', '产品目录式报价'], '强化品牌色与标题表现，适合品牌报价和产品展示。'),
-    styleDemo('pub_style_customs_clean', 'PDF 样式：清关实用', 'customs_clean', 'clearance_clean', ['通用外贸'], ['全球'], ['商业发票', '装箱单', '清关资料'], '表格边界更明确，适合报关、清关和物流核对。')
+    styleDemo('pub_style_classic_business', 'PDF 样式：经典商务', 'classic_business', 'business_blue', ['通用外贸'], ['全球'], ['报价单','PI','销售合同','商业发票','装箱单'], '统一商务蓝视觉，适合日常正式业务单据。'),
+    styleDemo('pub_style_minimal_trade', 'PDF 样式：极简外贸', 'minimal_trade', 'minimal_black', ['通用外贸'], ['全球'], ['报价单','PI','销售合同','商业发票','装箱单'], '统一黑白低干扰视觉，适合打印与正式往来。'),
+    styleDemo('pub_style_formal_contract', 'PDF 样式：正式合同', 'formal_contract', 'navy_gold', ['通用外贸'], ['全球'], ['报价单','PI','销售合同','商业发票','装箱单'], '统一正式文书视觉，五类单据共享同一模板家族。'),
+    styleDemo('pub_style_brand_showcase', 'PDF 样式：品牌展示', 'brand_showcase', 'fragrance_ivory', ['品牌出海', '美妆与香水', '服饰与配饰'], ['全球'], ['报价单','PI','销售合同','商业发票','装箱单'], '统一品牌展示视觉，五类单据共享同一模板家族。'),
+    styleDemo('pub_style_customs_clean', 'PDF 样式：清关实用', 'customs_clean', 'clearance_clean', ['通用外贸'], ['全球'], ['报价单','PI','销售合同','商业发票','装箱单'], '统一清关核对视觉，适合高信息密度和打印。')
   ];
 
   const VIP_KNOWLEDGE_DEMOS = [
@@ -254,8 +254,7 @@
       logoScope: 'first_page',
       showFooter: false,
       headerText: '',
-      footerText: '',
-      documentType: 'proforma_invoice'
+      footerText: ''
     };
     let settings = load();
     let scheduled = false;
@@ -287,17 +286,14 @@
       return PDF_STYLES[settings.pdfStyle] ? settings.pdfStyle : FREE_DEFAULT_PDF_STYLE;
     }
 
-    function normalizedDocumentType(type) {
+    function currentDocumentType() {
+      const type = window.FlypigBOXApp?.getDocumentType?.() || document.getElementById('documentType')?.value || 'proforma_invoice';
       return DOC_PROFILE_TYPES.has(type) ? type : 'proforma_invoice';
     }
 
     function effectiveSettings() {
       if (hasBrandAccess()) return settings;
-      return {
-        ...DEFAULT,
-        pdfStyle: FREE_DEFAULT_PDF_STYLE,
-        documentType: normalizedDocumentType(settings.documentType)
-      };
+      return { ...DEFAULT, pdfStyle: FREE_DEFAULT_PDF_STYLE };
     }
 
     function companyFooterFallback() {
@@ -341,7 +337,7 @@
       Object.keys(PDF_STYLES).forEach(key => paper.classList.remove(`fp-pdf-style-${key}`));
       paper.classList.add(`fp-pdf-style-${pdfStyle}`);
       const paperSpec = window.FlypigBOXApp?.resolveDocumentPaperSpec?.({ pdfStyle }) || window.FlypigBOXPaperLayout?.resolveDocumentPaperSpec?.({ pdfStyle }) || PDF_PAPER_SPECS[pdfStyle] || PDF_PAPER_SPECS.classic_business;
-      const documentType = normalizedDocumentType(active.documentType);
+      const documentType = currentDocumentType();
       paper.dataset.fpBrandLogoPosition = active.logoPosition || 'left';
       paper.dataset.fpBrandLogoScope = active.logoScope || 'first_page';
       paper.dataset.fpDocumentType = documentType;
@@ -423,10 +419,11 @@
     function apply(next = {}, options = {}) {
       const safe = { ...next };
       if (options.keepLogo !== false) delete safe.logo;
+      delete safe.documentType;
       settings = { ...settings, ...safe };
+      delete settings.documentType;
       settings.theme = normalizedTheme();
       settings.pdfStyle = normalizedPdfStyle();
-      settings.documentType = normalizedDocumentType(settings.documentType);
       save();
       scheduleDecorate();
       emitUpdate();
@@ -434,10 +431,12 @@
     }
 
     function set(next = {}) {
-      settings = { ...settings, ...next };
+      const safe = { ...next };
+      delete safe.documentType;
+      settings = { ...settings, ...safe };
+      delete settings.documentType;
       settings.theme = normalizedTheme();
       settings.pdfStyle = normalizedPdfStyle();
-      settings.documentType = normalizedDocumentType(settings.documentType);
       save();
       scheduleDecorate();
       emitUpdate();
@@ -486,7 +485,7 @@
 
     function get() {
       const active = effectiveSettings();
-      return { ...active, theme: normalizedTheme(), pdfStyle: normalizedPdfStyle(), documentType: normalizedDocumentType(active.documentType) };
+      return { ...active, theme: normalizedTheme(), pdfStyle: normalizedPdfStyle() };
     }
 
     function exportForTemplate() {
@@ -779,7 +778,7 @@
   }
 
   function currentWorkspaceDocumentType() {
-    const type = window.FlypigBOXApp?.getDocumentType?.() || Branding.get().documentType || 'proforma_invoice';
+    const type = window.FlypigBOXApp?.getDocumentType?.() || document.getElementById('documentType')?.value || 'proforma_invoice';
     return DOC_PROFILE_TYPES.has(type) ? type : 'proforma_invoice';
   }
 

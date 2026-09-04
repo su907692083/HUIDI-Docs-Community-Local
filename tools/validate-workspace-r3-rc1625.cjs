@@ -1,0 +1,24 @@
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8'),fail=[];const need=(x,m)=>{if(!x)fail.push(m)};
+const manifest=JSON.parse(read('RELEASE-MANIFEST.json')),pkg=JSON.parse(read('package.json')),html=read('public/workspace.html'),js=read('public/huidi-workspace-r3-rc1625.js'),css=read('public/huidi-workspace-r3-rc1625.css'),base=read('public/huidi-local-workspace-v120.js');
+need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(manifest.version)&&manifest.release===manifest.version.replace('1.2.0-',''),'RC16.26 manifest identity');
+need(/^1\.2\.0-rc16\.\d+(?:\.\d+)?$/.test(pkg.version),'RC16.26 package identity');
+need(html.includes('huidi-workspace-r3-rc1625.css')&&html.includes('huidi-workspace-r3-rc1625.js'),'R3 assets not referenced');
+need(html.indexOf('huidi-workspace-r3-rc1625.css')>html.indexOf('huidi-feishu-data-rc1624.css'),'R3 CSS must load after prior workspace layers');
+need(html.indexOf('huidi-workspace-r3-rc1625.js')>html.indexOf('huidi-feishu-data-rc1624.js'),'R3 JS must load after prior workspace layers');
+need(js.includes("document.body.classList.add('workspace-r3')")&&css.includes('body.workspace-r3'),'R3 scoped ownership missing');
+need(!/MutationObserver\s*\(|new\s+MutationObserver/.test(js),'R3 must not introduce body observer loops');
+need(css.includes('font-family:-apple-system,BlinkMacSystemFont')&&css.includes('backdrop-filter')&&css.includes('--brand:#007aff'),'Apple-like system visual layer missing');
+need(css.includes('.version{display:none!important}')&&js.includes('workspace-r3-create'),'sidebar simplification missing');
+need(js.includes("makeOverflow('customers','new-customer')")&&js.includes("makeOverflow('products','new-product')"),'page action de-duplication missing');
+need(js.includes('粘贴客户资料自动识别')&&js.includes('税务与注册资料')&&js.includes('收货与通知资料'),'customer progressive disclosure missing');
+need(js.includes('先录能报价的资料')&&js.includes('包装与物流')&&js.includes('报关与供应资料'),'product progressive disclosure missing');
+need(js.includes('外箱尺寸（长 × 宽 × 高 cm）')&&js.includes('1000000'),'structured carton / CBM helper missing');
+need(js.includes('moveFeishuCollab')&&js.includes('协作快照（可选）'),'Feishu/backup semantic separation missing');
+need(base.includes(`version:'${manifest.version}'`),'backup identity not RC16.26');
+need(read('public/huidi-public-config.json').includes(manifest.version),'public config identity not RC16.26');
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex');
+need(sha('public/flypigbox-v3-3-2-3-pdf-flow-fix.js')==='abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36','protected PDF flow changed');
+need(sha('public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js')==='570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583','protected output gate changed');
+if(fail.length){console.error('RC16.26 WORKSPACE R3 VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('RC16.26 WORKSPACE R3 VALIDATION PASSED');

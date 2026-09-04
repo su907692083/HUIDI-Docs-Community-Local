@@ -1,0 +1,8 @@
+/* HUIDI Docs Community Local RC16.6.2 — preview runtime recovery surface. */
+#piPaper .pdf-preview-runtime-error{
+  box-sizing:border-box;max-width:760px;margin:44px auto;padding:28px 30px;border:1px solid #f2c2b8;border-radius:18px;background:#fffaf8;box-shadow:0 10px 30px rgba(31,45,61,.08);color:#24364b;text-align:left
+}
+#piPaper .pdf-preview-runtime-error strong{display:block;margin-bottom:8px;font-size:18px;color:#9f2f24}
+#piPaper .pdf-preview-runtime-error span{display:block;line-height:1.7;color:#4b5d70}
+#piPaper .pdf-preview-runtime-error small{display:block;margin:12px 0 16px;padding:10px 12px;border-radius:10px;background:#fff;color:#7c433c;overflow-wrap:anywhere}
+#piPaper .pdf-preview-runtime-error .btn{min-height:34px}

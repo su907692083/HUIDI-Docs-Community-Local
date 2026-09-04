@@ -1,0 +1,22 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8');let fail=[];const need=(v,m)=>{if(!v)fail.push(m)};
+const pkg=JSON.parse(read('package.json')),manifest=JSON.parse(read('RELEASE-MANIFEST.json'));
+const owner=read('public/huidi-action-owner-rc1621.js'),css=read('public/huidi-action-owner-rc1621.css'),editor=read('public/editor.html'),bridge=read('public/huidi-local-editor-bridge-v120.js'),sync=read('public/flypigbox-v3-3-5-0-sync-core.js'),drawer=read('public/huidi-local-editor-rc15.js'),ready=read('public/flypigbox-empty-item-readiness-hotfix.js'),xm=read('public/flypigbox-cross-module-experience.js');
+need(/^1\.2\.0-rc16\.\d+(?:\.\d+)?$/.test(pkg.version),'package identity');
+need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(manifest.version)&&manifest.release===manifest.version.replace('1.2.0-',''),'manifest identity');
+need(owner.includes('Single Interaction Owner')&&owner.includes('window.HUIDIActionOwner'),'single action owner runtime missing');
+need(owner.includes("#fpV3321SaveHeader")&&owner.includes("FlypigBOXSmartSave"),'top save must use canonical smart-save flow');
+need(owner.includes("#huidiLocalCheckHeader")&&owner.includes('requestIdleCallback')&&owner.includes('仅供辅助'),'advisory check owner missing');
+need(owner.includes('data-rc1621-issue')&&owner.includes('HUIDIIssueNavigator'),'check issue locator missing');
+need(owner.includes('data-huidi-mode-transition')||owner.includes('huidiModeTransition'),'mode transition ownership missing');
+need(editor.includes("function modeTransitionActive()")&&editor.includes('fpPreviewDeferredDuringMode')&&editor.includes('allowDuringMode'),'preview must defer during mode transaction');
+need(css.includes('#fpV3325ClearHeader{display:none!important}'),'duplicate top clear must be removed');
+need(sync.includes("PDF模板/样式")&&sync.includes('HUIDIActionOwner?.save'),'top save/template naming not unified');
+need(bridge.includes('HUIDIActionOwner?.check'),'bridge must delegate check to owner');
+need(drawer.includes('常用资料模板')&&drawer.includes('这里不是 PDF 模板/样式'),'drawer template semantics not clarified');
+need(drawer.includes('data-rc15-action="check"')&&drawer.includes('<span>保存单据</span>'),'drawer assist actions not unified');
+need(ready.includes('可定位补充，也可按当前版本直接导出'),'readiness still sounds blocking');
+need(xm.includes('建议补充')&&!xm.includes("data-fp-open-output ${blockers.length?'disabled':''}"),'cross-module check still blocks output');
+need(editor.includes('huidi-action-owner-rc1621.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21'),'editor action owner cache identity missing');
+if(fail.length){console.error('RC16.21 ACTION OWNER VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('RC16.21 SINGLE INTERACTION OWNER VALIDATION PASSED');

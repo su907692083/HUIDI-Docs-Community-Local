@@ -17,17 +17,18 @@ function mountBanner(){
   banner.querySelector('button')?.addEventListener('click',()=>banner.remove());
 }
 function sanitizeTechnicalText(root=document){
+  if(root?.nodeType===1&&root.closest?.('#piPaper,.pdf-page,.pdf-template'))return;
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT);
   const nodes=[]; while(walker.nextNode())nodes.push(walker.currentNode);
   nodes.forEach(node=>{
-    if(!node.parentElement||/SCRIPT|STYLE|TEXTAREA|INPUT/.test(node.parentElement.tagName))return;
+    if(!node.parentElement||node.parentElement.closest?.('#piPaper,.pdf-page,.pdf-template')||/SCRIPT|STYLE|TEXTAREA|INPUT/.test(node.parentElement.tagName))return;
     let text=node.nodeValue||'';
     text=text.replace(/Failed to fetch/gi,'当前无法连接云端服务').replace(/\bguest\b/gi,'游客').replace(/ProductFlow 商品处理/g,'商品资料整理').replace(/Template & Brand Studio/g,'模板与品牌中心');
     if(text!==node.nodeValue)node.nodeValue=text;
   });
 }
 function boot(){mountBanner();sanitizeTechnicalText();
-  const observer=new MutationObserver(mutations=>mutations.forEach(m=>m.addedNodes.forEach(node=>{if(node.nodeType===1)sanitizeTechnicalText(node);else if(node.nodeType===3)sanitizeTechnicalText(node.parentElement||document)})));
+  const observer=new MutationObserver(mutations=>mutations.forEach(m=>m.addedNodes.forEach(node=>{if(node?.nodeType===1&&node.closest?.('#piPaper,.pdf-page,.pdf-template'))return;if(node.nodeType===1)sanitizeTechnicalText(node);else if(node.nodeType===3&&!node.parentElement?.closest?.('#piPaper,.pdf-page,.pdf-template'))sanitizeTechnicalText(node.parentElement||document)})));
   observer.observe(document.body,{childList:true,subtree:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();

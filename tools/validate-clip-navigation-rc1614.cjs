@@ -1,0 +1,27 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const failures=[];const ok=m=>console.log('[OK]',m);const need=(cond,msg)=>cond?ok(msg):failures.push(msg);
+const editor=read('public/editor.html');
+const nav=read('public/huidi-issue-navigator-rc1616.js');
+const gate=read('public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js');
+const rules=read('public/flypigbox-v3-3-6-24-r1-3a-17-rule-packs.js');
+const readiness=read('public/flypigbox-empty-item-readiness-hotfix.js');
+const integration=read('public/flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js');
+need(editor.includes('huidi-issue-navigator-rc1616.js'),'RC16.14 issue-navigation capability retained via RC16.18 navigator');
+need(editor.indexOf('huidi-issue-navigator-rc1616.js')<editor.indexOf('flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js'),'navigator loads before formal output gate');
+need(nav.includes('window.HUIDIIssueNavigator=Object.freeze'),'one canonical Issue Navigator authority');
+need(nav.includes("hs:'.i-hs'")&&nav.includes("showHsCode"),'HS Code locator exposes hidden item field');
+need(nav.includes('fp-item-expanded')&&nav.includes('scrollIntoView')&&nav.includes('focus?.'),'locator expands, scrolls and focuses target');
+need(rules.includes('fieldId:clean(entry.fieldId)')&&rules.includes('selector:clean(entry.selector)'),'Trade Factory locator metadata preserved in Rule Pack');
+need(rules.includes("path=`items.${Math.max(0,Number(nth[1])-1)}.${aliases[field]||field}`"),'item selector converted to canonical item path');
+need(gate.includes('data-a18-issue-path'),'protected formal output gate keeps path-based issue hooks');
+need(nav.includes('[data-a18-issue-path]')&&nav.includes('[data-a18-cancel]')&&nav.includes('返回并定位第一项'),'non-invasive navigator intercepts formal issue/return actions');
+need(readiness.includes('HUIDIIssueNavigator?.locate?.(issue)'),'preview readiness uses canonical locator');
+need(integration.includes('data-fp-a17-issue-index')&&integration.includes('HUIDIIssueNavigator?.locate'),'top Check dialog exposes locator actions');
+need(editor.includes('clipBoundaryPages')&&editor.includes('clipBoundaryNodes'),'pagination report records clip-boundary pages');
+need(editor.includes('clipOvershootByPage')&&editor.includes("stabilitySource:clipBoundaryPages.length?'post-layout-clip':'post-layout-overflow'"),'post-layout clip triggers bounded repagination');
+need(/valid:overflowPages\.length===0&&clipBoundaryPages\.length===0/.test(editor),'clip boundary is a hard pagination validity condition');
+need(editor.includes('pageOverflows(item.body)||clippedPdfNodes(item.body).length'),'formal PDF export retains same clip detector');
+if(failures.length){console.error('\nRC16.14 VALIDATION FAILED');failures.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('\nRC16.14 CLIP + ISSUE NAVIGATION VALIDATION PASSED');

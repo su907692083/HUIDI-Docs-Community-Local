@@ -1,6 +1,6 @@
 {
   "product": "HUIDI Docs Community Local",
-  "version": "1.2.0-RC6",
+  "version": "1.2.0-RC16.29",
   "edition": "community-local",
   "defaultMode": "local-only",
   "strictNetworkGuard": true,
@@ -11,16 +11,19 @@
   "notificationGatewayIncluded": false,
   "license": "HUIDI-Community-Source-License-1.0",
   "sourceBaseline": "HUIDI Docs Community Local 1.1.1 + CF1.2 production workflow audit",
-  "generatedAt": "2026-09-01",
-  "release": "RC6",
-  "fileCount": 263,
+  "generatedAt": "2026-09-04",
+  "release": "RC16.29",
+  "fileCount": 411,
   "windowsOneClick": true,
   "windowsPrimaryRuntime": "Windows PowerShell / loopback TCP server",
   "localAddress": "http://127.0.0.1:8765/",
-  "display_name": "HUIDI Docs Community Local V1.2.0 RC6",
-  "updated_at": "2026-09-01T18:30:00+08:00",
+  "display_name": "HUIDI Docs Community Local V1.2.0 RC16.29",
+  "updated_at": "2026-09-04T04:35:00+08:00",
   "licenseModel": "source-available",
   "freeUse": "personal-and-own-organization-internal-use",
   "commercialUse": "requires-separate-written-authorization",
-  "commercialAuthorizationContact": "WeChat nuliqingxing8"
+  "commercialAuthorizationContact": "WeChat nuliqingxing8",
+  "releaseTheme": "Catalog Connectivity Closure / Product Master Data Reuse / Local Image Continuity",
+  "packageKind": "SOURCE",
+  "publicRuntimeFileCount": 261
 }

@@ -272,15 +272,26 @@
     form.addEventListener('input',syncLegacyDates);form.addEventListener('change',syncLegacyDates);syncLegacyDates();
     document.documentElement.dataset.fpA10SectionsInstalled='1';return true;
   }
+  function fixedText(zh,en,language='bilingual'){
+    const i18n=window.HUIDIDocI18n;
+    if(i18n?.text)return i18n.text(zh,en,language);
+    return language==='zh'?zh:language==='en'?en:`${zh} / ${en}`;
+  }
   function displayValue(id,value,language='bilingual'){
     const def=FIELD_DEFINITIONS[id],text=String(value??'').trim();if(!text)return '';
-    if(def?.input==='select'){const row=(selectOptions[def.options]||[]).find(option=>option[0]===text);if(row)return language==='zh'?row[1]:language==='en'?row[2]:`${row[1]} / ${row[2]}`;}
+    if(def?.input==='select'){
+      const row=(selectOptions[def.options]||[]).find(option=>option[0]===text);
+      if(row)return fixedText(row[1],row[2],language);
+    }
     if(['depositPercent','balancePercent'].includes(id)){
       const number=Number(text);return Number.isFinite(number)?`${Number(number.toFixed(2))}%`:`${text}%`;
     }
     return text;
   }
-  function outputLabel(id,language='bilingual'){const def=FIELD_DEFINITIONS[id];if(!def)return id;return language==='zh'?def.label[0]:language==='en'?def.label[1]:`${def.label[0]} / ${def.label[1]}`;}
+  function outputLabel(id,language='bilingual'){
+    const def=FIELD_DEFINITIONS[id];if(!def)return id;
+    return fixedText(def.label[0],def.label[1],language);
+  }
   function structuredOutputRows(type,docMode,fields={},language='bilingual'){
     const t=normalizeType(type),m=normalizeMode(docMode),rows=[];
     Object.entries(FIELD_DEFINITIONS).forEach(([id,def])=>{

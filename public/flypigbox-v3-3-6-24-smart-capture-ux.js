@@ -6,7 +6,7 @@
   if(window.FlypigBOXSmartCaptureUX?.version===VERSION)return;
   const $=(s,r=document)=>r?.querySelector?.(s)||null,$$=(s,r=document)=>r?[...r.querySelectorAll(s)]:[];
   const clean=v=>String(v??'').trim(),esc=v=>String(v??'').replace(/[&<>'"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-  const LANGUAGES={auto:'自动识别',en:'英文',zh:'中文',bilingual:'中英双语',es:'西班牙语',fr:'法语',de:'德语',pt:'葡萄牙语',it:'意大利语',ja:'日语',ko:'韩语',ru:'俄语',ar:'阿拉伯语'};
+  const LANGUAGES={auto:'自动识别',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย',bilingual:'中英双语',zh:'中文',en:'English'};
   const DOC_TYPES={quotation:'报价单',proforma_invoice:'形式发票（PI）',commercial_invoice:'商业发票',packing_list:'装箱单',sales_contract:'销售合同'};
   const SAMPLE=`Buyer Company: Northstar Trading GmbH\nContact: Anna Keller\nEmail: anna@northstar.example\nWhatsApp: +49 151 23456789\nCountry: Germany\n\nProduct: Stainless Steel Bottle\nSKU: SB-750\nSpecification: 750ml, matte black\nQuantity: 500 PCS\nUnit Price: USD 6.80\nMOQ: 300 PCS\nIncoterm: FOB Ningbo\nDelivery Time: 25 days after deposit\nPayment Terms: 30% T/T deposit, 70% before shipment\nPlease prepare an English quotation.`;
   let hostObserver=null,bodyObserver=null,reviewObserver=null,centerTimer=0,decorating=false,lastRecorded='';

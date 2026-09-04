@@ -12,7 +12,7 @@
       button.addEventListener('click',()=>{const next=!section.classList.contains('fp30-collapsed');section.classList.toggle('fp30-collapsed',next);button.textContent=next?'＋':'－';const value=saved();value[index]=next;write(value)});
     });
   }
-  function status(){const layout=qs('#catalogToolLayout');if(!layout||qs('.fp30-catalog-status',layout))return;const bar=document.createElement('section');bar.className='fp30-catalog-status';bar.innerHTML='<div><b>目录制作流程</b><span>导入或选择商品 → 核对企业与客户信息 → 调整版式 → 预览并导出。</span></div><a class="workspace-return" href="../workspace.html?view=catalog">返回工作台</a>';layout.before(bar)}
+  function status(){qsa('.fp30-catalog-status').forEach(node=>node.remove())}
   function labels(){const sub=qs('.top .sub');if(sub)sub.textContent='产品目录工作室';qsa('.advanced-note').forEach(el=>{if(/API|JSON|技术|字段映射/.test(el.textContent))el.classList.add('fp-technical-only')})}
   function apply(){document.body.dataset.fpCatalogClosure='18.30';sections();status();labels();window.FlypigBOXUI30?.polish?.(document)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,500)},{once:true});else{apply();setTimeout(apply,500)}

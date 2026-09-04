@@ -18,7 +18,7 @@
   const notify=(message,type='ok')=>window.FlypigBOXApp?.setStatus?.(message,type);
   let quickMode=localStorage.getItem(MODE_KEY)!=='full';
   let advanced=localStorage.getItem(ADVANCED_KEY)==='1';
-  let onePage=localStorage.getItem(LAYOUT_KEY)!=='standard';
+  let onePage=localStorage.getItem(LAYOUT_KEY)==='one-page';
   let refreshTimer=0;
 
   const targets={basic:()=>$('.top-workspace>.card:first-child'),customer:()=>findCard('买卖双方'),products:()=>findCard('商品明细'),terms:()=>findCard('交易条款'),preview:()=>$('#previewShell')};
@@ -33,6 +33,7 @@
     return null;
   }
   function ensureBottom(){
+    if(window.HUIDI_LOCAL_ONLY?.localOnly){$('#fpQuotationBottomActions')?.remove();return null;}
     let bar=$('#fpQuotationBottomActions');if(bar)return bar;
     bar=document.createElement('div');bar.id='fpQuotationBottomActions';bar.className='fp-qf-bottom';
     bar.innerHTML='<span class="fp-qf-save-state" data-fp-qf-save-state>当前内容尚未保存</span><button type="button" data-fp-qf-bottom="save">保存草稿</button><button type="button" data-fp-qf-bottom="check">检查资料</button><button class="primary" type="button" data-fp-qf-bottom="export">导出PDF</button>';
@@ -42,9 +43,9 @@
   }
   function ensureDefaults(){
     const basic=$('.top-workspace>.card:first-child');if(!basic||$('#fpQuotationDefaults'))return;
-    const panel=document.createElement('div');panel.id='fpQuotationDefaults';panel.className='fp-qf-defaults';panel.innerHTML='<b>常用报价条件</b><span data-fp-qf-default-state>还没有保存企业常用值</span><button type="button" data-fp-qf-default="apply">填充空白字段</button><button type="button" data-fp-qf-default="save">保存当前为常用</button><button type="button" data-fp-qf-layout-toggle>优先一页</button>';
+    const panel=document.createElement('div');panel.id='fpQuotationDefaults';panel.className='fp-qf-defaults';panel.innerHTML='<b>常用报价条件</b><span data-fp-qf-default-state>还没有保存企业常用值</span><button type="button" data-fp-qf-default="apply">填充空白字段</button><button type="button" data-fp-qf-default="save">保存当前为常用</button>';
     basic.appendChild(panel);
-    panel.addEventListener('click',event=>{const action=event.target.closest('[data-fp-qf-default]')?.dataset.fpQfDefault;if(action==='save')return saveDefaults();if(action==='apply')return applyDefaults(false);if(event.target.closest('[data-fp-qf-layout-toggle]')){onePage=!onePage;localStorage.setItem(LAYOUT_KEY,onePage?'one-page':'standard');syncPreviewDensity(true);}});
+    panel.addEventListener('click',event=>{const action=event.target.closest('[data-fp-qf-default]')?.dataset.fpQfDefault;if(action==='save')return saveDefaults();if(action==='apply')return applyDefaults(false);});
   }
   function saveDefaults(){
     const issue=value('issueDate'),valid=value('validUntil');let validityDays=30;
@@ -59,7 +60,7 @@
     const issue=value('issueDate');if(issue&&!value('validUntil')&&data.validityDays){const date=new Date(`${issue}T00:00:00`);date.setDate(date.getDate()+Number(data.validityDays||30));if(setValue('validUntil',date.toISOString().slice(0,10)))count++;}
     window.FlypigBOXApp?.renderPreview?.();if(!silent)notify(count?`已填充 ${count} 个空白字段。`:'当前字段已有内容，没有覆盖。','ok');return count;
   }
-  function updateDefaultsState(){const data=readJSON(DEFAULTS_KEY,null),node=$('[data-fp-qf-default-state]');if(node)node.textContent=data?`已保存 · ${data.currency||'币种未设'} · 有效期 ${data.validityDays||30} 天`:'还没有保存企业常用值';const button=$('[data-fp-qf-layout-toggle]');if(button)button.textContent=onePage?'优先一页：开':'优先一页：关';}
+  function updateDefaultsState(){const data=readJSON(DEFAULTS_KEY,null),node=$('[data-fp-qf-default-state]');if(node)node.textContent=data?`已保存 · ${data.currency||'币种未设'} · 有效期 ${data.validityDays||30} 天`:'还没有保存企业常用值';}
   function openBatchProducts(){
     const switchBtn=$('[data-editor-view="table"]')||$('[data-primary-mode="table"]');if(switchBtn){switchBtn.click();setTimeout(()=>{const importBtn=$('[data-context-action="products"], [data-table-context="products"]')||$$('button').find(btn=>(btn.textContent||'').includes('导入商品'));importBtn?.click();},240);notify('已切换到表格工作台，可粘贴或批量导入商品。','ok');return;}
     field('fpLiteImportBtn')?.click();
@@ -116,7 +117,13 @@
       updateDefaultsState();syncPreviewDensity(false);
     },100);
   }
-  function syncPreviewDensity(announce){const paper=field('piPaper');if(!paper)return;const next=isQuotation()&&quickMode&&onePage;const changed=paper.classList.contains('fp-quotation-one-page')!==next;paper.classList.toggle('fp-quotation-one-page',next);const node=$('[data-fp-qf-layout]');if(node)node.textContent=onePage?'少量内容优先一页':'标准分页';if(changed)window.FlypigBOXApp?.renderPreview?.();if(announce)notify(onePage?'已启用少量报价优先一页排版。':'已恢复标准分页。','ok');}
+  function stableLayoutPolicy(){const policy=window.HUIDILayoutPolicy;return policy?.version==='1.2.0-RC16.10'?policy:null;}
+  function syncPreviewDensity(announce){
+    const policy=stableLayoutPolicy();
+    if(policy){onePage=policy.getMode?.('quotation')==='compact';const node=$('[data-fp-qf-layout]');if(node)node.textContent=onePage?'紧凑':'标准';if(announce)notify(onePage?'已切换为紧凑排版。':'已切换为标准排版。','ok');return;}
+    const paper=field('piPaper');if(!paper)return;const next=isQuotation()&&onePage;const changed=paper.classList.contains('fp-quotation-one-page')!==next;paper.classList.toggle('fp-quotation-one-page',next);paper.dataset.huidiPageFit=next?'one-page':'standard';if(next&&!paper.dataset.huidiPageFitLevel)paper.dataset.huidiPageFitLevel='1';if(!next)paper.dataset.huidiPageFitLevel='0';const node=$('[data-fp-qf-layout]');if(node)node.textContent=onePage?'紧凑':'标准';if(changed)window.FlypigBOXApp?.renderPreview?.();if(announce)notify(onePage?'已切换为紧凑排版。':'已切换为标准排版。','ok');
+  }
+  function setOnePage(next,{announce=true}={}){const policy=stableLayoutPolicy();if(policy){onePage=Boolean(next);policy.setMode?.(onePage?'compact':'standard',{documentType:'quotation',announce,source:'quotation-compat'});updateDefaultsState();return onePage;}onePage=Boolean(next);try{localStorage.setItem(LAYOUT_KEY,onePage?'one-page':'standard')}catch(_){}syncPreviewDensity(announce);updateDefaultsState();return onePage;}
   function setMode(nextQuick){
     const input=field('docMode');
     if(input){
@@ -144,6 +151,6 @@
     document.addEventListener('HUIDI:preview-rendered',()=>setTimeout(refreshStatus,0));
     const list=field('itemList');if(list)new MutationObserver(()=>{enhanceItems();refreshStatus();}).observe(list,{childList:true,subtree:true});
   }
-  function boot(){if(!field('piForm'))return;ensureShell();ensureBottom();ensureDefaults();applyDefaults(true);syncMode();installObserver();[300,900,1800,3200].forEach(ms=>setTimeout(syncMode,ms));window.FlypigBOXQuotationQuickFlow={version:VERSION,setMode,refresh:refreshStatus,applyDefaults,saveDefaults,meaningfulRows,originalHeaderOnly:true};}
+  function boot(){if(!field('piForm'))return;ensureShell();ensureBottom();ensureDefaults();applyDefaults(true);syncMode();installObserver();[300,900,1800,3200].forEach(ms=>setTimeout(syncMode,ms));window.FlypigBOXQuotationQuickFlow={version:VERSION,setMode,setOnePage,getOnePage:()=>onePage,refresh:refreshStatus,applyDefaults,saveDefaults,meaningfulRows,originalHeaderOnly:true};}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

@@ -1,0 +1,17 @@
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const root=path.resolve(__dirname,'..');const read=p=>fs.readFileSync(path.join(root,p),'utf8');let fail=[];const need=(v,m)=>{if(!v)fail.push(m)};
+const pkg=JSON.parse(read('package.json')),manifest=JSON.parse(read('RELEASE-MANIFEST.json')),editor=read('public/editor.html'),owner=read('public/huidi-output-advisory-rc1616.js'),table=read('public/flypigbox-editor-table-output.js'),unified=read('public/flypigbox-editor-unified.js'),nav=read('public/huidi-issue-navigator-rc1616.js'),gate=read('public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js');
+need(/^1\.2\.0-rc16\.\d+(?:\.\d+)?$/.test(pkg.version),'package identity');need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(manifest.version)&&manifest.release===manifest.version.replace('1.2.0-',''),'manifest identity');
+need(editor.indexOf('huidi-output-advisory-rc1616.js')<editor.indexOf('flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js'),'advisory output owner loads before protected gate');
+need(owner.includes("window.addEventListener('click'")&&owner.includes('stopImmediatePropagation')&&owner.includes('neverBlockForCompleteness:true'),'window capture single output owner');
+need(owner.includes("kind==='pdf'")&&owner.includes("kind==='xlsx'")&&owner.includes("kind==='data-xlsx'")&&owner.includes("kind==='csv'")&&owner.includes("kind==='print'"),'all output types routed');
+need(owner.includes('if(pdfBusy)')&&owner.includes("huidiPdfExportBusy='1'"),'PDF busy guard');
+need(!editor.includes('scale:2,useCORS:true'),'no fixed scale=2 PDF capture');need(editor.includes('pdfCaptureScale(pageCount')&&editor.includes('canvasJpegBytes'),'adaptive capture + async JPEG bytes');need(!editor.includes("canvas.toDataURL('image/jpeg',.97)"),'no synchronous page Base64 JPEG path');
+need(editor.includes('本次仍按当前右侧预览继续导出')&&editor.includes('本次以当前可见预览页为准继续导出'),'pagination warnings no longer hard-stop export');
+need(table.includes('completeness/readiness is advisory-only')&&table.includes('return true;'),'table validation advisory-only');
+need(unified.includes('仍然导出当前版本')&&!unified.includes("data-export-current ${blockers.length?'disabled"),'check dialog never disables export');
+need(nav.includes('导出前提醒（不阻止导出）')&&nav.includes('仍然导出当前版本'),'formal dialog patched to advisory wording');
+const sha=s=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,'public',s))).digest('hex');
+need(sha('flypigbox-v3-3-2-3-pdf-flow-fix.js')==='abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36','protected PDF flow core changed');
+need(sha('flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js')==='570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583','protected formal output gate changed');
+if(fail.length){console.error('RC16.18 VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}console.log('RC16.18 ADVISORY EXPORT + RESPONSIVE PIPELINE VALIDATION PASSED');

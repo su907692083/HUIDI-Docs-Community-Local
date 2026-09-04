@@ -84,8 +84,9 @@
     }
     if(has(fields.consigneeName)&&!has(fields.consigneeAddress))out.push(issue(formal?'blocker':'warning','consignee_address','fields.consigneeAddress','填写收货方后，需要补充收货地址。'));
     const beneficiary=fields.bankBeneficiary||fields.beneficiaryName;
-    const bankActive=[fields.bankName,fields.bankAccount,beneficiary,fields.bankSwift,fields.swiftCode].some(has);
-    if(bankActive&&![fields.bankName,fields.bankAccount,beneficiary].every(has))out.push(issue(formal?'blocker':'warning','bank_bundle','fields.bankAccount','收款资料启用后，需要同时核对收款人、银行名称和账号。'));
+    const paymentEnabled=['proforma_invoice','sales_contract'].includes(type) && [true,'true','1','on',1].includes(fields.showPayment);
+    const bankActive=paymentEnabled&&[fields.bankName,fields.bankAccount,beneficiary,fields.bankSwift,fields.swiftCode].some(has);
+    if(bankActive&&![fields.bankName,fields.bankAccount,beneficiary].every(has))out.push(issue(formal?'blocker':'warning','bank_bundle','fields.bankAccount','收款资料只填写了一部分，请补齐收款人、银行名称和账号，或关闭本单收款资料。'));
     if(type==='commercial_invoice'){
       if(!items.some(item=>has(item.hs))&&!has(fields.hsCode))out.push(issue('warning','hs_missing','items.hs','商业发票尚未填写 HS Code；正式申报前请由用户或报关行确认。'));
       if(!items.some(item=>has(item.origin))&&!has(fields.originCountry))out.push(issue(formal?'blocker':'warning','origin_missing','fields.originCountry','商业发票需要原产国信息。'));

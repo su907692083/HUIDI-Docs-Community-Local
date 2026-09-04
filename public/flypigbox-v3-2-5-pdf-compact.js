@@ -61,7 +61,7 @@ function compactAiCard(){
   const summary=card.querySelector(':scope>details>summary');
   if(!summary)return;
   summary.textContent='✨ AI翻译与语言状态（可选）';
-  const language=()=>({bilingual:'中英双语',zh:'中文',en:'英文'}[$('docLanguage')?.value]||'当前语言');
+  const language=()=>({bilingual:'中英双语',zh:'中文',en:'English',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย'}[$('docLanguage')?.value]||'当前语言');
   summary.dataset.status=`${language()} · 商品与条款保留原文`;
 }
 
@@ -117,7 +117,7 @@ function updateSummaries(){
   if(terms){const ids=['paymentTerms','tradeTerms','deliveryTime','portOfLoading','estimatedShipment','remarks'];const count=filledCount(ids);terms.textContent=count?`已填写 ${count} 项交易条件`:'未填写条款与备注';}
   const signature=cardByTitle('电子签名')?.querySelector('.section-collapse-summary');
   if(signature){const has=Boolean(document.querySelector('.upload-preview img[src]:not([src=""])'));signature.textContent=has?'已添加签名或公章':'未添加，空白区域不会输出';}
-  const ai=document.querySelector('.form-column>.api-card details>summary');if(ai){const lang=({bilingual:'中英双语',zh:'中文',en:'英文'}[$('docLanguage')?.value]||'当前语言');ai.dataset.status=`${lang} · AI翻译${$('translationReviewed')?.checked?'已核对':'可选'}`;}
+  const ai=document.querySelector('.form-column>.api-card details>summary');if(ai){const lang=({bilingual:'中英双语',zh:'中文',en:'English',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย'}[$('docLanguage')?.value]||'当前语言');ai.dataset.status=`${lang} · AI翻译${$('translationReviewed')?.checked?'已核对':'可选'}`;}
 }
 function scheduleSummaries(){window.clearTimeout(summaryTimer);summaryTimer=window.setTimeout(updateSummaries,80)}
 
