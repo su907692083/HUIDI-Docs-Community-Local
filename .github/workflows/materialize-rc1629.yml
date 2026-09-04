@@ -5,7 +5,7 @@ on:
     branches:
       - release/rc16.29
     paths:
-      - .release-staging/rc16.29/gh-delta.b64
+      - .release-staging/rc16.29/gh-delta-04.b64
 
 permissions:
   contents: write
@@ -24,7 +24,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          base64 -d .release-staging/rc16.29/gh-delta.b64 > /tmp/rc1629-github-delta.tar.xz
+          cat .release-staging/rc16.29/gh-delta-*.b64 | base64 -d > /tmp/rc1629-github-delta.tar.xz
           echo "49a75d3283ab7d3b7e9f51dae9892efb892812d4a36c811fbda3c12f1b9d561b  /tmp/rc1629-github-delta.tar.xz" | sha256sum -c -
           tar -xJf /tmp/rc1629-github-delta.tar.xz -C .
           rm -rf .release-staging
