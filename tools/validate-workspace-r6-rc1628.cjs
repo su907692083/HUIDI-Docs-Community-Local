@@ -1,0 +1,8 @@
+const fs=require('fs'),path=require('path');const root=path.resolve(__dirname,'..');let fail=[];const need=(x,m)=>{if(!x)fail.push(m)};const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const pkg=JSON.parse(read('package.json')),man=JSON.parse(read('RELEASE-MANIFEST.json')),html=read('public/workspace.html'),js=read('public/huidi-workspace-r6-rc1628.js'),css=read('public/huidi-workspace-r6-rc1628.css');
+need(/^1\.2\.0-rc16\.\d+(?:\.\d+)?$/.test(pkg.version),'package identity');need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(man.version)&&man.release===man.version.replace('1.2.0-',''),'manifest identity');need(html.includes('huidi-workspace-r6-rc1628.css')&&html.includes('huidi-workspace-r6-rc1628.js'),'workspace R6 assets');need(html.includes('workspace-r6'),'workspace R6 body owner');
+['compactDeal','compactCustomer','compactProduct','collapseActions','cleanFeishuCount','dealStageMode'].forEach(x=>need(js.includes(x),`missing ${x}`));
+['workspace-r6-deal-grid','workspace-r6-section','workspace-r6-row-more','workspace-r6-modal'].forEach(x=>need(css.includes(x),`missing ${x}`));
+need(js.includes("payment_status")&&js.includes("booking_status")&&js.includes("next_action_at"),'progressive deal fields');need(!js.includes('MutationObserver'),'R6 must not add MutationObserver');
+const r5=fs.readFileSync(path.join(root,'public/huidi-workspace-r5-rc1627.js'));const expected='b102a8320168e17a08a73dd333d49dbcdb50a1e2b697a78ea20d79ebfd8a6ac4';const crypto=require('crypto');need(crypto.createHash('sha256').update(r5).digest('hex')===expected,'R5 single-shell owner changed');
+if(fail.length){console.error('RC16.28 WORKSPACE R6 VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}console.log('RC16.28 WORKSPACE R6 VALIDATION PASSED');

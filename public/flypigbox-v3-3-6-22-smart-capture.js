@@ -10,7 +10,7 @@
   const RESULT_KEY='flypigbox_smart_capture_result_v1';
   const SOURCE_LABELS={paste:'粘贴文本',txt:'文本文件',csv:'CSV 文件',tsv:'TSV 文件',xlsx:'Excel 文件',manual:'手动录入'};
   const DOC_TYPES={quotation:'报价单',proforma_invoice:'形式发票（PI）',commercial_invoice:'商业发票',packing_list:'装箱单',sales_contract:'销售合同'};
-  const LANGUAGES={auto:'自动识别',en:'英文',zh:'中文',bilingual:'中英双语',es:'西班牙语',fr:'法语',de:'德语',pt:'葡萄牙语',it:'意大利语',ja:'日语',ko:'韩语',ru:'俄语',ar:'阿拉伯语'};
+  const LANGUAGES={auto:'自动识别',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย',bilingual:'中英双语',zh:'中文',en:'English'};
   const CURRENCIES=['USD','EUR','GBP','CNY','RMB','JPY','AUD','CAD','HKD','SGD','AED','SAR','INR','KRW','BRL','MXN'];
   const $=(s,r=document)=>r.querySelector(s);
   const $$=(s,r=document)=>[...r.querySelectorAll(s)];

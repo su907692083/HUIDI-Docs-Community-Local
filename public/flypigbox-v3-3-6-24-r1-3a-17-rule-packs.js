@@ -1,7 +1,7 @@
 /* HUIDI V3.3.6.24-R1.3A.17 — unified document rule packs and deterministic validation. */
 (()=>{
   'use strict';
-  const VERSION='V3.3.6.24-R1.3A.17-RULES.1';
+  const VERSION='V3.3.6.24-R1.3A.17-RULES.1-RC16.14-LOCATORS';
   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
   const num=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
   const unique=rows=>[...new Map((rows||[]).filter(Boolean).map(row=>[`${row.code}|${row.path}|${row.message}`,row])).values()];
@@ -77,8 +77,8 @@
       forbidden:['smtpPassword'],outputs:['pdf','xlsx','print']
     }
   });
-  function issue(severity,code,path,message,source='rule_pack'){
-    return{severity,code,path,message,source};
+  function issue(severity,code,path,message,source='rule_pack',locator={}){
+    return{severity,code,path,message,source,...(locator&&typeof locator==='object'?locator:{})};
   }
   function validateRequired(fields,required,formal){
     if(!formal)return[];
@@ -153,7 +153,17 @@
       const rows=[];
       const map=(list,severity)=>{
         (Array.isArray(list)?list:[]).forEach((entry,index)=>{
-          rows.push(issue(severity,`trade_factory_${index}`,'document',clean(entry?.message||entry?.text||entry)||'单据仍有待核对内容。','trade_factory'));
+          const locator=entry&&typeof entry==='object'?{fieldId:clean(entry.fieldId),selector:clean(entry.selector),section:clean(entry.section),itemIndex:entry.itemIndex,itemField:clean(entry.itemField)}:{};
+          let path=clean(entry?.path||entry?.target);
+          if(!path&&window.HUIDIIssueNavigator?.pathFromTradeIssue)path=window.HUIDIIssueNavigator.pathFromTradeIssue(locator);
+          if(!path&&locator.fieldId)path=`fields.${locator.fieldId}`;
+          if(!path&&locator.selector){
+            const nth=locator.selector.match(/\.item-row:nth-child\((\d+)\)/);
+            const field=locator.selector.match(/\.i-([a-z-]+)/)?.[1]||'';
+            const aliases={'net-weight':'netWeight','gross-weight':'grossWeight','carton-no':'cartonNo','package-desc':'packageDescription','item-marks':'shippingMarks'};
+            if(nth&&field)path=`items.${Math.max(0,Number(nth[1])-1)}.${aliases[field]||field}`;
+          }
+          rows.push(issue(severity,`trade_factory_${index}`,path||'document',clean(entry?.message||entry?.text||entry)||'单据仍有待核对内容。','trade_factory',locator));
         });
       };
       map(result.blockers||result.errors,'blocker');map(result.warnings,'warning');

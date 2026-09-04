@@ -16,7 +16,7 @@
       button.textContent='已了解风险，仍然继续';
       button.classList.add('fp-risk-confirm-continue');
     }
-    if(title&&/暂不能生成/.test(title.textContent))title.textContent=title.textContent.replace('暂不能生成','存在缺失项，可确认继续');
+    if(title&&/暂不能生成/.test(title.textContent))title.textContent=title.textContent.replace('暂不能生成','有资料可补充，但可随时继续导出');
     if(summary&&/必须补充/.test(summary.textContent))summary.textContent=summary.textContent.replace(/还有\s*(\d+)\s*项必须补充/,'有 $1 项需要关注，不影响用户确认导出');
     return true;
   }

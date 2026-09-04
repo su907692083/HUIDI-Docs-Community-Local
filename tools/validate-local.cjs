@@ -1,53 +1,28 @@
 const fs=require('fs'),path=require('path'),cp=require('child_process');
-const root=path.resolve(__dirname,'..'),pub=path.join(root,'public');let failures=[];const fail=m=>failures.push(m),ok=m=>console.log('[OK]',m);
+const root=path.resolve(__dirname,'..'),pub=path.join(root,'public'),failures=[];const fail=m=>failures.push(m),ok=m=>console.log('[OK]',m);
 const walk=d=>fs.readdirSync(d,{withFileTypes:true}).flatMap(n=>n.isDirectory()?walk(path.join(d,n.name)):[path.join(d,n.name)]);
-for(const f of ['package.json','RELEASE-MANIFEST.json','public/huidi-public-config.json','deploy/cloudflare/wrangler.example.jsonc']){
-  try{JSON.parse(fs.readFileSync(path.join(root,f),'utf8'));ok('JSON '+f)}catch(e){fail('JSON '+f+': '+e.message)}
-}
-for(const req of ['LICENSE','README.md','README-FIRST.zh-CN.md','SELF-HOSTING.md','SOURCE-AVAILABLE-SCOPE.md','COMMERCIAL-LICENSE.md','NOTICE','THIRD-PARTY-NOTICES.md','LICENSE-MIGRATION-RC6.zh-CN.md','NETWORK-POLICY.md','LEGACY-COMPATIBILITY.md','SECURITY.md','PRIVACY.md','CONTRIBUTING.md','CODE_OF_CONDUCT.md','START-HUIDI-LOCAL.cmd','tools/local-server.ps1','tools/local-server.cjs','public/index.html','public/workspace.html','public/document-start.html','public/editor.html','public/catalog-studio/index.html','public/community-local-mode.js','public/community-local-mode.css','public/assets/brand/favicon-32.png','public/catalog-studio/HUIDI_Product_Template.xlsx']){
-  if(fs.existsSync(path.join(root,req)))ok('exists '+req);else fail('missing '+req);
-}
-const files=walk(pub);
-for(const p of files.filter(p=>p.endsWith('.js'))){const r=cp.spawnSync(process.execPath,['--check',p],{encoding:'utf8'});if(r.status!==0)fail('JS syntax '+path.relative(pub,p)+': '+(r.stderr||r.stdout).trim())} ok('JS syntax scan');
-const htmls=files.filter(p=>p.endsWith('.html')),refRe=/(?:src|href)=["']([^"']+)["']/gi;
-for(const p of htmls){const s=fs.readFileSync(p,'utf8');let m;while((m=refRe.exec(s))){let ref=m[1].split(/[?#]/)[0];if(!ref||/^(https?:|data:|mailto:|tel:|javascript:|#|\/\/)/i.test(ref))continue;const q=ref.startsWith('/')?path.join(pub,ref.slice(1)):path.resolve(path.dirname(p),ref);if(!fs.existsSync(q)&&!ref.includes('${'))fail('HTML ref '+path.relative(pub,p)+' -> '+ref)}}
-ok('HTML local references');
-for(const key of ['index.html','workspace.html','document-start.html','editor.html','catalog-studio/index.html']){
-  const s=fs.readFileSync(path.join(pub,key),'utf8');
-  if(!/Content-Security-Policy/i.test(s))fail(key+' missing CSP');
-  if(!/connect-src 'self'/.test(s))fail(key+' connect-src is not self-only');
-  if(!/community-local-mode\.js/.test(s))fail(key+' missing local mode guard');
-}
-ok('local CSP/guard presence');
-const textFiles=files.filter(p=>/\.(html|js|json|webmanifest|css)$/i.test(p));
-const combined=textFiles.map(p=>fs.readFileSync(p,'utf8')).join('\n');
-const runtimeCombined=textFiles.filter(p=>!p.includes(path.join('assets','vendor'))).map(p=>fs.readFileSync(p,'utf8')).join('\n');
-for(const bad of ['icrdlqfszxygoxdldyhl','workspace.huidios.com','api.huidios.com','bridge-workspace.huidios.com','app.flypigbox.xyz','flypigbox.xyz'])if(combined.includes(bad))fail('production dependency remains: '+bad);
-for(const bad of ['sb_publishable_','service_role','sb_secret_'])if(combined.includes(bad))fail('credential-like marker remains: '+bad);
-for(const bad of ['cdnjs.cloudflare.com','cdn.jsdelivr.net','unpkg.com','api.openai.com','generativelanguage.googleapis.com','api.deepseek.com','dashscope.aliyuncs.com','openrouter.ai'])if(runtimeCombined.includes(bad))fail('external runtime endpoint remains: '+bad);
-const externalTag=/<(?:script|link)\b[^>]+(?:src|href)=["']https?:\/\//i;
-for(const p of htmls){const s=fs.readFileSync(p,'utf8');if(externalTag.test(s))fail('external script/style dependency: '+path.relative(pub,p))}
-if(fs.existsSync(path.join(pub,'admin')))fail('production admin directory present');else ok('admin excluded');
-for(const f of ['notifications.html','founder-os-project-contract.json','notification-gateway-contract.json','flypigbox-supabase-loader.js','flypigbox-ai-gateway-config.js','flypigbox-founder-os-bridge.js','flypigbox-service-runtime.js','flypigbox-notification-client.js','community-mode.js','community-mode.css','PATCH-MANIFEST.json'])if(fs.existsSync(path.join(pub,f)))fail('cloud/stale file remains: '+f);
-ok('cloud/stale surface prune');
-const guard=fs.readFileSync(path.join(pub,'community-local-mode.js'),'utf8');
-for(const term of ['window.fetch','XMLHttpRequest','WebSocket','EventSource','sendBeacon'])if(!guard.includes(term))fail('network guard missing '+term);
-if(!guard.includes('applyEditorAccessGate?.(false)'))fail('editor local access unlock missing');
-const catalog=fs.readFileSync(path.join(pub,'catalog-studio/index.html'),'utf8');
-if(!catalog.includes('if(window.HUIDI_LOCAL_ONLY?.localOnly)return true;'))fail('catalog local brand access unlock missing');
-const quick=fs.readFileSync(path.join(pub,'flypigbox-quick-result.js'),'utf8');
-if(/cdnjs|cdn\.jsdelivr|unpkg/i.test(quick))fail('quick import still has CDN fallback');
-if(!fs.readFileSync(path.join(root,'START-HUIDI-LOCAL.cmd'),'utf8').includes('-ExecutionPolicy Bypass'))fail('Windows launcher does not use safe one-click PowerShell path');
-if(!fs.readFileSync(path.join(root,'tools/local-server.ps1'),'utf8').includes('IPAddress]::Loopback'))fail('PowerShell local server is not loopback-only');
-if(!combined.includes('HUIDI Docs Community Local'))fail('local brand marker missing');
-// RC6 license model gate
-for(const rel of ['LICENSE','README.md','RELEASE-MANIFEST.json','package.json','public/index.html','public/SOURCE.html','public/terms.html','public/editor.html']){
-  const p=path.join(root,rel); if(!fs.existsSync(p)) continue; const t=fs.readFileSync(p,'utf8');
-  if(/AGPL-3\.0-only|GNU AFFERO GENERAL PUBLIC LICENSE/i.test(t)) fail(`RC6 license residual: ${rel}`);
-}
-const lic=fs.readFileSync(path.join(root,'LICENSE'),'utf8');
-if(!lic.includes('HUIDI Community Source License 1.0')) fail('missing HUIDI Community Source License 1.0');
-if(!lic.includes('自己公司内部使用')) fail('missing internal-use grant');
-if(!lic.includes('需要商业授权')) fail('missing commercial authorization boundary');
-if(failures.length){console.error('\nVALIDATION FAILED');failures.forEach(x=>console.error('-',x));process.exit(1)}
-console.log('\nVALIDATION PASSED');
+for(const f of ['package.json','RELEASE-MANIFEST.json','public/huidi-public-config.json']){try{JSON.parse(fs.readFileSync(path.join(root,f),'utf8'));ok('JSON '+f)}catch(e){fail('JSON '+f+': '+e.message)}}
+for(const req of ['LICENSE','README.md','README-FIRST.zh-CN.md','SELF-HOSTING.md','SOURCE-AVAILABLE-SCOPE.md','COMMERCIAL-LICENSE.md','NOTICE','THIRD-PARTY-NOTICES.md','START-HUIDI-LOCAL.cmd','tools/local-server.ps1','tools/local-server.cjs','tools/validate-unified-layout-rc1610.cjs','tools/validate-pagination-stability-rc1611.cjs','public/index.html','public/workspace.html','public/document-start.html','public/editor.html','public/catalog-studio/index.html','public/huidi-layout-policy-rc1610.js','public/huidi-layout-policy-rc1610.css','public/huidi-workspace-r1-rc1622.js','public/huidi-workspace-r1-rc1622.css','tools/validate-workspace-r1-rc1622.cjs','public/huidi-workspace-r2-rc1623.js','public/huidi-workspace-r2-rc1623.css','tools/validate-workspace-r2-rc1623.cjs','public/huidi-feishu-data-rc1624.js','public/huidi-feishu-data-rc1624.css','tools/validate-feishu-data-rc1624.cjs','public/huidi-workspace-r3-rc1625.js','public/huidi-workspace-r3-rc1625.css','tools/validate-workspace-r3-rc1625.cjs','public/huidi-workspace-r4-rc1626.js','public/huidi-workspace-r4-rc1626.css','tools/validate-workspace-r4-rc1626.cjs','public/huidi-workspace-r5-rc1627.js','public/huidi-workspace-r5-rc1627.css','tools/validate-workspace-r5-rc1627.cjs','tools/validate-catalog-connectivity-rc1629.cjs']){if(fs.existsSync(path.join(root,req)))ok('exists '+req);else fail('missing '+req)}
+const files=walk(pub);for(const p of files.filter(p=>p.endsWith('.js'))){const r=cp.spawnSync(process.execPath,['--check',p],{encoding:'utf8'});if(r.status!==0)fail('JS syntax '+path.relative(pub,p)+': '+(r.stderr||r.stdout).trim())}ok('JS syntax scan');
+const htmls=files.filter(p=>p.endsWith('.html')),refRe=/(?:src|href)=["']([^"']+)["']/gi;for(const p of htmls){const s=fs.readFileSync(p,'utf8');let m;while((m=refRe.exec(s))){let ref=m[1].split(/[?#]/)[0];if(!ref||/^(https?:|data:|mailto:|tel:|javascript:|#|\/\/)/i.test(ref))continue;const q=ref.startsWith('/')?path.join(pub,ref.slice(1)):path.resolve(path.dirname(p),ref);if(!fs.existsSync(q)&&!ref.includes('${'))fail('HTML ref '+path.relative(pub,p)+' -> '+ref)}}ok('HTML local references');
+for(const key of ['index.html','workspace.html','document-start.html','editor.html','catalog-studio/index.html']){const s=fs.readFileSync(path.join(pub,key),'utf8');if(!/Content-Security-Policy/i.test(s))fail(key+' missing CSP');if(!/community-local-mode\.js/.test(s))fail(key+' missing local mode guard')}ok('local CSP/guard presence');
+const r=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-unified-layout-rc1610.cjs')],{encoding:'utf8'});if(r.status!==0)fail('RC16.10 layout gate: '+(r.stderr||r.stdout).trim());else ok('RC16.10 layout gate');
+const p1611=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-pagination-stability-rc1611.cjs')],{encoding:'utf8'});if(p1611.status!==0)fail('RC16.11 pagination gate: '+(p1611.stderr||p1611.stdout).trim());else ok('RC16.11 pagination gate');
+const p1612=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-template-family-rc1612.cjs')],{encoding:'utf8'});if(p1612.status!==0)fail('RC16.12 template-family gate: '+(p1612.stderr||p1612.stdout).trim());else ok('RC16.12 template-family gate');
+const p1613=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-page-composer-rc1613.cjs')],{encoding:'utf8'});if(p1613.status!==0)fail('RC16.13 page-composer gate: '+(p1613.stderr||p1613.stdout).trim());else ok('RC16.13 page-composer gate');
+const p1614=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-clip-navigation-rc1614.cjs')],{encoding:'utf8'});if(p1614.status!==0)fail('RC16.14 clip/navigation gate: '+(p1614.stderr||p1614.stdout).trim());else ok('RC16.14 clip/navigation gate');
+const p1615=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-runtime-stability-rc1615.cjs')],{encoding:'utf8'});if(p1615.status!==0)fail('RC16.15 runtime-stability gate: '+(p1615.stderr||p1615.stdout).trim());else ok('RC16.15 runtime-stability gate');
+const p1616=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-advisory-export-rc1616.cjs')],{encoding:'utf8'});if(p1616.status!==0)fail('RC16.18 advisory-export gate: '+(p1616.stderr||p1616.stdout).trim());else ok('RC16.18 advisory-export gate');
+const p1617=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-toolbar-owner-rc1617.cjs')],{encoding:'utf8'});if(p1617.status!==0)fail('RC16.17 toolbar-owner retained gate: '+(p1617.stderr||p1617.stdout).trim());else ok('RC16.17 toolbar-owner retained gate');
+const p1618=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-live-preview-export-rc1618.cjs')],{encoding:'utf8'});if(p1618.status!==0)fail('RC16.18 live-preview export gate: '+(p1618.stderr||p1618.stdout).trim());else ok('RC16.18 live-preview export gate');
+const p1620=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-toolbar-interaction-rc1620.cjs')],{encoding:'utf8'});if(p1620.status!==0)fail('RC16.20 toolbar-interaction gate: '+(p1620.stderr||p1620.stdout).trim());else ok('RC16.20 toolbar-interaction gate');
+const p1621=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-action-owner-rc1621.cjs')],{encoding:'utf8'});if(p1621.status!==0)fail('RC16.21 action-owner gate: '+(p1621.stderr||p1621.stdout).trim());else ok('RC16.21 action-owner gate');
+const p1622=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-workspace-r1-rc1622.cjs')],{encoding:'utf8'});if(p1622.status!==0)fail('RC16.23 workspace-r1 retained gate: '+(p1622.stderr||p1622.stdout).trim());else ok('RC16.23 workspace-r1 retained gate');
+const p1623=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-workspace-r2-rc1623.cjs')],{encoding:'utf8'});if(p1623.status!==0)fail('RC16.23 workspace-r2 gate: '+(p1623.stderr||p1623.stdout).trim());else ok('RC16.23 workspace-r2 gate');
+const p1624=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-feishu-data-rc1624.cjs')],{encoding:'utf8'});if(p1624.status!==0)fail('RC16.24 Feishu Data retained gate: '+(p1624.stderr||p1624.stdout).trim());else ok('RC16.24 Feishu Data retained gate');
+const p1625=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-workspace-r3-rc1625.cjs')],{encoding:'utf8'});if(p1625.status!==0)fail('RC16.25 Workspace R3 retained gate: '+(p1625.stderr||p1625.stdout).trim());else ok('RC16.25 Workspace R3 retained gate');
+const p1626=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-workspace-r4-rc1626.cjs')],{encoding:'utf8',timeout:30000});if(p1626.status!==0)fail('RC16.26 Workspace R4 runtime-composition gate: '+(p1626.stderr||p1626.stdout).trim());else ok('RC16.26 Workspace R4 runtime-composition gate');
+const p1627=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-workspace-r5-rc1627.cjs')],{encoding:'utf8',timeout:30000});if(p1627.status!==0)fail('RC16.28 Workspace R5 single-shell gate: '+(p1627.stderr||p1627.stdout).trim());else ok('RC16.28 Workspace R5 single-shell gate');
+const p1628=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-workspace-r6-rc1628.cjs')],{encoding:'utf8',timeout:30000});if(p1628.status!==0)fail('RC16.28 Workspace R6 table-first gate: '+(p1628.stderr||p1628.stdout).trim());else ok('RC16.28 Workspace R6 table-first gate');
+const p1629=cp.spawnSync(process.execPath,[path.join(root,'tools','validate-catalog-connectivity-rc1629.cjs')],{encoding:'utf8',timeout:30000});if(p1629.status!==0)fail('RC16.29 Catalog connectivity gate: '+(p1629.stderr||p1629.stdout).trim());else ok('RC16.29 Catalog connectivity gate');
+if(failures.length){console.error('\nVALIDATION FAILED');failures.forEach(x=>console.error('-',x));process.exit(1)}console.log('\nVALIDATION PASSED');

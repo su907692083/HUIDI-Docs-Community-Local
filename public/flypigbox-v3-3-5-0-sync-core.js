@@ -2,7 +2,7 @@
    Explicit events only. No MutationObserver, ResizeObserver, polling interval, auth or session changes. */
 (()=>{
   'use strict';
-  const VERSION='V3.3.6.24 R1.3A.18.23.5';
+  const VERSION='V3.3.6.24 R1.3A.18.23.6';
   const $=id=>document.getElementById(id);
   const qsa=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
@@ -149,7 +149,7 @@
   function openTemplateCenter(){const trigger=document.querySelector('#flypigboxTemplateMount .fp-v8-trigger,[data-fp-template]');trigger?.click?.();if(!trigger)notify('模板中心仍在加载，请稍后重试。','error');}
   function openToolsAction(action){document.querySelector('#fpLiteMoreMenu>summary')?.click();setTimeout(()=>document.querySelector(`[data-v3315-action="${action}"]`)?.click(),40);}
   function openInternalTools(trigger){if(window.FlypigBOXInternalTools?.open)window.FlypigBOXInternalTools.open('factory',trigger);else document.querySelector('[data-table-action="open-internal-tools"],[data-v331-open-internal]')?.click?.();}
-  function ensureHeader(){const actions=document.querySelector('#fpLiteToolbar .fp-lite-toolbar-actions');if(!actions)return;const before=$('fpLiteExportMenu')||$('fpSpreadsheetExportMenu');const add=(id,text,handler,cls='fp-v3321-head-action')=>{let b=$(id);if(!b){b=document.createElement('button');b.type='button';b.id=id;b.className=cls;b.textContent=text;b.addEventListener('click',handler);actions.insertBefore(b,before||null);}return b;};add('fpV3350InternalHeader','内部工具',event=>openInternalTools(event.currentTarget));add('fpV3321SaveHeader','保存单据',()=>$('saveAllBtn')?.click());add('fpV3321TemplateHeader','模板/样式',openTemplateCenter);let modes=$('fpV3321ModeHeader');if(!modes){modes=document.createElement('div');modes.id='fpV3321ModeHeader';modes.className='fp-v3321-head-modes';modes.innerHTML='<button type="button" data-v3350-mode="ecommerce"></button><button type="button" data-v3350-mode="b2b"></button>';modes.addEventListener('click',event=>{if(event.target.closest('[data-fp-a13-formal-config]')){openFormalConfig();return;}const next=event.target.closest('[data-v3350-mode]')?.dataset.v3350Mode;if(!next)return;const input=$('docMode');if(input){input.value=next;input.dispatchEvent(new Event('change',{bubbles:true}));}});actions.insertBefore(modes,before||null);}add('fpV3321FieldsHeader','字段设置',()=>openToolsAction('fields'));syncModeHeader(modes);}
+  function ensureHeader(){const actions=document.querySelector('#fpLiteToolbar .fp-lite-toolbar-actions');if(!actions)return;const before=$('fpLiteExportMenu')||$('fpSpreadsheetExportMenu');const add=(id,text,handler,cls='fp-v3321-head-action')=>{let b=$(id);if(!b){b=document.createElement('button');b.type='button';b.id=id;b.className=cls;b.textContent=text;b.addEventListener('click',handler);actions.insertBefore(b,before||null);}return b;};add('fpV3350InternalHeader','内部工具',event=>openInternalTools(event.currentTarget));add('fpV3321SaveHeader','保存单据',()=>window.HUIDIActionOwner?.save?.()||$('saveAllBtn')?.click());add('fpV3321TemplateHeader','PDF模板/样式',openTemplateCenter);let modes=$('fpV3321ModeHeader');if(!modes){modes=document.createElement('div');modes.id='fpV3321ModeHeader';modes.className='fp-v3321-head-modes';modes.innerHTML='<button type="button" data-v3350-mode="ecommerce"></button><button type="button" data-v3350-mode="b2b"></button>';modes.addEventListener('click',event=>{if(event.target.closest('[data-fp-a13-formal-config]')){openFormalConfig();return;}const next=event.target.closest('[data-v3350-mode]')?.dataset.v3350Mode;if(!next)return;const input=$('docMode');if(input){input.value=next;input.dispatchEvent(new Event('change',{bubbles:true}));}});actions.insertBefore(modes,before||null);}add('fpV3321FieldsHeader','字段设置',()=>openToolsAction('fields'));syncModeHeader(modes);}
   function desiredPreview(){return document.body.classList.contains('fp-preview-table-only')?'table':'document';}
   function setPreviewVisibility(next){const table=next==='table',paper=$('piPaper'),workbook=$('fpTableOutputPreview');if(paper){paper.hidden=table;paper.setAttribute('aria-hidden',String(table));}if(workbook){workbook.hidden=!table;workbook.setAttribute('aria-hidden',String(!table));}}
   function forceCanonicalLeft(){document.body.classList.remove('fp-live-table-mode','fp-table-editor-mode');document.body.classList.add('fp-live-document-mode','fp-form-editor-mode','fp-unified-left-editor','fp-preview-only-switch');const duplicate=$('fpTableEditorWorkspace');if(duplicate){duplicate.hidden=true;duplicate.style.display='none';duplicate.setAttribute('aria-hidden','true');}const input=$('editorViewMode');if(input)input.value='form';}
@@ -171,8 +171,17 @@
     references:['关联与参考','REFERENCES'],paymentSchedule:['付款计划','PAYMENT SCHEDULE'],customs:['海关与合规','CUSTOMS & COMPLIANCE'],packing:['包装资料','PACKING DETAILS'],plannedLogistics:['交付与物流计划','DELIVERY & SHIPPING PLAN'],actualShipment:['实际出货','ACTUAL SHIPMENT'],qualityRisk:['质量、验收与风险','QUALITY, INSPECTION & RISK'],custom:['自定义字段','CUSTOM FIELDS'],quoteTerms:['报价条件','QUOTATION TERMS']
   };
   const A11_DUPLICATE_FIELDS=new Set(['quotationValidUntil','proformaValidUntil','packingDate']);
-  function outLang(){const value=clean($('docLanguage')?.value)||'bilingual';return ['zh','en','bilingual'].includes(value)?value:'bilingual';}
-  function outText(pair){const lang=outLang();return lang==='zh'?pair[0]:lang==='en'?pair[1]:`${pair[1]} / ${pair[0]}`;}
+  function outLang(){
+    const value=clean($('docLanguage')?.value)||'bilingual';
+    const supported=(window.HUIDIDocI18n?.languages||[]).map(row=>row?.[0]).filter(Boolean);
+    return supported.includes(value)?value:(['zh','en','bilingual'].includes(value)?value:'bilingual');
+  }
+  function outText(pair){
+    const lang=outLang(),zh=pair?.[0]||'',en=pair?.[1]||'';
+    const i18n=window.HUIDIDocI18n;
+    if(i18n?.text)return i18n.text(zh,en,lang);
+    return lang==='zh'?zh:lang==='en'?en:`${en} / ${zh}`;
+  }
   function esc(value){return String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
   function compact(value){return clean(value).toLowerCase();}
   function sameValue(a,b){return compact(a)&&compact(a)===compact(b);}
@@ -299,8 +308,8 @@
   window.FlypigBOXV3350={refresh:(refresh=false)=>applyRules({refresh}),navigate:(key)=>{const button=document.querySelector(`#fpV3321SideNav [data-v3321-section="${key}"]`);if(button&&!button.hidden)navigate(key,button);},navAvailable};
   function boot(){
     if(!$('piForm'))return;schema.installStructuredSections?.();exportNaming();bindPreviewSwitch();patchPublicRender();patchHtml2Canvas();applyRules({refresh:false});scheduleOutputIsolation(120);
-    const form=$('piForm');if(form&&!form.dataset.fpA10Bound){form.dataset.fpA10Bound='1';form.addEventListener('input',event=>{keepEditingSectionOpen(event.target);if(event.isTrusted&&event.target?.id)event.target.dataset.fpUserConfirmed='1';scheduleSync(true,90);});form.addEventListener('change',event=>{keepEditingSectionOpen(event.target);if(event.isTrusted&&event.target?.id)event.target.dataset.fpUserConfirmed='1';const id=event.target?.id||'';scheduleSync(true,['docMode','documentType',...schema.toggles].includes(id)?40:90);});}
-    document.addEventListener('HUIDI:document-type-changed',()=>scheduleSync(true,50));document.addEventListener('HUIDI:paper-orientation-change',()=>setTimeout(prepareWorkbook,60));document.addEventListener('HUIDI:preview-only-mode-change',event=>{if(event.detail?.mode==='table')scheduleWorkbookRefresh(40);});['HUIDI:branding-ready','HUIDI:branding-updated','HUIDI:apply-template'].forEach(name=>document.addEventListener(name,()=>scheduleSync(true,70)));window.addEventListener('pageshow',()=>scheduleSync(false,50),{once:true});[180,600,1400].forEach(ms=>setTimeout(()=>applyRules({refresh:false}),ms));
+    const form=$('piForm');if(form&&!form.dataset.fpA10Bound){form.dataset.fpA10Bound='1';form.addEventListener('input',event=>{keepEditingSectionOpen(event.target);if(event.isTrusted&&event.target?.id)event.target.dataset.fpUserConfirmed='1';scheduleSync(false,170);});form.addEventListener('change',event=>{keepEditingSectionOpen(event.target);if(event.isTrusted&&event.target?.id)event.target.dataset.fpUserConfirmed='1';const id=event.target?.id||'';scheduleSync(true,['docMode','documentType',...schema.toggles].includes(id)?40:90);});}
+    document.addEventListener('HUIDI:document-type-changed',()=>scheduleSync(true,50));document.addEventListener('HUIDI:paper-orientation-change',()=>setTimeout(prepareWorkbook,60));document.addEventListener('HUIDI:preview-only-mode-change',event=>{if(event.detail?.mode==='table')scheduleWorkbookRefresh(40);});['HUIDI:branding-ready','HUIDI:branding-updated'].forEach(name=>document.addEventListener(name,()=>scheduleSync(window.HUIDILayoutPolicy?.version==='1.2.0-RC16.10'?false:true,70)));document.addEventListener('HUIDI:apply-template',()=>scheduleSync(true,70));window.addEventListener('pageshow',()=>scheduleSync(false,50),{once:true});[180,600,1400].forEach(ms=>setTimeout(()=>applyRules({refresh:false}),ms));
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(boot,0),{once:true});else setTimeout(boot,0);
 })();
@@ -317,8 +326,16 @@
   const num=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
   const type=()=>window.FlypigBOXDocumentSchema?.normalizeType?.(new URLSearchParams(location.search).get('type')||$('documentType')?.value||new URLSearchParams(location.search).get('doc'))||'proforma_invoice';
   const mode=()=>window.FlypigBOXDocumentSchema?.effectiveMode?.(type(),$('docMode')?.value)||window.FlypigBOXDocumentSchema?.normalizeMode?.($('docMode')?.value)||'ecommerce';
-  const lang=()=>['zh','en','bilingual'].includes($('docLanguage')?.value)?$('docLanguage').value:'bilingual';
-  const out=(zh,en)=>lang()==='zh'?zh:lang()==='en'?en:`${en} / ${zh}`;
+  const lang=()=>{
+    const value=clean($('docLanguage')?.value)||'bilingual';
+    const supported=(window.HUIDIDocI18n?.languages||[]).map(row=>row?.[0]).filter(Boolean);
+    return supported.includes(value)?value:(['zh','en','bilingual'].includes(value)?value:'bilingual');
+  };
+  const out=(zh,en)=>{
+    const current=lang(),i18n=window.HUIDIDocI18n;
+    if(i18n?.text)return i18n.text(zh,en,current);
+    return current==='zh'?zh:current==='en'?en:`${en} / ${zh}`;
+  };
   const esc=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   let timer=0,drag=null;
 
@@ -404,7 +421,7 @@
   }
   function ensureDialog(){let dialog=$('fpA12ReadinessDialog');if(dialog)return dialog;dialog=document.createElement('dialog');dialog.id='fpA12ReadinessDialog';dialog.className='fp-a12-dialog';dialog.innerHTML='<div class="fp-a12-dialog-box"><button type="button" class="fp-a12-dialog-close" data-fp-a12-close>×</button><p class="eyebrow">正式导出检查</p><h2>这份单据还不能正式导出</h2><div data-fp-a12-dialog-content></div><div class="fp-a12-dialog-actions"><button type="button" class="btn primary" data-fp-a12-close>返回继续填写</button></div></div>';document.body.appendChild(dialog);dialog.addEventListener('click',event=>{if(event.target.matches('[data-fp-a12-close]')||event.target===dialog)dialog.close();});return dialog;}
   function showBlocked(result){const dialog=ensureDialog(),content=dialog.querySelector('[data-fp-a12-dialog-content]');content.innerHTML=`<p>缺少以下关键资料：</p><ol>${result.blocks.map(item=>`<li><b>${esc(SECTION_LABELS[item.section]||item.section)}</b>：${esc(item.text)}</li>`).join('')}</ol>${result.warnings.length?`<p class="fp-a12-dialog-warn">另有 ${result.warnings.length} 项提醒，可在补齐关键资料后继续核对。</p>`:''}`;dialog.showModal?.();try{window.FlypigBOXApp?.setStatus?.('当前单据缺少关键资料，已阻止正式导出。','error');}catch(_){}}
-  function guardExport(event){const button=event.target.closest?.('#exportPdfBtn,#headerExportPdfBtn');if(!button)return;const result=readiness();if(result.ready)return;event.preventDefault();event.stopImmediatePropagation();showBlocked(result);}
+  function guardExport(event){const button=event.target.closest?.('#exportPdfBtn,#headerExportPdfBtn');if(!button)return;if(window.HUIDI_LOCAL_ONLY?.localOnly&&window.FlypigBOXPdfExportState?.unifiedPreflight===true)return;const result=readiness();if(result.ready)return;event.preventDefault();event.stopImmediatePropagation();showBlocked(result);}
 
   function partyHtml(prefix){const fields=[['Name',''],['Contact',out('联系人','CONTACT')],['Phone',out('电话','PHONE')],['Email',out('邮箱','EMAIL')],['Address',out('地址','ADDRESS')]],values=fields.map(([suffix])=>clean($(`${prefix}${suffix}`)?.value));if(!values.some(Boolean))return'';return values.map((value,index)=>value?(index===0?`<strong>${esc(value)}</strong>`:`<span class="muted">${fields[index][1]}:</span> ${esc(value)}`):'').filter(Boolean).join('<br>');}
   function same(a,b){return clean(a).toLowerCase()===clean(b).toLowerCase()&&clean(a)!=='';}
@@ -447,7 +464,7 @@
   function normalizeBilingual(template){if(lang()!=='bilingual')return;qsa('.doc-section,h3,th,.pdf-meta-grid b,.pdf-meta-grid small,.pdf-meta-bar b,.pdf-meta-bar small',template).forEach(node=>{const text=clean(node.textContent);const parts=text.split(/\s*\/\s*/);if(parts.length!==2)return;const hasZh=value=>/[\u3400-\u9fff]/.test(value);if(hasZh(parts[0])&&!hasZh(parts[1]))node.textContent=`${parts[1]} / ${parts[0]}`;});}
   function cleanupPreview(template){template.style.removeProperty('border-right');template.style.removeProperty('outline');template.closest('.pdf-page')?.classList.remove('fp-a12-debug-outline');}
   function softenWatermark(root){qsa('.fp-trial-watermark',root).forEach(mark=>{mark.dataset.fpA12Watermark='1';mark.setAttribute('aria-hidden','true');});}
-  function fixOutput(){const result=readiness(),root=$('piPaper');if(!root)return result;root.dataset.fpA12Ready=result.ready?'1':'0';qsa('.pdf-template',root).forEach(template=>{readinessBanner(template,result);fixCommercialParties(template);pruneShipment(template);sanitizeDeclaration(template);normalizeBilingual(template);cleanupPreview(template);});softenWatermark(root);applyNavReadiness(result);setExportState(result);return result;}
+  function fixOutput(options={}){const result=readiness(),root=$('piPaper');if(!root)return result;root.dataset.fpA12Ready=result.ready?'1':'0';const mutatePdf=options.prePagination===true||document.body.dataset.huidiStablePagination!=='1';if(mutatePdf)qsa('.pdf-template',root).forEach(template=>{readinessBanner(template,result);fixCommercialParties(template);pruneShipment(template);sanitizeDeclaration(template);normalizeBilingual(template);cleanupPreview(template);});softenWatermark(root);applyNavReadiness(result);setExportState(result);return result;}
 
   function normalizeEditor(){
     const quote=$('quoteNo'),label=quote?.closest('label');if(label){const input=quote;const text=type()==='quotation'?'客户参考号':(['proforma_invoice','sales_contract'].includes(type())?'关联报价单号':'报价参考号');Array.from(label.childNodes).filter(node=>node.nodeType===3).forEach(node=>node.textContent='');label.insertBefore(document.createTextNode(text),input);}
@@ -460,6 +477,8 @@
   function patchPreviewRender(){const app=window.FlypigBOXApp;if(!app?.renderPreview||app.renderPreview.__fpA12)return;const original=app.renderPreview.bind(app);const wrapped=(...args)=>{const value=original(...args);requestAnimationFrame(()=>fixOutput());return value;};wrapped.__fpA12=true;app.renderPreview=wrapped;}
   function schedule(delay=40){clearTimeout(timer);timer=setTimeout(()=>requestAnimationFrame(()=>{patchPreviewRender();normalizeEditor();ensureSplitter();fixOutput();stamp();}),delay);}
   function stamp(){const badge=$('fpLiteVersion');if(badge){badge.textContent=RELEASE;badge.title='正规商业发票与装箱单统一、分栏展开可见性候选版';}document.body.dataset.fpA12='1';document.body.dataset.fpA13='1';}
-  function boot(){if(!$('piForm'))return;patchPreviewRender();document.addEventListener('click',guardExport,true);$('piForm').addEventListener('input',()=>schedule(90));$('piForm').addEventListener('change',()=>schedule(70));['HUIDI:preview-rendered','HUIDI:document-type-changed','HUIDI:apply-template','HUIDI:trade-scenario-applied'].forEach(name=>document.addEventListener(name,()=>schedule(40)));window.addEventListener('pageshow',()=>schedule(70),{once:true});[50,260,800].forEach(ms=>setTimeout(()=>schedule(0),ms));window.FlypigBOXA12={readiness,refresh:()=>schedule(0),setRatio};}
+  const preparePdf=()=>fixOutput({prePagination:true});
+  window.FlypigBOXA12=Object.assign(window.FlypigBOXA12||{},{readiness,refresh:()=>schedule(0),setRatio,preparePdf});
+  function boot(){if(!$('piForm'))return;patchPreviewRender();document.addEventListener('click',guardExport,true);$('piForm').addEventListener('change',()=>schedule(80));['HUIDI:preview-rendered','HUIDI:document-type-changed','HUIDI:apply-template','HUIDI:trade-scenario-applied'].forEach(name=>document.addEventListener(name,()=>schedule(40)));window.addEventListener('pageshow',()=>schedule(70),{once:true});[50,260,800].forEach(ms=>setTimeout(()=>schedule(0),ms));window.FlypigBOXA12=Object.assign(window.FlypigBOXA12||{},{readiness,refresh:()=>schedule(0),setRatio,preparePdf});}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

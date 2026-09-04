@@ -1,0 +1,7 @@
+/* RC16.21 Single Interaction Owner */
+#fpV3325ClearHeader{display:none!important}
+#huidiLocalCheckHeader[aria-busy="true"]{opacity:.68;cursor:progress}
+.huidi-rc1621-check-card{border-color:#cfe0f2!important;background:#fbfdff!important}
+.huidi-rc1621-check-summary{display:flex;gap:7px;flex-wrap:wrap}.huidi-rc1621-check-summary span{padding:5px 8px;border-radius:999px;background:#edf5ff;color:#315f92;font-size:10px;font-weight:900}
+.huidi-rc1621-check-list{display:grid;gap:7px}.huidi-rc1621-check-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;min-height:48px;padding:9px 10px;border:1px solid #dbe5ef;border-radius:10px;background:#fff;text-align:left;cursor:pointer}.huidi-rc1621-check-row:hover{border-color:#9ec1e8;background:#f5f9ff}.huidi-rc1621-check-row span{display:grid;gap:3px;min-width:0}.huidi-rc1621-check-row b{font-size:10px;color:#9a5b21}.huidi-rc1621-check-row.is-review b{color:#426d9e}.huidi-rc1621-check-row span{font-size:11px;color:#40566f;line-height:1.45}.huidi-rc1621-check-row em{font-style:normal;color:#2569bb;font-size:10px;font-weight:900}.huidi-rc1621-check-ok{padding:12px;border:1px dashed #b9ddc9;border-radius:10px;background:#f6fff9;color:#397058;font-size:11px;line-height:1.55}
+html[data-huidi-mode-transition="1"] #piPaper{pointer-events:none}

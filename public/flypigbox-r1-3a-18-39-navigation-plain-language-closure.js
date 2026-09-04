@@ -68,7 +68,7 @@
     if(!root)return;
     const walker=doc.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode(node){
       const p=node.parentElement;
-      if(!p||p.closest('script,style,code,pre,textarea,input,select,option'))return NodeFilter.FILTER_REJECT;
+      if(!p||p.closest('script,style,code,pre,textarea,input,select,option,#piPaper,.pdf-page,.pdf-template'))return NodeFilter.FILTER_REJECT;
       if(p.closest('.fp-technical-only,[data-fp-technical]'))return NodeFilter.FILTER_REJECT;
       return NodeFilter.FILTER_ACCEPT;
     }});
@@ -206,7 +206,7 @@
     doc.addEventListener('click',e=>{
       if(e.target.closest('[data-view], [data-sidecar-action="new-order"], [data-action^="notification-"]'))setTimeout(sync,0);
     },true);
-    new MutationObserver(muts=>{if(muts.some(m=>m.addedNodes?.length||m.type==='characterData'||m.type==='attributes'))queueSync()}).observe(doc.body||doc.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','open','hidden','data-workspace-view']});
+    new MutationObserver(muts=>{if(muts.some(m=>!m.target?.closest?.('#piPaper')&&(m.addedNodes?.length||m.type==='characterData'||m.type==='attributes')))queueSync()}).observe(doc.body||doc.documentElement,{subtree:true,childList:true,characterData:true,attributes:true,attributeFilter:['class','open','hidden','data-workspace-view']});
   }
   if(doc.readyState==='loading')doc.addEventListener('DOMContentLoaded',init,{once:true});else init();
 })();

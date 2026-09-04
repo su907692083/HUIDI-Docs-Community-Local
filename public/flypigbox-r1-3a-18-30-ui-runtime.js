@@ -48,12 +48,12 @@
     for(const scope of scopes){
       if(!scope||scope.dataset?.fp30PlainDone==='1') continue;
       const walker=document.createTreeWalker(scope,NodeFilter.SHOW_TEXT,{acceptNode(node){
-        const p=node.parentElement;if(!p||p.closest('script,style,code,pre,textarea,[contenteditable="true"]'))return NodeFilter.FILTER_REJECT;
+        const p=node.parentElement;if(!p||p.closest('script,style,code,pre,textarea,[contenteditable="true"],#piPaper,.pdf-page,.pdf-template'))return NodeFilter.FILTER_REJECT;
         return node.nodeValue.trim()?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
       }});
       const nodes=[];while(walker.nextNode())nodes.push(walker.currentNode);
       for(const node of nodes){let text=node.nodeValue;const trim=text.trim();if(exactTerms.has(trim)) text=text.replace(trim,exactTerms.get(trim));
-        for(const [re,to] of replacements) text=text.replace(re,to);node.nodeValue=text;}
+        for(const [re,to] of replacements) text=text.replace(re,to);if(text!==node.nodeValue)node.nodeValue=text;}
       qsa('input[placeholder],textarea[placeholder]',scope).forEach(el=>{let v=el.getAttribute('placeholder')||'';for(const [re,to] of replacements)v=v.replace(re,to);el.setAttribute('placeholder',v)});
     }
   }
@@ -96,7 +96,7 @@
     if(layer&&event.target===layer&&(layer.dataset.closeOnBackdrop!=='false')){window.setTimeout(()=>{if(visible(layer))closeLayer(layer)},20);}
   });
   document.addEventListener('keyup',event=>{if(event.key==='Escape'){const layer=topLayer();if(layer)window.setTimeout(()=>{if(visible(layer))closeLayer(layer)},20);}});
-  let timer=0;const observer=new MutationObserver(records=>{if(!records.some(r=>r.addedNodes.length||r.removedNodes.length))return;clearTimeout(timer);timer=setTimeout(()=>{polish(document);unlock();},90)});
+  let timer=0;const observer=new MutationObserver(records=>{const relevant=records.some(r=>(r.addedNodes.length||r.removedNodes.length)&&!r.target?.closest?.('#piPaper'));if(!relevant)return;clearTimeout(timer);timer=setTimeout(()=>{polish(document);unlock();},90)});
   const start=()=>{document.body?.setAttribute('data-fp-ui-closure',VERSION);polish(document);observer.observe(document.body,{childList:true,subtree:true});setInterval(unlock,1800);};
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});else start();
   window.FlypigBOXUI30={version:VERSION,closeLayer,toast,setBusy,polish,unlock};

@@ -247,6 +247,7 @@
     return next;
   }
   function localMirror(record={}){
+    if(window.HUIDI_LOCAL_ONLY?.localOnly)return record;
     try{
       const key='flypigbox_workspace_document_mirror_v1';
       const rows=parseJson(localStorage.getItem(key),[]);

@@ -1,0 +1,27 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const failures=[];const ok=m=>console.log('[OK]',m);const need=(c,m)=>c?ok(m):failures.push(m);
+const pkg=JSON.parse(read('package.json')),manifest=JSON.parse(read('RELEASE-MANIFEST.json'));
+const editor=read('public/editor.html');
+const nav=read('public/huidi-issue-navigator-rc1616.js');
+const bridge=read('public/huidi-local-editor-bridge-v120.js');
+const layout=read('public/huidi-layout-policy-rc1610.js');
+const runtime=read('public/huidi-runtime-stability-rc1615.js');
+need(/^1\.2\.0-rc16\.\d+(?:\.\d+)?$/.test(pkg.version),'package version is RC16.18');
+need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(manifest.version)&&manifest.release===manifest.version.replace('1.2.0-',''),'manifest identity is RC16.18');
+need(editor.includes("classList.add('huidi-rc1615-boot')")&&editor.includes('huidi-rc1615-critical'),'critical first-paint gate is installed before editor body paints');
+need(editor.includes('huidi-runtime-stability-rc1615.js'),'runtime stability controller loaded');
+need(runtime.includes("fpPaginationStable==='1'")&&runtime.includes("fpPreviewStatus==='ready'"),'first paint waits for a stable paginated preview');
+need(runtime.includes("setTimeout(()=>release(stable()?'stable-timeout':'bounded-fallback'),2400)"),'runtime gate has bounded fallback');
+need(!nav.includes("observe(document.body,{childList:true,subtree:true})"),'Issue Navigator never observes entire body subtree');
+need(nav.includes("rootObserver.observe(document.body,{childList:true})"),'Issue Navigator discovery observes body direct children only');
+need(nav.includes("formalDialogObserver.observe(dialog,{childList:true,subtree:true})"),'Issue Navigator observes only the small formal dialog subtree');
+need(!bridge.includes('[0,180,520,1100,2200]'),'legacy five-pass toolbar reshuffle removed');
+need(!bridge.includes('toolbarObserver'),'bridge no longer owns a competing toolbar observer');
+need(bridge.includes('HUIDIToolbarOwner'),'toolbar ownership delegated to RC16.18 single owner');
+need(!layout.includes('[250,900].forEach'),'layout-policy repeated boot sync timers removed');
+need(layout.includes("boot-settled"),'layout policy uses one double-RAF settled sync');
+need(!editor.includes('huidi-issue-navigator-rc1614.js'),'obsolete RC16.14 navigator is not loaded');
+if(failures.length){console.error('\nRC16.15 RETAINED VALIDATION FAILED ON RC16.18');failures.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('\nRC16.15 FIRST PAINT + RUNTIME STABILITY RETAINED VALIDATION PASSED ON RC16.18');

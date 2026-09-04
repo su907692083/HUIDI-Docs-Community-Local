@@ -7,6 +7,8 @@
   const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
   const num=value=>{const n=Number(value);return Number.isFinite(n)?n:0;};
+  const docNames={quotation:'报价单',proforma_invoice:'形式发票',commercial_invoice:'商业发票',sales_contract:'销售合同',packing_list:'装箱单'};
+  const currentDocName=()=>docNames[document.getElementById('documentType')?.value]||'当前单据';
   const textKeys=['sku','name','spec','hs','moq','cartonNo','packageDescription','dimensions','shippingMarks','image','origin','productCode','itemNo'];
   const numericKeys=['price','netWeight','grossWeight','cbm','cartons','subtotal','amount'];
   let patchTimer=0;
@@ -110,7 +112,7 @@
     const first=readiness.blocks?.[0];
     const list=(readiness.blocks||[]).slice(0,5).map(item=>item.text).filter(Boolean);
     const blankCount=removableBlankCount();
-    banner.innerHTML=`<strong>这张报价单还有内容需要补充</strong><span>${list.map((text,index)=>`<button type="button" data-fp-readiness-issue="${index}">${escapeHtml(text)}</button>`).join('')}${readiness.blocks.length>5?`<em>另有 ${readiness.blocks.length-5} 项</em>`:''}</span><div class="fp-readiness-actions">${blankCount?`<button type="button" data-fp-clean-empty>清理 ${blankCount} 条空白商品行</button>`:''}${first?'<button type="button" data-fp-first-issue>查看第一个问题</button>':''}</div><small>补充完成后才可以导出正式文件</small>`;
+    banner.innerHTML=`<strong>这张${currentDocName()}还有内容需要补充</strong><span>${list.map((text,index)=>`<button type="button" data-fp-readiness-issue="${index}">${escapeHtml(text)}</button>`).join('')}${readiness.blocks.length>5?`<em>另有 ${readiness.blocks.length-5} 项</em>`:''}</span><div class="fp-readiness-actions">${blankCount?`<button type="button" data-fp-clean-empty>清理 ${blankCount} 条空白商品行</button>`:''}${first?'<button type="button" data-fp-first-issue>查看第一个问题</button>':''}</div><small>这些内容仅供检查建议；可定位补充，也可按当前版本直接导出</small>`;
     banner.dataset.fpFirstIssuePath=first?.path||first?.target||'';
   }
   function escapeHtml(value){return String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));}
@@ -125,8 +127,8 @@
     },true);
     document.addEventListener('click',event=>{
       if(event.target.closest('[data-fp-clean-empty]')){event.preventDefault();cleanup({announce:true,render:true});schedulePatch(120);return;}
-      if(event.target.closest('[data-fp-first-issue]')){const banner=event.target.closest('#fpA12PreviewReadiness');const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const path=result?.blockers?.[0]?.path||banner?.dataset.fpFirstIssuePath||'items';focusPath(path);return;}
-      const issueButton=event.target.closest('[data-fp-readiness-issue]');if(issueButton){const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const index=Number(issueButton.dataset.fpReadinessIssue||0);focusPath(result?.blockers?.[index]?.path||result?.blockers?.[0]?.path||'items');}
+      if(event.target.closest('[data-fp-first-issue]')){const banner=event.target.closest('#fpA12PreviewReadiness');const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const issue=result?.blockers?.[0]||{path:banner?.dataset.fpFirstIssuePath||'items'};if(!window.HUIDIIssueNavigator?.locate?.(issue))focusPath(issue.path||'items');return;}
+      const issueButton=event.target.closest('[data-fp-readiness-issue]');if(issueButton){const result=window.FlypigBOXFormalOutputGate?.check?.('pdf');const index=Number(issueButton.dataset.fpReadinessIssue||0);const issue=result?.blockers?.[index]||result?.blockers?.[0]||{path:'items'};if(!window.HUIDIIssueNavigator?.locate?.(issue))focusPath(issue.path||'items');}
     });
     document.addEventListener('HUIDI:preview-rendered',()=>schedulePatch(150));
     document.addEventListener('HUIDI:formal-validation',()=>schedulePatch(90));

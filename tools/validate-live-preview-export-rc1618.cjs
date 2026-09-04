@@ -1,0 +1,21 @@
+const fs=require('fs'),path=require('path');
+const root=path.resolve(__dirname,'..');
+const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+const sha=p=>require('crypto').createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex');
+const pkg=JSON.parse(read('package.json')),manifest=JSON.parse(read('RELEASE-MANIFEST.json'));
+const editor=read('public/editor.html'),owner=read('public/huidi-output-advisory-rc1616.js'),fail=[];
+const need=(c,m)=>{if(!c)fail.push(m);};
+need(/^1\.2\.0-rc16\.\d+(?:\.\d+)?$/.test(pkg.version),'package identity');
+need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(manifest.version)&&manifest.release===manifest.version.replace('1.2.0-',''),'manifest identity');
+need(editor.includes('captureLivePdfPageCanvas'),'live preview page capture function exists');
+need(editor.includes('html2canvas(page,{scale'),'html2canvas captures live page node');
+need(!editor.includes('capturePdfPageCanvas(frozenPages'),'old detached clone capture path is not used');
+need(!editor.includes("cloneHost.className=String(paper.className"),'old off-screen capture host removed from export implementation');
+need(editor.includes("dataset.huidiPdfSnapshotExport='1'")&&editor.includes("dataset.fpExportFrozen='1'"),'export snapshot freeze markers');
+need(editor.includes("fpPreviewDeferredDuringExport")&&editor.includes("HUIDI:pdf-export-settled"),'deferred preview render resumes after export');
+need(editor.includes("snapshotGeneration")&&editor.includes("isConnected")&&editor.includes('liveCount!==snapshotCount'),'generation/page-count stability checks');
+need(owner.includes('RC16.18-OUTPUT-ADVISORY')&&owner.includes("HUIDI:pdf-export-settled"),'output owner releases preview freeze');
+need(sha('public/flypigbox-v3-3-2-3-pdf-flow-fix.js')==='abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36','protected PDF flow core unchanged');
+need(sha('public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js')==='570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583','protected formal output gate unchanged');
+if(fail.length){console.error('RC16.18 LIVE PREVIEW SNAPSHOT EXPORT VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('RC16.18 LIVE PREVIEW SNAPSHOT EXPORT VALIDATION PASSED');

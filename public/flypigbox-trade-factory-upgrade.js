@@ -248,6 +248,7 @@
   function scheduleReadiness(delay=150){clearTimeout(readinessTimer);readinessTimer=setTimeout(evaluateReadiness,delay);}
   function focusIssue(issue){
     if(!issue)return;
+    if(window.HUIDIIssueNavigator?.locate?.(issue))return;
     let target=issue.fieldId?$(issue.fieldId):null;if(!target&&issue.selector)target=document.querySelector(issue.selector);
     if(!target)return;
     qsa('details').forEach(details=>{if(details.contains(target))details.open=true;});

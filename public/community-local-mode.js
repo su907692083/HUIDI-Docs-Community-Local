@@ -1,5 +1,5 @@
 (()=>{'use strict';
-const LOCAL=Object.freeze({edition:'community-local',version:'1.2.0-rc5',localOnly:true,strictNetwork:true});
+const LOCAL=Object.freeze({edition:'community-local',version:'1.2.0-rc16.29',localOnly:true,strictNetwork:true});
 window.HUIDI_COMMUNITY=LOCAL; window.HUIDI_LOCAL_ONLY=LOCAL;
 window.FLYPIGBOX_SUPABASE={url:'',publishableKey:'',runtimeConfigFunction:''};
 window.FlypigBOXRuntimeConfig={mode:'local-only',apiBase:'',enabled:false};
@@ -44,8 +44,9 @@ if(navigator.sendBeacon){
   navigator.sendBeacon=(url,data)=>sameOrigin(url)?nativeBeacon(url,data):(blocked('beacon',url),false);
 }
 const hideByText=(root=document)=>{
-  const rx=/(通知与协同|飞书资料|飞书同步|AI\s*网关|Founder OS|云端草稿|云端模板|会员方案|开通会员|登录\/注册)/i;
+  const rx=/(通知与协同|AI\s*网关|Founder OS|云端草稿|云端模板|会员方案|开通会员|登录\/注册)/i;
   root.querySelectorAll('button,a,[role="button"],summary').forEach(el=>{
+    if(el.closest?.('[data-huidi-local-online-allowed="feishu"]'))return;
     const text=(el.textContent||'').trim();
     if(rx.test(text)){el.hidden=true;el.setAttribute('aria-hidden','true')}
   });

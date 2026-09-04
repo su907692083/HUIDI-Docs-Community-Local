@@ -1,4 +1,4 @@
-# 源码开放边界 — Community Local V1.2 RC6
+# 源码开放边界 — Community Local V1.2 RC16.4
 
 ## 当前授权定位
 
@@ -33,15 +33,14 @@ Community Local 是 **Source Available / 源码开放版**，不是 AGPL / GPL �
 - 报价 → PI → 合同 → CI → 装箱单的本地继续制作
 - PDF、客户版 XLSX、数据版 XLSX、CSV
 - 本地草稿、回收站、JSON 备份
-- 本地邮件草稿
-- Windows 一键本地启动和自有服务器部署参考
+- 本地邮件草稿\n- 可选的用户自有飞书自建应用协作同步（本机 Companion Server；不含 HUIDI 生产凭据）\n- Windows 一键本地启动和自有服务器部署参考
 
 ## HUIDI Cloud / Enterprise 不在本包
 
 - HUIDI 生产 Supabase 和生产数据库
 - 云 AI Gateway、模型路由、提示词运营链
 - 云同步、团队实时协作、邮件发送网关、通知网关
-- 飞书 / 企微等生产连接器
+- HUIDI 生产飞书 / 企微连接器、生产机器人和生产凭据（RC16.6.4 的用户自有飞书协作同步不在此排除项内）
 - Founder OS Bridge
 - 生产管理后台
 - 会员、计费、PDF额度、Token 成本和生产密钥

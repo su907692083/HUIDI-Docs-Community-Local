@@ -181,7 +181,7 @@ body.fp-live-document-mode.fp-a12-resizing,body.fp-live-document-mode.fp-a12-res
 .fp-a12-readiness-banner{display:grid;gap:4px;margin:0 0 10px;padding:9px 12px;border:1px solid #d44b3e;border-left:5px solid #c93226;background:#fff4f2;color:#7d2119;font-size:11px;line-height:1.45;break-inside:avoid;page-break-inside:avoid}
 .fp-a12-readiness-banner strong{font-size:13px;letter-spacing:.02em}.fp-a12-readiness-banner small{font-weight:800;color:#a52b20}
 .pdf-template.fp-a12-incomplete{filter:none!important}
-.pdf-template.fp-a12-incomplete:after{content:'INTERNAL REVIEW · 未完成';position:absolute;right:12px;bottom:10px;font-size:9px;font-weight:900;letter-spacing:.12em;color:rgba(160,38,28,.72)}
+.pdf-template.fp-a12-incomplete:after{content:none!important;display:none!important}
 .pdf-template{position:relative}
 
 .fp-a12-dialog{border:0;padding:0;border-radius:18px;max-width:min(620px,calc(100vw - 28px));box-shadow:0 24px 70px rgba(18,35,58,.28)}

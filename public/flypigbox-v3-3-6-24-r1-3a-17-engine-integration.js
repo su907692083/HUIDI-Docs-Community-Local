@@ -1,7 +1,7 @@
 /* HUIDI V3.3.6.24-R1.3A.18.3 — formal rule, router, workbench and document-save integration. */
 (()=>{
   'use strict';
-  const VERSION='V3.3.6.24-R1.3A.18.15-INTEGRATION.1';
+  const VERSION='V3.3.6.24-R1.3A.18.15-INTEGRATION.2-RC16.14';
   const $=(selector,root=document)=>root.querySelector(selector);
   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
   const escapeHTML=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[char]));
@@ -61,14 +61,18 @@
   function ensureDialog(){
     let dialog=$('#fp-a17-engine-dialog');if(dialog)return dialog;
     dialog=document.createElement('dialog');dialog.id='fp-a17-engine-dialog';dialog.className='fp-a17-dialog';dialog.innerHTML='<section class="fp-a17-dialog-card"><header><div><p data-fp-a17-eyebrow>处理结果</p><h2 data-fp-a17-title>系统检查</h2></div><button class="fp-a17-dialog-close" type="button" aria-label="关闭">×</button></header><div data-fp-a17-body></div><div class="fp-a17-dialog-actions"><button type="button" class="primary" data-fp-a17-close>知道了</button></div></section>';
-    dialog.addEventListener('click',event=>{if(event.target===dialog||event.target.closest('[data-fp-a17-close],.fp-a17-dialog-close'))dialog.close();});
+    dialog.addEventListener('click',event=>{
+      if(event.target===dialog||event.target.closest('[data-fp-a17-close],.fp-a17-dialog-close')){dialog.close();return;}
+      const issueButton=event.target.closest('[data-fp-a17-issue-index]');if(issueButton){const issue=dialog.__huidiIssues?.[Number(issueButton.dataset.fpA17IssueIndex)];dialog.close();if(issue)setTimeout(()=>window.HUIDIIssueNavigator?.locate?.(issue),40);}
+    });
     document.body.appendChild(dialog);return dialog;
   }
   function showDialog({title='系统检查',eyebrow='处理结果',summary='',tone='ok',issues=[],html=''}={}){
     const dialog=ensureDialog();$('[data-fp-a17-title]',dialog).textContent=title;$('[data-fp-a17-eyebrow]',dialog).textContent=eyebrow;
     const body=$('[data-fp-a17-body]',dialog);
+    dialog.__huidiIssues=issues;
     if(html)body.innerHTML=html;
-    else body.innerHTML=`<div class="fp-a17-result-summary ${tone}">${escapeHTML(summary)}</div>${issues.length?`<div class="fp-a17-issue-list">${issues.map(row=>`<div class="fp-a17-issue ${row.severity==='blocker'?'blocker':'warning'}">${escapeHTML(row.message||row)}</div>`).join('')}</div>`:''}`;
+    else body.innerHTML=`<div class="fp-a17-result-summary ${tone}">${escapeHTML(summary)}</div>${issues.length?`<div class="fp-a17-issue-list">${issues.map((row,index)=>`<div class="fp-a17-issue ${row.severity==='blocker'?'blocker':'warning'}"><span>${escapeHTML(row.message||row)}</span>${(row.path||row.fieldId||row.selector||row.itemField)?`<button type="button" data-fp-a17-issue-index="${index}">定位修改</button>`:''}</div>`).join('')}</div>`:''}`;
     if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
   }
   function stateLabel(state){return({active:'可使用',connected:'服务可用',waiting:'暂未开放',available:'后续可用',loading:'正在准备'}[state]||'待确认');}

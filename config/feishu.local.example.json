@@ -1,0 +1,7 @@
+{
+  "app_id": "cli_xxxxxxxxxxxxxxxx",
+  "app_secret": "replace-with-your-own-app-secret",
+  "tenant_domain": "your-company.feishu.cn",
+  "folder_token": "",
+  "document_id": ""
+}

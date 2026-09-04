@@ -10,7 +10,14 @@
     packing_list:{label:'装箱单',preview:'PACKING LIST',description:'用于说明包装、箱数、重量、体积和唛头。'}
   };
   const LANG={
-    bilingual:'中英双语',zh:'中文',en:'英文'
+    bilingual:'中英双语',zh:'中文',en:'English',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย'
+  };
+  const DOCUMENT_TITLES={
+    proforma_invoice:{en:'PROFORMA INVOICE',zh:'形式发票',es:'FACTURA PROFORMA',pt:'FATURA PROFORMA',de:'PROFORMARECHNUNG',fr:'FACTURE PRO FORMA',it:'FATTURA PROFORMA',ru:'СЧЕТ-ПРОФОРМА',ar:'فاتورة أولية',ja:'仮送り状',ko:'견적송장',tr:'PROFORMA FATURA',nl:'PROFORMAFACTUUR',pl:'FAKTURA PROFORMA',vi:'HÓA ĐƠN CHIẾU LỆ',id:'FAKTUR PROFORMA',th:'ใบแจ้งหนี้ล่วงหน้า'},
+    quotation:{en:'QUOTATION',zh:'报价单',es:'COTIZACIÓN',pt:'COTAÇÃO',de:'ANGEBOT',fr:'DEVIS',it:'PREVENTIVO',ru:'КОММЕРЧЕСКОЕ ПРЕДЛОЖЕНИЕ',ar:'عرض سعر',ja:'見積書',ko:'견적서',tr:'TEKLİF',nl:'OFFERTE',pl:'OFERTA',vi:'BÁO GIÁ',id:'PENAWARAN',th:'ใบเสนอราคา'},
+    commercial_invoice:{en:'COMMERCIAL INVOICE',zh:'商业发票',es:'FACTURA COMERCIAL',pt:'FATURA COMERCIAL',de:'HANDELSRECHNUNG',fr:'FACTURE COMMERCIALE',it:'FATTURA COMMERCIALE',ru:'КОММЕРЧЕСКИЙ ИНВОЙС',ar:'فاتورة تجارية',ja:'商業送り状',ko:'상업송장',tr:'TİCARİ FATURA',nl:'HANDELSFACTUUR',pl:'FAKTURA HANDLOWA',vi:'HÓA ĐƠN THƯƠNG MẠI',id:'FAKTUR KOMERSIAL',th:'ใบกำกับสินค้าพาณิชย์'},
+    sales_contract:{en:'SALES CONTRACT',zh:'销售合同',es:'CONTRATO DE COMPRAVENTA',pt:'CONTRATO DE COMPRA E VENDA',de:'KAUFVERTRAG',fr:'CONTRAT DE VENTE',it:'CONTRATTO DI VENDITA',ru:'ДОГОВОР КУПЛИ-ПРОДАЖИ',ar:'عقد بيع',ja:'売買契約書',ko:'매매계약서',tr:'SATIŞ SÖZLEŞMESİ',nl:'KOOPOVEREENKOMST',pl:'UMOWA SPRZEDAŻY',vi:'HỢP ĐỒNG MUA BÁN',id:'KONTRAK PENJUALAN',th:'สัญญาซื้อขาย'},
+    packing_list:{en:'PACKING LIST',zh:'装箱单',es:'LISTA DE EMPAQUE',pt:'LISTA DE EMBALAGEM',de:'PACKLISTE',fr:'LISTE DE COLISAGE',it:'LISTA DI IMBALLAGGIO',ru:'УПАКОВОЧНЫЙ ЛИСТ',ar:'قائمة التعبئة',ja:'梱包明細書',ko:'포장 명세서',tr:'PAKETLEME LİSTESİ',nl:'PAKLIJST',pl:'LISTA PAKOWA',vi:'PHIẾU ĐÓNG GÓI',id:'DAFTAR KEMASAN',th:'รายการบรรจุภัณฑ์'}
   };
   const CORE_TRANSLATABLE=[
     ['paymentTerms','付款条款'],['deliveryTime','交期'],['portOfLoading','装运港说明'],['destinationPort','目的港说明'],['remarks','补充备注'],['sellerAddress','卖方地址'],['buyerAddress','买方地址'],['buyerCountry','买方国家'],['originCountry','原产国'],['shippingMethod','运输方式'],['packageType','包装方式'],['shippingMarks','唛头 / 物流说明'],['bankAddress','银行地址']
@@ -192,16 +199,7 @@
     el.textContent=next.text;el.className='state '+next.klass;
     return result;
   }
-  function syncBrandingDocumentType(type=getType()){
-    const safe=TYPE[type]?type:'proforma_invoice';
-    const branding=window.FlypigBOXBranding;
-    if(!branding)return;
-    try{
-      if(branding.get?.().documentType===safe)return;
-      if(typeof branding.set==='function')branding.set({documentType:safe});
-      else if(typeof branding.apply==='function')branding.apply({documentType:safe},{keepLogo:true});
-    }catch(_){ }
-  }
+  function syncBrandingDocumentType(){/* RC16.12: PDF style is independent from document type. */}
   function forcePaperDocumentType(type=getType()){
     const paper=$('#piPaper');
     if(!paper)return;
@@ -213,12 +211,10 @@
     const zhTitle=TYPE[safe]?.titleLabel||TYPE[safe]?.label||expected;
     if(title){
       const lang=getLang();
-      const titleText=title.textContent||'';
-      const needsRestore=clean(titleText).indexOf(clean(expected))<0||(lang==='bilingual'&&!titleText.includes(zhTitle))||(lang==='zh'&&clean(titleText)!==clean(zhTitle));
-      if(!needsRestore)return;
-      if(lang==='zh')title.textContent=zhTitle;
-      else if(lang==='bilingual')title.textContent=`${expected} / ${zhTitle}`;
-      else title.textContent=expected;
+      const localized=DOCUMENT_TITLES[safe]?.[lang]||expected;
+      const wanted=lang==='bilingual'?`${expected} / ${zhTitle}`:localized;
+      if(clean(title.textContent||'')===clean(wanted))return;
+      title.textContent=wanted;
     }
   }
   function syncBridgeContext(){
@@ -409,14 +405,14 @@
     let dialog=$('#fp-check-dialog');
     if(!dialog){dialog=document.createElement('dialog');dialog.id='fp-check-dialog';dialog.className='fp-insert-dialog';document.body.appendChild(dialog);}
     const hasWarning=!result.typeOk||warnings.length||blockers.length;
-    const blockerList=blockers.length?`<div class="fp-export-blocker-note"><b>还有 ${blockers.length} 项必须先处理：</b><ul>${blockers.slice(0,8).map(item=>`<li>${escapeHTML(item.label||'必填项')}：${escapeHTML(item.message||'请返回完善')}</li>`).join('')}</ul></div>`:'';
+    const blockerList=blockers.length?`<div class="fp-export-blocker-note"><b>还有 ${blockers.length} 项建议补充：</b><ul>${blockers.slice(0,8).map(item=>`<li>${escapeHTML(item.label||'建议项')}：${escapeHTML(item.message||'请返回完善')}</li>`).join('')}</ul></div>`:'';
     const warningList=warnings.length?`<ul class="fp-export-warning-list">${warnings.slice(0,8).map(item=>`<li>${item}</li>`).join('')}${warnings.length>8?`<li>另有 ${warnings.length-8} 项待确认内容。</li>`:''}</ul>`:'';
-    dialog.innerHTML=`<div class="inner"><header><div><p class="eyebrow">导出 PDF</p><h2>导出前确认</h2></div><button class="close" data-close-check>×</button></header><div class="fp-status-note ${hasWarning?'warn':'ok'}">请确认价格、数量、客户信息、收款信息和条款已核对。未翻译内容不会阻止导出，但正式发送前建议自行检查。</div>${blockerList}${warningList}<ul>${list.map(item=>`<li>${item}</li>`).join('')}</ul><div class="fp-clause-actions fp-export-actions"><button class="replace" data-export-current ${blockers.length?'disabled aria-disabled="true"':''}>${blockers.length?'请先完善必填项':'继续导出当前版本'}</button><button class="append" data-open-translate>返回检查</button><button class="copy" data-close-check>取消</button></div></div>`;
+    dialog.innerHTML=`<div class="inner"><header><div><p class="eyebrow">导出 PDF</p><h2>导出前确认</h2></div><button class="close" data-close-check>×</button></header><div class="fp-status-note ${hasWarning?'warn':'ok'}">请确认价格、数量、客户信息、收款信息和条款已核对。未翻译内容不会阻止导出，但正式发送前建议自行检查。</div>${blockerList}${warningList}<ul>${list.map(item=>`<li>${item}</li>`).join('')}</ul><div class="fp-clause-actions fp-export-actions"><button class="replace" data-export-current>仍然导出当前版本</button><button class="append" data-open-translate>返回检查</button><button class="copy" data-close-check>取消</button></div></div>`;
     dialog.showModal();
     dialog.onclick=event=>{
       if(event.target.closest('[data-close-check]'))dialog.close();
       if(event.target.closest('[data-open-translate]')){dialog.close();scrollToTranslateArea();}
-      if(event.target.closest('[data-export-current]')&&!blockers.length){dialog.close();triggerCurrentPdfExport();}
+      if(event.target.closest('[data-export-current]')){dialog.close();triggerCurrentPdfExport();}
     };
   }
   window.FlypigBOXOpenExportCheck=openCheckDialog;
@@ -470,6 +466,8 @@
   function attachGuard(){
     document.addEventListener('click',event=>{
       const button=event.target.closest('#exportPdfBtn');if(!button)return;
+      // Community Local RC9: the formal output gate is the single owner of export preflight.
+      if(window.HUIDI_LOCAL_ONLY?.localOnly&&window.FlypigBOXPdfExportState?.unifiedPreflight===true)return;
       if(!pdfComponentsReady()){
         event.preventDefault();event.stopImmediatePropagation();
         if(window.FlypigBOXApp?.showPdfExportHelp)window.FlypigBOXApp.showPdfExportHelp('html2canvas 或 jsPDF 未加载');
@@ -483,7 +481,7 @@
     },true);
     exportState.unifiedPreflightReady=true;
     $('#documentType')?.addEventListener('change',()=>{const type=getType();try{const url=new URL(location.href);url.searchParams.set('doc',type);history.replaceState(history.state,'',`${url.pathname}${url.search}${url.hash||'#editorTop'}`);}catch(_){ }syncControls();renderNow();try{document.dispatchEvent(new CustomEvent('HUIDI:document-type-changed',{detail:{type,label:TYPE[type].label}}));}catch(_){ }});
-    $('#docLanguage')?.addEventListener('change',()=>{syncControls();renderNow();});
+    $('#docLanguage')?.addEventListener('change',()=>{syncControls();});
     ['paymentTerms','deliveryTime','portOfLoading','destinationPort','remarks','sellerName','buyerName','sellerAddress','buyerAddress','buyerCountry','originCountry','moq','shippingMethod','packageCount','packageType','netWeight','grossWeight','cbm','logisticsCarrier','trackingNo','blNo','containerNo','sealNo','vesselFlight','etd','eta','packageDimensions','shippingMarks','logisticsExtraRowsJson','bankBeneficiary','bankName','bankAccount','bankSwift','bankAddress','currency','tradeTerms','invoiceNo','issueDate','validUntil'].forEach(id=>$('#'+id)?.addEventListener('input',()=>requestAnimationFrame(()=>{renderStatus();scheduleDocumentEnhancements();})));
     $('#logisticsExtraList')?.addEventListener('input',()=>requestAnimationFrame(()=>{renderStatus();scheduleDocumentEnhancements();}));
     $('#itemList')?.addEventListener('input',()=>requestAnimationFrame(()=>{renderStatus();scheduleDocumentEnhancements();}));
@@ -506,7 +504,6 @@
         syncBridgeContext();
         renderStatus();
         scheduleDocumentEnhancements();
-        emitPreviewRendered();
       });
       return result;
     };
@@ -561,7 +558,7 @@
   const $=(selector,root=document)=>root.querySelector(selector);
   const $$=(selector,root=document)=>[...root.querySelectorAll(selector)];
   const LANGUAGE=Object.freeze({
-    bilingual:'中英双语',zh:'中文',en:'英文'
+    bilingual:'中英双语',zh:'中文',en:'English',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย'
   });
   const FEE_TYPES=Object.freeze({
     freight:'运费', insurance:'保险费', sample:'样品费', mould:'模具费', packing:'包装费', inspection:'验货费', certification:'认证费', bank:'银行手续费', platform:'平台服务费', tax:'税费 / VAT', discount:'折扣', other:'其他费用'
@@ -839,12 +836,17 @@
     };
     const item=labels[key]||labels.subtotal;
     const lang=currentLanguage();
+    const i18n=window.HUIDIDocI18n;
+    if(i18n?.text)return i18n.text(item.zh,item.en,lang);
     if(lang==='zh')return item.zh;
     if(lang==='bilingual')return `${item.zh} / ${item.en}`;
     return item.en;
   }
 
   function renderFeeRowsInPdf(){
+    // RC16.11: editor.html owns the canonical fee rows before pagination.
+    // Never reshape the money table after pagination has already been measured.
+    if(document.body.dataset.huidiStablePagination==='1')return;
     if(patching)return;
     const paper=$('#piPaper');
     const type=$('#documentType')?.value||'proforma_invoice';
@@ -978,6 +980,7 @@
         return;
       }
       if(exportState.allowCurrentPdfExport===true)return;
+      if(window.HUIDI_LOCAL_ONLY?.localOnly && window.FlypigBOXPdfExportState?.unifiedPreflight===true)return;
       const issues=feeTranslationIssues();
       if(!issues.length)return;
       event.preventDefault();event.stopImmediatePropagation();
@@ -1192,6 +1195,14 @@
     reflowing=true;
     try{
       markEmptyBrandChrome(paper);
+      // RC16.9: editor.html paginateCurrentPreview() is the single pagination authority.
+      // Rebuilding an already-paginated document here used a different reserve and
+      // treated previously split table fragments as atomic chunks, which could turn
+      // a stable 2-page preview into 4-6 pages after mode/style/type switches.
+      if(window.HUIDILayoutPolicy?.version==='1.2.0-RC16.10'||document.body.dataset.huidiStablePagination==='1'){
+        paper.dataset.fpR13a4='validation-only';
+        return;
+      }
       rebuildPages(paper,shell);
       paper.dataset.fpR13a4='1';
     }catch(error){

@@ -7,8 +7,8 @@
   const VERSION='V3.3.6.24 R1.3A.14';
   const STORAGE_KEY='flypigbox_entry_english_assist_v3318';
   const MIGRATION_KEY='flypigbox_chinese_first_v3319_migrated';
-  const OUTPUT_NAMES={bilingual:'中英双语',zh:'中文',en:'英文'};
-  const PLANNED_LANGUAGES=['西班牙语','葡萄牙语','德语','法语','意大利语','俄语','阿拉伯语','日语','韩语','土耳其语','荷兰语','波兰语','越南语','印尼语','泰语'];
+  const OUTPUT_NAMES={bilingual:'中英双语',zh:'中文',en:'English',es:'Español',pt:'Português (Brasil)',de:'Deutsch',fr:'Français',it:'Italiano',ru:'Русский',ar:'العربية',ja:'日本語',ko:'한국어',tr:'Türkçe',nl:'Nederlands',pl:'Polski',vi:'Tiếng Việt',id:'Bahasa Indonesia',th:'ไทย'};
+  const RESTORED_FIXED_LANGUAGES=['Español','Português','Deutsch','Français','Italiano','Русский','العربية','日本語','한국어','Türkçe','Nederlands','Polski','Tiếng Việt','Bahasa Indonesia','ไทย'];
   const KEEP_ACRONYM=/^(PI|CI|PL|PO|SKU|MOQ|HS\s*Code|CBM|SWIFT|IBAN|VAT|EORI|B\/L|AWB|ETD|ETA|ISO|OEM|ODM|Incoterms®?|API)$/i;
   const $=id=>document.getElementById(id);
   const qsa=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
@@ -307,7 +307,7 @@
       card=document.createElement('aside');
       card.id='fpR13A9LanguageSeparation';
       card.className='fp-r13a9-language-separation';
-      card.innerHTML=`<div class="fp-r13a9-language-state"><span>编辑区：<b>中文</b></span><span>右侧单据：<b data-fp-output-language></b></span></div><p>切换右侧单据语言，只改变预览、PDF和客户表格的固定标题与已确认语言内容，不改变左侧中文字段名称。</p><details><summary>其他语言版本状态</summary><p>${PLANNED_LANGUAGES.join('、')}：已建立语言版本规划，真实语言服务连接并完成人工确认前不会生成或冒充译文。</p></details>`;
+      card.innerHTML=`<div class="fp-r13a9-language-state"><span>编辑区：<b>中文</b></span><span>右侧单据：<b data-fp-output-language></b></span></div><p>切换右侧单据语言，只改变预览、PDF和客户表格的固定标题与已确认语言内容，不改变左侧中文字段名称。</p><details><summary>其他语言版本状态</summary><p>${RESTORED_FIXED_LANGUAGES.join('、')}：固定标题、字段名和表头使用本地历史词典；商品名、备注、条款等业务内容保持原文，除非用户自行提供对应译文。</p></details>`;
       label.insertAdjacentElement('afterend',card);
     }
     const output=card.querySelector('[data-fp-output-language]');

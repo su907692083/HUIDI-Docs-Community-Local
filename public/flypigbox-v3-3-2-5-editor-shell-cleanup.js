@@ -39,7 +39,8 @@ function ensureHeader(){
  const nodes=[
   $('fpLiteImportBtn'),document.querySelector('.fp-primary-workspace-switch'),docSelect,$('fpV3321SaveHeader'),$('fpV3321TemplateHeader'),$('fpV3321ModeHeader'),$('fpV3321FieldsHeader'),layout,$('fpLiteExportMenu'),clear,$('fpLiteMoreMenu'),$('fpLiteAccountBtn'),$('fpLiteVersion')
  ].filter(Boolean);
- nodes.forEach(node=>actions.appendChild(node));
+ if(actions.dataset.huidiToolbarOwner==='rc1617'){nodes.forEach(node=>{if(node.parentNode!==actions)window.HUIDIToolbarOwner?.place?.(node)});}
+ else nodes.forEach(node=>{if(node.parentNode!==actions)actions.appendChild(node)});
  syncHeader();ensureExportEmailToggle();return true;
 }
 function syncHeader(){
@@ -81,7 +82,7 @@ window.FlypigBOXV3325={refresh:updateAll,rebuildSideNav:()=>window.FlypigBOXV335
 function schedule(delay=80){clearTimeout(timer);timer=setTimeout(updateAll,delay)}
 function boot(){
  if(!$('piForm'))return;
- updateAll();setTimeout(updateAll,600);
+ updateAll();
  document.addEventListener('change',event=>{if(['docMode','documentType','showOrigin','showSalesperson','showTerms','showLogistics','showPayment','showSignature'].includes(event.target.id))schedule(30)},true);
  document.addEventListener('click',event=>{if(event.target.closest('[data-v3350-mode],[data-v3321-mode],[data-doc-mode],[data-v3315-doc-mode],[data-v3315-drawer-mode],[data-v3318-field-id]'))schedule(60)},true);
  ['HUIDI:document-type-changed','HUIDI:layout-updated','HUIDI:editor-view-change','HUIDI:startup-stable','HUIDI:branding-ready','HUIDI:apply-template'].forEach(name=>document.addEventListener(name,()=>schedule(40)));

@@ -18,20 +18,19 @@
   const documentBaseName = (prefix, number) => { const no=safeFile(number||prefix); return no.toLowerCase().startsWith(String(prefix||'').toLowerCase()) ? no : `${safeFile(prefix)}-${no}`; };
   function languageMode(snapshot){return clean(snapshot?.fields?.docLanguage)||'bilingual';}
   function localizedLabel(label,snapshot){
-    const mode=languageMode(snapshot),text=String(label??'').trim();if(mode==='bilingual'||!text)return text;
+    const mode=languageMode(snapshot),text=String(label??'').trim();if(!text)return text;
+    const i18n=window.HUIDIDocI18n;if(i18n?.localizeLabel)return i18n.localizeLabel(text,mode);
+    if(mode==='bilingual')return text;
     const parts=text.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);if(parts.length<2)return text;
-    const hasZh=part=>/[㐀-鿿]/.test(part);
-    if(mode==='zh'){const zh=parts.filter(hasZh).join(' / ')||parts[0]||text;const keep=parts.find(part=>!hasZh(part)&&/^(SKU|MOQ|HS\s*Code|CBM|SWIFT|VAT|EORI|B\/L(?:\s*No\.)?|Incoterms®?|ETD|ETA|ISO(?:\s*Code)?|PO(?:\s*No\.)?)$/i.test(part));return keep&&!zh.toLowerCase().includes(keep.toLowerCase())?`${zh}（${keep}）`:zh;}
+    const hasZh=part=>/[㐀-鿿]/.test(part);if(mode==='zh')return parts.filter(hasZh).join(' / ')||parts[0]||text;
     return parts.filter(part=>!hasZh(part)).join(' / ')||parts[parts.length-1]||text;
   }
-  function localizedText(snapshot,zh,en){const mode=languageMode(snapshot);return mode==='zh'?zh:mode==='en'?en:`${zh} / ${en}`;}
+  function localizedText(snapshot,zh,en){const mode=languageMode(snapshot),i18n=window.HUIDIDocI18n;return i18n?.text?i18n.text(zh,en,mode):(mode==='zh'?zh:mode==='en'?en:`${zh} / ${en}`);}
   function localizedOption(value,snapshot){
-    const text=clean(value),mode=languageMode(snapshot);
-    if(!text||mode==='bilingual')return text;
-    const parts=text.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);
-    if(parts.length<2)return text;
-    const hasZh=part=>/[㐀-鿿]/.test(part);
-    if(mode==='zh')return parts.find(hasZh)||parts[0]||text;
+    const text=clean(value),mode=languageMode(snapshot);if(!text||mode==='bilingual')return text;
+    const i18n=window.HUIDIDocI18n;if(i18n?.localizeLabel&&/\//.test(text))return i18n.localizeLabel(text,mode);
+    const parts=text.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);if(parts.length<2)return text;
+    const hasZh=part=>/[㐀-鿿]/.test(part);if(mode==='zh')return parts.find(hasZh)||parts[0]||text;
     return parts.find(part=>!hasZh(part))||parts[parts.length-1]||text;
   }
   const DOCUMENT_META = {
@@ -41,7 +40,11 @@
     packing_list:{title:'PACKING LIST / 装箱单',prefix:'Packing-List'},
     sales_contract:{title:'SALES CONTRACT / 销售合同',prefix:'Sales-Contract'}
   };
-  function documentMeta(snapshot){const base=DOCUMENT_META[snapshot?.type]||DOCUMENT_META.proforma_invoice;return {...base,title:localizedLabel(base.title,snapshot)};}
+  function documentMeta(snapshot){
+    const base=DOCUMENT_META[snapshot?.type]||DOCUMENT_META.proforma_invoice;
+    const lang=languageMode(snapshot),i18n=window.HUIDIDocI18n;
+    return {...base,title:i18n?.documentTitle?i18n.documentTitle(snapshot?.type,lang):localizedLabel(base.title,snapshot)};
+  }
   const TABLE_DOCUMENT_PROFILES = {
     quotation:{sheet:['报价单','Quotation'],subtitle:['价格、有效期与供货条件','PRICE OFFER · VALIDITY · SUPPLY TERMS'],info:['报价信息','QUOTATION INFORMATION'],parties:['客户与卖方','CUSTOMER & SELLER'],product:['报价商品','QUOTED ITEMS'],delivery:false,logistics:true,payment:false,terms:true,signature:false,packing:false},
     proforma_invoice:{sheet:['形式发票','Proforma Invoice'],subtitle:['订单确认、付款与交付资料','ORDER CONFIRMATION · PAYMENT · DELIVERY'],info:['订单与形式发票信息','PROFORMA & ORDER INFORMATION'],parties:['买卖双方','SELLER & BUYER'],product:['订单商品','ORDER ITEMS'],delivery:true,logistics:true,payment:true,terms:true,signature:true,packing:false},
@@ -68,10 +71,16 @@
   }
   function tableFieldAllowed(snapshot,id){const schema=sharedSchema();return !id||!schema?.fieldAllowed||schema.fieldAllowed(id,snapshot.type,documentMode(snapshot));}
   function tableProductColumnAllowed(snapshot,key){const schema=sharedSchema();return !schema?.productColumnAllowed||schema.productColumnAllowed(key,snapshot.type,documentMode(snapshot));}
-  const DOCUMENT_STATUS_LABELS={draft:'草稿 / Draft',internal_review:'内部审核 / Internal Review',sent:'已发送客户 / Sent',customer_confirmed:'客户已确认 / Confirmed',deposit_received:'已收定金 / Deposit Received',production:'生产中 / In Production',ready_to_ship:'待发货 / Ready to Ship',shipped:'已发货 / Shipped',completed:'已完成 / Completed',cancelled:'已取消 / Cancelled'};
-  const TRADE_SCENARIO_LABELS={wholesale:'标准批发 / Wholesale',sample:'样品订单 / Sample Order',oem:'OEM / ODM 定制',stock:'现货订单 / Stock Order',project:'工程 / 项目订单'};
-  const statusLabel=value=>DOCUMENT_STATUS_LABELS[clean(value)]||clean(value);
-  const scenarioLabel=value=>TRADE_SCENARIO_LABELS[clean(value)]||clean(value);
+  const DOCUMENT_STATUS_LABELS={
+    draft:['草稿','Draft'],internal_review:['内部审核','Internal Review'],sent:['已发送客户','Sent'],customer_confirmed:['客户已确认','Confirmed'],
+    deposit_received:['已收定金','Deposit Received'],production:['生产中','In Production'],ready_to_ship:['待发货','Ready to Ship'],shipped:['已发货','Shipped'],
+    completed:['已完成','Completed'],cancelled:['已取消','Cancelled']
+  };
+  const TRADE_SCENARIO_LABELS={
+    wholesale:['标准批发','Wholesale'],sample:['样品订单','Sample Order'],oem:['OEM / ODM 定制','OEM / ODM Custom'],stock:['现货订单','Stock Order'],project:['工程 / 项目订单','Project Order']
+  };
+  const statusLabel=(value,snapshot)=>{const row=DOCUMENT_STATUS_LABELS[clean(value)];return row?localizedText(snapshot,row[0],row[1]):clean(value);};
+  const scenarioLabel=(value,snapshot)=>{const row=TRADE_SCENARIO_LABELS[clean(value)];return row?localizedText(snapshot,row[0],row[1]):clean(value);};
 
   const PREVIEW_LABEL_FIELD = new Map([
     ['单据编号 / Document No.','invoiceNo'],['修订版本 / Revision','revisionNo'],['单据状态 / Status','documentStatus'],['业务场景 / Scenario','tradeScenario'],
@@ -108,6 +117,10 @@
     const value=clean($('paperOrientation')?.value||'auto');
     return ['auto','portrait','landscape'].includes(value)?value:'auto';
   }
+  function currentLayoutPolicy(){
+    try{return window.HUIDILayoutPolicy?.getMode?.()||localStorage.getItem('huidi_document_page_fit_v1')||'standard';}catch(_){return 'standard';}
+  }
+  function preferCompact(){return currentLayoutPolicy()==='compact';}
   function resolvedTableLayout(snapshot=stateSnapshot(),preference=currentPaperPreference()){
     if(preference==='landscape')return'wide';
     if(preference==='portrait')return'standard';
@@ -213,7 +226,7 @@
     const row=(label,value,{toggle='',detailed=false,types=null}={})=>({label,value,toggle,detailed,types});
     const groups = {
       basic:[
-        row('单据编号 / Document No.',f.invoiceNo),row('修订版本 / Revision',f.revisionNo,{detailed:true}),row('单据状态 / Status',localizedLabel(statusLabel(f.documentStatus),snapshot),{detailed:true}),row('业务场景 / Scenario',localizedLabel(scenarioLabel(f.tradeScenario),snapshot),{detailed:true}),
+        row('单据编号 / Document No.',f.invoiceNo),row('修订版本 / Revision',f.revisionNo,{detailed:true}),row('单据状态 / Status',statusLabel(f.documentStatus,snapshot),{detailed:true}),row('业务场景 / Scenario',scenarioLabel(f.tradeScenario,snapshot),{detailed:true}),
         row('出单日期 / Issue Date',f.issueDate),row('有效期 / Valid Until',f.validUntil,{types:['quotation','proforma_invoice','sales_contract']}),row('币种 / Currency',f.currency),row('客户 PO / Customer PO',f.customerPo,{toggle:'showCustomerPo'}),
         row(quoteReferenceLabel,f.quoteNo,{toggle:'showQuote',types:['quotation','proforma_invoice','sales_contract']}),row('原产国 / Country of Origin',localizedOption(f.originCountry,snapshot),{toggle:'showOrigin',types:['commercial_invoice','proforma_invoice','quotation']}),row('业务员 / Salesperson',f.salesperson,{toggle:'showSalesperson'}),row('制单人 / Prepared by',f.preparedBy,{detailed:true}),row('审核人 / Approved by',f.approvedBy,{detailed:true})
       ],
@@ -542,7 +555,7 @@
     const renderScrollRevision=workbookUserScrollRevision;
     const renderSequence=++previewRenderSequence;
     tableSheetLayout=resolvedTableLayout(snapshot,currentPaperPreference());
-    const signature=JSON.stringify({type:snapshot.type,fields:snapshot.fields,items:snapshot.items.map(item=>({...item,image:imageSignature(item.image)})),sheet:activePreviewSheet,zoom:previewZoom,fullscreen:previewFullscreen,layout:tableSheetLayout,paper:currentPaperPreference()});
+    const signature=JSON.stringify({type:snapshot.type,fields:snapshot.fields,items:snapshot.items.map(item=>({...item,image:imageSignature(item.image)})),sheet:activePreviewSheet,zoom:previewZoom,fullscreen:previewFullscreen,layout:tableSheetLayout,paper:currentPaperPreference(),pageFit:currentLayoutPolicy()});
     if(!force&&signature===lastPreviewSignature){applyPendingPreviewTarget({scroll:false});return;}
     lastPreviewSignature=signature;
     mount.classList.add('is-refreshing');
@@ -556,7 +569,7 @@
     }
     const tabs = sheets.map(sheet=>`<button type="button" class="${sheet.name===activePreviewSheet?'active':''}" data-preview-sheet="${html(sheet.name)}"><span>${html(sheet.name)}</span><small>${sheet.rows?.length||0}</small></button>`).join('');
     mount.innerHTML = `
-      <div class="fp-workbook-preview fp-export-faithful-preview fp-workbook-layout-${tableSheetLayout} ${previewFullscreen?'is-fullscreen':''}" style="--fp-workbook-zoom:${previewZoom/100}">
+      <div class="fp-workbook-preview fp-export-faithful-preview fp-workbook-layout-${tableSheetLayout} ${preferCompact()?'huidi-layout-compact':''} ${previewFullscreen?'is-fullscreen':''}" data-huidi-page-fit="${currentLayoutPolicy()}" style="--fp-workbook-zoom:${previewZoom/100}">
         <header class="fp-workbook-toolbar">
           <div class="fp-workbook-file"><span class="fp-workbook-icon">X</span><div><b>${html(meta.title)} · ${html(localizedText(snapshot,'客户 Excel 预览','Customer Excel Preview'))}</b><small>${html(value(snapshot,'invoiceNo')||localizedText(snapshot,'未填写单据编号','Document number not set'))} · ${items.length} ${html(localizedText(snapshot,'个商品','items'))} · ${html(value(snapshot,'currency')||'USD')}</small></div></div>
           <div class="fp-workbook-tools">
@@ -849,18 +862,17 @@
   }
 
   function validateExport(snapshot,{includePayment=false,internal=false}={}) {
-    if (!meaningfulItems(snapshot).length) { notify('请至少填写一个有效商品后再导出表格文件。','error'); return false; }
-    if (!internal && window.FlypigBOXTradeFactory?.validateBeforeExport && !window.FlypigBOXTradeFactory.validateBeforeExport({kind:'Excel / CSV'})) return false;
-    if (includePayment && !snapshot.packing && on(snapshot.fields.showPayment) && fieldPairs(snapshot,'payment').length) {
-      const account = value(snapshot,'bankAccount');
-      const ok = window.confirm(`表格文件将包含收款资料${account?`（账号尾号 ${account.slice(-4)}）`:''}。\n\n请确认收款人、账号、SWIFT 和付款渠道已经通过已知联系方式人工核对。\n\n点击“确定”继续导出。`);
-      if (!ok) return false;
+    // RC16.17: completeness/readiness is advisory-only for every customer output.
+    // Empty/partial sheets are still useful as working templates and must remain exportable.
+    const notes=[];
+    if (!meaningfulItems(snapshot).length) notes.push('当前没有有效商品行');
+    if (!internal && window.FlypigBOXTradeFactory?.evaluateReadiness) {
+      try{const r=window.FlypigBOXTradeFactory.evaluateReadiness();const count=(r?.blockers?.length||0)+(r?.warnings?.length||0);if(count)notes.push(`还有 ${count} 项资料可补充/核对`);}catch(_){ }
     }
+    if (includePayment && !snapshot.packing && on(snapshot.fields.showPayment) && fieldPairs(snapshot,'payment').length) notes.push('文件包含收款资料，请发送前人工复核账户');
     const trade = value(snapshot,'tradeTerms');
-    if (!internal && !snapshot.packing && trade && !/2020/.test(trade)) {
-      const ok = window.confirm('当前贸易术语未明确注明 Incoterms® 2020。\n\n建议补充指定地点和版本后再发送客户。\n\n点击“确定”仍然导出。');
-      if (!ok) return false;
-    }
+    if (!internal && !snapshot.packing && trade && !/2020/.test(trade)) notes.push('贸易术语未明确 Incoterms® 2020');
+    if(notes.length)notify(`导出提醒：${notes.join('；')}。本次不会阻止导出。`,'');
     return true;
   }
 
@@ -922,7 +934,9 @@
     const filter=sheet.autoFilter?`<autoFilter ref="${sheet.autoFilter}"/>`:'';
     const orientation=sheet.orientation==='portrait'?'portrait':'landscape';
     const drawing=sheet._drawingIndex?'<drawing r:id="rId1"/>':'';
-    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${freeze}<sheetFormatPr defaultRowHeight="18"/><cols>${widths}</cols><sheetData>${rows}</sheetData>${filter}${merges}${drawing}<printOptions horizontalCentered="1" verticalCentered="0"/><pageMargins left="0.25" right="0.25" top="0.42" bottom="0.42" header="0.18" footer="0.18"/><pageSetup orientation="${orientation}" paperSize="9" fitToWidth="1" fitToHeight="0"/></worksheet>`;
+    // RC16.10 compact mode changes density, not pagination. Never force worksheet height to one page.
+    const fitHeight=0;
+    return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheetPr><pageSetUpPr fitToPage="1"/></sheetPr>${freeze}<sheetFormatPr defaultRowHeight="18"/><cols>${widths}</cols><sheetData>${rows}</sheetData>${filter}${merges}${drawing}<printOptions horizontalCentered="1" verticalCentered="0"/><pageMargins left="0.25" right="0.25" top="0.42" bottom="0.42" header="0.18" footer="0.18"/><pageSetup orientation="${orientation}" paperSize="9" fitToWidth="1" fitToHeight="${fitHeight}"/></worksheet>`;
   }
   function stylesXml(brandColor){const primary=rgbHex(brandColor),soft=mixWithWhite(primary,.88),soft2=mixWithWhite(primary,.94),line=mixWithWhite(primary,.76);return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="1"><numFmt numFmtId="164" formatCode="#,##0.00"/></numFmts><fonts count="5"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="18"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font><font><sz val="10"/><color rgb="FF667085"/><name val="Calibri"/></font></fonts><fills count="5"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF${primary}"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF${soft}"/><bgColor indexed="64"/></patternFill></fill><fill><patternFill patternType="solid"><fgColor rgb="FF${soft2}"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FF${line}"/></left><right style="thin"><color rgb="FF${line}"/></right><top style="thin"><color rgb="FF${line}"/></top><bottom style="thin"><color rgb="FF${line}"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="11"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="0" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyAlignment="1"><alignment vertical="center" wrapText="1"/></xf><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="2" fillId="3" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="164" fontId="2" fillId="3" borderId="1" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="right" vertical="center"/></xf><xf numFmtId="0" fontId="3" fillId="2" borderId="1" xfId="0" applyAlignment="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf><xf numFmtId="0" fontId="4" fillId="4" borderId="1" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf><xf numFmtId="14" fontId="0" fillId="0" borderId="1" xfId="0" applyNumberFormat="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;}
   function addRow(sheet,cells,height){sheet.rows.push({cells,height});return sheet.rows.length;}
@@ -1080,7 +1094,7 @@ ${item.displayNote}`:'';
   function internalWorkbookSheets(snapshot) {
     const settings=internalCostSettings(snapshot);
     const summary=[
-      ['保密级别 / Confidentiality','INTERNAL USE ONLY · 禁止发送客户'],['单据编号 / Document No.',value(snapshot,'invoiceNo')],['修订版本 / Revision',value(snapshot,'revisionNo')],['单据状态 / Status',statusLabel(value(snapshot,'documentStatus'))],['业务场景 / Scenario',scenarioLabel(value(snapshot,'tradeScenario'))],['制单人 / Prepared by',value(snapshot,'preparedBy')],['审核人 / Approved by',value(snapshot,'approvedBy')],['销售币种 / Sales Currency',settings.sale],['成本币种 / Cost Currency',settings.cost],[`汇率 / FX`,`1 ${settings.sale} = ${settings.fx} ${settings.cost}`],['制造 / 管理损耗',`${settings.overhead}%`],['平台 / 业务佣金',`${settings.commission}%`],['目标毛利率',`${settings.target}%`]
+      ['保密级别 / Confidentiality','INTERNAL USE ONLY · 禁止发送客户'],['单据编号 / Document No.',value(snapshot,'invoiceNo')],['修订版本 / Revision',value(snapshot,'revisionNo')],['单据状态 / Status',statusLabel(value(snapshot,'documentStatus'),snapshot)],['业务场景 / Scenario',scenarioLabel(value(snapshot,'tradeScenario'),snapshot)],['制单人 / Prepared by',value(snapshot,'preparedBy')],['审核人 / Approved by',value(snapshot,'approvedBy')],['销售币种 / Sales Currency',settings.sale],['成本币种 / Cost Currency',settings.cost],[`汇率 / FX`,`1 ${settings.sale} = ${settings.fx} ${settings.cost}`],['制造 / 管理损耗',`${settings.overhead}%`],['平台 / 业务佣金',`${settings.commission}%`],['目标毛利率',`${settings.target}%`]
     ];
     return [internalCostSheet(snapshot),keyValueSheet('内部参数',summary),productDataSheet(snapshot),keyValueSheet('生产质量条件',factoryConditionPairs(snapshot))];
   }
@@ -1113,7 +1127,7 @@ ${item.displayNote}`:'';
     addRow(sheet,[textCell('仅限内部使用 · INTERNAL USE ONLY · 禁止发送客户',STYLE.note),...Array(widths.length-1).fill(blankCell())],24);merge(sheet,1,2,widths.length);
     const meta=[
       ['单据编号 / Document No.',value(snapshot,'invoiceNo')],['修订版本 / Revision',value(snapshot,'revisionNo')],
-      ['单据状态 / Status',statusLabel(value(snapshot,'documentStatus'))],['业务场景 / Scenario',scenarioLabel(value(snapshot,'tradeScenario'))],
+      ['单据状态 / Status',statusLabel(value(snapshot,'documentStatus'),snapshot)],['业务场景 / Scenario',scenarioLabel(value(snapshot,'tradeScenario'),snapshot)],
       ['买方 / Buyer',value(snapshot,'buyerName')],['客户 PO / Customer PO',value(snapshot,'customerPo')],
       ['制单人 / Prepared by',value(snapshot,'preparedBy')],['审核人 / Approved by',value(snapshot,'approvedBy')]
     ].filter(row=>clean(row[1]));
@@ -1129,7 +1143,7 @@ ${item.displayNote}`:'';
     const control=[
       ['保密级别 / Confidentiality','INTERNAL USE ONLY · 禁止发送客户'],
       ['单据编号 / Document No.',value(snapshot,'invoiceNo')],['修订版本 / Revision',value(snapshot,'revisionNo')],
-      ['单据状态 / Status',statusLabel(value(snapshot,'documentStatus'))],['业务场景 / Scenario',scenarioLabel(value(snapshot,'tradeScenario'))],
+      ['单据状态 / Status',statusLabel(value(snapshot,'documentStatus'),snapshot)],['业务场景 / Scenario',scenarioLabel(value(snapshot,'tradeScenario'),snapshot)],
       ['制单人 / Prepared by',value(snapshot,'preparedBy')],['审核人 / Approved by',value(snapshot,'approvedBy')]
     ].filter(row=>clean(row[1]));
     return [factoryExecutionSheet(snapshot),keyValueSheet('生产质量条件',factoryConditionPairs(snapshot)),keyValueSheet('内部控制',control)];
@@ -1197,16 +1211,8 @@ ${item.displayNote}`:'';
   function exportWorkbook(mode) {
     if (!requireExportAccess()) return;
     const snapshot=stateSnapshot();const internal=mode==='internal'||mode==='factory';if(!validateExport(snapshot,{includePayment:!internal,internal}))return;
-    if(mode==='internal'){const ok=window.confirm(`即将导出“工厂内部核算 Excel”。
-
-文件包含生产 / 采购成本、包装成本、国内运费、佣金、建议售价和毛利，仅限公司内部使用，禁止发送客户。
-
-点击“确定”继续。`);if(!ok)return;}
-    if(mode==='factory'){const ok=window.confirm(`即将导出“工厂执行单 Excel”。
-
-文件包含生产、质量、包装和交付资料，仅限公司内部使用，禁止发送客户。
-
-点击“确定”继续。`);if(!ok)return;}
+    if(mode==='internal')notify('提醒：工厂内部核算 Excel 含成本、佣金、售价和毛利，仅限内部使用。','');
+    if(mode==='factory')notify('提醒：工厂执行单 Excel 含生产、质量、包装和交付资料，仅限内部使用。','');
     try {
       const sheets=mode==='customer'?customerWorkbookSheets(snapshot):mode==='internal'?internalWorkbookSheets(snapshot):mode==='factory'?factoryWorkbookSheets(snapshot):dataWorkbookSheets(snapshot);
       const meta=documentMeta(snapshot);const no=safeFile(value(snapshot,'invoiceNo')||meta.prefix);const suffix=mode==='customer'?'客户版':mode==='internal'?'工厂内部核算-保密':mode==='factory'?'工厂执行单-保密':'数据版';
@@ -1257,7 +1263,7 @@ ${item.displayNote}`:'';
     document.addEventListener('click',event=>{
       if(event.target?.closest?.('#addItem,#addTenItems,[data-add-item],[data-remove-item],.remove-item,.item-remove'))schedulePreview(220);
     },true);
-    ['HUIDI:apply-template','HUIDI:branding-updated','HUIDI:branding-ready','HUIDI:document-type-change','HUIDI:document-mode-change'].forEach(name=>document.addEventListener(name,()=>schedulePreview(120)));
+    ['HUIDI:apply-template','HUIDI:branding-updated','HUIDI:branding-ready','HUIDI:document-type-change','HUIDI:document-mode-change','HUIDI:layout-policy-changed'].forEach(name=>document.addEventListener(name,()=>schedulePreview(120)));
     document.addEventListener('HUIDI:editor-view-change',event=>setPreviewMode(event.detail?.mode==='table'?'table':'document',{announce:false,persist:true}));
     document.addEventListener('HUIDI:paper-orientation-change',event=>{
       const preference=event.detail?.preference||currentPaperPreference();

@@ -23,18 +23,16 @@
   const numberValue = value => Number(value || 0) || 0;
   function outputLanguage(){return canonicalInput('docLanguage')?.value || 'bilingual';}
   function englishAssistEnabled(){try{return localStorage.getItem(ENGLISH_ASSIST_STORAGE_KEY)==='1';}catch(_){return false;}}
-  // 左侧默认中文优先；英文术语仅在用户主动开启辅助时显示。
-  function currentLanguage(){return 'zh';}
+  // RC16.4: table-mode section and field labels follow the selected customer document language.
+  // The canonical form data stays unchanged; only labels/workbook presentation are localized.
+  function currentLanguage(){return outputLanguage();}
   function localizedLabel(label,mode=currentLanguage()){
-    const text=String(label??'').trim();
-    if(mode==='bilingual'||!text)return text;
-    const parts=text.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);
-    if(parts.length<2)return text;
-    const hasZh=part=>/[㐀-鿿]/.test(part);
-    if(mode==='zh'){const zh=parts.filter(hasZh).join(' / ')||parts[0]||text;const keep=parts.find(part=>!hasZh(part)&&/^(SKU|MOQ|HS\s*Code|CBM|SWIFT|VAT|EORI|B\/L(?:\s*No\.)?|Incoterms®?|ETD|ETA|ISO(?:\s*Code)?|PO(?:\s*No\.)?)$/i.test(part));return keep&&!zh.toLowerCase().includes(keep.toLowerCase())?`${zh}（${keep}）`:zh;}
-    return parts.filter(part=>!hasZh(part)).join(' / ')||parts[parts.length-1]||text;
+    const text=String(label??'').trim();if(!text)return text;
+    const i18n=window.HUIDIDocI18n;if(i18n?.localizeLabel)return i18n.localizeLabel(text,mode);
+    if(mode==='bilingual')return text;const parts=text.split(/\s*\/\s*/).map(part=>part.trim()).filter(Boolean);if(parts.length<2)return text;
+    const hasZh=part=>/[㐀-鿿]/.test(part);if(mode==='zh')return parts.filter(hasZh).join(' / ')||parts[0]||text;return parts.filter(part=>!hasZh(part)).join(' / ')||parts[parts.length-1]||text;
   }
-  function localizedText(zh,en,mode=currentLanguage()){return mode==='zh'?zh:mode==='en'?en:`${zh} / ${en}`;}
+  function localizedText(zh,en,mode=currentLanguage()){const i18n=window.HUIDIDocI18n;return i18n?.text?i18n.text(zh,en,mode):(mode==='zh'?zh:mode==='en'?en:`${zh} / ${en}`);}
 
   const DOCUMENT_TYPES = [
     ['quotation', '报价单'],
@@ -705,7 +703,8 @@
     const toolbarLabels={document:localizedText('单据类型','Document'),language:localizedText('客户文件语言','Output Language'),entry:localizedText('录入布局','Entry Layout'),fields:localizedText('字段版本','Fields'),sheet:localizedText('表格方向','Sheet Orientation')};
     Object.entries(toolbarLabels).forEach(([key,text])=>{const node=workspace.querySelector(`[data-table-toolbar-label="${key}"]`);if(node)node.textContent=text;});
     const setOptions=(selector,rows)=>{const select=workspace.querySelector(selector);if(!select)return;const current=select.value;select.innerHTML=rows.map(([value,zh,en])=>`<option value="${value}">${escapeHTML(localizedText(zh,en))}</option>`).join('');select.value=current;};
-    setOptions('[data-table-language]',[['bilingual','中英双语','Bilingual'],['zh','中文','Chinese'],['en','英文','English']]);
+    const languageRows=(window.HUIDIDocI18n?.languages||[['bilingual','中英双语','Bilingual'],['zh','中文','Chinese'],['en','English','English']]).map(([value,label,en])=>[value,label,en]);
+    setOptions('[data-table-language]',languageRows);
     setOptions('[data-table-entry-layout]',[['standard','标准分栏','Standard sections'],['horizontal','横向录入','Horizontal entry']]);
     setOptions('[data-table-doc-mode]',[['ecommerce','默认版 · 常用字段','Default · Common fields'],['b2b','精细版 · 完整字段','Detailed · Full fields']]);
     setOptions('[data-table-sheet-layout]',[['standard','纵向紧凑','Portrait compact'],['wide','横向宽表','Landscape wide']]);
@@ -774,7 +773,7 @@
   }
 
   function contextKey() {
-    return [currentDocumentType(),canonicalInput('docMode')?.value,currentPaper(),fieldVisible('showHsCode'),fieldVisible('showMoq'),fieldVisible('showProductImage'),fieldVisible('showLogistics'),fieldVisible('showPayment'),fieldVisible('showTerms'),canonicalRows().length,Boolean($('fpFactoryCostingPanel'))].join('|');
+    return [currentDocumentType(),canonicalInput('docMode')?.value,outputLanguage(),currentPaper(),fieldVisible('showHsCode'),fieldVisible('showMoq'),fieldVisible('showProductImage'),fieldVisible('showLogistics'),fieldVisible('showPayment'),fieldVisible('showTerms'),canonicalRows().length,Boolean($('fpFactoryCostingPanel'))].join('|');
   }
 
   function scheduleRender(delay = 80) {

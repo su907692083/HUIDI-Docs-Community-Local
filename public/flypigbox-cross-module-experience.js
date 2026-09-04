@@ -280,6 +280,7 @@
 
   function showFormalCheck() {
     const gate = window.FlypigBOXFormalOutputGate;
+    if (window.HUIDI_LOCAL_ONLY?.localOnly && gate?.open) { gate.open('pdf'); return; }
     if (!gate?.check) { document.getElementById('headerExportPdfBtn')?.click(); return; }
     let result;
     try { result = gate.check('pdf') || {}; } catch (_) { document.getElementById('headerExportPdfBtn')?.click(); return; }
@@ -288,7 +289,7 @@
     const normalizeIssue = item => typeof item === 'string' ? { message: item } : (item && typeof item === 'object' ? item : { message: clean(item) });
     const blockers = Array.isArray(result.blockers) ? result.blockers.map(normalizeIssue) : [];
     const warnings = Array.isArray(result.warnings) ? result.warnings.map(normalizeIssue) : [];
-    dialog.innerHTML = `<section><header><div><small>正式输出前检查</small><h2>${blockers.length ? '还有资料需要补充' : warnings.length ? '可以输出，建议再核对' : '基础检查通过'}</h2></div><button type="button" data-fp-close-check>×</button></header><div class="fp-xm-check-counts"><span class="${blockers.length?'is-error':'is-ok'}">必须处理 ${blockers.length}</span><span class="${warnings.length?'is-warn':'is-ok'}">建议核对 ${warnings.length}</span></div><div class="fp-xm-check-list">${[...blockers.map(x => ({...x,tone:'error'})),...warnings.map(x => ({...x,tone:'warn'}))].map(x => `<p class="is-${x.tone}"><b>${clean(x.label || x.field || '资料')}</b><span>${clean(x.message || x.reason || '')}</span></p>`).join('') || '<p class="is-ok"><b>可以继续</b><span>请确认客户、数量、价格、条款和收款资料无误。</span></p>'}</div><footer><button type="button" data-fp-close-check>返回编辑</button><button type="button" class="primary" data-fp-open-output ${blockers.length?'disabled':''}>正式文件操作</button></footer></section>`;
+    dialog.innerHTML = `<section><header><div><small>正式输出前检查</small><h2>${blockers.length ? '还有资料需要补充' : warnings.length ? '可以输出，建议再核对' : '基础检查通过'}</h2></div><button type="button" data-fp-close-check>×</button></header><div class="fp-xm-check-counts"><span class="${blockers.length?'is-error':'is-ok'}">建议补充 ${blockers.length}</span><span class="${warnings.length?'is-warn':'is-ok'}">建议核对 ${warnings.length}</span></div><div class="fp-xm-check-list">${[...blockers.map(x => ({...x,tone:'error'})),...warnings.map(x => ({...x,tone:'warn'}))].map(x => `<p class="is-${x.tone}"><b>${clean(x.label || x.field || '资料')}</b><span>${clean(x.message || x.reason || '')}</span></p>`).join('') || '<p class="is-ok"><b>可以继续</b><span>请确认客户、数量、价格、条款和收款资料无误。</span></p>'}</div><footer><button type="button" data-fp-close-check>返回编辑</button><button type="button" class="primary" data-fp-open-output>正式文件操作</button></footer></section>`;
     $$('[data-fp-close-check]', dialog).forEach(btn => btn.addEventListener('click', () => dialog.close()));
     $('[data-fp-open-output]', dialog)?.addEventListener('click', () => { dialog.close(); $('#headerExportPdfBtn')?.click(); });
     dialog.showModal();

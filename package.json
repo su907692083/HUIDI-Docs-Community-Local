@@ -1,11 +1,30 @@
 {
   "name": "huidi-docs-community-local",
-  "version": "1.2.0-rc6",
+  "version": "1.2.0-rc16.29",
   "private": false,
   "license": "SEE LICENSE IN LICENSE",
   "scripts": {
     "check": "node ./tools/validate-local.cjs",
-    "serve": "node ./tools/local-server.cjs"
+    "check:layout": "node ./tools/validate-unified-layout-rc1610.cjs",
+    "serve": "node ./tools/local-server.cjs",
+    "check:pagination": "node ./tools/validate-pagination-stability-rc1611.cjs",
+    "check:templates": "node ./tools/validate-template-family-rc1612.cjs",
+    "check:composer": "node ./tools/validate-page-composer-rc1613.cjs",
+    "check:clipnav": "node ./tools/validate-clip-navigation-rc1614.cjs",
+    "check:runtime": "node ./tools/validate-runtime-stability-rc1615.cjs",
+    "check:export": "node ./tools/validate-advisory-export-rc1616.cjs",
+    "check:toolbar": "node ./tools/validate-toolbar-owner-rc1617.cjs",
+    "check:wysiwyg": "node ./tools/validate-live-preview-export-rc1618.cjs",
+    "check:toolbar-interaction": "node ./tools/validate-toolbar-interaction-rc1620.cjs",
+    "check:actions": "node ./tools/validate-action-owner-rc1621.cjs",
+    "check:workspace-r1": "node ./tools/validate-workspace-r1-rc1622.cjs",
+    "check:workspace-r2": "node ./tools/validate-workspace-r2-rc1623.cjs",
+    "check:feishu-data": "node ./tools/validate-feishu-data-rc1624.cjs",
+    "check:workspace-r3": "node ./tools/validate-workspace-r3-rc1625.cjs",
+    "check:workspace-r4": "node ./tools/validate-workspace-r4-rc1626.cjs",
+    "check:workspace-r5": "node ./tools/validate-workspace-r5-rc1627.cjs",
+    "check:workspace-r6": "node ./tools/validate-workspace-r6-rc1628.cjs",
+    "check:catalog-connectivity": "node ./tools/validate-catalog-connectivity-rc1629.cjs"
   },
-  "description": "HUIDI Docs Community Local — source-available local-first foreign trade workflow for personal and own-organization internal use"
+  "description": "HUIDI Docs Community Local — source-available local-first foreign trade document workspace"
 }

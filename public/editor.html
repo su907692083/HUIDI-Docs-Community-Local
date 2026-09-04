@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head><script src="./community-local-mode.js"></script><link rel="stylesheet" href="./community-local-mode.css"><link rel="stylesheet" href="./huidi-local-rc5.css">
+<head><script>document.documentElement.classList.add('huidi-rc1615-boot');setTimeout(function(){document.documentElement.classList.remove('huidi-rc1615-boot')},3200);</script><style id="huidi-rc1615-critical">html.huidi-rc1615-boot{background:#f5f8fb}html.huidi-rc1615-boot body{overflow:hidden!important}html.huidi-rc1615-boot body>*{visibility:hidden!important}html.huidi-rc1615-boot:before{content:"正在准备单据…";position:fixed;left:50%;top:46%;transform:translate(-50%,-50%);z-index:2147483647;color:#30435f;font:700 14px -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;letter-spacing:.02em}html.huidi-rc1615-boot:after{content:"";position:fixed;left:50%;top:calc(46% + 28px);width:110px;height:3px;transform:translateX(-50%);z-index:2147483647;border-radius:99px;background:linear-gradient(90deg,#dbe7f2 0 20%,#0f7bdc 45% 60%,#dbe7f2 80% 100%);background-size:220% 100%;animation:huidiRc1615Boot 1.05s linear infinite}@keyframes huidiRc1615Boot{to{background-position:-220% 0}}html.huidi-rc1615-boot #fpA12PreviewReadiness,[data-huidi-preview-hidden="1"]{visibility:hidden!important}</style><script src="./community-local-mode.js"></script>
+<script src="./huidi-local-db-rc165.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.8"></script><script src="./huidi-local-core-rc167.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.8"></script><link rel="stylesheet" href="./community-local-mode.css"><link rel="stylesheet" href="./huidi-local-rc5.css">
 <script src="./assets/vendor/html2canvas.min.js"></script><script src="./assets/vendor/jspdf.umd.min.js"></script>
   <meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; connect-src 'self'; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -197,7 +198,7 @@
 <link rel="stylesheet" href="./flypigbox-v3-3-3-9-document-guide.css?v=20260719-v3-3-3-9">
 <link rel="stylesheet" href="./flypigbox-v3-3-4-1-mode-navigation-personal-templates.css?v=20260720-v3-3-4-1">
   <link rel="stylesheet" href="./flypigbox-v3-3-4-2-prelaunch-account.css?v=20260720-v3-3-4-2">
-  <script src="./flypigbox-document-schema.js?v=20260720-v3-3-5-0"></script>
+  <script src="./flypigbox-document-schema.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
 <link rel="stylesheet" href="./flypigbox-v3-3-5-0-sync-core.css?v=20260731-r1-3a-18-23-3-empty-item-readiness">
 <link rel="stylesheet" href="./flypigbox-v3-3-6-3-local-guest-ui.css?v=20260721-v3-3-6-3">
 <link rel="stylesheet" href="./flypigbox-v3-3-5-2-2-support-unification.css?v=20260720-v33523">
@@ -222,6 +223,14 @@
   
   <link rel="manifest" href="./manifest.webmanifest">
   <link rel="stylesheet" href="./assets/brand/huidi-brand.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.1.0">
+  <link rel="stylesheet" href="./huidi-local-rc11.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4">
+  <link rel="stylesheet" href="./huidi-local-rc15.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4">
+  <link rel="stylesheet" href="./huidi-pdf-product-layout-rc166.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4">
+  <link rel="stylesheet" href="./huidi-preview-runtime-rc1662.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4">
+  <link rel="stylesheet" href="./huidi-layout-policy-rc1610.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.10">
+  <link rel="stylesheet" href="./huidi-pdf-template-family-rc1612.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.12">
+<link rel="stylesheet" href="./huidi-toolbar-owner-rc1617.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21">
+<link rel="stylesheet" href="./huidi-action-owner-rc1621.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21">
 </head>
 <body class="editor-premium-page" data-fp-release="v3.3.6.24-r1.3a.18.38-workspace-hidden-interaction-visual-closure-candidate">
 <header class="site-header">
@@ -363,13 +372,28 @@
     <section class="top-workspace" id="editorTop">
       <section class="card">
         <div class="section-title"><h2>基础单据信息</h2><div class="section-actions"><button class="btn warning is-hidden" id="translateAllBtn" type="button">翻译整份单据</button></div></div>
-        <p class="hint"><b>PDF 输出语言</b><br>用于控制 PDF 中的固定标题、字段名和表头语言。用户填写的商品名、备注和条款不会被强制翻译。<br><span class="fp-language-support-note">当前正式支持中英双语、中文、英文。更多语言将在翻译辅助开放后支持。</span></p>
+        <p class="hint"><b>PDF 输出语言</b><br>用于控制 PDF 中的固定标题、字段名和表头语言。用户填写的商品名、备注和条款不会被强制翻译。<br><span class="fp-language-support-note">固定标题、字段名和表头支持 17 种单语 + 中英双语离线本地化；商品名、备注、条款等业务内容保持原文，除非你自行提供对应译文。</span></p>
         <div class="grid four">
           <label data-fp-language-control>PDF 输出语言 <small id="fp-language-mirror-note" class="fp-language-mirror-note">与页面顶部快捷栏同步</small>
             <select id="docLanguage" aria-describedby="fp-language-mirror-note">
               <option value="bilingual">中英双语</option>
               <option value="zh">中文</option>
-              <option value="en">英文</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="pt">Português (Brasil)</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Français</option>
+              <option value="it">Italiano</option>
+              <option value="ru">Русский</option>
+              <option value="ar">العربية</option>
+              <option value="ja">日本語</option>
+              <option value="ko">한국어</option>
+              <option value="tr">Türkçe</option>
+              <option value="nl">Nederlands</option>
+              <option value="pl">Polski</option>
+              <option value="vi">Tiếng Việt</option>
+              <option value="id">Bahasa Indonesia</option>
+              <option value="th">ไทย</option>
             </select>
           </label>
           <label>主币种
@@ -684,7 +708,7 @@
           <label id="bankLabel4">SWIFT 代码<input id="bankSwift" placeholder="请输入 SWIFT 代码"></label>
           <label class="span-2" id="bankLabel5">银行地址或付款备注<input id="bankAddress" placeholder="请输入银行地址或付款备注"></label>
         </div>
-        <div class="bank-security-check" id="bankSecurityCheck" aria-live="polite"><div><b>收款账户安全核对</b><span id="bankSecurityStatus">填写收款资料后，请确认收款人、账号和 SWIFT。账户变化时系统会在导出前再次提醒。</span></div><button class="btn secondary" id="verifyBankDetailsBtn" type="button">确认当前账户已核对</button></div>
+        <div class="bank-security-check" id="bankSecurityCheck" aria-live="polite"><div><b>收款账户安全核对</b><span id="bankSecurityStatus">填写收款资料后，请确认收款人、账号和 SWIFT。账户变化时系统会提醒复核，但不会阻止导出。</span></div><button class="btn secondary" id="verifyBankDetailsBtn" type="button">确认当前账户已核对</button></div>
         <details class="paste-tools" style="margin-top:14px">
           <summary>一键粘贴识别收款信息</summary>
           <p class="paste-tip">可粘贴银行账户、PayPal、Western Union 或阿里信保资料。建议按“字段名：内容”逐行粘贴，系统会按当前收款方式自动填充；请务必核对账户、收款人、SWIFT 与链接。</p>
@@ -866,6 +890,9 @@
     'exportPdfBtn','emailDraftBtn','emailAfterExport'
   ];
   function applyEditorAccessGate(locked=true){
+    // Community Local owns its local editor permissions. Legacy membership refreshes
+    // must never re-disable local save/export controls after the local bridge unlocks them.
+    if(window.HUIDI_LOCAL_ONLY?.localOnly) locked=false;
     editorAccessLocked=Boolean(locked);
     document.body.classList.toggle('editor-login-restricted',editorAccessLocked);
     const banner=$('editorAccessBanner');
@@ -892,7 +919,7 @@
   const external = url => window.open(url, '_blank', 'noopener,noreferrer');
 
   const KEYS = {
-    defaults:'flypigbox_b2b_defaults_v1', customers:'flypigbox_b2b_customers_v1', apiProfiles:'flypigbox_b2b_api_profiles_v1',
+    defaults:'flypigbox_b2b_defaults_v1', customers:window.HUIDI_LOCAL_ONLY?.localOnly?'huidi_local_customers_v1':'flypigbox_b2b_customers_v1', apiProfiles:'flypigbox_b2b_api_profiles_v1',
     histories:'flypigbox_b2b_histories_v1', templates:'flypigbox_b2b_templates_v1', contentLibrary:'flypigbox_b2b_content_library_v1', paymentTemplates:'flypigbox_b2b_payment_templates_v1', autosave:'flypigbox_b2b_autosave_v1', assetProfiles:'flypigbox_b2b_signature_profiles_v1', emailPrefs:'flypigbox_b2b_email_prefs_v1'
   };
   const MAX_HISTORY=30, MAX_TEMPLATES=20, MAX_ASSET_STORE=1200000, MAX_ASSET_PROFILES=12;
@@ -1054,9 +1081,24 @@
     additionalTradeParties:{en:'Additional Trade Parties',zh:'其他贸易主体'}, documentNotice:{en:'Document Notice',zh:'单据说明'}, additionalClauses:{en:'Additional Contract Clauses',zh:'合同补充条款'}
   });
 
+  // RC16.1: late-added composite headings reuse the existing canonical multilingual core terms.
+  // This restores a complete fixed-label surface without inventing translations for user-authored business content.
+  const RC16_LABEL_ALIASES={"additionalClauses": "terms", "additionalTradeParties": "sellerBuyer", "billTo": "address", "buyerAcceptance": "authorizedSignature", "buyerOnly": "buyer", "buyerSignature": "authorizedSignature", "cartonCount": "packages", "cartonWeightVolume": "logistics", "commercialTerms": "terms", "consignee": "buyerCompany", "contractArticles": "terms", "contractDate": "date", "contractGoods": "products", "contractParties": "sellerBuyer", "contractTerms": "terms", "contractingParties": "sellerBuyer", "customsDeclaration": "remarks", "declarationRemarks": "remarks", "declaredAmount": "amount", "declaredGoods": "products", "declaredTotal": "total", "deliveryTerms": "terms", "documentNotice": "note", "exportShipment": "logistics", "exporter": "sellerCompany", "exporterConsignee": "sellerBuyer", "goodsDeclaredValue": "products", "invoiceControl": "note", "invoiceDate": "date", "logisticsCarrier": "shippingMethod", "marksAndLogistics": "logistics", "notifyParty": "contact", "orderConfirmation": "proforma", "packageDescription": "description", "packageType": "packages", "packingContents": "products", "packingDate": "date", "packingManifest": "logistics", "packingShippingDetails": "logistics", "quantity": "qty", "quotationDate": "date", "quotationNo": "quoteNo", "quotationRemarks": "remarks", "quotationValidity": "valid", "quoteBasis": "terms", "quotedGoods": "products", "quotedItems": "products", "sellerAcceptance": "authorizedSignature", "sellerSignature": "authorizedSignature", "shipTo": "address", "shipmentDetails": "logistics", "shipper": "sellerCompany", "shipperConsignee": "sellerBuyer", "shippingMark": "shippingMarks", "totalDeclaredAmount": "total", "totalPayable": "total", "totalQuantity": "qty"};
+  Object.entries(RC16_LABEL_ALIASES).forEach(([target,source])=>{
+    const base=labels[source]||{}; const next=labels[target]||(labels[target]={});
+    Object.entries(base).forEach(([lang,text])=>{if(lang!=='bilingual'&&!next[lang]&&text)next[lang]=text;});
+  });
+  // RC16.6.3: only true international abbreviations remain language-invariant.
+  // Human-readable document fields (Carton No., Dimensions, Invoice No., etc.) must localize.
+  const RC16_TECHNICAL_LABELS={"blNo":"B/L No.","eta":"ETA","etd":"ETD","moq":"MOQ"};
+  Object.entries(RC16_TECHNICAL_LABELS).forEach(([key,text])=>{
+    const next=labels[key]||(labels[key]={});
+    ["en", "zh", "es", "pt", "de", "fr", "it", "ru", "ar", "ja", "ko", "tr", "nl", "pl", "vi", "id", "th"].forEach(lang=>{if(!next[lang])next[lang]=text;});
+  });
+
   function supportedDocLanguage(){
     const value = $('docLanguage')?.value;
-    return ['bilingual','zh','en'].includes(value) ? value : 'bilingual';
+    return ['bilingual','zh','en','es','pt','de','fr','it','ru','ar','ja','ko','tr','nl','pl','vi','id','th'].includes(value) ? value : 'bilingual';
   }
   const compactBilingualLabel = (zh, en) => {
     const zhParts = String(zh || '').split('/').map(part => part.trim()).filter(Boolean);
@@ -1079,6 +1121,27 @@
     // Chinese/English documents show both labels; every other output mode shows one target-language label.
     if (lang === 'bilingual') return labels[key]?.bilingual || (normalizeTerm(zh) === normalizeTerm(en) ? en : compactBilingualLabel(zh, en));
     return labels[key]?.[local] || en;
+  };
+
+  // RC16.4: expose the canonical document glossary so PDF, table editor and workbook
+  // share one language source instead of maintaining separate zh/en-only dictionaries.
+  const RC163_LANGUAGE_CODES=['bilingual','zh','en','es','pt','de','fr','it','ru','ar','ja','ko','tr','nl','pl','vi','id','th'];
+  const findDocLabelKey=(zh='',en='')=>{
+    const z=normalizeTerm(zh),e=normalizeTerm(en);
+    for(const [key,map] of Object.entries(labels)){
+      if(e&&normalizeTerm(map?.en)===e)return key;
+      if(z&&normalizeTerm(map?.zh)===z)return key;
+    }
+    return '';
+  };
+  window.HUIDIDocI18nCore={
+    version:'1.2.0-RC16.8',
+    languages:RC163_LANGUAGE_CODES.slice(),
+    language:supportedDocLanguage,
+    label:docLabel,
+    raw:key=>({...((labels[key]||{}))}),
+    findKey:(zh,en)=>findDocLabelKey(zh,en),
+    patch:(key,map)=>{if(!key||!map||typeof map!=='object')return;labels[key]={...(labels[key]||{}),...map};}
   };
 
   const money = (currency, n) => `${currency} ${toNum(n).toFixed(2)}`;
@@ -1295,7 +1358,7 @@
     const f=input.files?.[0]; if(!f)return;
     if(!/^image\/(png|jpeg|webp)$/.test(f.type)){setStatus('请上传 PNG、JPG 或 WEBP 图片。','error');input.value='';return;}
     if(f.size>2*1024*1024){setStatus('签名、公章或商品图片请控制在 2MB 以内。','error');input.value='';return;}
-    const commit=dataUrl=>{owner.dataset[key]=dataUrl;const n=owner.querySelector(nameSelector);if(n)n.textContent=f.name;renderPreview();owner.querySelector('.i-name,.i-sku,.i-spec')?.dispatchEvent(new Event('input',{bubbles:true}));};
+    const commit=dataUrl=>{owner.dataset[key]=dataUrl;const n=owner.querySelector(nameSelector);if(n)n.textContent=f.name;owner.querySelector('.i-name,.i-sku,.i-spec')?.dispatchEvent(new Event('input',{bubbles:true}));schedulePreviewRender(90);};
     const reader=new FileReader();reader.onload=e=>{
       const dataUrl=String(e.target.result||'');
       if(f.type!=='image/webp'){commit(dataUrl);return;}
@@ -1323,7 +1386,7 @@
     row.className='logistics-extra-row';
     row.dataset.logisticsId=data.id||`log_${Date.now()}_${Math.random().toString(36).slice(2,6)}`;
     row.innerHTML=`<label>字段标题<input data-logistics-extra-label value="${escapeHTML(data.label||'')}" placeholder="例如：承运人 / Carrier"></label><label>字段内容<input data-logistics-extra-value value="${escapeHTML(data.value||'')}" placeholder="例如：DHL、柜号、封条号、ETA 或包装尺寸"></label><button class="btn danger" type="button" data-remove-logistics-extra>删除</button>`;
-    qsa('input',row).forEach(input=>input.addEventListener('input',()=>{syncLogisticsExtraJson();renderPreview();}));
+    qsa('input',row).forEach(input=>input.addEventListener('input',()=>{syncLogisticsExtraJson();schedulePreviewRender(160);}));
     row.querySelector('[data-remove-logistics-extra]')?.addEventListener('click',()=>{row.remove();syncLogisticsExtraJson();renderPreview();});
     list.appendChild(row);
     syncLogisticsExtraJson();
@@ -1421,6 +1484,14 @@
     setStatus(`请先登录或完成会员授权后再${label}。当前预览保留 HUIDI 试用水印。`,'error');
   }
   async function requestDocumentPdfPermit(action='export'){
+    // Community Local PDF export is offline/local and must not depend on a cloud
+    // membership object that legacy runtime code may recreate later in startup.
+    if(window.HUIDI_LOCAL_ONLY?.localOnly){
+      const paper=$('piPaper');
+      if(paper)paper.dataset.fpAuthorizedOutput='once';
+      setDocumentTrialWatermark(false);
+      return {allowed:true,watermark:false,plan:'community-local',remaining:null,source:'local-only'};
+    }
     const request=window.FlypigBOXMember?.requestPdfExport;
     if(typeof request!=='function'){
       showPdfGateDenied(action);
@@ -1490,8 +1561,8 @@
   }
   function pdfDocumentComplianceNotice(){
     const type=getDocumentType();
-    if(type==='proforma_invoice')return pdfSection(docLabel('documentNotice'),pdfInfoTable([[docLabel('documentNotice'),'This Proforma Invoice is issued for order confirmation and payment purposes only. It is not a tax invoice.']]),'pdf-document-notice');
-    if(type==='commercial_invoice')return pdfSection(docLabel('documentNotice'),pdfInfoTable([[docLabel('documentNotice'),'We certify that the information contained in this Commercial Invoice is true and correct to the best of our knowledge.']]),'pdf-document-notice');
+    if(type==='proforma_invoice')return pdfSection(docLabel('documentNotice'),pdfInfoTable([[docLabel('documentNotice'),outputPhrase('This Proforma Invoice is issued for order confirmation and payment purposes only. It is not a tax invoice.','本形式发票仅用于订单确认与付款，不作为税务发票。')]]),'pdf-document-notice');
+    if(type==='commercial_invoice')return pdfSection(docLabel('documentNotice'),pdfInfoTable([[docLabel('documentNotice'),outputPhrase('We certify that the information contained in this Commercial Invoice is true and correct to the best of our knowledge.','我们确认本商业发票所载信息在我们所知范围内真实且正确。')]]),'pdf-document-notice');
     return '';
   }
 
@@ -1638,16 +1709,25 @@
     const rows=entries.filter(([,value])=>pdfHasValue(value));
     return rows.length?`<div class="pdf-value-cards ${className}">${rows.map(([label,value])=>`<article><small>${label}</small><strong>${translatedHTML(value)}</strong></article>`).join('')}</div>`:'';
   }
-  function pdfAdditionalInfoLabel(){
+  function outputPhrase(en,zh=''){
     const lang=supportedDocLanguage();
-    if(lang==='zh')return '补充信息';
-    if(lang==='bilingual')return 'Supplementary Info / 补充信息';
-    return 'Supplementary Info';
+    const i18n=window.HUIDIDocI18n;
+    if(lang==='bilingual')return zh&&en?`${zh} / ${en}`:(zh||en);
+    if(lang==='zh')return zh||en;
+    if(lang==='en')return en||zh;
+    return i18n?.phrase?.(en,lang)||i18n?.text?.(zh,en,lang)||en||zh;
   }
+  function quoteReferenceLabelForType(type=getDocumentType()){
+    if(type==='quotation')return outputPhrase('Customer Reference','客户参考号');
+    if(type==='proforma_invoice'||type==='sales_contract')return outputPhrase('Related Quotation No.','关联报价单号');
+    return outputPhrase('Quotation Reference','报价参考号');
+  }
+  function pdfAdditionalInfoLabel(){ return outputPhrase('Supplementary Info','补充信息'); }
   function pdfCustomFieldEntries(){
     try{
       const rows=JSON.parse(get('customDocumentFieldsJson')||'[]');
-      return Array.isArray(rows)?rows.filter(row=>String(row?.value||'').trim()).map(row=>[String(row.label||'补充字段 / Additional Field').trim(),String(row.value||'').trim()]):[];
+      const fallback=outputPhrase('Additional Field','补充字段');
+      return Array.isArray(rows)?rows.filter(row=>String(row?.value||'').trim()).map(row=>[String(row.label||fallback).trim(),String(row.value||'').trim()]):[];
     }catch(_){return [];}
   }
   function pdfSupplementInfoSection(excludedToggles=[]){
@@ -1655,7 +1735,7 @@
     const entries=[
       ['showOrigin',docLabel('origin'),translatedDisplay('products','originCountry',get('originCountry'))],
       ['showCustomerPo',docLabel('customerPo'),get('customerPo')],
-      ['showQuote',docLabel('quoteNo'),get('quoteNo')],
+      ['showQuote',quoteReferenceLabelForType(),get('quoteNo')],
       ['showMoq',docLabel('moq'),documentMoqValue()],
       ['showSalesperson',docLabel('salesperson'),get('salesperson')]
     ].filter(([toggle,,value])=>!excluded.has(toggle)&&docFieldOn(toggle)&&pdfHasValue(value)).map(([,label,value])=>[label,value]);
@@ -1697,6 +1777,12 @@
   const FP_DOCUMENT_FEE_LABELS={
     freight:'Freight / 运费',insurance:'Insurance / 保险费',sample:'Sample Fee / 样品费',mould:'Mould Fee / 模具费',packing:'Packing Fee / 包装费',inspection:'Inspection Fee / 验货费',certification:'Certification Fee / 认证费',bank:'Bank Fee / 银行手续费',platform:'Platform Fee / 平台服务费',tax:'VAT / Tax / 税费',discount:'Discount / 折扣',other:'Other Fee / 其他费用'
   };
+  function localizedFixedLabel(value){
+    const raw=String(value||'').trim();
+    if(!raw)return raw;
+    const lang=supportedDocLanguage(),i18n=window.HUIDIDocI18n;
+    return i18n?.known?.(raw,lang)||raw;
+  }
   function documentFeeItems(subtotal){
     const allowed=item=>{
       if(!item||item.showPdf===false||Number(item.value)<=0)return false;
@@ -1709,7 +1795,7 @@
       const mode=item.mode==='percent'?'percent':'amount';
       const value=Math.max(0,toNum(item.value));
       const amount=mode==='percent'?subtotal*value/100:value;
-      return {id:String(item.id||''),type,mode,value,amount,includeTotal:item.includeTotal!==false,showPdf:item.showPdf!==false,label:String(item.label||FP_DOCUMENT_FEE_LABELS[type]||FP_DOCUMENT_FEE_LABELS.other).trim(),note:String(item.note||'').trim()};
+      return {id:String(item.id||''),type,mode,value,amount,includeTotal:item.includeTotal!==false,showPdf:item.showPdf!==false,label:localizedFixedLabel(item.label||FP_DOCUMENT_FEE_LABELS[type]||FP_DOCUMENT_FEE_LABELS.other),note:String(item.note||'').trim()};
     };
     const raw=get('fpFeeItemsJson');
     if(raw){
@@ -1741,7 +1827,7 @@
     const rows=[`<tr><th>${docLabel('subtotal')}:</th><td>${money(ctx.cur,ctx.sub)}</td></tr>`];
     ctx.feeItems.forEach(item=>{
       const percent=item.mode==='percent'?` (${Number(item.value).toLocaleString(undefined,{maximumFractionDigits:2})}%)`:'';
-      const excluded=item.includeTotal?'':` <small class="pdf-fee-excluded">${supportedDocLanguage()==='en'?'Excluded from total':'不计入总计'}</small>`;
+      const excluded=item.includeTotal?'':` <small class="pdf-fee-excluded">${outputPhrase('Excluded from total','不计入总计')}</small>`;
       const sign=item.type==='discount'?'-':'';
       rows.push(`<tr class="pdf-fee-row pdf-fee-${escapeHTML(item.type)}"><th>${translatedHTML(item.label)}${percent}${excluded}:</th><td>${sign}${money(ctx.cur,item.amount)}</td></tr>`);
     });
@@ -1774,7 +1860,24 @@
     const productDescription=item=>{
       const productName=translatedDisplay('products',`item:${item.itemKey}:name`,item.name);
       const productSpec=translatedDisplay('products',`item:${item.itemKey}:spec`,item.spec);
-      return `<strong>${translatedHTML(productName)}</strong>${item.sku?`<br><small><b>SKU / 货号:</b> ${escapeHTML(item.sku)}</small>`:''}${productSpec?`<br><span class="muted">${translatedHTML(productSpec)}</span>`:''}${showHs&&item.hs?`<br><small><b>${escapeHTML(docLabel('hsCode'))}:</b> ${escapeHTML(item.hs)}</small>`:''}`;
+      const meta=[];
+      if(item.sku)meta.push(`<span class="pdf-product-meta"><b>SKU</b> ${escapeHTML(item.sku)}</span>`);
+      if(showHs&&item.hs)meta.push(`<span class="pdf-product-meta"><b>${escapeHTML(docLabel('hsCode'))}</b> ${escapeHTML(item.hs)}</span>`);
+      return `<strong class="pdf-product-name">${translatedHTML(productName)}</strong>${meta.length?`<div class="pdf-product-meta-row">${meta.join('')}</div>`:''}${productSpec?`<div class="pdf-product-spec">${translatedHTML(productSpec)}</div>`:''}`;
+    };
+    const productColgroup=(options={})=>{
+      const packing=options.packing===true;
+      const includeImage=options.showImage===undefined?showImage:Boolean(options.showImage);
+      const includeMoney=options.showMoney===undefined?showMoneyColumns:Boolean(options.showMoney);
+      let widths=[];
+      if(packing){
+        widths=includeImage?[8,12,46,14,20]:[9,55,16,20];
+      }else if(includeMoney){
+        widths=includeImage?[5,9,40,8,8,14,16]:[6,47,8,8,15,16];
+      }else{
+        widths=includeImage?[6,10,56,12,16]:[7,63,13,17];
+      }
+      return `<colgroup>${widths.map(width=>`<col style="width:${width}%">`).join('')}</colgroup>`;
     };
     const productHTML=pdfItems.map((item,idx)=>{
       const description=productDescription(item);
@@ -1828,7 +1931,7 @@
       [docLabel('date'),get('issueDate')],[docLabel('currency'),cur],...(get('validUntil')?[[documentValidLabel(documentType),get('validUntil')]]:[]),
       ...optionalInfo('showOrigin','origin',translatedDisplay('products','originCountry',get('originCountry'))),
       ...optionalInfo('showCustomerPo','customerPo',get('customerPo')),
-      ...optionalInfo('showQuote','quoteNo',get('quoteNo')),
+      ...(docFieldOn('showQuote')&&get('quoteNo')?[[quoteReferenceLabelForType(documentType),get('quoteNo')]]:[]),
       ...optionalInfo('showSalesperson','salesperson',get('salesperson'))
     ].filter(([,value])=>pdfHasValue(value));
     if(isCommercial){
@@ -1850,129 +1953,123 @@
       ].filter(([,value])=>pdfHasValue(value));
     }
     const infoRows=infoEntries.reduce((rows,entry,index)=>{if(index%2===0){const second=infoEntries[index+1]||['',''];rows.push(`<tr><th>${entry[0]}</th><td>${translatedHTML(entry[1])}</td>${second[0]?`<th>${second[0]}</th><td>${translatedHTML(second[1])}</td>`:'<th></th><td></td>'}`);}return rows;},[]).join('');
-    const quoteLine=(isQuotation||isContract||isCommercial)&&docFieldOn('showQuote')&&get('quoteNo')?`<small>${docLabel('quoteNo')}: ${escapeHTML(get('quoteNo'))}</small>`:'';
+    const quoteLine=(isQuotation||isContract||isCommercial)&&docFieldOn('showQuote')&&get('quoteNo')?`<small>${quoteReferenceLabelForType(documentType)}: ${escapeHTML(get('quoteNo'))}</small>`:'';
     const showMoneyTable=!isPacking&&hasPricedItems;
     const totalRows=pdfFinancialRows({cur,sub,total,feeItems,showMoneyTable});
     const signatureHTML=pdfStandardSignature({showSignature:docFieldOn('showSignature')});
     const contractIntro='';
     const partyTitle=isContract?docLabel('contractingParties'):docLabel('sellerBuyer');
     const goodsTitle=isPacking?docLabel('packingContents'):isCommercial?docLabel('goodsDeclaredValue'):isContract?docLabel('contractGoods'):isQuotation?docLabel('quotedGoods'):docLabel('products');
-    return {lang,cur,pdfStyle,paperSpec,documentType,isPacking,isContract,isCommercial,isQuotation,pdfItems,pricedItems,hasPricedItems,showMoneyColumns,sub,discount,extra,tax,total,feeItems,words,showImage,showHs,productDescription,productHTML,productHeader,logistics,logisticsHTML,bankRows,bankHTML,paymentTermsValue,terms,termsHTML,infoEntries,infoRows,quoteLine,showMoneyTable,totalRows,signatureHTML,contractIntro,partyTitle,goodsTitle};
+    return {lang,cur,pdfStyle,paperSpec,documentType,isPacking,isContract,isCommercial,isQuotation,pdfItems,pricedItems,hasPricedItems,showMoneyColumns,sub,discount,extra,tax,total,feeItems,words,showImage,showHs,productDescription,productColgroup,productHTML,productHeader,logistics,logisticsHTML,bankRows,bankHTML,paymentTermsValue,terms,termsHTML,infoEntries,infoRows,quoteLine,showMoneyTable,totalRows,signatureHTML,contractIntro,partyTitle,goodsTitle};
+  }
+  const PDF_TEMPLATE_FAMILY_IDS=new Set(['classic_business','minimal_trade','formal_contract','brand_showcase','customs_clean']);
+  const PDF_TEMPLATE_DOCUMENT_TYPES=new Set(['proforma_invoice','quotation','commercial_invoice','sales_contract','packing_list']);
+  function pdfTemplateFamilyMeta(style,entries){
+    const rows=(entries||[]).filter(([,value])=>pdfHasValue(value));
+    if(!rows.length)return '';
+    if(style==='minimal_trade'||style==='customs_clean')return pdfMetaBar(rows);
+    if(style==='brand_showcase')return pdfValueCards(rows,'pdf-family-meta');
+    return pdfMetaGrid(rows);
+  }
+  function renderPdfTemplateFamily(ctx,slots={}){
+    const style=PDF_TEMPLATE_FAMILY_IDS.has(ctx.pdfStyle)?ctx.pdfStyle:'classic_business';
+    const type=PDF_TEMPLATE_DOCUMENT_TYPES.has(ctx.documentType)?ctx.documentType:'proforma_invoice';
+    const hero=pdfTemplateHero(type,slots.heroLabel||docLabel('invoiceControl'),slots.heroClass||'doc-hero');
+    const meta=pdfTemplateFamilyMeta(style,slots.metaEntries||ctx.infoEntries||[]);
+    const ordered=[
+      hero,
+      meta,
+      slots.parties||'',
+      // RC16.13 Page Composer: primary business flow owns the first-page capacity.
+      // Supplemental/reference/compliance fields must not push the product table to
+      // a later page while usable space remains above it.
+      slots.primary||'',
+      slots.summary||'',
+      slots.amountWords||'',
+      slots.supplement||'',
+      slots.logistics||'',
+      slots.payment||'',
+      slots.terms||'',
+      slots.signature||''
+    ].filter(Boolean).join('');
+    return `<div class="pdf-template pdf-template-${type.replace(/_invoice$/,'').replace('sales_contract','contract').replace('packing_list','packing')} pdf-template-family pdf-family-${style}" data-pdf-family="${style}" data-pdf-family-version="1" data-pdf-family-document="${type}">${ordered}</div>`;
   }
   function renderQuotationPdfTemplate(ctx){
-    const quotationMeta=pdfMetaGrid([[docLabel('quotationNo'),get('invoiceNo')],...(docFieldOn('showQuote')?[[docLabel('quoteNo'),get('quoteNo')]]:[]),[docLabel('quotationDate'),get('issueDate')],[docLabel('quotationValidity'),get('validUntil')],[docLabel('currency'),ctx.cur]]);
     const parties=pdfSection(docLabel('sellerBuyer'),`<div class="pdf-party-grid">${pdfPartyCard(docLabel('sellerCompany'),'seller')}${pdfPartyCard(docLabel('buyerCompany'),'buyer')}</div>`,'pdf-quotation-parties');
-    const products=ctx.pdfItems.length?pdfSection(docLabel('quotedItems'),`<table class="products pdf-quotation-table"><thead><tr><th>${docLabel('no')}</th>${ctx.showImage?`<th>${docLabel('picture')}</th>`:''}<th>${docLabel('description')}</th><th>${docLabel('quantity')}</th><th>${docLabel('unit')}</th>${ctx.showMoneyColumns?`<th>${docLabel('price')}</th><th>${docLabel('amount')}</th>`:''}</tr></thead><tbody>${ctx.productHTML}</tbody></table>`,'pdf-quotation-items pdf-split-block'):'';
+    const products=ctx.pdfItems.length?pdfSection(docLabel('quotedItems'),`<table class="products pdf-quotation-table">${ctx.productColgroup()}<thead><tr><th>${docLabel('no')}</th>${ctx.showImage?`<th>${docLabel('picture')}</th>`:''}<th>${docLabel('description')}</th><th>${docLabel('quantity')}</th><th>${docLabel('unit')}</th>${ctx.showMoneyColumns?`<th>${docLabel('price')}</th><th>${docLabel('amount')}</th>`:''}</tr></thead><tbody>${ctx.productHTML}</tbody></table>`,'pdf-quotation-items pdf-split-block'):'';
     const quoteTerms=pdfInfoTable([...(docFieldOn('showTerms')?[[docLabel('paymentTerms'),ctx.paymentTermsValue],[docLabel('incoterms'),get('tradeTerms')],[docLabel('leadTime'),translatedDisplay('terms','deliveryTime',get('deliveryTime'))]]:[]),...(docFieldOn('showRemarks')?[[docLabel('quotationRemarks'),translatedDisplay('terms','remarks',get('remarks'))]]:[])]);
     const termsSection=pdfSection(docLabel('quoteBasis'),quoteTerms,'pdf-quotation-terms');
     const total=ctx.showMoneyTable?`<table class="money-table pdf-quote-total"><tbody>${ctx.totalRows}</tbody></table>`:'';
-    const supplement=pdfSupplementInfoSection(['showQuote']);
-    const amountWords=pdfAmountWordsBlock(ctx);
-    const signature=pdfSignatureSection(ctx);
-    const brandSnapshot=pdfValueCards([[docLabel('quotationValidity'),get('validUntil')],[docLabel('currency'),ctx.cur],[docLabel('leadTime'),translatedDisplay('terms','deliveryTime',get('deliveryTime'))]],'pdf-quote-snapshot');
-    const brandTotal=pdfTotalCard(ctx,docLabel('totalPayable'),'pdf-quote-total-card');
-    const brandFinance=(ctx.logisticsHTML||brandTotal)?`<div class="pdf-brand-finance-row">${ctx.logisticsHTML}${brandTotal}</div>`:'';
-    if(ctx.pdfStyle==='brand_showcase'){
-      return `<div class="pdf-template pdf-template-quotation pdf-layout-proposal pdf-layout-brand-sheet">${pdfTemplateHero('quotation',docLabel('quoteSnapshot'),'pdf-quotation-hero')}${brandSnapshot}${parties}${supplement}${products}${brandFinance}${termsSection}${amountWords}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='minimal_trade'){
-      return `<div class="pdf-template pdf-template-quotation pdf-layout-ledger">${pdfTemplateHero('quotation',docLabel('quoteBasis'),'pdf-quotation-hero')}${pdfMetaBar([[docLabel('quotationDate'),get('issueDate')],[docLabel('quotationValidity'),get('validUntil')],[docLabel('currency'),ctx.cur],[docLabel('incoterms'),get('tradeTerms')]])}${parties}${supplement}${products}${ctx.logisticsHTML}${total}${amountWords}${termsSection}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='formal_contract'){
-      return `<div class="pdf-template pdf-template-quotation pdf-layout-formal-offer">${pdfTemplateHero('quotation',docLabel('quoteBasis'),'pdf-quotation-hero')}${quotationMeta}${parties}${supplement}${termsSection}${products}${ctx.logisticsHTML}${total}${amountWords}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='customs_clean'){
-      return `<div class="pdf-template pdf-template-quotation pdf-layout-customs-quote">${pdfTemplateHero('quotation',docLabel('quoteSnapshot'),'pdf-quotation-hero')}${pdfMetaBar([[docLabel('quotationNo'),get('invoiceNo')],[docLabel('date'),get('issueDate')],[docLabel('valid'),get('validUntil')],[docLabel('currency'),ctx.cur]])}${parties}${supplement}${products}${ctx.logisticsHTML}${termsSection}${total}${amountWords}${signature}</div>`;
-    }
-    return `<div class="pdf-template pdf-template-quotation pdf-layout-classic">${pdfTemplateHero('quotation',docLabel('quoteSnapshot'),'pdf-quotation-hero')}${quotationMeta}${parties}${supplement}${products}${ctx.logisticsHTML}${total}${amountWords}${termsSection}${signature}</div>`;
+    return renderPdfTemplateFamily(ctx,{
+      heroLabel:docLabel('quoteSnapshot'),heroClass:'pdf-quotation-hero',
+      metaEntries:[[docLabel('quotationNo'),get('invoiceNo')],...(docFieldOn('showQuote')?[[quoteReferenceLabelForType('quotation'),get('quoteNo')]]:[]),[docLabel('quotationDate'),get('issueDate')],[docLabel('quotationValidity'),get('validUntil')],[docLabel('currency'),ctx.cur]],
+      parties,
+      supplement:pdfSupplementInfoSection(['showQuote']),
+      primary:products,
+      summary:total,
+      amountWords:pdfAmountWordsBlock(ctx),
+      logistics:ctx.logisticsHTML,
+      terms:termsSection,
+      signature:pdfSignatureSection(ctx)
+    });
   }
   function renderProformaInvoicePdfTemplate(ctx){
-    const info=`<table class="info"><tbody>${ctx.infoRows}</tbody></table>`;
-    const parties=`<div class="pdf-party-grid">${pdfPartyCard(docLabel('sellerCompany'),'seller')}${pdfPartyCard(docLabel('buyerCompany'),'buyer')}</div>`;
-    const products=ctx.pdfItems.length?`<table class="products pdf-pi-products"><thead>${ctx.productHeader}</thead><tbody>${ctx.productHTML}</tbody></table>`:'';
-    const amountWords=pdfAmountWordsBlock(ctx);
-    const supplement=pdfSupplementInfoSection();
-    const signature=pdfSignatureSection(ctx);
+    const parties=pdfSection(docLabel('sellerBuyer'),`<div class="pdf-party-grid">${pdfPartyCard(docLabel('sellerCompany'),'seller')}${pdfPartyCard(docLabel('buyerCompany'),'buyer')}</div>`,'pdf-pi-parties');
+    const products=ctx.pdfItems.length?`<table class="products pdf-pi-products">${ctx.productColgroup()}<thead>${ctx.productHeader}</thead><tbody>${ctx.productHTML}</tbody></table>`:'';
     const productSection=ctx.pdfItems.length?pdfSection(docLabel('products'),products,'pdf-pi-goods pdf-split-block'):'';
-    const moneyTable=ctx.showMoneyTable?`<table class="money-table"><tbody>${ctx.totalRows}</tbody></table>`:'';
-    if(ctx.pdfStyle==='brand_showcase'){
-      return `<div class="pdf-template pdf-template-proforma pdf-layout-order-confirmation">${pdfTemplateHero('proforma_invoice',docLabel('orderConfirmation'),'doc-hero pdf-pi-hero')}<div class="pdf-order-dashboard">${pdfValueCards([[docLabel('date'),get('issueDate')],[docLabel('valid'),get('validUntil')],[docLabel('currency'),ctx.cur],[docLabel('incoterms'),get('tradeTerms')]])}${pdfTotalCard(ctx,docLabel('totalPayable'))}</div>${pdfSection(docLabel('sellerBuyer'),parties,'pdf-pi-parties')}${supplement}${productSection}${moneyTable}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${ctx.termsHTML}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='minimal_trade'){
-      return `<div class="pdf-template pdf-template-proforma pdf-layout-ledger">${pdfTemplateHero('proforma_invoice',docLabel('invoiceControl'),'doc-hero pdf-pi-hero')}${pdfMetaBar(ctx.infoEntries)}${pdfSection(docLabel('sellerBuyer'),parties,'pdf-pi-parties')}${productSection}${moneyTable}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${ctx.termsHTML}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='formal_contract'){
-      return `<div class="pdf-template pdf-template-proforma pdf-layout-formal-order">${pdfTemplateHero('proforma_invoice',docLabel('orderConfirmation'),'doc-hero pdf-pi-hero')}${info}${pdfSection(docLabel('sellerBuyer'),parties,'pdf-pi-parties')}${productSection}${moneyTable}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${ctx.termsHTML}${pdfAgreementStrip(docLabel('sellerAcceptance'),docLabel('buyerAcceptance'))}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='customs_clean'){
-      return `<div class="pdf-template pdf-template-proforma pdf-layout-customs-order">${pdfTemplateHero('proforma_invoice',docLabel('invoiceControl'),'doc-hero pdf-pi-hero')}${pdfMetaBar([[docLabel('piNo'),get('invoiceNo')],[docLabel('date'),get('issueDate')],[docLabel('currency'),ctx.cur],[docLabel('incoterms'),get('tradeTerms')]])}${pdfSection(docLabel('sellerBuyer'),parties,'pdf-pi-parties')}${supplement}${productSection}${moneyTable}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${ctx.termsHTML}${signature}</div>`;
-    }
-    return `<div class="pdf-template pdf-template-proforma pdf-layout-classic">${pdfTemplateHero('proforma_invoice',docLabel('orderConfirmation'),'doc-hero pdf-pi-hero')}${info}${pdfSection(docLabel('sellerBuyer'),parties,'pdf-pi-parties')}${productSection}${moneyTable}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${ctx.termsHTML}${signature}</div>`;
+    const moneyTable=ctx.showMoneyTable?`<table class="money-table pdf-pi-total"><tbody>${ctx.totalRows}</tbody></table>`:'';
+    return renderPdfTemplateFamily(ctx,{
+      heroLabel:docLabel('orderConfirmation'),heroClass:'doc-hero pdf-pi-hero',
+      metaEntries:[[docLabel('piNo'),get('invoiceNo')],[docLabel('date'),get('issueDate')],[docLabel('valid'),get('validUntil')],[docLabel('currency'),ctx.cur],...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[])],
+      parties,
+      supplement:pdfSupplementInfoSection(),
+      primary:productSection,
+      summary:moneyTable,
+      amountWords:pdfAmountWordsBlock(ctx),
+      logistics:ctx.logisticsHTML,
+      payment:ctx.bankHTML,
+      terms:ctx.termsHTML,
+      signature:pdfSignatureSection(ctx)
+    });
   }
   function renderCommercialInvoicePdfTemplate(ctx){
-    const meta=pdfMetaGrid([[docLabel('invoiceNo'),get('invoiceNo')],[docLabel('invoiceDate'),get('issueDate')],[docLabel('currency'),ctx.cur],...(docFieldOn('showOrigin')?[[docLabel('origin'),translatedDisplay('products','originCountry',get('originCountry'))]]:[]),...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[])]);
     const supplement=pdfSupplementInfoSection(['showOrigin']);
-    const amountWords=pdfAmountWordsBlock(ctx);
-    const signature=pdfSignatureSection(ctx);
-    const parties=`<div class="pdf-party-grid">${pdfPartyCard(docLabel('exporter'),'seller','pdf-exporter')}${pdfPartyCard(docLabel('consignee'),get('consigneeName')?'consignee':'buyer','pdf-consignee')}</div>`;
+    const parties=pdfSection(docLabel('exporterConsignee'),`<div class="pdf-party-grid">${pdfPartyCard(docLabel('exporter'),'seller','pdf-exporter')}${pdfPartyCard(docLabel('consignee'),get('consigneeName')?'consignee':'buyer','pdf-consignee')}</div>`,'pdf-commercial-parties');
     const originValue=translatedDisplay('products','originCountry',get('originCountry'));
     const showOriginColumn=docFieldOn('showOrigin')&&pdfHasValue(originValue);
     const showWeightColumns=ctx.paperSpec.orientation==='landscape'&&docFieldOn('showLogistics')&&(ctx.pdfItems.some(item=>Number(item.netWeight)>0||Number(item.grossWeight)>0)||get('netWeight')||get('grossWeight'));
     const body=ctx.pdfItems.map((item,idx)=>`<tr><td>${idx+1}</td>${ctx.showImage?`<td>${item.image?`<img class="img" src="${item.image}" alt="${escapeHTML(item.name)}">`:''}</td>`:''}<td>${ctx.productDescription(item)}</td>${ctx.showHs?`<td>${escapeHTML(item.hs||'')}</td>`:''}${showOriginColumn?`<td>${translatedHTML(originValue)}</td>`:''}<td>${item.qty>0?item.qty:''}</td><td>${escapeHTML(item.unit)}</td>${showWeightColumns?`<td>${Number(item.netWeight)>0?`${item.netWeight} KG`:(idx===0&&get('netWeight')?`${get('netWeight')} KG`:'')}</td><td>${Number(item.grossWeight)>0?`${item.grossWeight} KG`:(idx===0&&get('grossWeight')?`${get('grossWeight')} KG`:'')}</td>`:''}${ctx.showMoneyColumns?`<td>${item.price>0?money(ctx.cur,item.price):''}</td><td>${item.qty>0&&item.price>0?`<b>${money(ctx.cur,item.qty*item.price)}</b>`:''}</td>`:''}</tr>`).join('');
     const products=ctx.pdfItems.length?pdfSection(docLabel('declaredGoods'),`<table class="products pdf-commercial-table"><thead><tr><th>${docLabel('no')}</th>${ctx.showImage?`<th>${docLabel('picture')}</th>`:''}<th>${docLabel('description')}</th>${ctx.showHs?`<th>${docLabel('hsCode')}</th>`:''}${showOriginColumn?`<th>${docLabel('origin')}</th>`:''}<th>${docLabel('qty')}</th><th>${docLabel('unit')}</th>${showWeightColumns?`<th>${docLabel('netWeight')}</th><th>${docLabel('grossWeight')}</th>`:''}${ctx.showMoneyColumns?`<th>${docLabel('price')}</th><th>${docLabel('declaredAmount')}</th>`:''}</tr></thead><tbody>${body}</tbody></table>`,'pdf-commercial-goods pdf-split-block'):'';
-    const declaration=pdfInfoTable([...(docFieldOn('showRemarks')?[[docLabel('remarks'),translatedDisplay('terms','remarks',get('remarks'))]]:[])]);
     const total=ctx.showMoneyTable?`<table class="money-table pdf-declared-total"><tbody><tr class="total"><th>${docLabel('totalDeclaredAmount')}:</th><td>${money(ctx.cur,ctx.total)}</td></tr></tbody></table>`:'';
+    const declaration=pdfInfoTable([...(docFieldOn('showRemarks')?[[docLabel('remarks'),translatedDisplay('terms','remarks',get('remarks'))]]:[])]);
     const declarationSection=pdfSection(docLabel('customsDeclaration'),declaration,'pdf-commercial-declaration');
-    if(ctx.pdfStyle==='customs_clean'){
-      return `<div class="pdf-template pdf-template-commercial pdf-layout-customs">${pdfTemplateHero('commercial_invoice',docLabel('customsDeclaration'),'pdf-commercial-hero')}${pdfMetaBar([[docLabel('invoiceNo'),get('invoiceNo')],[docLabel('invoiceDate'),get('issueDate')],[docLabel('origin'),originValue],[docLabel('incoterms'),get('tradeTerms')]])}${pdfSection(docLabel('exporterConsignee'),parties,'pdf-commercial-parties')}${supplement}${products}${total}${amountWords}${ctx.logisticsHTML}${declarationSection}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='minimal_trade'){
-      return `<div class="pdf-template pdf-template-commercial pdf-layout-ledger">${pdfTemplateHero('commercial_invoice',docLabel('invoiceControl'),'pdf-commercial-hero')}${pdfMetaBar([[docLabel('invoiceNo'),get('invoiceNo')],[docLabel('invoiceDate'),get('issueDate')],[docLabel('currency'),ctx.cur],[docLabel('origin'),originValue],...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[])])}${pdfSection(docLabel('exporterConsignee'),parties,'pdf-commercial-parties')}${supplement}${products}${total}${amountWords}${ctx.logisticsHTML}${declarationSection}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='formal_contract'){
-      return `<div class="pdf-template pdf-template-commercial pdf-layout-certificate">${pdfTemplateHero('commercial_invoice',docLabel('customsDeclaration'),'pdf-commercial-hero')}${meta}${pdfSection(docLabel('exporterConsignee'),parties,'pdf-commercial-parties')}${supplement}${products}${ctx.logisticsHTML}${declarationSection}${total}${amountWords}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='brand_showcase'){
-      return `<div class="pdf-template pdf-template-commercial pdf-layout-corporate-invoice">${pdfTemplateHero('commercial_invoice',docLabel('exportShipment'),'pdf-commercial-hero')}<div class="pdf-proposal-grid"><main>${supplement}${products}${amountWords}${ctx.logisticsHTML}${declarationSection}${signature}</main><aside>${pdfValueCards([[docLabel('invoiceDate'),get('issueDate')],[docLabel('origin'),originValue],[docLabel('shippingMethod'),docFieldOn('showLogistics')?translatedDisplay('logistics','shippingMethod',get('shippingMethod')):''],...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[]),[docLabel('currency'),ctx.cur]])}${pdfSection(docLabel('exporterConsignee'),parties,'pdf-commercial-parties')}${pdfTotalCard(ctx,docLabel('declaredTotal'))}</aside></div></div>`;
-    }
-    return `<div class="pdf-template pdf-template-commercial pdf-layout-classic">${pdfTemplateHero('commercial_invoice',docLabel('invoiceControl'),'pdf-commercial-hero')}${meta}${pdfSection(docLabel('exporterConsignee'),parties,'pdf-commercial-parties')}${supplement}${products}${total}${amountWords}${ctx.logisticsHTML}${declarationSection}${signature}</div>`;
+    return renderPdfTemplateFamily(ctx,{
+      heroLabel:docLabel('invoiceControl'),heroClass:'pdf-commercial-hero',
+      metaEntries:[[docLabel('invoiceNo'),get('invoiceNo')],[docLabel('invoiceDate'),get('issueDate')],[docLabel('currency'),ctx.cur],...(docFieldOn('showOrigin')?[[docLabel('origin'),originValue]]:[]),...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[])],
+      parties,supplement,primary:products,summary:total,amountWords:pdfAmountWordsBlock(ctx),logistics:ctx.logisticsHTML,terms:declarationSection,signature:pdfSignatureSection(ctx)
+    });
   }
   function renderSalesContractPdfTemplate(ctx){
-    const meta=pdfMetaGrid([[docLabel('contractNo'),get('invoiceNo')],[docLabel('contractDate'),get('issueDate')],[docLabel('currency'),ctx.cur],...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[])]);
-    const supplement=pdfSupplementInfoSection();
-    const amountWords=pdfAmountWordsBlock(ctx);
-    const parties=`<div class="pdf-party-grid">${pdfPartyCard(docLabel('sellerCompany'),'seller')}${pdfPartyCard(docLabel('buyerOnly'),'buyer')}</div>`;
-    const goods=ctx.pdfItems.length?pdfSection(docLabel('contractGoods'),`<table class="products pdf-contract-goods"><thead>${ctx.productHeader}</thead><tbody>${ctx.productHTML}</tbody></table>`,'pdf-contract-goods-section pdf-split-block'):'';
+    const parties=pdfSection(docLabel('contractParties'),`<div class="pdf-party-grid">${pdfPartyCard(docLabel('sellerCompany'),'seller')}${pdfPartyCard(docLabel('buyerOnly'),'buyer')}</div>`,'pdf-contract-parties');
+    const goods=ctx.pdfItems.length?pdfSection(docLabel('contractGoods'),`<table class="products pdf-contract-goods">${ctx.productColgroup()}<thead>${ctx.productHeader}</thead><tbody>${ctx.productHTML}</tbody></table>`,'pdf-contract-goods-section pdf-split-block'):'';
     const contractTerms=[
       ...(docFieldOn('showPayment')?[[docLabel('paymentTerms'),ctx.paymentTermsValue]]:[]),
       ...(docFieldOn('showTerms')?[[docLabel('deliveryTerms'),translatedDisplay('terms','deliveryTime',get('deliveryTime'))],[docLabel('incoterms'),get('tradeTerms')]]:[]),
       ...(docFieldOn('showRemarks')?[[docLabel('remarks'),translatedDisplay('terms','remarks',get('remarks'))]]:[]),
       ...(pdfHasValue(get('contractClauses'))?[[docLabel('additionalClauses'),get('contractClauses')]]:[])
     ];
-    const contractTermsHTML=pdfInfoTable(contractTerms);
+    const termsSection=pdfSection(docLabel('contractArticles'),pdfInfoTable(contractTerms),'pdf-contract-terms');
     const total=ctx.showMoneyTable?`<table class="money-table pdf-contract-total"><tbody>${ctx.totalRows}</tbody></table>`:'';
-    const termsSection=pdfSection(docLabel('contractArticles'),contractTermsHTML,'pdf-contract-terms');
-    if(ctx.pdfStyle==='brand_showcase'){
-      return `<div class="pdf-template pdf-template-contract pdf-layout-contract-brief">${pdfTemplateHero('sales_contract',docLabel('commercialTerms'),'pdf-contract-hero')}${pdfValueCards([[docLabel('contractDate'),get('issueDate')],[docLabel('currency'),ctx.cur],[docLabel('incoterms'),get('tradeTerms')],[docLabel('leadTime'),translatedDisplay('terms','deliveryTime',get('deliveryTime'))]])}${pdfSection(docLabel('contractParties'),parties,'pdf-contract-parties')}${supplement}${goods}${pdfTotalCard(ctx,docLabel('totalPayable'))}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${termsSection}${pdfContractSignature({showSignature:docFieldOn('showSignature')})}</div>`;
-    }
-    if(ctx.pdfStyle==='minimal_trade'){
-      return `<div class="pdf-template pdf-template-contract pdf-layout-contract-plain">${pdfTemplateHero('sales_contract',docLabel('contractArticles'),'pdf-contract-hero')}${pdfMetaBar([[docLabel('contractNo'),get('invoiceNo')],[docLabel('contractDate'),get('issueDate')],[docLabel('currency'),ctx.cur]])}${pdfSection(docLabel('contractParties'),parties,'pdf-contract-parties')}${supplement}${goods}${total}${amountWords}${ctx.logisticsHTML}${ctx.bankHTML}${termsSection}${pdfContractSignature({showSignature:docFieldOn('showSignature')})}</div>`;
-    }
-    if(ctx.pdfStyle==='customs_clean'){
-      return `<div class="pdf-template pdf-template-contract pdf-layout-contract-table">${pdfTemplateHero('sales_contract',docLabel('commercialTerms'),'pdf-contract-hero')}${meta}${supplement}${goods}${pdfSection(docLabel('contractParties'),parties,'pdf-contract-parties')}${ctx.logisticsHTML}${termsSection}${ctx.bankHTML}${total}${amountWords}${pdfContractSignature({showSignature:docFieldOn('showSignature')})}</div>`;
-    }
-    return `<div class="pdf-template pdf-template-contract pdf-layout-formal-contract">${pdfTemplateHero('sales_contract',docLabel('contractArticles'),'pdf-contract-hero')}${meta}${pdfSection(docLabel('contractParties'),parties,'pdf-contract-parties')}${supplement}${ctx.contractIntro}${goods}${total}${amountWords}${ctx.logisticsHTML}${termsSection}${ctx.bankHTML}${pdfContractSignature({showSignature:docFieldOn('showSignature')})}</div>`;
+    return renderPdfTemplateFamily(ctx,{
+      heroLabel:docLabel('contractArticles'),heroClass:'pdf-contract-hero',
+      metaEntries:[[docLabel('contractNo'),get('invoiceNo')],[docLabel('contractDate'),get('issueDate')],[docLabel('currency'),ctx.cur],...(docFieldOn('showTerms')?[[docLabel('incoterms'),get('tradeTerms')]]:[])],
+      parties,supplement:pdfSupplementInfoSection(),primary:goods,summary:total,amountWords:pdfAmountWordsBlock(ctx),logistics:ctx.logisticsHTML,payment:ctx.bankHTML,terms:termsSection,signature:pdfContractSignature({showSignature:docFieldOn('showSignature')})
+    });
   }
   function renderPackingListPdfTemplate(ctx){
-    const meta=pdfMetaGrid([[docLabel('packingListNo'),get('invoiceNo')],[docLabel('packingDate'),get('issueDate')],...(docFieldOn('showLogistics')?[[docLabel('cartonCount'),get('packageCount')]]:[]),...(docFieldOn('showRemarks')?[[docLabel('shippingMarks'),translatedDisplay('logistics','shippingMarks',get('shippingMarks'))]]:[])]);
     const supplement=pdfSupplementInfoSection();
-    const signature=pdfSignatureSection(ctx);
-    const parties=`<div class="pdf-party-grid">${pdfPartyCard(docLabel('shipper'),'seller')}${pdfPartyCard(docLabel('consignee'),get('consigneeName')?'consignee':'buyer')}</div>`;
-    const packingMetric=value=>{
-      const number=Number(value);
-      if(!Number.isFinite(number)||number<=0)return '';
-      return Number(number.toFixed(3)).toString();
-    };
+    const parties=pdfSection(docLabel('shipperConsignee'),`<div class="pdf-party-grid">${pdfPartyCard(docLabel('shipper'),'seller')}${pdfPartyCard(docLabel('consignee'),get('consigneeName')?'consignee':'buyer')}</div>`,'pdf-packing-parties');
+    const packingMetric=value=>{const number=Number(value);if(!Number.isFinite(number)||number<=0)return '';return Number(number.toFixed(3)).toString();};
     const itemKg=value=>packingMetric(value)?`${packingMetric(value)} KG`:'';
     const itemCbm=value=>packingMetric(value)?`${packingMetric(value)} m³`:'';
     const showCartonColumn=ctx.pdfItems.some(item=>pdfHasValue(item.cartonNo));
@@ -1983,35 +2080,18 @@
     const showDimensionsColumn=docFieldOn('showLogistics')&&ctx.pdfItems.some(item=>pdfHasValue(item.dimensions));
     const showItemMarksColumn=docFieldOn('showRemarks')&&ctx.pdfItems.some(item=>pdfHasValue(item.shippingMarks));
     const packingHead=`<tr><th>${docLabel('no')}</th>${showCartonColumn?`<th>${docLabel('cartonNo')}</th>`:''}${ctx.showImage?`<th>${docLabel('picture')}</th>`:''}<th>${docLabel('description')}</th><th>${docLabel('qty')}</th><th>${docLabel('unit')}</th>${showPackageColumn?`<th>${docLabel('packageDescription')}</th>`:''}${showNetColumn?`<th>${docLabel('netWeight')}</th>`:''}${showGrossColumn?`<th>${docLabel('grossWeight')}</th>`:''}${showCbmColumn?`<th>${docLabel('cbm')}</th>`:''}${showDimensionsColumn?`<th>${docLabel('packageDimensions')}</th>`:''}${showItemMarksColumn?`<th>${docLabel('shippingMarks')}</th>`:''}</tr>`;
-    const body=ctx.pdfItems.map((item,idx)=>{
-      const packageText=translatedDisplay('products',`item:${item.itemKey}:packageDescription`,item.packageDescription);
-      const markText=translatedDisplay('products',`item:${item.itemKey}:shippingMarks`,item.shippingMarks);
-      return `<tr><td>${idx+1}</td>${showCartonColumn?`<td>${escapeHTML(item.cartonNo)}</td>`:''}${ctx.showImage?`<td>${item.image?`<img class="img" src="${item.image}" alt="${escapeHTML(item.name)}">`:''}</td>`:''}<td>${ctx.productDescription(item)}</td><td>${item.qty>0?item.qty:''}</td><td>${escapeHTML(item.unit)}</td>${showPackageColumn?`<td>${translatedHTML(packageText)}</td>`:''}${showNetColumn?`<td>${itemKg(item.netWeight)}</td>`:''}${showGrossColumn?`<td>${itemKg(item.grossWeight)}</td>`:''}${showCbmColumn?`<td>${itemCbm(item.cbm)}</td>`:''}${showDimensionsColumn?`<td>${escapeHTML(item.dimensions)}</td>`:''}${showItemMarksColumn?`<td>${translatedHTML(markText)}</td>`:''}</tr>`;
-    }).join('');
+    const body=ctx.pdfItems.map((item,idx)=>{const packageText=translatedDisplay('products',`item:${item.itemKey}:packageDescription`,item.packageDescription);const markText=translatedDisplay('products',`item:${item.itemKey}:shippingMarks`,item.shippingMarks);return `<tr><td>${idx+1}</td>${showCartonColumn?`<td>${escapeHTML(item.cartonNo)}</td>`:''}${ctx.showImage?`<td>${item.image?`<img class="img" src="${item.image}" alt="${escapeHTML(item.name)}">`:''}</td>`:''}<td>${ctx.productDescription(item)}</td><td>${item.qty>0?item.qty:''}</td><td>${escapeHTML(item.unit)}</td>${showPackageColumn?`<td>${translatedHTML(packageText)}</td>`:''}${showNetColumn?`<td>${itemKg(item.netWeight)}</td>`:''}${showGrossColumn?`<td>${itemKg(item.grossWeight)}</td>`:''}${showCbmColumn?`<td>${itemCbm(item.cbm)}</td>`:''}${showDimensionsColumn?`<td>${escapeHTML(item.dimensions)}</td>`:''}${showItemMarksColumn?`<td>${translatedHTML(markText)}</td>`:''}</tr>`;}).join('');
     const products=ctx.pdfItems.length?pdfSection(docLabel('packingContents'),`<table class="products pdf-packing-table"><thead>${packingHead}</thead><tbody>${body}</tbody></table>`,'pdf-packing-goods pdf-split-block'):'';
-    const itemNetTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.netWeight)||0),0);
-    const itemGrossTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.grossWeight)||0),0);
-    const itemCbmTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.cbm)||0),0);
-    const totalQty=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.qty)||0),0);
-    const summaryNetWeight=itemNetTotal>0?`${packingMetric(itemNetTotal)} KG`:(packingMetric(get('netWeight'))?`${packingMetric(get('netWeight'))} KG`:'');
-    const summaryGrossWeight=itemGrossTotal>0?`${packingMetric(itemGrossTotal)} KG`:(packingMetric(get('grossWeight'))?`${packingMetric(get('grossWeight'))} KG`:'');
-    const summaryCbm=itemCbmTotal>0?`${packingMetric(itemCbmTotal)} m³`:(packingMetric(get('cbm'))?`${packingMetric(get('cbm'))} m³`:'');
+    const itemNetTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.netWeight)||0),0),itemGrossTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.grossWeight)||0),0),itemCbmTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.cbm)||0),0),totalQty=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.qty)||0),0);
+    const summaryNetWeight=itemNetTotal>0?`${packingMetric(itemNetTotal)} KG`:(packingMetric(get('netWeight'))?`${packingMetric(get('netWeight'))} KG`:''),summaryGrossWeight=itemGrossTotal>0?`${packingMetric(itemGrossTotal)} KG`:(packingMetric(get('grossWeight'))?`${packingMetric(get('grossWeight'))} KG`:''),summaryCbm=itemCbmTotal>0?`${packingMetric(itemCbmTotal)} m³`:(packingMetric(get('cbm'))?`${packingMetric(get('cbm'))} m³`:'');
     const customLogisticsRows=logisticsExtraRows().map(row=>[translatedHTML(row.label),translatedDisplay('logistics',`logisticsExtra:${row.id}`,row.value)]);
     const summary=pdfInfoTable([...(docFieldOn('showLogistics')?[[docLabel('cartonCount'),get('packageCount')],[docLabel('totalQuantity'),totalQty>0?totalQty:''],[docLabel('shippingMethod'),translatedDisplay('logistics','shippingMethod',get('shippingMethod'))],[docLabel('packageType'),translatedDisplay('logistics','packageType',get('packageType'))],[docLabel('netWeight'),summaryNetWeight],[docLabel('grossWeight'),summaryGrossWeight],[docLabel('cbm'),summaryCbm],[docLabel('packageDimensions'),get('packageDimensions')],[docLabel('logisticsCarrier'),get('logisticsCarrier')],[docLabel('trackingNo'),get('trackingNo')],[docLabel('blNo'),get('blNo')],[docLabel('containerNo'),get('containerNo')],[docLabel('sealNo'),get('sealNo')],[docLabel('vesselFlight'),get('vesselFlight')],[docLabel('etd'),get('etd')],[docLabel('eta'),get('eta')],...customLogisticsRows]:[]),...(docFieldOn('showRemarks')?[[docLabel('shippingMarks'),translatedDisplay('logistics','shippingMarks',get('shippingMarks'))]]:[])]);
     const summarySection=pdfSection(docLabel('cartonWeightVolume'),summary,'pdf-packing-summary');
-    if(ctx.pdfStyle==='customs_clean'){
-      return `<div class="pdf-template pdf-template-packing pdf-layout-manifest">${pdfTemplateHero('packing_list',docLabel('packingManifest'),'pdf-packing-hero')}${pdfMetaBar([[docLabel('packingListNo'),get('invoiceNo')],[docLabel('packingDate'),get('issueDate')],[docLabel('cartonCount'),get('packageCount')],[docLabel('shippingMarks'),translatedDisplay('logistics','shippingMarks',get('shippingMarks'))]])}${pdfSection(docLabel('shipperConsignee'),parties,'pdf-packing-parties')}${supplement}${products}${summarySection}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='brand_showcase'){
-      return `<div class="pdf-template pdf-template-packing pdf-layout-logistics-card">${pdfTemplateHero('packing_list',docLabel('marksAndLogistics'),'pdf-packing-hero')}<div class="pdf-proposal-grid"><main>${supplement}${products}${signature}</main><aside>${pdfValueCards([[docLabel('cartonCount'),get('packageCount')],[docLabel('totalQuantity'),totalQty>0?totalQty:''],[docLabel('netWeight'),summaryNetWeight],[docLabel('grossWeight'),summaryGrossWeight],[docLabel('cbm'),summaryCbm]])}${pdfSection(docLabel('shipperConsignee'),parties,'pdf-packing-parties')}${summarySection}</aside></div></div>`;
-    }
-    if(ctx.pdfStyle==='minimal_trade'){
-      return `<div class="pdf-template pdf-template-packing pdf-layout-ledger">${pdfTemplateHero('packing_list',docLabel('packingManifest'),'pdf-packing-hero')}${pdfMetaBar([[docLabel('packingListNo'),get('invoiceNo')],[docLabel('packingDate'),get('issueDate')],[docLabel('cartonCount'),get('packageCount')]])}${pdfSection(docLabel('shipperConsignee'),parties,'pdf-packing-parties')}${supplement}${products}${summarySection}${signature}</div>`;
-    }
-    if(ctx.pdfStyle==='formal_contract'){
-      return `<div class="pdf-template pdf-template-packing pdf-layout-certificate">${pdfTemplateHero('packing_list',docLabel('packingManifest'),'pdf-packing-hero')}${meta}${pdfSection(docLabel('shipperConsignee'),parties,'pdf-packing-parties')}${supplement}${summarySection}${products}${signature}</div>`;
-    }
-    return `<div class="pdf-template pdf-template-packing pdf-layout-classic">${pdfTemplateHero('packing_list',docLabel('packingManifest'),'pdf-packing-hero')}${meta}${pdfSection(docLabel('shipperConsignee'),parties,'pdf-packing-parties')}${supplement}${products}${summarySection}${signature}</div>`;
+    return renderPdfTemplateFamily(ctx,{
+      heroLabel:docLabel('packingManifest'),heroClass:'pdf-packing-hero',
+      metaEntries:[[docLabel('packingListNo'),get('invoiceNo')],[docLabel('packingDate'),get('issueDate')],...(docFieldOn('showLogistics')?[[docLabel('cartonCount'),get('packageCount')]]:[]),...(docFieldOn('showRemarks')?[[docLabel('shippingMarks'),translatedDisplay('logistics','shippingMarks',get('shippingMarks'))]]:[])],
+      parties,supplement,primary:products,summary:summarySection,signature:pdfSignatureSection(ctx)
+    });
   }
   const PDF_DOCUMENT_RENDERERS={
     quotation:renderQuotationPdfTemplate,
@@ -2037,24 +2117,61 @@
     const bodyRect=body.getBoundingClientRect();
     const template=body.querySelector(':scope > .pdf-template');
     if(!template)return 0;
+    // RC16.11: PDF preview uses CSS zoom. DOMRects are display-space values while
+    // clientHeight is layout-space, so comparing them directly can both miss real
+    // clipping and create false overflow. Convert every measured bottom back to
+    // logical PDF coordinates. Also do not use template scrollHeight/offsetHeight:
+    // template/theme min-height and grid stretching are visual shells, not content.
+    const displayScale=(body.clientHeight||0)>0&&bodyRect.height>0?bodyRect.height/body.clientHeight:1;
+    const scale=Number.isFinite(displayScale)&&displayScale>0?displayScale:1;
     let bottom=0;
-    const visibleNodes=[template,...template.querySelectorAll('*')];
-    visibleNodes.forEach(node=>{
+    const nodes=[...template.querySelectorAll('*')];
+    nodes.forEach(node=>{
+      if(node.hidden||node.classList?.contains('is-hidden'))return;
+      if(node.closest?.('[data-fp-brand-footer]'))return;
+      const style=window.getComputedStyle?.(node);
+      if(style&&(style.display==='none'||style.visibility==='hidden'))return;
+      // These wrappers are allowed to stretch for visual composition. Their real
+      // descendants are measured independently so wrapper min-height cannot force
+      // an artificial page break.
+      if(node.matches?.('.pdf-proposal-grid,.pdf-proposal-grid>main,.pdf-proposal-grid>aside'))return;
       const rect=node.getBoundingClientRect?.();
-      if(rect&&(rect.width||rect.height))bottom=Math.max(bottom,rect.bottom-bodyRect.top);
+      if(!rect||(rect.width<=0&&rect.height<=0))return;
+      const logicalBottom=(rect.bottom-bodyRect.top)/scale;
+      if(Number.isFinite(logicalBottom))bottom=Math.max(bottom,logicalBottom);
     });
-    return Math.max(0,bottom,template.scrollHeight||0,template.offsetHeight||0);
+    // Preserve intentional bottom spacing on the last real top-level business block.
+    const topLevel=[...template.children].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+    const last=topLevel[topLevel.length-1];
+    if(last){
+      const rect=last.getBoundingClientRect?.();
+      const style=window.getComputedStyle?.(last);
+      const marginBottom=parseFloat(style?.marginBottom||'0')||0;
+      if(rect)bottom=Math.max(bottom,(rect.bottom-bodyRect.top)/scale+marginBottom);
+    }
+    return Math.max(0,bottom);
   }
-  function pageOverflows(body,tolerance=2){
+  function logicalPdfFooterReserve(body){
+    const base=Math.max(32,Math.round((body?.clientHeight||0)*0.03));
+    const paper=body?.closest?.('#piPaper')||$('piPaper');
+    const guard=Math.max(0,Math.min(72,Number(paper?.dataset.fpPaginationGuardPx||0)||0));
+    return base+guard;
+  }
+  function pageOverflows(body,tolerance=1){
     if(!body)return false;
-    const reserve=Math.max(16,Math.round((body.clientHeight||0)*0.016));
+    const reserve=logicalPdfFooterReserve(body);
     return measuredContentHeight(body) > Math.max(0,body.clientHeight-reserve) + tolerance;
   }
   function clippedPdfNodes(body){
     if(!body)return [];
     const bodyRect=body.getBoundingClientRect();
-    const safeBottom=bodyRect.bottom-Math.max(24,Math.round(bodyRect.height*0.022));
-    return [...body.querySelectorAll('tr,.pdf-section,.info-section,.doc-section,.money-table,.signature-zone')].filter(node=>{
+    // RC16.9: use the same logical footer reserve as the paginator. The preview
+    // is CSS-scaled, so subtracting a fixed 24 *display* pixels here made the
+    // export gate much stricter than pagination (especially in landscape mode).
+    const logicalReserve=logicalPdfFooterReserve(body);
+    const displayScale=(body.clientHeight||0)>0?bodyRect.height/body.clientHeight:1;
+    const safeBottom=bodyRect.bottom-(logicalReserve*displayScale);
+    return [...body.querySelectorAll('tr,.pdf-section,.info-section,.doc-section,.money-table,.signature-zone,.pdf-logistics-section,.pdf-payment-section,.pdf-terms-section')].filter(node=>{
       if(node.hidden||node.classList?.contains('is-hidden'))return false;
       const style=window.getComputedStyle?.(node);
       if(style&&(style.display==='none'||style.visibility==='hidden'))return false;
@@ -2080,6 +2197,7 @@
     const frame=section.cloneNode(false);
     [...section.childNodes].filter(node=>node!==table).forEach(node=>frame.appendChild(node.cloneNode(true)));
     const tableClone=table.cloneNode(false);
+    table.querySelectorAll(':scope > colgroup').forEach(colgroup=>tableClone.appendChild(colgroup.cloneNode(true)));
     const thead=table.querySelector('thead');
     if(thead)tableClone.appendChild(thead.cloneNode(true));
     const tbody=document.createElement('tbody');
@@ -2096,10 +2214,14 @@
       if(pageOverflows(current.body)&&current.template.children.length>1){section.remove();current=createPage();current.template.appendChild(section);}
       return current;
     }
-    // Short business tables should stay together. Splitting a two- or three-row
-    // goods table into one row per page is harder to review than moving the
-    // complete table to the next page.
-    if(rows.length<=4){
+    // RC16.6: keep genuinely atomic short blocks together, but do not apply this
+    // rule to every 1-4 row business table. The old blanket rule pushed short
+    // quotation/PI terms onto an almost empty second page.
+    const keepWholeShort=Boolean(
+      section.matches?.('.pdf-contract-signatures,.pdf-signature-section') ||
+      section.querySelector?.('.signature-zone,.pdf-contract-signatures')
+    );
+    if(keepWholeShort&&rows.length<=4){
       current.template.appendChild(section);
       if(!pageOverflows(current.body))return current;
       section.remove();
@@ -2132,9 +2254,83 @@
     });
     return target;
   }
+  const PDF_PRODUCT_FLOW_SELECTOR='.pdf-quotation-items,.pdf-pi-goods,.pdf-contract-goods-section,.pdf-commercial-goods,.pdf-packing-goods';
+  const PDF_PRODUCT_TAIL_SELECTOR='.pdf-quote-total,.pdf-declared-total,.pdf-contract-total,.pdf-packing-summary,.pdf-total-card,.money-table,.pdf-brand-finance-row';
+  function isProductFlowChunk(node){
+    return Boolean(node?.matches?.(PDF_PRODUCT_FLOW_SELECTOR));
+  }
+  function isProductSummaryTail(node){
+    return Boolean(node?.matches?.(PDF_PRODUCT_TAIL_SELECTOR));
+  }
+  function splitProductSectionWithTail(section,tail,createPage,current){
+    const table=section.querySelector(':scope > table')||section.querySelector('table');
+    const sourceBody=table?.querySelector('tbody');
+    const rows=sourceBody?[...sourceBody.children]:[];
+    if(!table||!sourceBody||!rows.length){
+      current=appendFlowChunk(section,createPage,current);
+      return appendFlowChunk(tail,createPage,current);
+    }
+
+    // RC16.13: product rows are primary flow. Keep the final row with Summary when
+    // the pair fits, but never evict a row that already fits merely to force a very
+    // tall Summary onto the same physical page. In that case Summary gets an explicit
+    // continuation page and the product row stays where the available space is.
+    let target=current;
+    let group=null;
+    const startGroup=()=>{
+      group=cloneSectionFrame(section,table);
+      target.template.appendChild(group.frame);
+    };
+    startGroup();
+
+    rows.forEach((row,rowIndex)=>{
+      const isLast=rowIndex===rows.length-1;
+      const clone=row.cloneNode(true);
+      group.tbody.appendChild(clone);
+      if(!isLast){
+        if(!pageOverflows(target.body))return;
+        clone.remove();
+        if(!group.tbody.children.length)group.frame.remove();
+        target=createPage();
+        group=cloneSectionFrame(section,table);
+        const title=group.frame.querySelector('.doc-section');if(title&&rowIndex>0)title.dataset.continued='1';
+        target.template.appendChild(group.frame);
+        group.tbody.appendChild(clone);
+        return;
+      }
+
+      // Last row: first prove the row itself fits on the current page.
+      if(pageOverflows(target.body,1)){
+        clone.remove();
+        if(!group.tbody.children.length)group.frame.remove();
+        target=createPage();
+        group=cloneSectionFrame(section,table);
+        const title=group.frame.querySelector('.doc-section');if(title&&rowIndex>0)title.dataset.continued='1';
+        target.template.appendChild(group.frame);
+        group.tbody.appendChild(clone);
+      }
+
+      target.template.appendChild(tail);
+      if(!pageOverflows(target.body,1))return;
+
+      // Product row is valid here; only Summary does not fit. Keep the row and move
+      // the complete Summary to a dedicated continuation page instead of creating
+      // another product continuation and wasting the previous page.
+      tail.remove();
+      target=createPage();
+      target.template.appendChild(tail);
+      target.page.dataset.fpSummaryContinuation='1';
+    });
+    return target;
+  }
   function appendFlowChunk(chunk,createPage,current){
-    const hasRows=Boolean(chunk.querySelector?.('table tbody tr'));
-    if(hasRows){
+    // Only direct/top-level tables are safe for row-by-row splitting. RC16.8
+    // treated any nested table as splittable; brand showcase finance/card grids
+    // contain several nested tables, so cloning the outer frame duplicated rows
+    // and could turn a stable 2-page preview into 4-6 pages.
+    const directTable=chunk.matches?.('table')?chunk:chunk.querySelector?.(':scope > table');
+    const hasSplittableRows=Boolean(directTable?.querySelector?.('tbody tr'));
+    if(hasSplittableRows){
       const probe=chunk.cloneNode(true);
       current.template.appendChild(probe);
       if(!pageOverflows(current.body))return current;
@@ -2153,11 +2349,185 @@
     current.template.appendChild(chunk);
     return current;
   }
+  function repairOrphanProductSummaries(documentShell){
+    const pages=[...documentShell.querySelectorAll('.pdf-page')];
+    let repaired=false;
+    for(let index=1;index<pages.length;index+=1){
+      const page=pages[index],previous=pages[index-1];
+      const template=page.querySelector('.pdf-template'),previousTemplate=previous.querySelector('.pdf-template');
+      const body=page.querySelector('.pdf-page-body');
+      if(!template||!previousTemplate||!body)continue;
+      const visible=[...template.children].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+      const tail=visible[0];
+      if(!isProductSummaryTail(tail))continue;
+      const previousFlows=[...previousTemplate.children].filter(isProductFlowChunk);
+      const sourceSection=previousFlows[previousFlows.length-1];
+      const sourceTable=sourceSection?.querySelector?.(':scope > table')||sourceSection?.querySelector?.('table');
+      const sourceBody=sourceTable?.querySelector?.('tbody');
+      const row=sourceBody?.lastElementChild;
+      if(!sourceSection||!sourceTable||!sourceBody||!row)continue;
+      const continuation=cloneSectionFrame(sourceSection,sourceTable);
+      const title=continuation.frame.querySelector('.doc-section');
+      if(title)title.dataset.continued='1';
+      continuation.tbody.appendChild(row);
+      template.insertBefore(continuation.frame,tail);
+      if(pageOverflows(body,1)){
+        continuation.frame.remove();sourceBody.appendChild(row);continue;
+      }
+      if(!sourceBody.children.length)sourceSection.remove();
+      page.dataset.fpOrphanSummaryRepaired='1';
+      repaired=true;
+    }
+    return repaired;
+  }
+
+  function pageUtilizationRatio(body){
+    if(!body)return 0;
+    const safeHeight=Math.max(1,(body.clientHeight||0)-logicalPdfFooterReserve(body));
+    return measuredContentHeight(body)/safeHeight;
+  }
+  function visiblePdfBusinessChildren(template){
+    return [...(template?.children||[])].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+  }
+  function firstProductPageNumber(documentShell){
+    const pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
+    const index=pages.findIndex(page=>Boolean(page.querySelector(PDF_PRODUCT_FLOW_SELECTOR)));
+    return index<0?0:index+1;
+  }
+  function pullLeadingProductRowsBackward(previous,next,targetUtilization=.74){
+    const previousBody=previous?.querySelector('.pdf-page-body'),nextBody=next?.querySelector('.pdf-page-body');
+    const previousTemplate=previousBody?.querySelector('.pdf-template'),nextTemplate=nextBody?.querySelector('.pdf-template');
+    if(!previousBody||!nextBody||!previousTemplate||!nextTemplate||previous.dataset.fpCoreProductFitBlocked==='1')return false;
+    const nextVisible=visiblePdfBusinessChildren(nextTemplate);
+    const sourceSection=nextVisible.find(isProductFlowChunk);
+    if(!sourceSection||nextVisible[0]!==sourceSection)return false;
+    const sourceTable=sourceSection.querySelector?.(':scope > table')||sourceSection.querySelector?.('table');
+    const sourceBody=sourceTable?.querySelector?.('tbody');
+    if(!sourceTable||!sourceBody||!sourceBody.children.length)return false;
+    const summary=sourceSection.nextElementSibling&&isProductSummaryTail(sourceSection.nextElementSibling)?sourceSection.nextElementSibling:null;
+    // Reuse an existing product continuation on the previous page when possible.
+    // Creating a second table repeats headers and can itself manufacture a sparse page.
+    const previousFlows=visiblePdfBusinessChildren(previousTemplate).filter(isProductFlowChunk);
+    const existingSection=previousFlows[previousFlows.length-1];
+    const existingTable=existingSection?.querySelector?.(':scope > table')||existingSection?.querySelector?.('table');
+    const existingBody=existingTable?.querySelector?.('tbody');
+    const continuation=existingBody?{frame:existingSection,table:existingTable,tbody:existingBody,reused:true}:cloneSectionFrame(sourceSection,sourceTable);
+    if(!continuation.reused){const title=continuation.frame.querySelector('.doc-section');if(title)title.dataset.continued='1';previousTemplate.appendChild(continuation.frame);}
+    let moved=0;
+    while(sourceBody.children.length>1&&pageUtilizationRatio(previousBody)<targetUtilization){
+      const row=sourceBody.firstElementChild;
+      continuation.tbody.appendChild(row);
+      if(pageOverflows(previousBody,1)){
+        sourceBody.insertBefore(row,sourceBody.firstElementChild);
+        break;
+      }
+      moved+=1;
+    }
+    // If one final row remains with a compact Summary, move the semantic pair only
+    // when both fit. A tall Packing Summary is intentionally allowed to continue.
+    if(sourceBody.children.length===1&&summary&&pageUtilizationRatio(previousBody)<targetUtilization){
+      const row=sourceBody.firstElementChild;
+      continuation.tbody.appendChild(row);
+      previousTemplate.appendChild(summary);
+      if(pageOverflows(previousBody,1)){
+        nextTemplate.insertBefore(summary,sourceSection.nextElementSibling);
+        sourceBody.appendChild(row);
+      }else moved+=1;
+    }
+    if(!moved){if(!continuation.reused)continuation.frame.remove();previous.dataset.fpCoreProductFitBlocked='1';return false;}
+    if(!sourceBody.children.length)sourceSection.remove();
+    if(!continuation.reused&&!continuation.tbody.children.length)continuation.frame.remove();
+    previous.dataset.fpPrimaryFlowPulled='1';next.dataset.fpPrimaryFlowPulled='1';
+    return true;
+  }
+  function rebalanceSparseProductContinuationPages(documentShell){
+    const pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
+    if(pages.length<3)return false;
+    let changed=false;
+    const TRIGGER=.36,TARGET=.52,MIN_PREVIOUS=.48;
+    for(let index=1;index<pages.length-1;index+=1){
+      const current=pages[index],previous=pages[index-1];
+      const currentBody=current.querySelector('.pdf-page-body'),previousBody=previous.querySelector('.pdf-page-body');
+      const currentTemplate=currentBody?.querySelector('.pdf-template'),previousTemplate=previousBody?.querySelector('.pdf-template');
+      if(!currentBody||!previousBody||!currentTemplate||!previousTemplate||pageUtilizationRatio(currentBody)>=TRIGGER)continue;
+      const currentFlows=visiblePdfBusinessChildren(currentTemplate).filter(isProductFlowChunk);
+      const previousFlows=visiblePdfBusinessChildren(previousTemplate).filter(isProductFlowChunk);
+      const targetSection=currentFlows[0],sourceSection=previousFlows[previousFlows.length-1];
+      if(!targetSection||!sourceSection)continue;
+      const targetTable=targetSection.querySelector(':scope > table')||targetSection.querySelector('table');
+      const sourceTable=sourceSection.querySelector(':scope > table')||sourceSection.querySelector('table');
+      const targetBody=targetTable?.querySelector('tbody'),sourceBody=sourceTable?.querySelector('tbody');
+      if(!targetBody||!sourceBody||!sourceBody.children.length)continue;
+      let moved=0;
+      while(sourceBody.children.length>1&&pageUtilizationRatio(currentBody)<TARGET&&pageUtilizationRatio(previousBody)>MIN_PREVIOUS){
+        const row=sourceBody.lastElementChild;
+        targetBody.insertBefore(row,targetBody.firstElementChild);
+        if(pageOverflows(currentBody,1)){
+          sourceBody.appendChild(row);
+          break;
+        }
+        moved+=1;
+      }
+      if(moved){
+        current.dataset.fpProductContinuationBalanced='1';
+        previous.dataset.fpProductContinuationBalanced='1';
+        changed=true;
+      }
+    }
+    if(changed)documentShell.dataset.fpProductContinuationBalanced='1';
+    return changed;
+  }
+  function rebalanceSparseIntermediatePages(documentShell){
+    let changed=false;
+    let pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
+    const TARGET=.74,TRIGGER=.66;
+    for(let index=0;index<pages.length-1;index+=1){
+      const current=pages[index],next=pages[index+1];
+      const currentBody=current.querySelector('.pdf-page-body'),nextBody=next.querySelector('.pdf-page-body');
+      const currentTemplate=currentBody?.querySelector('.pdf-template'),nextTemplate=nextBody?.querySelector('.pdf-template');
+      if(!currentBody||!nextBody||!currentTemplate||!nextTemplate)continue;
+      // Product-continuation balancing owns row distribution across this pair.
+      // Do not immediately pull the same row back and recreate the sparse page.
+      if(current.dataset.fpProductContinuationBalanced==='1'||next.dataset.fpProductContinuationBalanced==='1')continue;
+      if(pageUtilizationRatio(currentBody)>=TRIGGER)continue;
+      let pairChanged=false;
+      for(let pass=0;pass<8&&pageUtilizationRatio(currentBody)<TARGET;pass+=1){
+        const visible=visiblePdfBusinessChildren(nextTemplate);
+        const node=visible[0];
+        if(!node)break;
+        if(isProductFlowChunk(node)){
+          if(!pullLeadingProductRowsBackward(current,next,TARGET))break;
+          pairChanged=true;changed=true;continue;
+        }
+        if(isProductSummaryTail(node)){
+          // Explicit summary continuation is valid; do not drag a tall summary back
+          // just to satisfy a density target and recreate product/page churn.
+          if(next.dataset.fpSummaryContinuation==='1')break;
+          if(!currentTemplate.querySelector(PDF_PRODUCT_FLOW_SELECTOR))break;
+          currentTemplate.appendChild(node);
+          if(pageOverflows(currentBody,1)){nextTemplate.insertBefore(node,nextTemplate.firstElementChild);break;}
+          pairChanged=true;changed=true;continue;
+        }
+        if(node.matches?.('.pdf-template-hero,.doc-hero'))break;
+        currentTemplate.appendChild(node);
+        if(pageOverflows(currentBody,1)){
+          nextTemplate.insertBefore(node,nextTemplate.firstElementChild);
+          break;
+        }
+        pairChanged=true;changed=true;
+      }
+      if(pairChanged&&!pageHasContent(next)){next.remove();pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);index-=1;}
+    }
+    if(changed)documentShell.dataset.fpIntermediateBalanced='1';
+    return changed;
+  }
   function rebalanceLowContentTail(documentShell){
     let pages=[...documentShell.querySelectorAll('.pdf-page')];
     if(pages.length<2)return;
-    // First try to pull the leading blocks of the last page back onto the
-    // previous page. This can remove a nearly empty signature-only tail page.
+    // RC16.11: tail compaction must not greedily fill the previous page and leave
+    // a 5-10% continuation page. Only pull a block when it removes the tail page
+    // completely, or when the remaining tail still keeps a useful reading area.
+    const MIN_TAIL_UTILIZATION=.22;
     for(let pass=0;pass<4&&pages.length>1;pass+=1){
       const last=pages[pages.length-1],previous=pages[pages.length-2];
       const lastBody=last.querySelector('.pdf-page-body'),previousBody=previous.querySelector('.pdf-page-body');
@@ -2166,8 +2536,23 @@
       let moved=false;
       while(lastTemplate.firstElementChild){
         const node=lastTemplate.firstElementChild;
+        // Never pull a product Total/Summary backward when real business content
+        // still follows it on the tail page. Doing so can make the final page even
+        // emptier (for example 37% -> 20%) while separating the visual close of the
+        // product flow from the terms/logistics that follow.
+        if(isProductSummaryTail(node)){
+          const trailing=[...lastTemplate.children].slice(1).filter(item=>!isPdfBrandChrome(item)&&!item.hidden&&!item.classList?.contains('is-hidden'));
+          if(trailing.length)break;
+        }
+        const beforeTailUtil=pageUtilizationRatio(lastBody);
         previousTemplate.appendChild(node);
         if(pageOverflows(previousBody,1)){
+          lastTemplate.insertBefore(node,lastTemplate.firstChild);
+          break;
+        }
+        const tailStillHasContent=pageHasContent(last);
+        const afterTailUtil=tailStillHasContent?pageUtilizationRatio(lastBody):0;
+        if(tailStillHasContent&&beforeTailUtil>=MIN_TAIL_UTILIZATION&&afterTailUtil<MIN_TAIL_UTILIZATION){
           lastTemplate.insertBefore(node,lastTemplate.firstChild);
           break;
         }
@@ -2181,6 +2566,79 @@
       if(!moved)break;
       pages=[...documentShell.querySelectorAll('.pdf-page')];
     }
+  }
+  function rebalanceSparseFinalPage(documentShell){
+    let pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
+    if(pages.length<2)return false;
+    const MIN_TAIL=.30,TARGET_TAIL=.38,MIN_PREVIOUS=.48;
+    const last=pages[pages.length-1],previous=pages[pages.length-2];
+    const lastBody=last.querySelector('.pdf-page-body'),previousBody=previous.querySelector('.pdf-page-body');
+    const lastTemplate=lastBody?.querySelector('.pdf-template'),previousTemplate=previousBody?.querySelector('.pdf-template');
+    if(!lastBody||!previousBody||!lastTemplate||!previousTemplate||pageUtilizationRatio(lastBody)>=MIN_TAIL)return false;
+    let moved=false;
+    for(let pass=0;pass<4&&pageUtilizationRatio(lastBody)<TARGET_TAIL;pass+=1){
+      const candidates=[...previousTemplate.children].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+      const candidate=candidates[candidates.length-1];
+      if(!candidate||candidate.matches?.('.pdf-template-hero,.doc-hero')||isProductSummaryTail(candidate))break;
+      if(pageUtilizationRatio(previousBody)<MIN_PREVIOUS)break;
+      const marker=lastTemplate.firstElementChild;
+      lastTemplate.insertBefore(candidate,marker);
+      if(pageOverflows(lastBody,1)||!pageHasContent(previous)){
+        previousTemplate.appendChild(candidate);
+        break;
+      }
+      moved=true;
+    }
+    if(moved){last.dataset.fpSparseTailBalanced='1';previous.dataset.fpSparseTailBalanced='1';}
+    return moved;
+  }
+  function rebalanceSparseTailWithProductContext(documentShell){
+    const pages=[...documentShell.querySelectorAll('.pdf-page')].filter(pageHasContent);
+    if(pages.length<2)return false;
+    const last=pages[pages.length-1],previous=pages[pages.length-2];
+    const lastBody=last.querySelector('.pdf-page-body'),previousBody=previous.querySelector('.pdf-page-body');
+    const lastTemplate=lastBody?.querySelector('.pdf-template'),previousTemplate=previousBody?.querySelector('.pdf-template');
+    if(!lastBody||!previousBody||!lastTemplate||!previousTemplate||pageUtilizationRatio(lastBody)>=.32)return false;
+    const previousVisible=[...previousTemplate.children].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+    let summaryIndex=-1;
+    for(let i=previousVisible.length-1;i>=0;i-=1){if(isProductSummaryTail(previousVisible[i])){summaryIndex=i;break;}}
+    if(summaryIndex<0)return false;
+    let productIndex=-1;
+    for(let i=summaryIndex-1;i>=0;i-=1){if(isProductFlowChunk(previousVisible[i])){productIndex=i;break;}}
+    if(productIndex<0)return false;
+    const sourceSection=previousVisible[productIndex],summary=previousVisible[summaryIndex];
+    const sourceTable=sourceSection.querySelector?.(':scope > table')||sourceSection.querySelector?.('table');
+    const sourceBody=sourceTable?.querySelector?.('tbody');
+    if(!sourceTable||!sourceBody||sourceBody.children.length<2)return false;
+    const continuation=cloneSectionFrame(sourceSection,sourceTable);
+    const title=continuation.frame.querySelector('.doc-section');if(title)title.dataset.continued='1';
+    const firstTail=lastTemplate.firstElementChild;
+    const summaryNext=summary.nextSibling;
+    lastTemplate.insertBefore(continuation.frame,firstTail);
+    lastTemplate.insertBefore(summary,firstTail);
+    let moved=0;
+    // Move complete trailing product rows in natural order until the sparse tail
+    // becomes useful. Keep enough content on the previous page and never split a row.
+    while(sourceBody.children.length>1&&moved<5&&(moved===0||pageUtilizationRatio(lastBody)<.44)&&pageUtilizationRatio(previousBody)>.52){
+      const row=sourceBody.lastElementChild;
+      continuation.tbody.insertBefore(row,continuation.tbody.firstElementChild);
+      if(pageOverflows(lastBody,1)){
+        sourceBody.appendChild(row);
+        break;
+      }
+      moved+=1;
+    }
+    if(!moved){
+      continuation.frame.remove();
+      if(summaryNext&&summaryNext.parentNode===previousTemplate)previousTemplate.insertBefore(summary,summaryNext);else previousTemplate.appendChild(summary);
+      return false;
+    }
+    // The continuation must precede its summary; insertBefore(summary, firstTail)
+    // above placed summary after continuation only when firstTail was stable. Repair
+    // explicitly so template changes cannot invert the semantic order.
+    if(continuation.frame.nextElementSibling!==summary)continuation.frame.insertAdjacentElement('afterend',summary);
+    last.dataset.fpProductTailBalanced='1';previous.dataset.fpProductTailBalanced='1';
+    return true;
   }
   function paginationSnapshot(root){
     if(!root)return {rowCount:0,modules:{}};
@@ -2198,24 +2656,106 @@
   function validatePaginatedDocument(documentShell,expected){
     const pages=[...documentShell.querySelectorAll('.pdf-page')];
     const actual=paginationSnapshot(documentShell);
-    const overflowPages=[];
+    const overflowPages=[],clipBoundaryPages=[],clipBoundaryNodes={};
     pages.forEach((page,index)=>{
       const body=page.querySelector('.pdf-page-body');
       if(pageOverflows(body,1))overflowPages.push(index+1);
+      const clips=clippedPdfNodes(body);
+      if(clips.length){clipBoundaryPages.push(index+1);clipBoundaryNodes[index+1]=clips.length;}
     });
     const missingModules=Object.entries(expected?.modules||{}).filter(([key,required])=>required&&!actual.modules[key]).map(([key])=>key);
+    const semanticViolations=[];
+    pages.forEach((page,index)=>{
+      if(index===0)return;
+      const template=page.querySelector('.pdf-template');
+      const visible=[...(template?.children||[])].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+      const first=visible[0];
+      if(!isProductSummaryTail(first))return;
+      if(page.dataset.fpSummaryContinuation==='1')return;
+      const previousTemplate=pages[index-1]?.querySelector('.pdf-template');
+      const previousVisible=[...(previousTemplate?.children||[])].filter(node=>!isPdfBrandChrome(node)&&!node.hidden&&!node.classList?.contains('is-hidden'));
+      if(previousVisible.some(isProductFlowChunk))semanticViolations.push(`page-${index+1}:orphan-product-summary`);
+    });
+    pages.forEach((page,index)=>{if(page.dataset.fpSemanticDegraded)semanticViolations.push(`page-${index+1}:${page.dataset.fpSemanticDegraded}`);});
+    // RC16.13: quality is part of pagination validity. No clipping is necessary but
+    // not sufficient; sparse intermediate pages and delayed core goods are defects.
+    const utilization=pages.map(page=>pageUtilizationRatio(page.querySelector('.pdf-page-body')));
+    const qualityViolations=[];
+    utilization.forEach((ratio,index)=>{
+      if(index<pages.length-1&&ratio<.34)qualityViolations.push(`page-${index+1}:sparse-nonfinal-${Math.round(ratio*100)}`);
+    });
+    const firstProductPage=firstProductPageNumber(documentShell);
+    if(firstProductPage>1){
+      const prior=utilization.slice(0,firstProductPage-1);
+      const sparsePrior=prior.findIndex(ratio=>ratio<.66);
+      if(sparsePrior>=0)qualityViolations.push(`page-${sparsePrior+1}:core-products-delayed`);
+    }
     const report={
-      valid:overflowPages.length===0&&actual.rowCount===(expected?.rowCount||0)&&missingModules.length===0,
+      valid:overflowPages.length===0&&clipBoundaryPages.length===0&&actual.rowCount===(expected?.rowCount||0)&&missingModules.length===0&&semanticViolations.length===0&&qualityViolations.length===0,
       expectedRows:expected?.rowCount||0,
       actualRows:actual.rowCount,
       overflowPages,
+      clipBoundaryPages,
+      clipBoundaryNodes,
       missingModules,
+      semanticViolations,
+      qualityViolations,
+      pageUtilization:utilization.map(ratio=>Math.round(ratio*100)),
+      firstProductPage,
       pageCount:pages.length
     };
     documentShell.dataset.fpPaginationValid=report.valid?'1':'0';
     documentShell.dataset.fpPaginationReport=JSON.stringify(report);
     window.__fpLastPaginationReport=report;
     return report;
+  }
+  function normalizeProductSummaryOrder(template){
+    if(!template)return false;
+    const children=[...template.children];
+    const productIndex=children.findIndex(isProductFlowChunk);
+    if(productIndex<0)return false;
+    const tailIndex=children.findIndex((node,index)=>index>productIndex&&isProductSummaryTail(node));
+    if(tailIndex<0||tailIndex===productIndex+1)return false;
+    const tail=children[tailIndex];
+    const product=children[productIndex];
+    product.insertAdjacentElement('afterend',tail);
+    tail.dataset.fpSummaryBoundToProducts='1';
+    return true;
+  }
+
+  function linearizeOversizedNestedLayouts(template,body){
+    if(!template||!body)return false;
+    let changed=false;
+    [...template.children].forEach(chunk=>{
+      if(!chunk.matches?.('.pdf-proposal-grid'))return;
+      const main=chunk.querySelector(':scope > main'),aside=chunk.querySelector(':scope > aside');
+      const nestedRows=chunk.querySelectorAll('table tbody tr').length;
+      // Nested tables cannot be handed to splitTableSection safely. For a small
+      // showcase keep the two-column card intact; for a long table or an already
+      // overflowing page, linearize before the generic paginator sees it.
+      const mustLinearize=nestedRows>6||pageOverflows(body,1)||Boolean(main&&main.scrollHeight>main.clientHeight+2);
+      if(!mustLinearize)return;
+      const mainNodes=[...(main?.children||[])],asideNodes=[...(aside?.children||[])];
+      if(!mainNodes.length&&!asideNodes.length)return;
+      const productIndex=mainNodes.findIndex(isProductFlowChunk);
+      let nodes=[];
+      if(productIndex>=0){
+        const beforeProduct=mainNodes.slice(0,productIndex);
+        const product=mainNodes[productIndex];
+        const afterProduct=mainNodes.slice(productIndex+1);
+        const asideTails=asideNodes.filter(isProductSummaryTail);
+        const asideContext=asideNodes.filter(node=>!asideTails.includes(node));
+        // Reading order for a degraded multi-page showcase: document context
+        // first, then the complete product flow and its totals/packing summary,
+        // then declarations/signatures. This avoids a final page containing only
+        // context cards after the business summary and usually saves one page.
+        nodes=[...beforeProduct,...asideContext,product,...asideTails,...afterProduct];
+      }else nodes=[...mainNodes,...asideNodes];
+      nodes.forEach(node=>{node.dataset.fpLinearizedFrom='proposal-grid';template.insertBefore(node,chunk)});
+      chunk.remove();changed=true;
+    });
+    if(changed)template.classList.add('fp-paginated-linear-layout');
+    return changed;
   }
   function paginateCurrentPreview(){
     const paper=$('piPaper');
@@ -2224,6 +2764,14 @@
     const firstBody=firstPage?.querySelector('.pdf-page-body');
     const firstTemplate=firstBody?.querySelector('.pdf-template');
     if(!paper||!documentShell||!firstBody||!firstTemplate||documentShell.dataset.paginated==='1')return;
+    // RC16.9: two-column showcase layouts contain nested product tables. The generic
+    // table splitter only supports top-level flow sections. If the showcase no
+    // longer fits one physical page, flatten its main/aside children into normal
+    // flow chunks before pagination. This preserves every row and prevents nested
+    // table duplication/clipping while keeping the two-column design for true
+    // one-page showcase documents.
+    linearizeOversizedNestedLayouts(firstTemplate,firstBody);
+    normalizeProductSummaryOrder(firstTemplate);
     const expected=paginationSnapshot(firstTemplate);
     const templateClass=firstTemplate.className||'pdf-template';
     const chunks=[...firstTemplate.children];
@@ -2236,21 +2784,45 @@
       return page;
     };
     let current=createPage();
-    chunks.forEach(chunk=>{
+    for(let chunkIndex=0;chunkIndex<chunks.length;chunkIndex+=1){
+      const chunk=chunks[chunkIndex];
       if(chunk.matches?.('.pdf-template-hero,.doc-hero')&&pageHasContent(current))current=createPage();
+      const next=chunks[chunkIndex+1];
+      if(isProductFlowChunk(chunk)&&isProductSummaryTail(next)){
+        current=splitProductSectionWithTail(chunk,next,createPage,current);
+        chunkIndex+=1;
+        continue;
+      }
       current=appendFlowChunk(chunk,createPage,current);
-    });
+    }
     [...documentShell.querySelectorAll('.pdf-page')].forEach(page=>{
       if(!pageHasContent(page))page.remove();
     });
     rebalanceLowContentTail(documentShell);
+    rebalanceSparseProductContinuationPages(documentShell);
+    // RC16.13: compose intermediate pages too. A technically valid but half-empty
+    // non-final page is still a broken document distribution.
+    rebalanceSparseIntermediatePages(documentShell);
+    repairOrphanProductSummaries(documentShell);
+    // Repair semantic product-summary adjacency after generic tail compaction.
+    // Do not run a second generic rebalance afterwards: it can pull the repaired
+    // continuation row back to the previous page and orphan the summary again.
+    repairOrphanProductSummaries(documentShell);
+    // If greedy forward packing leaves a nearly empty final page, move complete
+    // trailing business blocks from the previous page into the tail. This improves
+    // visual balance without moving a Total/Summary away from its product flow.
+    rebalanceSparseFinalPage(documentShell);
+    repairOrphanProductSummaries(documentShell);
+    rebalanceSparseTailWithProductContext(documentShell);
+    repairOrphanProductSummaries(documentShell);
     [...documentShell.querySelectorAll('.pdf-page')].forEach(page=>{
       const body=page.querySelector('.pdf-page-body');
       page.dataset.fpContentHeight=String(Math.round(measuredContentHeight(body)));
       page.dataset.fpUsableHeight=String(Math.round(body?.clientHeight||0));
-      page.dataset.fpUtilization=String(Math.round((measuredContentHeight(body)/Math.max(1,body?.clientHeight||1))*100));
+      page.dataset.fpUtilization=String(Math.round(pageUtilizationRatio(body)*100));
     });
     documentShell.dataset.paginated='1';
+    documentShell.dataset.fpPaginationExpected=JSON.stringify(expected);
     validatePaginatedDocument(documentShell,expected);
     updatePdfPageNumbers();
   }
@@ -2268,35 +2840,203 @@
     const scale=Math.min(1,Math.max(.28,available/pageWidthPx));
     paper.style.setProperty('--fp-preview-scale',String(scale));
   }
-  function renderPreview(){
+  function applyPrePaginationGovernance(ctx){
     const paper=$('piPaper');
-    const paperSpec=resolveDocumentPaperSpec();
-    applyPdfPaperSpec(paper,paperSpec);
-    paper.dataset.fpRenderGeneration=String((Number(paper.dataset.fpRenderGeneration)||0)+1);
+    if(!paper||!ctx)return;
+    const count=Array.isArray(ctx.pdfItems)?ctx.pdfItems.length:itemRows().filter(item=>item.name).length;
+    const imageOn=Boolean(ctx.showImage);
+    const type=ctx.documentType||getDocumentType();
+    const mode=get('docMode')||'ecommerce';
+    const columns=type==='packing_list'?9:(type==='commercial_invoice'?10:(ctx.showMoneyColumns?7:5));
+    const recommendation=type==='packing_list'?'landscape':(type==='sales_contract'&&count>12?'landscape':(count>=10||columns>=11||(imageOn&&count>=6)?'landscape':'portrait'));
+    paper.dataset.fpR13a6='1';
+    paper.dataset.fpDocumentType=type;
+    paper.dataset.fpDocumentMode=mode;
+    paper.dataset.fpItemCount=String(count);
+    paper.dataset.fpProductColumns=String(columns);
+    paper.dataset.fpRecommendedPaper=recommendation;
+    paper.dataset.fpSelectedPaper=paperOrientationPreference();
+    paper.classList.toggle('fp-r13a6-dense-items',count>=7);
+    paper.classList.toggle('fp-r13a6-very-dense-items',count>=12);
+    paper.classList.toggle('fp-r13a6-product-images',imageOn);
+    paper.classList.toggle('fp-r13a6-portrait-recommended',recommendation==='portrait');
+    paper.classList.toggle('fp-r13a6-landscape-recommended',recommendation==='landscape');
+    document.body.dataset.fpRecommendedPaper=recommendation;
+    document.body.dataset.fpDocumentType=type;
+    document.body.dataset.fpDocumentMode=mode;
+    document.body.dataset.huidiStablePagination='1';
+  }
+  let paginationStabilityToken=0;
+  function schedulePaginationStabilityCheck(generation,stabilityPass=0,balancePass=0){
+    const paper=$('piPaper');if(!paper)return;
+    const token=++paginationStabilityToken;
+    paper.dataset.fpPaginationStable='pending';
+    const verify=async()=>{
+      try{await document.fonts?.ready;}catch(_){ }
+      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      if(token!==paginationStabilityToken||!paper.isConnected||String(paper.dataset.fpRenderGeneration||'')!==String(generation||''))return;
+      const pages=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page));
+      const overflowPages=[];
+      const clipBoundaryPages=[];
+      const clipOvershootByPage={};
+      const geometryDriftPages=[];
+      pages.forEach((page,index)=>{
+        const body=page.querySelector('.pdf-page-body');
+        const measured=Math.round(measuredContentHeight(body));
+        const recorded=Number(page.dataset.fpContentHeight||0);
+        if(pageOverflows(body,1))overflowPages.push(index+1);
+        const clips=clippedPdfNodes(body);
+        if(clips.length){
+          clipBoundaryPages.push(index+1);
+          const bodyRect=body.getBoundingClientRect();
+          const scale=(body.clientHeight||0)>0?bodyRect.height/body.clientHeight:1;
+          const safeBottom=bodyRect.bottom-(logicalPdfFooterReserve(body)*scale);
+          clipOvershootByPage[index+1]=Math.max(...clips.map(node=>Math.max(0,(node.getBoundingClientRect().bottom-safeBottom)/Math.max(.01,scale))));
+        }
+        // Geometry drift is diagnostic only. A font/label can legitimately settle
+        // by a few pixels without invalidating pagination; retrying on every benign
+        // delta caused duplicate render generations and page-count instability.
+        if(recorded&&Math.abs(measured-recorded)>8)geometryDriftPages.push(index+1);
+      });
+      if((overflowPages.length||clipBoundaryPages.length)&&stabilityPass<2){
+        // RC16.14: preview and formal export share the same safety contract. A
+        // complete row/section crossing the footer boundary is a hard pagination
+        // defect even when the aggregate measured height still fits. Convert both
+        // late overflow and clip-boundary overshoot into one bounded logical guard.
+        let requiredGuard=0;
+        pages.forEach((page,index)=>{
+          const body=page.querySelector('.pdf-page-body');if(!body)return;
+          const baseReserve=Math.max(32,Math.round((body.clientHeight||0)*0.03));
+          const currentGuard=Math.max(0,Number(paper.dataset.fpPaginationGuardPx||0)||0);
+          const excess=measuredContentHeight(body)-Math.max(0,body.clientHeight-baseReserve-currentGuard);
+          const recorded=Number(page.dataset.fpContentHeight||0);
+          const drift=recorded?Math.max(0,measuredContentHeight(body)-recorded):0;
+          const clipOvershoot=Math.max(0,Number(clipOvershootByPage[index+1]||0));
+          if(overflowPages.includes(index+1)||clipBoundaryPages.includes(index+1))requiredGuard=Math.max(requiredGuard,currentGuard+Math.ceil(Math.max(12,excess+8,drift+4,clipOvershoot+10)));
+        });
+        paper.dataset.fpPaginationGuardPx=String(Math.min(72,requiredGuard));
+        paper.dataset.fpPaginationStable='retry';
+        renderPreview({stabilityPass:stabilityPass+1,stabilitySource:clipBoundaryPages.length?'post-layout-clip':'post-layout-overflow'});
+        return;
+      }
+      const shell=paper.querySelector('.pdf-document');
+      if(shell&&!overflowPages.length&&balancePass<3){
+        // RC16.11: run the visual tail balance again only after fonts/theme geometry
+        // has actually settled. The first pagination frame can look full and later
+        // relax into a 20-30% orphan tail; final-geometry balancing fixes that without
+        // forcing an additional full preview render.
+        const movedContinuation=rebalanceSparseProductContinuationPages(shell);
+        const movedIntermediate=rebalanceSparseIntermediatePages(shell);
+        repairOrphanProductSummaries(shell);
+        const movedSparse=rebalanceSparseFinalPage(shell);
+        repairOrphanProductSummaries(shell);
+        const movedProduct=rebalanceSparseTailWithProductContext(shell);
+        repairOrphanProductSummaries(shell);
+        if(movedContinuation||movedIntermediate||movedSparse||movedProduct){
+          updatePdfPageNumbers();
+          [...shell.querySelectorAll('.pdf-page')].forEach(page=>{const body=page.querySelector('.pdf-page-body');page.dataset.fpContentHeight=String(Math.round(measuredContentHeight(body)));page.dataset.fpUtilization=String(Math.round(pageUtilizationRatio(body)*100));});
+          schedulePaginationStabilityCheck(generation,stabilityPass,balancePass+1);
+          return;
+        }
+      }
+      let expected={rowCount:0,modules:{}};
+      try{expected=JSON.parse(shell?.dataset.fpPaginationExpected||'{}')}catch(_){ }
+      const finalReport=shell?validatePaginatedDocument(shell,expected):{valid:false,overflowPages,clipBoundaryPages};
+      finalReport.stabilityDriftPages=geometryDriftPages;
+      finalReport.stabilityClipBoundaryPages=clipBoundaryPages;
+      if(overflowPages.length||clipBoundaryPages.length||!finalReport.valid){
+        paper.dataset.fpPaginationStable='0';
+        window.__fpLastPaginationReport=finalReport;
+        if(shell){shell.dataset.fpPaginationValid='0';shell.dataset.fpPaginationReport=JSON.stringify(finalReport);}
+        return;
+      }
+      paper.dataset.fpPaginationStable='1';
+      window.__fpLastPaginationReport=finalReport;
+      if(shell){shell.dataset.fpPaginationValid='1';shell.dataset.fpPaginationReport=JSON.stringify(finalReport);}
+      pages.forEach(page=>{const body=page.querySelector('.pdf-page-body');page.dataset.fpContentHeight=String(Math.round(measuredContentHeight(body)));page.dataset.fpUtilization=String(Math.round(pageUtilizationRatio(body)*100));});
+    };
+    setTimeout(verify,0);
+  }
+  let previewInputTimer=0;
+  let previewInputPending=false;
+  function pdfSnapshotExportActive(){return document.documentElement.dataset.huidiPdfExportBusy==='1'||document.documentElement.dataset.huidiPdfSnapshotExport==='1';}
+  function modeTransitionActive(){return document.documentElement.dataset.huidiModeTransition==='1';}
+  const schedulePreviewRender=(delay=160)=>{
+    clearTimeout(previewInputTimer);
+    previewInputPending=true;
+    const paper=$('piPaper');
+    if(pdfSnapshotExportActive()){if(paper)paper.dataset.fpPreviewDeferredDuringExport='1';return;}
+    if(modeTransitionActive()){if(paper)paper.dataset.fpPreviewDeferredDuringMode='1';return;}
+    previewInputTimer=setTimeout(()=>{previewInputTimer=0;previewInputPending=false;renderPdfWhenVisible();},Math.max(0,delay));
+  };
+  function renderPreview(options={}){
+    if(previewInputTimer){clearTimeout(previewInputTimer);previewInputTimer=0;}
+    previewInputPending=false;
+    const paper=$('piPaper');
+    if(!paper)return false;
+    if(pdfSnapshotExportActive()&&!options?.allowDuringExport){paper.dataset.fpPreviewDeferredDuringExport='1';return true;}
+    if(modeTransitionActive()&&!options?.allowDuringMode){paper.dataset.fpPreviewDeferredDuringMode='1';return true;}
+    const previousHtml=paper.querySelector('.pdf-document')?paper.innerHTML:'';
+    const previousGeneration=paper.dataset.fpRenderGeneration||'';
+    try{
+      if(!Number(options?.stabilityPass||0))paper.dataset.fpPaginationGuardPx='0';
+      const paperSpec=resolveDocumentPaperSpec();
+      applyPdfPaperSpec(paper,paperSpec);
+      paper.dataset.fpRenderGeneration=String((Number(paper.dataset.fpRenderGeneration)||0)+1);
 
-    const ctx=buildDocumentPdfContext();
-    const renderer=PDF_DOCUMENT_RENDERERS[ctx.documentType]||renderProformaInvoicePdfTemplate;
-    const source=document.createElement('div');
-    source.innerHTML=renderer(ctx);
-    const rootTemplate=source.firstElementChild;
-    const page=makePdfPage(rootTemplate?.className||'pdf-template',1);
-    page.body.innerHTML='';
-    page.body.appendChild(rootTemplate||document.createElement('div'));
-    const documentShell=document.createElement('div');
-    documentShell.className='pdf-document';
-    documentShell.appendChild(page.page);
-    paper.innerHTML='';
-    paper.appendChild(documentShell);
+      const ctx=buildDocumentPdfContext();
+      const renderer=PDF_DOCUMENT_RENDERERS[ctx.documentType]||renderProformaInvoicePdfTemplate;
+      const source=document.createElement('div');
+      source.innerHTML=renderer(ctx);
+      const rootTemplate=source.firstElementChild;
+      if(!rootTemplate)throw new Error('PDF 模板没有生成可渲染内容。');
+      const page=makePdfPage(rootTemplate.className||'pdf-template',1);
+      page.body.innerHTML='';
+      page.body.appendChild(rootTemplate);
+      const documentShell=document.createElement('div');
+      documentShell.className='pdf-document';
+      documentShell.appendChild(page.page);
+      paper.innerHTML='';
+      paper.appendChild(documentShell);
 
-    // Branding and the selected paper orientation both change real element
-    // dimensions.  They must be applied before pagination, otherwise a layout
-    // measured as portrait/default can overflow after switching to landscape or
-    // another PDF theme and the page's overflow:hidden silently cuts rows.
-    window.FlypigBOXBranding?.decorate?.();
-    void paper.offsetHeight;
-    paginateCurrentPreview();
-    syncDocumentPreviewWatermark();
-    requestAnimationFrame(fitPdfPreviewToShell);
+      // Branding and the selected paper orientation both change real element
+      // dimensions.  They must be applied before pagination, otherwise a layout
+      // measured as portrait/default can overflow after switching to landscape or
+      // another PDF theme and the page's overflow:hidden silently cuts rows.
+      applyPrePaginationGovernance(ctx);
+      try{window.HUIDIBrandRuntime?.preparePdf?.(paper);}catch(error){console.warn('RC16.11 pre-pagination brand text normalization failed',error)}
+      window.FlypigBOXBranding?.decorate?.();
+      // RC16.11: all customer-visible PDF mutations must finish before pagination.
+      // Legacy modules may still update editor/readiness UI after preview-rendered,
+      // but they are no longer allowed to reshape an already paginated PDF.
+      try{window.FlypigBOXA12?.preparePdf?.();}catch(error){console.warn('RC16.11 pre-pagination output normalization failed',error)}
+      try{window.HUIDIDocI18nSurface?.preparePdf?.(paper);}catch(error){console.warn('RC16.11 pre-pagination i18n surface failed',error)}
+      void paper.offsetHeight;
+      paginateCurrentPreview();
+      if(!paper.querySelector('.pdf-document .pdf-page'))throw new Error('PDF 分页完成后没有生成页面。');
+      paper.dataset.fpPreviewStatus='ready';
+      delete paper.dataset.fpPreviewError;
+      syncDocumentPreviewWatermark();
+      requestAnimationFrame(fitPdfPreviewToShell);
+      try{document.dispatchEvent(new CustomEvent('HUIDI:preview-rendered',{detail:{type:ctx.documentType,generation:paper.dataset.fpRenderGeneration||''}}));}catch(_){}
+      schedulePaginationStabilityCheck(paper.dataset.fpRenderGeneration||'',Number(options?.stabilityPass||0));
+      return true;
+    }catch(error){
+      const message=String(error?.message||error||'未知预览错误');
+      console.error('[HUIDI preview] render failed',error);
+      paper.dataset.fpPreviewStatus='error';
+      paper.dataset.fpPreviewError=message.slice(0,240);
+      if(previousHtml){
+        paper.innerHTML=previousHtml;
+        if(previousGeneration)paper.dataset.fpRenderGeneration=previousGeneration;
+      }else{
+        paper.innerHTML=`<div class="pdf-preview-runtime-error" role="alert"><strong>预览生成失败</strong><span>当前填写内容没有丢失。请修改后重试，或刷新页面重新生成预览。</span><small>${escapeHTML(message)}</small><button class="btn" type="button" data-retry-pdf-preview>重新生成预览</button></div>`;
+        paper.querySelector('[data-retry-pdf-preview]')?.addEventListener('click',()=>renderPreview());
+      }
+      try{document.dispatchEvent(new CustomEvent('HUIDI:preview-render-failed',{detail:{message}}));}catch(_){}
+      setStatus(`预览生成失败：${message}`,'error');
+      return false;
+    }
   }
 
   // V7.4 — streamlined, verified provider presets only. API keys deliberately remain in page memory only.
@@ -2496,7 +3236,7 @@
     const list=getJSON(key,[]);const state=compressState(formState(true));const record={id:`${kind}_${Date.now()}_${Math.random().toString(36).slice(2,6)}`,title:title||`${get('invoiceNo')||'Draft'} · ${get('buyerName')||'No buyer'}`,createdAt:Date.now(),state};
     list.unshift(record);setJSON(key,list.slice(0,max));setStatus(kind==='template'?'模板已保存至浏览器本地。':'草稿已保存至历史记录。','ok');
   }
-  function autosave(){if(editorAccessLocked)return;try{setJSON(KEYS.autosave,compressState(formState(false)));}catch{}}
+  function autosave(){if(window.HUIDI_LOCAL_ONLY?.localOnly)return;if(editorAccessLocked)return;try{setJSON(KEYS.autosave,compressState(formState(false)));}catch{}}
   function saveWorkspaceSnapshot(){
     try{
       autosave();
@@ -2587,19 +3327,25 @@
 
   function saveCustomer(){
     const name=get('buyerName');if(!name){setStatus('请先填写买方公司名称。','error');return;}
+    const repo=window.HUIDILocalCore?.repositories?.customers;
+    if(window.HUIDI_LOCAL_ONLY?.localOnly&&repo){
+      const old=repo.list().find(c=>String(c.company||c.name||'').toLowerCase()===name.toLowerCase())||{};
+      repo.upsert({...old,id:old.id||`customer_${Date.now()}`,company:name,name,contact:get('buyerContact'),country:get('buyerCountry'),country_code:get('buyerCountryCode'),phone:get('buyerPhone'),email:get('buyerEmail'),website:get('buyerWebsite'),address:get('buyerAddress'),tax_id:get('buyerTaxId'),destination_port:get('destinationPort')});
+      setStatus('客户已同步到工作台客户中心。','ok');return;
+    }
     const obj={id:`c_${Date.now()}`,name,contact:get('buyerContact'),country:get('buyerCountry'),countryCode:get('buyerCountryCode'),phone:get('buyerPhone'),email:get('buyerEmail'),website:get('buyerWebsite'),address:get('buyerAddress'),taxId:get('buyerTaxId'),destinationPort:get('destinationPort'),updatedAt:Date.now()};
-    let list=getJSON(KEYS.customers,[]);const index=list.findIndex(c=>c.name.toLowerCase()===name.toLowerCase());if(index>=0){obj.id=list[index].id;list[index]=obj;}else list.unshift(obj);setJSON(KEYS.customers,list.slice(0,200));setStatus('客户已保存至本地客户库。','ok');
+    let list=getJSON(KEYS.customers,[]);const index=list.findIndex(c=>String(c.name||c.company||'').toLowerCase()===name.toLowerCase());if(index>=0){obj.id=list[index].id;list[index]=obj;}else list.unshift(obj);setJSON(KEYS.customers,list.slice(0,200));setStatus('客户已保存至本地客户库。','ok');
   }
-  function applyCustomer(c){set('buyerName',c.name);set('buyerContact',c.contact);set('buyerCountry',c.country);set('buyerCountryCode',c.countryCode||'');set('buyerPhone',c.phone);set('buyerEmail',c.email);set('buyerWebsite',c.website);set('buyerAddress',c.address);set('buyerTaxId',c.taxId);set('destinationPort',c.destinationPort);renderPreview();closeModal();setStatus('已套用客户资料。','ok');}
+  function applyCustomer(c){set('buyerName',c.company||c.name);set('buyerContact',c.contact);set('buyerCountry',c.country);set('buyerCountryCode',c.country_code||c.countryCode||'');set('buyerPhone',c.phone);set('buyerEmail',c.email);set('buyerWebsite',c.website);set('buyerAddress',c.address);set('buyerTaxId',c.tax_id||c.taxId);set('destinationPort',c.destination_port||c.destinationPort);if(c.preferred_language&&c.preferred_language!=='auto')set('docLanguage',c.preferred_language);renderPreview();closeModal();setStatus('已套用工作台客户资料。','ok');}
 
   function openModal(title, html){$('modalTitle').textContent=title;$('modalContent').innerHTML=html;$('modalBackdrop').classList.add('open');$('modalBackdrop').setAttribute('aria-hidden','false');}
   function closeModal(){$('modalBackdrop').classList.remove('open');$('modalBackdrop').setAttribute('aria-hidden','true');}
   function renderCustomerLibraryList(){
     const target=$('customerLibraryList');if(!target)return;
     const query=String(get('customerSearch')||'').trim().toLowerCase();
-    const list=getJSON(KEYS.customers,[]).filter(c=>!query||[c.name,c.contact,c.country,c.phone,c.email,c.website,c.address,c.taxId,c.destinationPort].join(' ').toLowerCase().includes(query));
+    const list=getJSON(KEYS.customers,[]).filter(c=>!query||[c.company||c.name,c.contact,c.country,c.phone,c.email,c.website,c.address,c.tax_id||c.taxId,c.destination_port||c.destinationPort].join(' ').toLowerCase().includes(query));
     const count=$('customerLibraryCount');if(count)count.textContent=`${list.length} / ${getJSON(KEYS.customers,[]).length} 位客户`;
-    target.innerHTML=list.length?`<div class="modal-list">${list.map(c=>`<div class="stored-item"><div><strong>${escapeHTML(c.name)}</strong><span>${escapeHTML(c.country||'未填国家')} · ${escapeHTML(c.contact||'无联系人')} · ${escapeHTML(c.email||'无邮箱')} · ${new Date(c.updatedAt).toLocaleString()}</span></div><div class="header-actions"><button class="btn primary use-customer" data-id="${c.id}">套用</button><button class="btn danger delete-customer" data-id="${c.id}">删除</button></div></div>`).join('')}</div>`:'<p class="hint">未找到匹配客户。可按公司、联系人、国家、邮箱、电话、地址或目的地搜索。</p>';
+    target.innerHTML=list.length?`<div class="modal-list">${list.map(c=>`<div class="stored-item"><div><strong>${escapeHTML(c.company||c.name)}</strong><span>${escapeHTML(c.country||'未填国家')} · ${escapeHTML(c.contact||'无联系人')} · ${escapeHTML(c.email||'无邮箱')} · ${new Date(c.updated_at||c.updatedAt||Date.now()).toLocaleString()}</span></div><div class="header-actions"><button class="btn primary use-customer" data-id="${c.id}">套用</button><button class="btn danger delete-customer" data-id="${c.id}">删除</button></div></div>`).join('')}</div>`:'<p class="hint">未找到匹配客户。可按公司、联系人、国家、邮箱、电话、地址或目的地搜索。</p>';
   }
   function openCustomers(){
     openModal('👥 客户库',`<div class="customer-library-toolbar"><input id="customerSearch" placeholder="搜索公司、联系人、国家、邮箱、电话、地址或目的地"><span class="customer-library-count" id="customerLibraryCount"></span></div><div id="customerLibraryList"></div>`);renderCustomerLibraryList();
@@ -2628,7 +3374,7 @@
     if(button.id==='captureCopyTargetBtn'){const target=get('copyEntryTarget');const value=readTargetValue(target);const lang=get('copyEntryLanguage')||'en';if(lang==='zh')set('copyEntryZh',value);else if(lang==='en')set('copyEntryEn',value);else set('copyEntryLangText',value);setStatus('已读取当前写入字段内容，请检查后保存。','ok');return;}
     const c=button.closest('.use-customer,.delete-customer,.restore-record,.delete-record');if(!c)return;
     if(c.classList.contains('use-customer')){const x=getJSON(KEYS.customers,[]).find(v=>v.id===c.dataset.id);if(x)applyCustomer(x);}
-    if(c.classList.contains('delete-customer')){const list=getJSON(KEYS.customers,[]).filter(v=>v.id!==c.dataset.id);setJSON(KEYS.customers,list);openCustomers();}
+    if(c.classList.contains('delete-customer')){const repo=window.HUIDILocalCore?.repositories?.customers;if(window.HUIDI_LOCAL_ONLY?.localOnly&&repo)repo.remove(c.dataset.id);else{const list=getJSON(KEYS.customers,[]).filter(v=>v.id!==c.dataset.id);setJSON(KEYS.customers,list);}openCustomers();}
     if(c.classList.contains('restore-record')){const key=c.dataset.kind==='template'?KEYS.templates:KEYS.histories;const x=getJSON(key,[]).find(v=>v.id===c.dataset.id);if(x){applyState(x.state);closeModal();setStatus('已恢复本地记录。','ok');}}
     if(c.classList.contains('delete-record')){const key=c.dataset.kind==='template'?KEYS.templates:KEYS.histories;setJSON(key,getJSON(key,[]).filter(v=>v.id!==c.dataset.id));openStored();}
   }
@@ -2815,23 +3561,25 @@
     if(align==='right')drawX=x-w;
     try{pdf.addImage(img.src,'PNG',drawX,y,w,h,undefined,'FAST');}catch(_){}
   }
-  async function capturePdfPageCanvas(page,paper){
-    const cloneHost=document.createElement('div');
-    cloneHost.className=`${paper.className} pdf-exporting fp-pdf-capture-host`;
-    cloneHost.setAttribute('style',paper.getAttribute('style')||'');
-    [...paper.attributes].filter(attr=>attr.name.startsWith('data-')).forEach(attr=>cloneHost.setAttribute(attr.name,attr.value));
-    cloneHost.style.position='fixed';cloneHost.style.left='-12000px';cloneHost.style.top='0';cloneHost.style.zIndex='-1';cloneHost.style.opacity='1';cloneHost.style.pointerEvents='none';cloneHost.style.overflow='visible';
-    const clonedPage=page.cloneNode(true);
-    clonedPage.style.boxShadow='none';
-    cloneHost.appendChild(clonedPage);
-    document.body.appendChild(cloneHost);
-    try{
-      const cloneBody=clonedPage.querySelector('.pdf-page-body');
-      await Promise.all([...cloneBody.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2400);}))); 
-      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-      const rect=cloneBody.getBoundingClientRect();
-      return await html2canvas(cloneBody,{scale:2,useCORS:true,allowTaint:false,backgroundColor:'#fff',scrollX:0,scrollY:0,width:Math.ceil(rect.width),height:Math.ceil(rect.height),windowWidth:Math.ceil(rect.width),windowHeight:Math.ceil(rect.height),logging:false,imageTimeout:3500});
-    }finally{cloneHost.remove();}
+  function exportYield(){return new Promise(resolve=>setTimeout(resolve,0));}
+  function pdfCaptureScale(pageCount=1){const dpr=Math.max(1,Number(window.devicePixelRatio)||1);const byCount=pageCount<=2?1.5:pageCount<=5?1.35:1.25;return Math.max(1.2,Math.min(byCount,dpr+0.25));}
+  function canvasJpegBytes(canvas,quality=.9){return new Promise((resolve,reject)=>{try{canvas.toBlob(async blob=>{if(!blob)return reject(new Error('PDF 页面图片编码失败'));try{resolve(new Uint8Array(await blob.arrayBuffer()));}catch(error){reject(error);}},'image/jpeg',quality);}catch(error){reject(error);}});}
+  async function captureLivePdfPageCanvas(page,paper,pageCount=1){
+    // RC16.18 WYSIWYG export authority: capture the *live paginated page* that the
+    // user is actually looking at.  The old off-screen clone lost #piPaper-scoped
+    // density/template rules and could therefore repaginate visually during export.
+    if(!page?.isConnected)throw new Error('PDF 预览页已更新，请重试导出。');
+    const rect=page.getBoundingClientRect();
+    const logicalWidth=Math.max(1,Number(page.offsetWidth)||parseFloat(getComputedStyle(page).width)||rect.width||1);
+    const renderedWidth=Math.max(1,rect.width||logicalWidth);
+    const renderedHeight=Math.max(1,rect.height||Number(page.offsetHeight)||parseFloat(getComputedStyle(page).height)||1);
+    const zoomCompensation=Math.max(.25,Math.min(4,logicalWidth/renderedWidth));
+    const scale=Math.max(1.2,Math.min(4,pdfCaptureScale(pageCount)*zoomCompensation));
+    await Promise.all([...page.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2400);})));
+    try{await document.fonts?.ready;}catch(_){ }
+    await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+    await exportYield();
+    return html2canvas(page,{scale,useCORS:true,allowTaint:false,backgroundColor:'#fff',scrollX:-(window.scrollX||0),scrollY:-(window.scrollY||0),width:renderedWidth,height:renderedHeight,logging:false,imageTimeout:2200,removeContainer:true});
   }
 
   function simpleSecurityHash(value){let h=2166136261;for(const ch of String(value||'')){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return (h>>>0).toString(16);}
@@ -2840,11 +3588,17 @@
   function hasCurrentBankDetails(){return ['bankBeneficiary','bankName','bankAccount','bankSwift','bankAddress'].some(id=>pdfHasValue(get(id)));}
   function currentBankIsVerified(){return hasCurrentBankDetails()&&localStorage.getItem(VERIFIED_BANK_KEY)===currentBankFingerprint();}
   function verifyCurrentBankDetails(){if(!hasCurrentBankDetails()){setStatus('请先填写收款资料后再核对。','error');return false;}localStorage.setItem(VERIFIED_BANK_KEY,currentBankFingerprint());updateBankSecurityStatus();setStatus('当前收款资料已在本机标记为已核对。账户内容再次变化时会重新提醒。','ok');return true;}
-  function updateBankSecurityStatus(){const box=$('bankSecurityCheck'),text=$('bankSecurityStatus');if(!box||!text)return;if(!hasCurrentBankDetails()){box.dataset.state='empty';text.textContent='填写收款资料后，请确认收款人、账号和 SWIFT。账户变化时系统会在导出前再次提醒。';return;}if(currentBankIsVerified()){box.dataset.state='ok';text.textContent='当前收款账户已在本机核对。请在每次正式付款前仍通过已知联系方式复核。';return;}const account=get('bankAccount');box.dataset.state='warn';text.textContent=`收款资料尚未核对或与上次不同${account?`（账号尾号 ${account.slice(-4)}）`:''}。导出前必须确认。`;}
+  function updateBankSecurityStatus(){const box=$('bankSecurityCheck'),text=$('bankSecurityStatus');if(!box||!text)return;if(!hasCurrentBankDetails()){box.dataset.state='empty';text.textContent='填写收款资料后，请确认收款人、账号和 SWIFT。账户变化时系统会提醒复核，但不会阻止导出。';return;}if(currentBankIsVerified()){box.dataset.state='ok';text.textContent='当前收款账户已在本机核对。请在每次正式付款前仍通过已知联系方式复核。';return;}const account=get('bankAccount');box.dataset.state='warn';text.textContent=`收款资料尚未核对或与上次不同${account?`（账号尾号 ${account.slice(-4)}）`:''}。建议在发送或收款前再次确认；不会阻止导出。`;}
   function tradeComplianceReport(){const raw=String(get('tradeTerms')||'').trim(),shipping=String(get('shippingMethod')||'').toLowerCase();const code=(raw.match(/^(EXW|FCA|FAS|FOB|CFR|CIF|CPT|CIP|DAP|DPU|DDP)\b/i)||[])[1]?.toUpperCase()||'';const issues=[];if(!code)issues.push('未识别标准 Incoterms® 术语');if(code&&raw.replace(new RegExp(`^${code}\\b`,'i'),'').trim().length<3)issues.push('缺少指定地点 / 港口');if(!/2020/.test(raw))issues.push('未注明 Incoterms® 2020');if(/air|航空|空运|flight|express|快递/.test(shipping)&&['FAS','FOB','CFR','CIF'].includes(code))issues.push(`${code} 通常用于海运或内河运输，当前运输方式可能不匹配`);if(code==='DDP')issues.push('DDP 需明确进口清关、关税与税费责任');return {code,issues};}
   function updateTradeComplianceStatus(){const el=$('incotermsComplianceStatus');if(!el)return;const report=tradeComplianceReport();el.dataset.state=report.issues.length?'warn':'ok';el.textContent=report.issues.length?report.issues.join('；'):'术语、地点和版本信息完整；仍请结合运输方式和合同责任人工核对。';}
   function ensureTradeAndBankChecksBeforeExport(){
     const unified=window.FlypigBOXPdfExportState;
+    // Community Local RC7: the formal-output gate is the single preflight owner.
+    // Do not stack legacy confirm()/alert() checks behind the unified dialog.
+    if(window.HUIDI_LOCAL_ONLY?.localOnly && unified?.unifiedPreflight===true && window.FlypigBOXFormalOutputGate){
+      if(unified.approvedOnce===true)unified.approvedOnce=false;
+      return true;
+    }
     if(unified?.approvedOnce===true){
       unified.approvedOnce=false;
       if(hasCurrentBankDetails()&&!currentBankIsVerified())verifyCurrentBankDetails();
@@ -2870,137 +3624,111 @@
       showPdfExportHelp('html2canvas 或 jsPDF 未加载');
       return;
     }
-    const button=$('exportPdfBtn'), paper=$('piPaper'), no=(get('invoiceNo')||'Invoice').replace(/[\/:*?"<>|]+/g,'_');
-    const previousOverflow=paper.style.overflow;
-    const previousHeight=paper.style.height;
-    const wasExporting=paper.classList.contains('pdf-exporting');
-    paper.classList.add('pdf-exporting');
-    paper.style.overflow='visible';
-    paper.style.height='auto';
-    const finalPaperSpec=resolveDocumentPaperSpec();
-    applyPdfPaperSpec(paper,finalPaperSpec);
-    renderPreview();
-    await Promise.all([...paper.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2400);})))
+    const button=$('exportPdfBtn'),paper=$('piPaper'),no=(get('invoiceNo')||'Invoice').replace(/[\/:*?"<>|]+/g,'_');
+    if(!paper){showPdfExportHelp('当前 PDF 预览尚未准备好');return;}
+
+    // RC9: the right-side preview is the one and only pagination authority.
+    // Do not add pdf-exporting, do not change paper height/overflow, and do not
+    // call renderPreview() inside the export path. Those operations previously
+    // caused a second hidden pagination pass and could collapse a 2-page preview
+    // into a 1-page download or clip the tail page.
+    await Promise.all([...paper.querySelectorAll('img')].map(img=>img.complete?Promise.resolve():new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true});setTimeout(resolve,2400);}))); 
     try{await document.fonts?.ready;}catch(_){ }
-    renderPreview();
     await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
-    const runtimePages=[...paper.querySelectorAll('.pdf-page')];
-    const runtimeOverflow=runtimePages.map((page,index)=>({index:index+1,body:page.querySelector('.pdf-page-body')})).filter(item=>pageOverflows(item.body)||clippedPdfNodes(item.body).length);
+
+    const previewGeneration=paper.dataset.fpRenderGeneration||'';
+    const previewPages=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page));
+    let previewPageCount=previewPages.length;
+    if(!previewPageCount){showPdfExportHelp('当前 PDF 预览没有可导出的页面');return;}
+
+    const runtimeOverflow=previewPages.map((page,index)=>({index:index+1,body:page.querySelector('.pdf-page-body')})).filter(item=>pageOverflows(item.body)||clippedPdfNodes(item.body).length);
     if(runtimeOverflow.length){
-      setStatus(`PDF 页面仍有内容进入页脚安全区（第 ${runtimeOverflow.map(item=>item.index).join('、')} 页），系统已停止导出。请返回检查或减少单页内容。`,'error');
-      if(!wasExporting)paper.classList.remove('pdf-exporting');
-      paper.style.overflow=previousOverflow;
-      paper.style.height=previousHeight;
-      renderPreview();
-      return;
+      setStatus(`导出提醒：第 ${runtimeOverflow.map(item=>item.index).join('、')} 页有内容接近或进入页脚安全区；仍将按当前右侧预览继续导出。建议稍后检查版式。`,'');
     }
     const paginationReport=window.__fpLastPaginationReport||{};
     if(paginationReport.valid===false){
-      const detail=[paginationReport.overflowPages?.length?`溢出页：${paginationReport.overflowPages.join(', ')}`:'',paginationReport.expectedRows!==paginationReport.actualRows?`表格行数 ${paginationReport.actualRows}/${paginationReport.expectedRows}`:'',paginationReport.missingModules?.length?`缺少模块：${paginationReport.missingModules.join(', ')}`:''].filter(Boolean).join('；');
-      setStatus(`PDF 分页完整性检查未通过${detail?`（${detail}）`:''}，系统已停止导出，避免生成被裁切或缺少内容的文件。`,'error');
-      if(!wasExporting)paper.classList.remove('pdf-exporting');
-      paper.style.overflow=previousOverflow;
-      paper.style.height=previousHeight;
-      renderPreview();
-      return;
+      const detail=[paginationReport.overflowPages?.length?`溢出页：${paginationReport.overflowPages.join(', ')}`:'',paginationReport.expectedRows!==paginationReport.actualRows?`表格行数 ${paginationReport.actualRows}/${paginationReport.expectedRows}`:'',paginationReport.missingModules?.length?`缺少模块：${paginationReport.missingModules.join(', ')}`:'',paginationReport.semanticViolations?.length?`业务块断裂：${paginationReport.semanticViolations.join(', ')}`:''].filter(Boolean).join('；');
+      setStatus(`导出提醒：PDF 分页检查发现待核对内容${detail?`（${detail}）`:''}；本次仍按当前右侧预览继续导出。`,'');
     }
-    const permit = await requestDocumentPdfPermit('export');
-    if (!permit?.allowed){
-      if(!wasExporting)paper.classList.remove('pdf-exporting');
-      paper.style.overflow=previousOverflow;
-      paper.style.height=previousHeight;
-      renderPreview();
-      return;
+    if(Number.isFinite(Number(paginationReport.pageCount))&&Number(paginationReport.pageCount)>0&&Number(paginationReport.pageCount)!==previewPageCount){
+      setStatus(`导出提醒：右侧预览 ${previewPageCount} 页，分页报告 ${paginationReport.pageCount} 页；本次以当前可见预览页为准继续导出。`,'');
     }
-    const stablePdf=window.FlypigBOXServiceRuntime;
-    if(stablePdf?.isPdfReady?.()){
-      const stableName=window.FlypigBOXExportNaming?.file?.('pdf','customer')||`${no}_HUIDI.pdf`;
-      button.disabled=true;button.textContent='⏳ 正在生成稳定PDF…';setStatus('正在使用稳定PDF生成，请勿关闭页面…');
-      try{
-        const stableResult=await stablePdf.exportElementPdf({element:paper,filename:stableName,landscape:finalPaperSpec.jsPdfOrientation==='landscape',source:'document-editor'});
-        if(stableResult?.ok){
-          setStatus('稳定PDF已生成。原单据、账号和会员数据没有被修改。','ok');
-          if($('emailAfterExport')?.checked)window.setTimeout(openEmailDraftModal,420);
-          if(!wasExporting)paper.classList.remove('pdf-exporting');
-          paper.style.overflow=previousOverflow;paper.style.height=previousHeight;renderPreview();
-          button.disabled=false;button.textContent='📥 导出 PDF';
-          if(permit.watermark===false)window.setTimeout(restoreDocumentPreviewWatermark,450);
-          return;
-        }
-      }catch(error){
-        console.warn('stable PDF unavailable; browser fallback retained',error);
-        setStatus('稳定PDF暂时没有完成，正在改用浏览器导出。','');
-      }
-      button.disabled=false;button.textContent='📥 导出 PDF';
+
+    const permit=await requestDocumentPdfPermit('export');
+    if(!permit?.allowed)return;
+
+    // The preflight/permit dialog must not silently replace the preview while the
+    // user is confirming. If it did, abort instead of exporting a different DOM.
+    let currentPages=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page));
+    if((paper.dataset.fpRenderGeneration||'')!==previewGeneration||currentPages.length!==previewPageCount){
+      setStatus(`导出提醒：确认期间预览发生更新（原 ${previewPageCount} 页，现 ${currentPages.length} 页）；本次将导出最新可见预览。`,'');
+      previewPageCount=currentPages.length;
     }
-    const brandSettings=window.FlypigBOXBranding?.get?.()||{};
-    const brandLogoNode=paper.querySelector('[data-fp-brand-logo] img');
-    const brandLogo=brandSettings.logoScope!=='none'?await imageSrcToPngData(brandLogoNode?.src||''):null;
-    const brandHeaderText=String(brandSettings.headerText||paper.querySelector('[data-fp-brand-header]')?.textContent||'').trim();
-    const brandFooterText=String(brandSettings.footerText||paper.querySelector('[data-fp-brand-footer]')?.textContent||'').trim();
-    const brandHeaderImage=textToPngData(brandHeaderText,{fontPx:16,weight:'600'});
-    const brandFooterImage=textToPngData(brandFooterText,{fontPx:15,weight:'500'});
-    const brandChrome=[...paper.querySelectorAll('[data-fp-brand-logo],[data-fp-brand-header],[data-fp-brand-footer]')];
-    const brandChromeDisplay=brandChrome.map(el=>[el,el.style.display]);
+
+    // RC16.18: the visible preview DOM itself is the export snapshot authority.
+    // Freeze preview generation while capture is in progress; any requested rerender
+    // is deferred until the output owner announces export completion.
+    const snapshotPages=currentPages.slice();
+    const snapshotGeneration=paper.dataset.fpRenderGeneration||'';
+    const snapshotCount=snapshotPages.length;
+    document.documentElement.dataset.huidiPdfSnapshotExport='1';
+    paper.dataset.fpExportFrozen='1';
+    const paperSpec=resolveDocumentPaperSpec();
     const restoreScroll={x:window.scrollX||0,y:window.scrollY||0};
-    button.disabled=true;button.textContent='⏳ 正在分页渲染…';setStatus('正在按真实页面节点生成 PDF…');
+    button.disabled=true;
+    button.textContent=`⏳ 正在原样导出 ${previewPageCount} 页…`;
+    setStatus(`正在按右侧预览原样生成 ${previewPageCount} 页 PDF，请勿关闭页面…`);
     try{
-      const paperSpec=finalPaperSpec;
-      brandChrome.forEach(el=>{el.style.display='none';});
-      await new Promise(resolve => requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+      // Capture every validated preview page before creating the PDF. This gives
+      // us a hard 1:1 page-count gate and prevents partial downloads.
+      const canvases=[];
+      for(let index=0;index<snapshotPages.length;index+=1){
+        if((paper.dataset.fpRenderGeneration||'')!==snapshotGeneration||!snapshotPages[index]?.isConnected)throw new Error('导出期间预览发生更新，已停止本次导出，请重试。');
+        const liveCount=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page)).length;
+        if(liveCount!==snapshotCount)throw new Error(`导出期间页数发生变化（${snapshotCount} → ${liveCount}），已停止本次导出。`);
+        button.textContent=`⏳ 正在原样捕获 ${index+1}/${previewPageCount} 页…`;
+        await exportYield();
+        const canvas=await captureLivePdfPageCanvas(snapshotPages[index],paper,previewPageCount);
+        if(!canvas?.width||!canvas?.height)throw new Error(`第 ${index+1} 页截图为空，已停止导出。`);
+        if((paper.dataset.fpRenderGeneration||'')!==snapshotGeneration)throw new Error('页面在截图期间发生重绘，已停止本次导出。');
+        canvases.push(canvas);
+        await exportYield();
+      }
+      if(canvases.length!==previewPageCount)throw new Error(`页数校验失败：预览 ${previewPageCount} 页，实际捕获 ${canvases.length} 页。`);
+
       const {jsPDF}=window.jspdf;
       const pdf=new jsPDF({orientation:paperSpec.jsPdfOrientation,unit:'mm',format:paperSpec.format,compress:true});
-      const pageW=pdf.internal.pageSize.getWidth(), pageH=pdf.internal.pageSize.getHeight();
-      const hasBrandLogo=Boolean(brandLogo?.src);
-      const hasBrandHeader=Boolean(brandHeaderImage?.src);
-      const topReserve=Math.max(paperSpec.marginTopMm,(hasBrandLogo||hasBrandHeader)?19:11);
-      const footerReserve=Math.max(paperSpec.marginBottomMm,12);
-      const leftReserve=paperSpec.marginLeftMm, rightReserve=paperSpec.marginRightMm;
-      const contentW=pageW-leftReserve-rightReserve, contentH=pageH-topReserve-footerReserve;
-      const pageNodes=[...paper.querySelectorAll('.pdf-page')].filter(page=>pageHasContent(page));
-      if(!pageNodes.length)throw new Error('PDF 页面内容为空，无法导出。');
-      const totalPages=pageNodes.length;
-      window.__fpLastExportPageCount=totalPages;
-      const piLabel=get('invoiceNo')||''; const showBrandFooter=permit.watermark===true;
-      for(let p=0;p<totalPages;p++){
-        const canvas=await capturePdfPageCanvas(pageNodes[p],paper);
-        if(!canvas.width||!canvas.height)throw new Error('PDF 页面截图为空，请重试或切换纸张方向后再导出。');
-        if(p)pdf.addPage();
-        pdf.setFillColor(255,255,255);pdf.rect(0,0,pageW,pageH,'F');
-        const exportType=getDocumentType();const exportDocTitle=DOCUMENT_TITLES[exportType]?.en||window.FlypigBOXBranding?.documentTitle?.(exportType)||'PROFORMA INVOICE';const exportNumberLabel=DOCUMENT_TITLES[exportType]?.number||'PI NO.';
-        pdf.setDrawColor(220,226,234);pdf.line(8,topReserve-2,pageW-8,topReserve-2);
-        pdf.setFont('helvetica','normal');pdf.setFontSize(7.2);pdf.setTextColor(86,96,112);
-        if(hasBrandLogo){
-          const aspect=Math.max(.2,Math.min(6,brandLogo.width/Math.max(1,brandLogo.height)));
-          let logoH=9.5, logoW=logoH*aspect;
-          const maxLogoW=brandSettings.logoPosition==='center'?38:30;
-          if(logoW>maxLogoW){logoW=maxLogoW;logoH=logoW/aspect;}
-          let logoX=8;
-          if(brandSettings.logoPosition==='center')logoX=(pageW-logoW)/2;
-          if(brandSettings.logoPosition==='right')logoX=pageW-8-logoW;
-          try{pdf.addImage(brandLogo.src,'PNG',logoX,3,logoW,logoH,undefined,'FAST');}catch(_){}
-          pdf.text(exportDocTitle,8,topReserve-4);pdf.text(`${exportNumberLabel} ${piLabel}`,pageW-8,topReserve-4,{align:'right'});
-        }else{
-          pdf.text(exportDocTitle,8,6.3);pdf.text(`${exportNumberLabel} ${piLabel}`,pageW-8,6.3,{align:'right'});
-        }
-        if(hasBrandHeader)addTextImage(pdf,brandHeaderImage,pageW/2,hasBrandLogo?10.6:3.9,pageW-88,3.9,'center');
-        pdf.addImage(canvas.toDataURL('image/jpeg',.95),'JPEG',leftReserve,topReserve,contentW,contentH,undefined,'FAST');
-        if(showBrandFooter){pdf.setFont('helvetica','bold');pdf.setFontSize(28);pdf.setTextColor(231,235,241);pdf.text('HUIDI',pageW/2,topReserve+contentH/2,{align:'center',angle:36});}
-        pdf.setFillColor(255,255,255);pdf.rect(0,topReserve+contentH,pageW,footerReserve,'F');
-        pdf.setDrawColor(220,226,234);pdf.line(8,topReserve+contentH+1,pageW-8,topReserve+contentH+1);
-        pdf.setFont('helvetica','normal');pdf.setFontSize(7.5);pdf.setTextColor(86,96,112);
-        if(showBrandFooter) pdf.text('your-domain.example · HUIDI Free Edition',8,pageH-4.5);
-        if(brandFooterImage)addTextImage(pdf,brandFooterImage,pageW/2,pageH-7.0,showBrandFooter?pageW-104:pageW-42,3.8,'center');
-        pdf.text(`Page ${p+1} of ${totalPages}`,pageW-8,pageH-4.5,{align:'right'});
+      const pageW=pdf.internal.pageSize.getWidth(),pageH=pdf.internal.pageSize.getHeight();
+      for(let index=0;index<canvases.length;index+=1){
+        if(index)pdf.addPage(paperSpec.format,paperSpec.jsPdfOrientation);
+        const canvas=canvases[index];
+        button.textContent=`⏳ 正在写入 ${index+1}/${previewPageCount} 页…`;
+        await exportYield();
+        const jpeg=await canvasJpegBytes(canvas,.9);
+        pdf.addImage(jpeg,'JPEG',0,0,pageW,pageH,undefined,'FAST');
+        canvases[index].width=1;canvases[index].height=1;
+        await exportYield();
       }
+      const outputPageCount=typeof pdf.getNumberOfPages==='function'?pdf.getNumberOfPages():canvases.length;
+      if(outputPageCount!==previewPageCount)throw new Error(`PDF 页数校验失败：预览 ${previewPageCount} 页，生成器 ${outputPageCount} 页。文件未保存。`);
+      window.__fpLastExportPageCount=outputPageCount;
+      window.__fpLastExportPreviewPageCount=previewPageCount;
       pdf.save(window.FlypigBOXExportNaming?.file?.('pdf','customer')||`${no}_HUIDI.pdf`);
-      const exportMessage=showBrandFooter?'PDF 已生成。请在下载文件中查看。':'PDF 已生成。请在下载文件中查看。';
-      setStatus(exportMessage,'ok');
-      if($('emailAfterExport')?.checked){
-        window.setTimeout(openEmailDraftModal, 420);
-      }
-    }catch(e){console.error(e);showPdfExportHelp(e?.message||e);}finally{window.scrollTo(restoreScroll.x,restoreScroll.y);brandChromeDisplay.forEach(([el,display])=>{el.style.display=display;});if(!wasExporting)paper.classList.remove('pdf-exporting');paper.style.overflow=previousOverflow;paper.style.height=previousHeight;renderPreview();button.disabled=false;button.textContent='📥 导出 PDF';if(permit.watermark===false)window.setTimeout(restoreDocumentPreviewWatermark,450);}
+      setStatus(`PDF 已按右侧预览原样生成，共 ${outputPageCount} 页。`,'ok');
+      if($('emailAfterExport')?.checked)window.setTimeout(openEmailDraftModal,420);
+    }catch(e){
+      console.error(e);
+      showPdfExportHelp(e?.message||e);
+    }finally{
+      window.scrollTo(restoreScroll.x,restoreScroll.y);
+      delete document.documentElement.dataset.huidiPdfSnapshotExport;
+      delete paper.dataset.fpExportFrozen;
+      button.disabled=false;
+      button.textContent='📥 导出 PDF';
+      if(permit.watermark===false)window.setTimeout(restoreDocumentPreviewWatermark,450);
+    }
   }
+
   async function printDocumentPdf(){
     if(!ensureTradeAndBankChecksBeforeExport())return;
     const permit=await requestDocumentPdfPermit('print');
@@ -3055,10 +3783,11 @@
     sales_contract:{en:'Contract No.',zh:'合同编号'},
     packing_list:{en:'Packing List No.',zh:'装箱单编号'}
   };
-  function getDocumentType(){const current=get('documentType');if(DOCUMENT_PROFILE_TYPES.has(current))return current;const branded=window.FlypigBOXBranding?.get?.().documentType;return DOCUMENT_PROFILE_TYPES.has(branded)?branded:'proforma_invoice';}
-  function documentTitleForPreview(type){const entry=DOCUMENT_TITLES[type]||DOCUMENT_TITLES.proforma_invoice;const lang=supportedDocLanguage();if(lang==='bilingual')return `${entry.en} / ${entry.zh}`;return lang==='zh'?entry.zh:entry.en;}
-  function documentNumberLabel(type){const entry=DOCUMENT_NUMBER_LABELS[type]||DOCUMENT_NUMBER_LABELS.proforma_invoice;const lang=supportedDocLanguage();if(lang==='bilingual')return `${entry.zh} / ${entry.en}`;return lang==='zh'?entry.zh:entry.en;}
-  function documentValidLabel(type){const lang=supportedDocLanguage();if(type==='packing_list'){const labels={en:'PACKING DATE',zh:'装箱日期'};return lang==='bilingual'?'装箱日期 / PACKING DATE':labels[lang]||labels.en;}if(type==='sales_contract'){const labels={en:'CONTRACT DATE / VALIDITY',zh:'合同日期 / 有效期'};return lang==='bilingual'?'合同日期 / CONTRACT DATE / VALIDITY':labels[lang]||labels.en;}return docLabel('valid');}
+  function getDocumentType(){const current=get('documentType');return DOCUMENT_PROFILE_TYPES.has(current)?current:'proforma_invoice';}
+  function documentTitleForPreview(type){const entry=DOCUMENT_TITLES[type]||DOCUMENT_TITLES.proforma_invoice;const lang=supportedDocLanguage();if(lang==='bilingual')return `${entry.en} / ${entry.zh}`;return entry[lang]||entry.en;}
+  const DOCUMENT_NUMBER_KEYS={proforma_invoice:'piNo',quotation:'quoteNo',commercial_invoice:'invoiceNo',sales_contract:'contractNo',packing_list:'packingListNo'};
+  function documentNumberLabel(type){const entry=DOCUMENT_NUMBER_LABELS[type]||DOCUMENT_NUMBER_LABELS.proforma_invoice;const lang=supportedDocLanguage();if(lang==='bilingual')return `${entry.zh} / ${entry.en}`;const key=DOCUMENT_NUMBER_KEYS[type]||'piNo';return docLabel(key)||entry[lang]||entry.en;}
+  function documentValidLabel(type){const lang=supportedDocLanguage();if(type==='packing_list'){if(lang==='bilingual')return '装箱日期 / PACKING DATE';if(lang==='zh')return '装箱日期';if(lang==='en')return 'PACKING DATE';return docLabel('date');}if(type==='sales_contract'){if(lang==='bilingual')return '合同日期 / CONTRACT DATE / VALIDITY';if(lang==='zh')return '合同日期 / 有效期';if(lang==='en')return 'CONTRACT DATE / VALIDITY';return `${docLabel('date')} / ${docLabel('valid')}`;}return docLabel('valid');}
   function currentDocMode(){return isDetailedDocMode()?'b2b':'ecommerce';}
   function syncModeButtons(){
     const mode=currentDocMode();
@@ -3140,7 +3869,7 @@
   }
   function applyDocumentProfile(type,{silent=false}={}){
     const safe=DOCUMENT_PROFILE_TYPES.has(type)?type:'proforma_invoice';const profile=DOCUMENT_PROFILE_PRESETS[safe];set('documentType',safe);set('docMode',profile.mode);document.querySelector('.doc-mode-card')?.classList.remove('fp-advanced-open');Object.entries(profile.visibility).forEach(([id,value])=>set(id,value));syncDocumentNumberUi({updatePrefix:true,regenerateAuto:true});syncModeButtons();syncVisibilityUI();syncDocumentModeEffect();renderPreview();
-    try{const url=new URL(location.href);url.searchParams.set('doc',safe);history.replaceState(history.state,'',`${url.pathname}${url.search}${url.hash||'#editorTop'}`);}catch(_){ }
+    try{const url=new URL(location.href);url.searchParams.set('type',safe);url.searchParams.set('doc',safe);url.searchParams.set('local','1');history.replaceState(history.state,'',`${url.pathname}${url.search}${url.hash||'#editorTop'}`);}catch(_){ }
     try{document.dispatchEvent(new CustomEvent('HUIDI:document-type-changed',{detail:{type:safe,label:profile.label}}));}catch(_){ }
     if(!silent)setStatus(`已切换为“${profile.label}”默认版本，并自动套用该单据的标准字段。你可以切换到精细版本补充更多字段。`,'ok');return safe;
   }
@@ -3377,7 +4106,7 @@
   }
 
   function init(){
-    const saved=getJSON(KEYS.defaults,{}), autosaveState=getJSON(KEYS.autosave,null);
+    const saved=getJSON(KEYS.defaults,{}), autosaveState=window.HUIDI_LOCAL_ONLY?.localOnly?null:getJSON(KEYS.autosave,null);
     if(autosaveState?.fields){
       applyState(autosaveState);
       setStatus('已恢复上次自动保存的本地草稿。','ok');
@@ -3414,7 +4143,7 @@
     applyEditorAccessGate(true);
     syncEmailDraftToggle();
     initMobileWorkspaceSwitch();
-    setInterval(autosave,5000);
+    if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(autosave,5000);
   }
 
   $('addItemBtn').addEventListener('click',()=>{
@@ -3435,10 +4164,10 @@
     row?.querySelector('[data-logistics-extra-label]')?.focus();
   });
   const renderPdfWhenVisible=()=>{if(!document.body.classList.contains('fp-live-table-mode')&&!document.body.classList.contains('fp-preview-table-only'))renderPreview();};
-  $('piForm').addEventListener('input',e=>{clearTranslationForInput(e.target);syncAdjustmentOutputs();renderPdfWhenVisible();});$('piForm').addEventListener('change',e=>{clearTranslationForInput(e.target);syncScopeControls();syncVisibilityUI();syncAdjustmentOutputs();renderPdfWhenVisible();});$('docLanguage').addEventListener('change',renderPdfWhenVisible);qsa('[data-doc-mode]').forEach(button=>button.addEventListener('click',()=>applyDocMode(button.dataset.docMode)));qsa('[data-paper-choice]').forEach(button=>button.addEventListener('click',()=>setPaperOrientationPreference(button.dataset.paperChoice)));qsa('.visibility-grid input').forEach(input=>input.addEventListener('change',()=>{syncVisibilityUI();renderPdfWhenVisible();const label=input.closest('.switch-line')?.querySelector('[data-visibility-caption]')?.textContent||VISIBILITY_LABELS[input.id]||'字段';setStatus(`${input.checked?'已显示':'已隐藏'}：${label}，PDF 预览已更新。`,input.checked?'ok':'');}));
+  $('piForm').addEventListener('input',e=>{clearTranslationForInput(e.target);syncAdjustmentOutputs();schedulePreviewRender(160);});$('piForm').addEventListener('change',e=>{clearTranslationForInput(e.target);syncScopeControls();syncVisibilityUI();syncAdjustmentOutputs();renderPdfWhenVisible();});$('docLanguage').addEventListener('change',renderPdfWhenVisible);qsa('[data-doc-mode]').forEach(button=>button.addEventListener('click',()=>applyDocMode(button.dataset.docMode)));qsa('[data-paper-choice]').forEach(button=>button.addEventListener('click',()=>setPaperOrientationPreference(button.dataset.paperChoice)));qsa('.visibility-grid input').forEach(input=>input.addEventListener('change',()=>{syncVisibilityUI();renderPdfWhenVisible();const label=input.closest('.switch-line')?.querySelector('[data-visibility-caption]')?.textContent||VISIBILITY_LABELS[input.id]||'字段';setStatus(`${input.checked?'已显示':'已隐藏'}：${label}，PDF 预览已更新。`,input.checked?'ok':'');}));
   $('issueDate').addEventListener('change',()=>{if($('validUntil').dataset.auto==='1')set('validUntil',isoDate(addDays(issueCodeDate(),15)));syncPiNumberWithIssueDate();renderPreview();});
   $('invoiceNo').addEventListener('input',event=>{if(event.isTrusted)$('invoiceNo').dataset.auto='0';});
-  PI_CODE_INPUTS.forEach(id=>$(id).addEventListener('input',event=>{if(id==='piPrefix'&&event.isTrusted)event.currentTarget.dataset.userEdited='1';if($('invoiceNo').dataset.auto==='1'&&!isOn('lockPiNo'))generatePiNumber({reserve:false});renderPreview();}));
+  PI_CODE_INPUTS.forEach(id=>$(id).addEventListener('input',event=>{if(id==='piPrefix'&&event.isTrusted)event.currentTarget.dataset.userEdited='1';if($('invoiceNo').dataset.auto==='1'&&!isOn('lockPiNo'))generatePiNumber({reserve:false});schedulePreviewRender(140);}));
   $('regeneratePiBtn').addEventListener('click',()=>{const meta=documentNumberUi();if(isOn('lockPiNo')){setStatus(`当前${meta.status}已锁定。请先取消“锁定编号”后再重新生成。`,'error');return;}generatePiNumber({reserve:true});renderPreview();setStatus(`已按当前规则生成新的${meta.status}。发送给客户后建议锁定。`,'ok');});
   $('lockPiNo').addEventListener('change',()=>{syncPiLockUI();renderPreview();});
   $('paymentTemplate').addEventListener('change',e=>{applyPayment(e.target.value);$('savedPaymentTemplate').value='';});
@@ -3449,6 +4178,7 @@
   $('saveCustomerBtn').addEventListener('click',()=>{if(guardEditorAccess('客户库保存'))saveCustomer();});$('openCustomersBtn').addEventListener('click',()=>{if(guardEditorAccess('客户库'))openCustomers();});$('verifyCustomerBtn').addEventListener('click',openCustomerVerifier);$('openMapsBtn').addEventListener('click',openMaps);
   $('useOwnApi').addEventListener('change',syncOwnApiSettings);$('apiProvider').addEventListener('change',()=>syncApiProviderUI({clearModel:true}));$('apiModel').addEventListener('blur',()=>{if(selectedProvider()!=='gemini')return;try{const normalized=validateProviderModel('gemini',get('apiModel'));if(normalized!==get('apiModel').trim()){set('apiModel',normalized);setStatus('Gemini 模型资源名称已自动规范化。','ok');}}catch(e){setStatus(e?.message||'Gemini 模型格式不正确。','error');}});$('fetchGeminiModelsBtn')?.addEventListener('click',fetchGeminiModels);$('saveApiProfileBtn').addEventListener('click',()=>{if(guardEditorAccess('保存翻译服务配置'))saveApiProfile();});$('deleteApiProfileBtn').addEventListener('click',()=>{if(guardEditorAccess('删除翻译服务配置'))deleteApiProfile();});$('apiProfileSelect').addEventListener('change',loadApiProfile);$('testApiBtn').addEventListener('click',testApi);$('translateAllBtn').addEventListener('click',()=>{if(guardEditorAccess('翻译辅助'))translateAll();});
   $('headerTranslateBtn')?.addEventListener('click',()=>{if(guardEditorAccess('翻译辅助'))$('translateAllBtn').click();});$('headerExportPdfBtn')?.addEventListener('click',()=>{$('previewExportActions')?.scrollIntoView({behavior:'smooth',block:'start'});$('exportPdfBtn')?.focus({preventScroll:true});});
+  document.addEventListener('HUIDI:pdf-export-settled',()=>{const paper=$('piPaper');if(paper?.dataset.fpPreviewDeferredDuringExport==='1'){delete paper.dataset.fpPreviewDeferredDuringExport;window.setTimeout(()=>renderPreview({source:'post-export'}),0);}});
   $('exportPdfBtn').addEventListener('click',()=>{if(guardEditorAccess('导出 PDF'))exportPdf();});$('emailAfterExport')?.addEventListener('change',e=>{if(editorAccessLocked){e.target.checked=false;guardEditorAccess('邮件草稿');return;}saveEmailPrefs({afterExport:e.target.checked});});$('emailDraftBtn')?.addEventListener('click',()=>{if(guardEditorAccess('生成邮件草稿'))openEmailDraftModal();});$('closeModalBtn').addEventListener('click',closeModal);$('modalBackdrop').addEventListener('click',e=>{if(e.target===$('modalBackdrop'))closeModal();});$('modalContent').addEventListener('click',storedClick);
   $('modalContent').addEventListener('input',e=>{if(e.target.id==='copySearch')renderContentLibraryList();if(e.target.id==='customerSearch')renderCustomerLibraryList();});
   $('modalContent').addEventListener('change',e=>{
@@ -3464,14 +4194,14 @@
   $('appendContractClauseBtn')?.addEventListener('click',()=>{const key=get('contractClauseTemplate'),text=CONTRACT_CLAUSES[key];if(!text){setStatus('请先选择一个合同条款模块。','error');return;}const current=get('contractClauses');set('contractClauses',current?`${current}\n\n${text}`:text);renderPreview();setStatus('已追加合同条款模板，请结合订单、法律适用地和双方约定人工修改。','ok');});
   $('clearContractClausesBtn')?.addEventListener('click',()=>{if(window.confirm('确认清空合同补充条款？')){set('contractClauses','');renderPreview();}});
   $('saveAssetProfileBtn').addEventListener('click',()=>{if(guardEditorAccess('保存签章组合'))saveAssetProfile();});$('deleteAssetProfileBtn').addEventListener('click',()=>{if(guardEditorAccess('删除签章组合'))deleteAssetProfile();});$('assetProfileSelect').addEventListener('change',loadAssetProfile);handleAssetFile('signatureFile','signature');handleAssetFile('stampFile','stamp');qsa('.clear-asset').forEach(b=>b.addEventListener('click',()=>{assets[b.dataset.asset]='';renderAssetPreviews();renderPreview();}));
-  qsa('[data-asset-adjust]').forEach(input=>input.addEventListener('input',()=>{syncAdjustmentOutputs();renderPreview();}));
+  qsa('[data-asset-adjust]').forEach(input=>input.addEventListener('input',()=>{syncAdjustmentOutputs();schedulePreviewRender(140);}));
   function openSupportQr(){openModal('HUIDI Docs Community Local',`<div class="support-qr-modal"><p><b>社区源码开放版</b></p><p>本地单据、客户/商品基础资料、产品目录与 PDF 等核心能力开放；HUIDI 生产云、AI、邮件、通知、管理后台和商业服务不包含在本包。</p><p><a href="./SOURCE.html">查看源码与授权说明</a></p></div>`);}
   $('showQrBtn').addEventListener('click',openSupportQr);$('footerQrBtn').addEventListener('click',openSupportQr);
   $('parseBuyerBtn').addEventListener('click',parseBuyerPaste);$('clearBuyerPasteBtn').addEventListener('click',()=>set('buyerPasteText'));
   $('parsePaymentBtn').addEventListener('click',parsePaymentPaste);$('clearPaymentPasteBtn').addEventListener('click',()=>set('paymentPasteText'));
   qsa('.preview-asset').forEach(button=>button.addEventListener('click',()=>{const image=assets[button.dataset.asset]||'';if(!image){setStatus('请先上传图片后再放大查看。','error');return;}openModal(button.dataset.asset==='stamp'?'公司公章':'电子签名',`<div class="support-qr-modal"><img src="${image}" alt="图片预览"></div>`);}));
   document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
-  window.FlypigBOXApp = { formState, applyState, compressState, setStatus, showPdfExportHelp, saveWorkspaceSnapshot, applyDocumentProfile, getDocumentType, renderPreview, renderLogisticsExtraRowsFromState, applyEditorAccessGate, clearCurrentDocument:openClearDocumentDialog, resetCurrentDocument, openPaperLayoutDialog, resolveDocumentPaperSpec };
+  window.FlypigBOXApp = { formState, applyState, compressState, setStatus, showPdfExportHelp, saveWorkspaceSnapshot, applyDocumentProfile, getDocumentType, renderPreview, schedulePreviewRender, renderLogisticsExtraRowsFromState, applyEditorAccessGate, exportPdf, clearCurrentDocument:openClearDocumentDialog, resetCurrentDocument, openPaperLayoutDialog, resolveDocumentPaperSpec };
   document.addEventListener('DOMContentLoaded',init);
 })();
 </script>
@@ -4241,11 +4971,11 @@
       if(titleInput)titleInput.value=title;
       payload.fields.workspaceDocumentTitle=title;
       summary=intelligence?.enrichPayload?.(payload,docType,relationContext)||summary;
-      const localSaved=bridge.saveWorkspaceSnapshot();
-      if(!localSaved)return;
+      const localSaved=await bridge.saveWorkspaceSnapshot();
+      if(!localSaved){appStatus('本地保存失败：当前页面内容仍在，请不要关闭页面；建议立即导出备份。','error');return;}
       const currentId=String(idInput?.value||sessionStorage.getItem('flypigbox_current_document_id')||'').trim();
       const workspaceMeta=window.FlypigBOXWorkspaceMeta?.build?.(payload,docType)||{document_type:docType,document_no:fallbackNo};
-      intelligence?.localMirror?.({id:currentId||'workspace_current',title,status:'draft',payload,...workspaceMeta});
+      if(!window.HUIDI_LOCAL_ONLY?.localOnly)intelligence?.localMirror?.({id:currentId||'workspace_current',title,status:'draft',payload,...workspaceMeta});
       if(!sb){
         appStatus(`已保存到本机：${title}。云端同步尚未配置。`,'ok');
         intelligence?.showSaveReceipt?.({title,summary,cloud:false,customerMatched});
@@ -4593,16 +5323,12 @@
   const documentProfileLabels = { proforma_invoice:'形式发票（PI）', quotation:'报价单', commercial_invoice:'商业发票', sales_contract:'销售合同', packing_list:'装箱单' };
   const applyDocumentProfile = (type, options = {}) => window.FlypigBOXApp?.applyDocumentProfile?.(type, options);
 
-  function applyBranding(payload, documentType) {
+  function applyBranding(payload) {
     const branding = payload?.branding || {};
     const studio = window.FlypigBOXBranding;
     if (!studio?.apply && !studio?.set) return false;
     const next = { ...branding };
-    if (documentProfileTypes.has(documentType)) next.documentType = documentType;
-    else {
-      const currentType = document.getElementById('documentType')?.value;
-      if (documentProfileTypes.has(currentType)) next.documentType = currentType;
-    }
+    delete next.documentType;
     if (studio.apply) studio.apply(next, { keepLogo: true });
     else studio.set(next);
     return true;
@@ -4620,7 +5346,7 @@
     const payload = template?.payload || {};
     const documentType = documentProfileTypes.has(template?.document_type) ? template.document_type : 'proforma_invoice';
     const styleOnly = Boolean(payload.branding && !payload.fields && !payload.formFields && !payload.workspaceState && !payload.state && !payload.documentState && !payload.noteContent);
-    const profileApplied = applyBranding(payload, styleOnly ? '' : documentType);
+    const profileApplied = applyBranding(payload);
     const fullState = payload.workspaceState || payload.state || payload.documentState || null;
 
     if (fullState && typeof fullState === 'object' && (fullState.fields || fullState.items)) {
@@ -4671,16 +5397,8 @@
     const result=applyTemplateToWorkspace(event.detail?.template);
     if(event.detail?.result && result) Object.assign(event.detail.result,result);
   });
-  document.addEventListener('HUIDI:branding-updated', event => {
-    const type=event.detail?.documentType;
-    if(documentProfileTypes.has(type) && type!==document.getElementById('documentType')?.value) applyDocumentProfile(type,{silent:true});
-    else window.FlypigBOXApp?.renderPreview?.();
-  });
-  document.addEventListener('HUIDI:branding-ready', event => {
-    const type=event.detail?.documentType;
-    if(documentProfileTypes.has(type) && type!==document.getElementById('documentType')?.value) applyDocumentProfile(type,{silent:true});
-    else window.FlypigBOXApp?.renderPreview?.();
-  });
+  document.addEventListener('HUIDI:branding-updated', () => window.FlypigBOXApp?.renderPreview?.());
+  document.addEventListener('HUIDI:branding-ready', () => window.FlypigBOXApp?.renderPreview?.());
   document.addEventListener('HUIDI:request-login', () => document.getElementById('memberAuthBtn')?.click());
 
 })();
@@ -4693,10 +5411,11 @@
 <div class="editor-legal-links" aria-label="法律与数据说明"><a href="./privacy.html">隐私政策</a><a href="./terms.html">用户协议</a><a href="./refund-policy.html">退款政策</a><a href="./data-deletion.html">数据删除</a><a href="./security.html">安全说明</a></div>
 <script src="./flypigbox-v2-4-hardening.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-trade-factory-upgrade.js?v=20260720-v3-3-5-2-4"></script>
+<script src="./huidi-doc-i18n-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
 <script src="./flypigbox-editor-table-view.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-xlsx-lite.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-smart-sheet-import.js?v=20260719-v3-3-3-0"></script>
-<script src="./flypigbox-editor-table-output.js?v=20260720-v3-3-5-0"></script>
+<script src="./flypigbox-editor-table-output.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
 <script src="./flypigbox-quick-result.js?v=20260722-v3-3-6-12"></script>
 <script src="./flypigbox-v3-2-5-pdf-compact.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-v3-2-6-internal-tools.js?v=20260720-v3-3-5-2-5"></script>
@@ -4711,7 +5430,7 @@
 <script src="./flypigbox-v3-3-3-9-document-guide.js?v=20260721-v3-3-6-3"></script>
 <script src="./flypigbox-v3-3-4-1-mode-navigation-personal-templates.js?v=20260721-v3-3-6-3"></script>
 <script src="./flypigbox-v3-3-4-2-prelaunch-account.js?v=20260721-v3-3-6-3"></script>
-<script src="./flypigbox-v3-3-5-0-sync-core.js?v=20260731-r1-3a-18-23-5-edit-stability"></script>
+<script src="./flypigbox-v3-3-5-0-sync-core.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
 <script src="./flypigbox-r1-3a-18-41-assistant.js?v=20260808-r1-3a-18-41"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-17-engine-config.js?v=20260729-r1-3a-18-3"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-17-rule-packs.js?v=20260729-r1-3a-18-3"></script>
@@ -4719,7 +5438,9 @@
 <script src="./flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js?v=20260729-r1-3a-18-3-integration-3"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-18-schema-runtime.js?v=20260729-r1-3a-18"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-rules.js?v=20260729-r1-3a-18"></script>
-<script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js?v=20260731-r1-3a-18-23-3-issue-navigation"></script>
+<script src="./huidi-issue-navigator-rc1616.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21"></script>
+<script src="./huidi-output-advisory-rc1616.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21"></script>
+<script src="./flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js?v=20260731-r1-3a-18-23-3-issue-navigation-rc1614"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-18-document-linkage.js?v=20260729-r1-3a-18"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-18-router-upgrade.js?v=20260729-r1-3a-18"></script>
 <script src="./flypigbox-v3-3-6-24-r1-3a-18-job-center.js?v=20260729-r1-3a-18-3"></script>
@@ -4733,6 +5454,14 @@
   <script src="./flypigbox-r1-3a-18-38-hidden-interaction-closure.js?v=20260808-r1-3a-18-38"></script>
   <script src="./flypigbox-r1-3a-18-39-navigation-plain-language-closure.js?v=20260808-r1-3a-18-39"></script>
   <script src="./assets/brand/huidi-brand.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.1.0"></script>
-<script src="./huidi-local-editor-bridge-v120.js"></script>
+<script src="./huidi-toolbar-owner-rc1617.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21"></script>
+<script src="./huidi-local-editor-bridge-v120.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
+<script src="./huidi-local-stability-rc165.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
+<script src="./huidi-local-editor-rc11.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
+<script src="./huidi-local-editor-rc15.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21"></script>
+<script src="./huidi-action-owner-rc1621.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21"></script>
+<script src="./huidi-doc-i18n-surface-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.4"></script>
+<script src="./huidi-layout-policy-rc1610.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.10"></script>
+<script src="./huidi-runtime-stability-rc1615.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21"></script>
 </body>
 </html>

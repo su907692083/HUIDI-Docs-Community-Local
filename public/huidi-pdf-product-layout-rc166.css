@@ -1,0 +1,123 @@
+/* HUIDI Docs Community Local RC16.6.4 — product-table readability + low-tail pagination closure */
+.pdf-page .products.pdf-quotation-table,
+.pdf-page .products.pdf-pi-products,
+.pdf-page .products.pdf-contract-goods{
+  table-layout:fixed!important;
+  width:100%!important;
+}
+.pdf-page .products th,
+.pdf-page .products td{
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.pdf-page .products td:nth-child(3){
+  text-align:left!important;
+}
+.pdf-page .pdf-product-name{
+  display:block;
+  font-size:1.03em;
+  line-height:1.28;
+  font-weight:850;
+  color:inherit;
+  margin:0 0 2px;
+}
+.pdf-page .pdf-product-meta-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:2px 7px;
+  margin-top:2px;
+}
+.pdf-page .pdf-product-meta{
+  display:inline-flex;
+  align-items:baseline;
+  gap:3px;
+  font-size:.88em;
+  line-height:1.25;
+  color:#46576d;
+}
+.pdf-page .pdf-product-meta b{
+  font-size:.92em;
+  letter-spacing:.01em;
+}
+.pdf-page .pdf-product-spec{
+  margin-top:2px;
+  color:#66758a;
+  font-size:.91em;
+  line-height:1.32;
+}
+.pdf-page .products .img{
+  width:44px!important;
+  height:44px!important;
+  max-width:100%!important;
+}
+/* Ordinary short terms/logistics tables may split by complete rows.  They are
+   not atomic blocks like a goods row or a signature block. */
+.pdf-page .pdf-quotation-terms,
+.pdf-page .pdf-terms-section,
+.pdf-page .pdf-logistics-section{
+  break-inside:auto!important;
+  page-break-inside:auto!important;
+}
+.pdf-page .pdf-quotation-terms table,
+.pdf-page .pdf-terms-section table,
+.pdf-page .pdf-logistics-section table{
+  break-inside:auto!important;
+  page-break-inside:auto!important;
+}
+/* Product rows themselves remain indivisible. */
+.pdf-page .products tr{
+  break-inside:avoid!important;
+  page-break-inside:avoid!important;
+}
+@media(max-width:900px){
+  .pdf-page .pdf-product-meta-row{display:block}
+  .pdf-page .pdf-product-meta{display:block}
+}
+/* Keep dense trade-item tables readable without burning an extra page. */
+.pdf-page .products th,
+.pdf-page .products td{
+  padding:5px 6px!important;
+  line-height:1.25!important;
+}
+.pdf-page .products{margin-bottom:8px!important}
+.pdf-page .money-table{margin-bottom:8px!important}
+.pdf-page .pdf-quotation-items .doc-section,
+.pdf-page .pdf-pi-goods .doc-section,
+.pdf-page .pdf-contract-goods-section .doc-section{margin-bottom:6px!important}
+
+
+/* RC16.6.4 — sparse CI / PL should read like customer documents, not miniature back-office grids. */
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing{
+  font-size:1.045em!important;
+  line-height:1.4!important;
+}
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial .doc-section,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing .doc-section{
+  margin-top:8px!important;
+  margin-bottom:5px!important;
+  padding-top:5px!important;
+  padding-bottom:5px!important;
+}
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial .pdf-party-card,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing .pdf-party-card{
+  padding:8px 9px!important;
+  line-height:1.42!important;
+}
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial table:not(.products) th,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial table:not(.products) td,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing table:not(.products) th,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing table:not(.products) td{
+  padding:5px 6px!important;
+  line-height:1.32!important;
+}
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial .pdf-commercial-table th,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-commercial .pdf-commercial-table td{
+  font-size:9.55px!important;
+  padding:4.7px 5px!important;
+}
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing .pdf-packing-table th,
+#piPaper:not(.fp-r13a6-dense-items) .pdf-template-packing .pdf-packing-table td{
+  font-size:9.25px!important;
+  padding:4.5px 5px!important;
+}

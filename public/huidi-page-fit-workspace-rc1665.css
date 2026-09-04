@@ -1,0 +1,32 @@
+/* HUIDI Docs Community Local RC16.6.5 — page-fit + landscape workspace closure. */
+.huidi-page-fit-control{display:flex;align-items:center;gap:7px;min-height:40px;padding:6px 8px;border:1px solid #d8e5ef;border-radius:12px;background:#f8fbff;color:#314f69;white-space:nowrap}
+.huidi-page-fit-control>span{font-size:12px;font-weight:900}.huidi-page-fit-control small{font-size:10.5px;font-weight:750;color:#60778d}
+.huidi-page-fit-segment{display:inline-flex;align-items:center;gap:3px;padding:3px;border:1px solid #cdddeb;border-radius:999px;background:#fff}
+.huidi-page-fit-segment button{min-height:28px;border:0;border-radius:999px;padding:0 10px;background:transparent;color:#3c5a72;font-size:12px;font-weight:850;white-space:nowrap}
+.huidi-page-fit-segment button.active{background:#176fd1;color:#fff;box-shadow:0 4px 12px rgba(23,111,209,.20)}
+/* Quotation one-page is a real pagination density, not only a label. Level 1 is
+   readable compression; level 2 is used only for a modest two-page quotation. */
+#piPaper.fp-quotation-one-page[data-fp-document-kind="quotation"],#piPaper.fp-quotation-one-page[data-fp-document-type="quotation"]{--huidi-quotation-density:1}
+#piPaper.fp-quotation-one-page[data-fp-document-kind="quotation"] .pdf-page,#piPaper.fp-quotation-one-page[data-fp-document-type="quotation"] .pdf-page{font-size:9.75px!important;line-height:1.22!important;padding:25px 28px 23px!important}
+#piPaper.fp-quotation-one-page .pdf-template{gap:2px!important}#piPaper.fp-quotation-one-page .pdf-quotation-hero{padding-bottom:5px!important;margin-bottom:5px!important;border-bottom-width:2px!important}#piPaper.fp-quotation-one-page .pdf-quotation-hero h2{font-size:19px!important}
+#piPaper.fp-quotation-one-page .pdf-meta-grid{gap:4px!important;margin-bottom:1px!important}#piPaper.fp-quotation-one-page .pdf-meta-grid>div{min-height:28px!important;padding:3px 5px!important}
+#piPaper.fp-quotation-one-page .pdf-party-grid{gap:5px!important}#piPaper.fp-quotation-one-page .pdf-party-card{padding:5px 6px!important;min-height:0!important}#piPaper.fp-quotation-one-page .pdf-party-card p{line-height:1.22!important;margin-block:1px!important}
+#piPaper.fp-quotation-one-page .doc-section{margin:4px 0 2px!important;padding:3px 6px!important;font-size:9.4px!important}#piPaper.fp-quotation-one-page table{margin-bottom:2px!important}#piPaper.fp-quotation-one-page th,#piPaper.fp-quotation-one-page td{padding:2.5px 4px!important;line-height:1.16!important}
+#piPaper.fp-quotation-one-page .products .img{width:36px!important;height:36px!important}#piPaper.fp-quotation-one-page .money-table{margin-bottom:1px!important}#piPaper.fp-quotation-one-page .signature-zone{min-height:52px!important;margin-top:3px!important}
+#piPaper.fp-quotation-one-page[data-huidi-page-fit-level="2"] .pdf-page{font-size:9.15px!important;line-height:1.16!important;padding:21px 24px 19px!important}
+#piPaper.fp-quotation-one-page[data-huidi-page-fit-level="2"] .pdf-quotation-hero h2{font-size:17.5px!important}#piPaper.fp-quotation-one-page[data-huidi-page-fit-level="2"] th,#piPaper.fp-quotation-one-page[data-huidi-page-fit-level="2"] td{padding:2px 3px!important}
+#piPaper.fp-quotation-one-page[data-huidi-page-fit-level="2"] .pdf-party-card{padding:4px 5px!important}#piPaper.fp-quotation-one-page[data-huidi-page-fit-level="2"] .products .img{width:32px!important;height:32px!important}
+/* Landscape is a workspace mode, not just a rotated sheet. Give the right preview
+   enough real pixels to show A4 landscape at a useful scale while retaining a
+   practical form column. */
+@media(min-width:1181px){
+  body.paper-landscape-mode.fp-live-document-mode .app,body.paper-landscape-mode.fp-live-table-mode .app{width:min(1780px,calc(100% - 18px))!important;max-width:none!important;padding-left:4px!important;padding-right:4px!important}
+  body.paper-landscape-mode.fp-live-document-mode .workbench,body.paper-landscape-mode.fp-live-table-mode .workbench{gap:6px!important}
+  body.paper-landscape-mode .preview-shell{padding-right:2px!important}
+  body.paper-landscape-mode.fp-live-document-mode .preview-toolbar{padding:8px 9px!important;margin-bottom:6px!important}
+  body.paper-landscape-mode.fp-live-document-mode #piPaper{margin-left:auto!important;margin-right:auto!important}
+  body.paper-landscape-mode.fp-live-table-mode .fp-workbook-canvas{padding:6px!important}
+  body.paper-landscape-mode.fp-live-table-mode .fp-workbook-sheet{min-width:860px!important}
+}
+@media(max-width:1380px){.huidi-page-fit-control small,.paper-layout-compact small{display:none}.preview-toolbar-primary{flex-wrap:wrap}}
+@media(max-width:980px){.huidi-page-fit-control{display:none!important}}

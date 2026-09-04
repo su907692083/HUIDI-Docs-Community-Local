@@ -1,0 +1,8 @@
+/* HUIDI Docs Community Local RC16.6 — optional online Feishu collaboration */
+.feishu-online-panel{margin-top:14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(145deg,var(--panel),var(--panel2));padding:16px;box-shadow:var(--shadow)}
+.feishu-online-head{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap;padding-bottom:13px;border-bottom:1px solid var(--line)}
+.feishu-online-head h4{margin:0;font-size:16px}.feishu-online-head p{margin:5px 0 0;color:var(--muted);font-size:11px;line-height:1.65;max-width:820px}
+.feishu-status{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px 0 4px}.feishu-status-copy{min-width:0}.feishu-status-copy strong{display:block;font-size:13px;margin:7px 0 3px}.feishu-status-copy small{display:block;color:var(--muted);font-size:10px;line-height:1.55}.feishu-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.feishu-actions .btn:disabled{opacity:.48;cursor:not-allowed;transform:none;box-shadow:none}
+.feishu-scope{margin-top:12px;padding:11px 12px;border-radius:13px;background:var(--panel);border:1px dashed var(--line2);font-size:10px;line-height:1.65;color:var(--muted)}.feishu-scope b{color:var(--text)}
+.feishu-security-note{display:grid;gap:4px;margin-top:14px;padding:11px 12px;border-radius:12px;background:#fff8e7;border:1px solid #f0d79e;color:#76551a;font-size:11px;line-height:1.6}
+@media(max-width:950px){.feishu-status{grid-template-columns:1fr}.feishu-actions{justify-content:flex-start}}

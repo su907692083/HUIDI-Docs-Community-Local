@@ -1,0 +1,22 @@
+const fs=require('fs'),path=require('path'),crypto=require('crypto');
+const root=path.resolve(__dirname,'..'),read=p=>fs.readFileSync(path.join(root,p),'utf8'),fail=[];const need=(x,m)=>{if(!x)fail.push(m)};
+const manifest=JSON.parse(read('RELEASE-MANIFEST.json')),html=read('public/workspace.html'),js=read('public/huidi-workspace-r2-rc1623.js'),css=read('public/huidi-workspace-r2-rc1623.css'),base=read('public/huidi-local-workspace-v120.js');
+need(/^1\.2\.0-RC16\.\d+$/.test(manifest.version)&&/^RC16\.\d+$/.test(manifest.release),'RC16 retained manifest family');
+need(html.includes('huidi-workspace-r2-rc1623.css')&&html.includes('huidi-workspace-r2-rc1623.js'),'Workspace R2 assets referenced');
+need(/v1\.2\.0 RC16\.\d+/.test(html),'workspace visible RC16 identity');
+need(js.includes('找客户 / 商品 / 业务 / 单据')&&js.includes('workspace-r2-search-result'),'global find missing');
+need(js.includes('第一次使用，先准备 3 项')&&js.includes('公司 / 收款')&&js.includes('第一个客户')&&js.includes('第一个商品'),'first-run setup missing');
+need(js.includes('更多工具')&&js.includes("['home','deals','customers','products','documents']"),'core/secondary navigation split missing');
+need(js.includes('huidi_workspace_last_view_v1')&&js.includes('restoreLastView'),'last-view recovery missing');
+need(js.includes('huidi_workspace_last_backup_export_v1')&&js.includes('backupStatus'),'backup awareness missing');
+need(!/new\s+MutationObserver|MutationObserver\s*\(/.test(js),'Workspace R2 must not add observer loop');
+need(css.includes('--ws-sidebar:204px')&&css.includes('.workspace-r2-quick')&&css.includes('.workspace-r2-more')&&css.includes('.workspace-r2-first-run'),'compact R2 styles missing');
+need(css.includes('body.workspace-r2 .workflow{display:none!important}')&&css.includes('data-huidi-view="home"'),'workflow not limited to home');
+need(/version:'1\.2\.0-RC16\.\d+'/.test(base),'backup release identity missing');
+const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex');
+need(sha('public/flypigbox-v3-3-2-3-pdf-flow-fix.js')==='abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36','protected PDF flow changed');
+need(sha('public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js')==='570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583','protected output gate changed');
+need(sha('public/huidi-workspace-r1-rc1622.js')==='ef5e82df349da28c0e50c8ce54cfa050c50691704769840990051f4ced19ad4d','RC16.22 Workspace R1 JS changed');
+need(sha('public/huidi-workspace-r1-rc1622.css')==='9e8bdc1ec2cfe3804b5d01a9f7de0add9f0ae818878c123d40497223dc5bc33a','RC16.22 Workspace R1 CSS changed');
+if(fail.length){console.error('RC16.23 WORKSPACE R2 VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
+console.log('RC16.23 WORKSPACE R2 VALIDATION PASSED');

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="zh-CN">
-<head><script src="../community-local-mode.js"></script><link rel="stylesheet" href="../community-local-mode.css"><link rel="stylesheet" href="../huidi-local-rc5.css">
+<head><script src="../community-local-mode.js"></script><script src="../huidi-local-core-rc167.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.8"></script><link rel="stylesheet" href="../community-local-mode.css"><link rel="stylesheet" href="../huidi-local-rc5.css">
 <meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'self' data: blob:; connect-src 'self'; img-src 'self' data: blob: https: http:; media-src 'self' data: blob:; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; worker-src 'self' blob:; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HUIDI 产品目录制作 · 本地版</title>
@@ -159,7 +159,7 @@ details{border:1px solid var(--line);border-radius:10px;background:#fbfdff}detai
   
   
   <link rel="manifest" href="../manifest.webmanifest">
-  <link rel="stylesheet" href="../assets/brand/huidi-brand.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC5">
+  <link rel="stylesheet" href="../assets/brand/huidi-brand.css?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.2">
 <script src="../flypigbox-xlsx-lite.js"></script></head>
 <body class="catalog-premium-page huidi-local-catalog-rc5">
 <main class="app catalog-shell">
@@ -175,8 +175,7 @@ details{border:1px solid var(--line);border-radius:10px;background:#fbfdff}detai
     <h2 id="catalogAuthTitle">Community Local · 本地产品目录</h2>
     <p id="catalogAuthDesc">本地版无需登录。商品资料和目录项目会保存在当前浏览器里。</p>
     <div class="catalog-auth-actions">
-      <a class="btn primary" href="../workspace.html">返回本地工作台</a>
-      <a class="btn gray" href="../workspace.html">返回工作台</a>
+      <a class="btn primary" href="../workspace.html?view=catalog">返回本地工作台</a>
     </div>
   </section>
 
@@ -839,7 +838,8 @@ async function fetchCatalogProject(id){if(!id)return null;if(String(id).startsWi
 async function maybeLoadCatalogProjectFromUrl(){const id=new URLSearchParams(location.search).get("project");if(!id)return false;const project=await fetchCatalogProject(id);if(!project){notify("未找到这份产品目录，或当前账号无权访问。","error");return false;}state.currentProjectId=project.id;state.projectLoaded=true;if(E.catalogProjectName)E.catalogProjectName.value=project.title||"";if(E.catalogProjectLanguage)E.catalogProjectLanguage.value=project.language||"en";if(E.catalogProjectCurrency)E.catalogProjectCurrency.value=project.currency||"USD";if(E.catalogProjectStatus)E.catalogProjectStatus.value=project.status||"draft";if(E.catalogProjectCustomer)E.catalogProjectCustomer.value=project.customer_id||"";fillCatalogProjectDealOptions();if(E.catalogProjectDeal)E.catalogProjectDeal.value=project.deal_id||"";applyCatalogProjectPayload(project.payload||{});notify(`已打开目录项目：${project.title||"未命名产品目录"}`);return true;}
 function detectHeader(headers,role){const p={title:/(产品标题|产品名称|商品名称|标题|品名|product.?title|product.?name|^name$)/i,sku:/(sku|型号|货号|产品编码|编码|model|product.?code|spu)/i,price:/(价格|售价|报价|金额|price|sale.?price|cost)/i,description:/(产品描述|产品详情|描述|规格|说明|description|detail|spec)/i,image:/(主图|产品图片|图片链接|图片|image|photo|picture|img|image.?url)/i};return headers.find(h=>p[role].test(String(h)))||"";}
 function usefulHeader(h){return/(重量|尺寸|材质|颜色|包装|品牌|单位|适配|产地|认证|weight|size|material|color|package|brand|unit|compatible|origin|certificate)/i.test(String(h));}
-function extractUrls(v){const t=String(v??"").replace(/&amp;/g,"&"),out=[];let m;const a=/\b(?:src|data-src)\s*=\s*["']?([^"'\s>]+)["']?/gi,u=/https?:\/\/[^\s"'<>]+/gi;while((m=a.exec(t)))out.push(m[1]);while((m=u.exec(t)))out.push(m[0].replace(/[),.;]+$/,""));return unique(out.filter(x=>/^https?:\/\/\S+/i.test(x)));}
+function extractUrls(v){const t=String(v??"").replace(/&amp;/g,"&"),out=[],direct=clean(t);if(/^(?:data:image\/[^;]+;base64,|blob:)/i.test(direct))out.push(direct);let m;const a=/\b(?:src|data-src)\s*=\s*["']?([^"'\s>]+)["']?/gi,u=/https?:\/\/[^\s"'<>]+/gi;while((m=a.exec(t)))out.push(m[1]);while((m=u.exec(t)))out.push(m[0].replace(/[),.;]+$/,""));return unique(out.filter(x=>/^(?:https?:\/\/\S+|data:image\/[^;]+;base64,|blob:)/i.test(x)));}
+function isLocalImageSource(value){return /^(?:data:image\/[^;]+;base64,|blob:)/i.test(clean(value));}
 function parseRich(v){const raw=String(v??""),images=extractUrls(raw);if(!raw)return{text:"",fields:[],images};if(!/<\/?(table|tbody|tr|td|th|img|div|span|p|strong|br|li|ul|ol)\b/i.test(raw))return{text:clean(raw),fields:[],images};const doc=new DOMParser().parseFromString(raw,"text/html");doc.querySelectorAll("script,style,iframe,svg,canvas,noscript").forEach(n=>n.remove());const f=[],s=new Set();doc.querySelectorAll("table tr").forEach(tr=>{const c=[...tr.querySelectorAll("th,td")].map(x=>clean(x.textContent)).filter(Boolean);if(c.length>=2&&c[0].length<=60){const l=c[0].replace(/[:：]\s*$/,""),val=c.slice(1).join(" "),key=(l+"|"+val).toLowerCase();if(val&&!s.has(key)){s.add(key);f.push({label:l,value:val});}}});doc.querySelectorAll("li").forEach(li=>{const val=clean(li.textContent),key=("|"+val).toLowerCase();if(val&&val.length<=180&&!s.has(key)){s.add(key);f.push({label:"",value:val});}});return{text:clean(doc.body?.textContent||""),fields:f.slice(0,14),images};}
 function valueFor(p,role){const h=state.mapping[role];return h?(p.raw[h]??""):"";}
 function newField(l,v,visible=true){return{id:uid("f"),label:clean(l),value:clean(v),visible:!!visible};}
@@ -855,9 +855,36 @@ function productLibraryDescription(row){
   add("Specification",row.specification||row.spec);
   add("MOQ",row.moq);
   add("HS Code",row.hs_code);
+  add("Customs Description",row.customs_description);
+  add("Country of Origin",row.country_of_origin||row.origin_country);
   add("Supplier",row.supplier_name);
-  add("Source",row.source_url);
+  add("Package Type",row.package_type);
+  add("Carton Size",row.carton_size||row.dimensions);
+  add("Qty / Carton",row.qty_per_carton);
+  add("N.W. (kg)",row.net_weight);
+  add("G.W. (kg)",row.gross_weight);
+  add("CBM",row.cbm);
+  add("Shipping Marks",row.shipping_marks);
   return lines.length?`<table>${lines.join("")}</table>`:"";
+}
+function productLibraryFields(row){
+  const fields=[];
+  const add=(label,value)=>{const v=clean(value);if(v)fields.push(newField(label,v,true));};
+  add("Category",row.category);
+  add("Specification",row.specification||row.spec);
+  add("MOQ",row.moq);
+  add("HS Code",row.hs_code);
+  add("Customs Description",row.customs_description);
+  add("Country of Origin",row.country_of_origin||row.origin_country);
+  add("Supplier",row.supplier_name);
+  add("Package Type",row.package_type);
+  add("Carton Size",row.carton_size||row.dimensions);
+  add("Qty / Carton",row.qty_per_carton);
+  add("N.W. (kg)",row.net_weight);
+  add("G.W. (kg)",row.gross_weight);
+  add("CBM",row.cbm);
+  add("Shipping Marks",row.shipping_marks);
+  return fields.slice(0,14);
 }
 function productLibraryRowToCatalogRaw(row){
   return {
@@ -877,7 +904,19 @@ function loadCatalogRows(rows,{source="product_library"}={}){
   state.headers=["Product Title","SKU / Model","Price","Description","Image URL"];
   state.mapping={title:"Product Title",sku:"SKU / Model",price:"Price",description:"Description",image:"Image URL"};
   state.products=state.rawRows.map((raw,i)=>buildProduct(raw,i));
-  state.products.forEach((product,index)=>{product.sourceRecordId=usable[index]?.id||"";});
+  state.products.forEach((product,index)=>{
+    const sourceRow=usable[index]||{};
+    product.sourceRecordId=sourceRow.id||"";
+    const sourceImage=productLibraryImage(sourceRow);
+    if(isLocalImageSource(sourceImage)){
+      product.image=sourceImage;
+      product.imageCandidates=unique([sourceImage,...(product.imageCandidates||[])]);
+      product.imageStatus="ready";
+    }
+    const syncedFields=productLibraryFields(sourceRow);
+    if(syncedFields.length)product.fields=syncedFields;
+    if(clean(sourceRow.notes))product.note=clean(sourceRow.notes);
+  });
   state.selected.clear();state.activeId=state.products[0]?.id||null;state.page=1;state.cache.clear();state.search="";E.search.value="";
   E.excelChip.textContent=source==="workspace_selected"?`已从工作台商品资料库导入 ${state.products.length} 个已选商品。`:`已从商品资料库导入 ${state.products.length} 个商品。`;
   E.excelChip.classList.add("show");
@@ -896,7 +935,7 @@ function transferProductIds(){
 }
 async function fetchProductLibraryRows(ids=[]){
   if(window.HUIDI_LOCAL_ONLY?.localOnly){
-    let rows=[];try{rows=JSON.parse(localStorage.getItem('huidi_local_products_v1')||'[]')||[]}catch(_){}
+    let rows=window.HUIDILocalCore?.repositories?.products?.list?.()||[]
     if(ids.length){const set=new Set(ids.map(String));rows=rows.filter(row=>set.has(String(row.id)))}
     return rows.slice(0,MAX_PRODUCTS);
   }
@@ -974,15 +1013,15 @@ async function saveCatalogProductsToProductLibrary(){
   if(!requireCatalogAuth())return;
   if(!state.products.length){notify("当前目录没有可保存的产品。","error");return;}
   if(window.HUIDI_LOCAL_ONLY?.localOnly){
-    let rows=[];try{rows=JSON.parse(localStorage.getItem('huidi_local_products_v1')||'[]')||[]}catch(_){}
+    let rows=window.HUIDILocalCore?.repositories?.products?.list?.()||[]
     const bySku=new Map(rows.filter(r=>clean(r.sku)).map(r=>[clean(r.sku).toLowerCase(),r]));
     for(const product of state.products){
       const parts=catalogPriceParts(product.price),sku=clean(product.sku),old=sku?bySku.get(sku.toLowerCase()):null;
       const row={id:old?.id||`local_${Date.now()}_${Math.random().toString(36).slice(2,7)}`,name:clean(product.title),sku,price:parts.amount??'',currency:parts.currency||'USD',moq:catalogMoq(product),spec:(product.fields||[]).map(f=>`${clean(f.label)}: ${clean(f.value)}`).filter(x=>!x.startsWith(':')).join('\n'),image_url:clean(product.image||product.imageCandidates?.[0]||''),updated_at:new Date().toISOString()};
       if(old){const i=rows.findIndex(x=>x.id===old.id);rows[i]={...old,...row}}else rows.unshift(row);
     }
-    localStorage.setItem('huidi_local_products_v1',JSON.stringify(rows.slice(0,1000)));
-    notify(`已保存 ${state.products.length} 个产品到本机商品资料。`,"success");return;
+    const repo=window.HUIDILocalCore?.repositories?.products;if(repo)repo.replaceAll(rows.slice(0,1000));else localStorage.setItem('huidi_local_products_v1',JSON.stringify(rows.slice(0,1000)));
+    notify(`已保存 ${state.products.length} 个产品到工作台商品资料。`,"success");return;
   }
   notify("当前版本未启用云端商品库。","error");
 }
@@ -1864,7 +1903,7 @@ boot();
 <script src="../flypigbox-r1-3a-18-32-visual-regression-closure.js?v=20260807-r1-3a-18-33"></script>
   <script src="../flypigbox-r1-3a-18-38-hidden-interaction-closure.js?v=20260808-r1-3a-18-38"></script>
   <script src="../flypigbox-r1-3a-18-39-navigation-plain-language-closure.js?v=20260808-r1-3a-18-39"></script>
-  <script src="../assets/brand/huidi-brand.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC5"></script>
+  <script src="../assets/brand/huidi-brand.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.6.2"></script>
 <script>
 (function(){const KEY='huidi_local_theme_v1';function apply(next){const theme=next||localStorage.getItem(KEY)||'light';document.documentElement.dataset.huidiTheme=theme;localStorage.setItem(KEY,theme);document.getElementById('catalogThemeToggle')&&(document.getElementById('catalogThemeToggle').textContent=theme==='dark'?'切换白天':'切换夜间');}const style=document.createElement('style');style.textContent=`html[data-huidi-theme='dark'] body{background:#0b1323;color:#eaf1ff}html[data-huidi-theme='dark'] .panel,html[data-huidi-theme='dark'] .catalog-auth-gate,html[data-huidi-theme='dark'] .company-box,html[data-huidi-theme='dark'] .upload-card,html[data-huidi-theme='dark'] details,html[data-huidi-theme='dark'] .mini-preview{background:#101b31!important;color:#eaf1ff!important;border-color:#2b3b55!important}html[data-huidi-theme='dark'] .top,html[data-huidi-theme='dark'] .privacy,html[data-huidi-theme='dark'] .help,html[data-huidi-theme='dark'] .hint,html[data-huidi-theme='dark'] .sub{color:#a9b7cf!important}html[data-huidi-theme='dark'] input,html[data-huidi-theme='dark'] select,html[data-huidi-theme='dark'] textarea{background:#13203a!important;color:#eef4ff!important;border-color:#334764!important}html[data-huidi-theme='dark'] .workspace-return,html[data-huidi-theme='dark'] .btn.gray{background:#13203a!important;color:#eaf1ff!important;border-color:#334764!important}html[data-huidi-theme='dark'] .upload-drop{background:#13203a!important;border-color:#4672d4!important}`;document.head.appendChild(style);apply();window.addEventListener('DOMContentLoaded',()=>{const btn=document.getElementById('catalogThemeToggle');if(btn)btn.addEventListener('click',()=>apply(document.documentElement.dataset.huidiTheme==='dark'?'light':'dark'));});})();
 </script></body>
