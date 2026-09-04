@@ -1,0 +1,156 @@
+name: Publish RC16.29
+
+on:
+  push:
+    branches:
+      - release/rc16.29
+    paths:
+      - .release/publish-rc1629.json
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release branch
+        uses: actions/checkout@v4
+        with:
+          ref: release/rc16.29
+          fetch-depth: 0
+
+      - name: Read publish config
+        id: cfg
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+          cfg=json.loads(Path('.release/publish-rc1629.json').read_text(encoding='utf-8'))
+          for k in ('source_url','windows_url'):
+              if not cfg.get(k):
+                  raise SystemExit(f'missing {k}')
+          print('source_url='+cfg['source_url'])
+          print('windows_url='+cfg['windows_url'])
+          PY
+
+      - name: Download verified release packages
+        shell: bash
+        env:
+          SOURCE_URL: ${{ steps.cfg.outputs.source_url }}
+          WINDOWS_URL: ${{ steps.cfg.outputs.windows_url }}
+        run: |
+          set -euo pipefail
+          curl -fL --retry 4 --retry-delay 2 "$SOURCE_URL" -o /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip
+          curl -fL --retry 4 --retry-delay 2 "$WINDOWS_URL" -o /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip
+          echo "94f1b4e88f25ba23a0749ad3a7dfc3744b3fdbb9b66dadb62c3a8ed6b2c83106  /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip" | sha256sum -c -
+          echo "61ac9f99ba6fb7500b19662add6434008a0ac27343be6b69801f1df23a9fbe72  /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip" | sha256sum -c -
+
+      - name: Materialize RC16.29 source into repository
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/rc1629-source /tmp/rc1629-keep
+          mkdir -p /tmp/rc1629-source /tmp/rc1629-keep
+          unzip -q /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip -d /tmp/rc1629-source
+
+          for f in README.md FEATURES-RC16.29.zh-CN.md RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md SHA256SUMS-RC16.29.txt RELEASE-PACKAGE-VERIFY-RC16.29.txt; do
+            if [ -f "$f" ]; then cp "$f" "/tmp/rc1629-keep/$f"; fi
+          done
+
+          rsync -a --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.release/' \
+            --exclude='README.md' \
+            --exclude='FEATURES-RC16.29.zh-CN.md' \
+            --exclude='RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md' \
+            --exclude='SHA256SUMS-RC16.29.txt' \
+            --exclude='RELEASE-PACKAGE-VERIFY-RC16.29.txt' \
+            /tmp/rc1629-source/ ./
+
+          cp /tmp/rc1629-keep/* .
+
+          rm -rf .release
+          rm -f .github/workflows/publish-rc1629.yml
+
+      - name: Validate materialized source
+        shell: bash
+        run: |
+          set -euo pipefail
+          node --version
+          npm run check
+          test "$(node -p "require('./package.json').version")" = "1.2.0-rc16.29"
+          grep -q '1.2.0-RC16.29' RELEASE-MANIFEST.json
+          test ! -f config/feishu.local.json
+
+      - name: Commit complete source snapshot
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "HUIDI Release Bot"
+          git config user.email "224401967+su907692083@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes to commit"
+          else
+            git commit -m "release: publish HUIDI Docs Community Local v1.2.0 RC16.29 source"
+            git push origin HEAD:release/rc16.29
+          fi
+          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Prepare release checksums
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SHA256SUMS.txt <<'EOF'
+          94f1b4e88f25ba23a0749ad3a7dfc3744b3fdbb9b66dadb62c3a8ed6b2c83106  HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip
+          61ac9f99ba6fb7500b19662add6434008a0ac27343be6b69801f1df23a9fbe72  HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip
+          EOF
+          cp RELEASE-PACKAGE-VERIFY-RC16.29.txt /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-PACKAGE-VERIFY.txt
+
+      - name: Merge RC16.29 pull request
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh pr ready 1 --repo "$GITHUB_REPOSITORY" || true
+          gh pr merge 1 --repo "$GITHUB_REPOSITORY" --merge --subject "release: HUIDI Docs Community Local v1.2.0 RC16.29" --body "Publish the verified RC16.29 source snapshot and user-facing release documentation."
+          git fetch origin main
+          echo "Merged main: $(git rev-parse origin/main)"
+
+      - name: Create GitHub prerelease and upload assets
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          TARGET_SHA="$(git rev-parse origin/main)"
+          SOURCE=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip
+          WINDOWS=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip
+          SUMS=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SHA256SUMS.txt
+          VERIFY=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-PACKAGE-VERIFY.txt
+
+          if gh release view v1.2.0-rc16.29 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload v1.2.0-rc16.29 "$SOURCE" "$WINDOWS" "$SUMS" "$VERIFY" --clobber --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create v1.2.0-rc16.29 "$SOURCE" "$WINDOWS" "$SUMS" "$VERIFY" \
+              --repo "$GITHUB_REPOSITORY" \
+              --target "$TARGET_SHA" \
+              --title "HUIDI Docs Community Local v1.2.0 RC16.29" \
+              --notes-file RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md \
+              --prerelease
+          fi
+
+      - name: Final release verification
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release view v1.2.0-rc16.29 --repo "$GITHUB_REPOSITORY" --json tagName,name,isPrerelease,url,assets
