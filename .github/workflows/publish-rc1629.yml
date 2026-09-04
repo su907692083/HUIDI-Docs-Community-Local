@@ -60,69 +60,63 @@ jobs:
 
           const shareUrl = process.env.SHARE_URL;
           const wanted = [
-            {
-              name: 'HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip',
-              out: '/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip'
-            },
-            {
-              name: 'HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip',
-              out: '/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip'
-            }
+            {name:'HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip',out:'/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip'},
+            {name:'HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip',out:'/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip'}
           ];
 
           const browser = await chromium.launch({headless:true, executablePath, args:['--no-sandbox','--disable-dev-shm-usage']});
           try {
             for (const item of wanted) {
               const page = await browser.newPage({acceptDownloads:true});
+              page.on('response', r => {
+                const u=r.url();
+                if (/api|download|file|share/i.test(u)) console.log('NET', r.status(), u);
+              });
               await page.goto(shareUrl, {waitUntil:'domcontentloaded', timeout:60000});
-              await page.waitForTimeout(2500);
 
-              let downloaded = false;
+              let fileVisible=false;
+              for (let attempt=0; attempt<9; attempt++) {
+                await page.waitForTimeout(10000);
+                const body=(await page.locator('body').innerText()).slice(0,6000);
+                console.log(`WAIT ${attempt+1}/9`, body.slice(0,1200));
+                if (body.includes(item.name)) { fileVisible=true; break; }
+                if (attempt===3 || attempt===6) {
+                  console.log('Reloading share page while waiting for file verification');
+                  await page.reload({waitUntil:'domcontentloaded', timeout:60000});
+                }
+              }
+              if (!fileVisible) throw new Error('file list did not become ready within 90s: '+item.name);
+
               const tryClickForDownload = async (locator) => {
                 if (await locator.count() < 1) return false;
                 try {
                   const [download] = await Promise.all([
-                    page.waitForEvent('download', {timeout:12000}),
-                    locator.first().click({timeout:12000})
+                    page.waitForEvent('download', {timeout:20000}),
+                    locator.first().click({timeout:15000})
                   ]);
                   await download.saveAs(item.out);
                   return true;
-                } catch (e) {
-                  return false;
-                }
+                } catch { return false; }
               };
 
-              const direct = page.locator('a,button').filter({hasText:item.name});
-              downloaded = await tryClickForDownload(direct);
-
+              let downloaded = await tryClickForDownload(page.locator('a,button').filter({hasText:item.name}));
               if (!downloaded) {
-                const textNode = page.getByText(item.name, {exact:false}).first();
-                if (await textNode.count()) {
-                  try { await textNode.click({timeout:10000}); } catch {}
-                  await page.waitForTimeout(1500);
-                }
-
-                for (const re of [/download/i, /ダウンロード/i, /下载/i, /保存/i]) {
+                const node=page.getByText(item.name,{exact:false}).first();
+                if (await node.count()) { try { await node.click({timeout:10000}); } catch {} await page.waitForTimeout(1500); }
+                for (const re of [/download/i,/ダウンロード/i,/下载/i,/保存/i]) {
                   if (downloaded) break;
-                  const btn = page.locator('a,button').filter({hasText:re});
-                  downloaded = await tryClickForDownload(btn);
+                  downloaded=await tryClickForDownload(page.locator('a,button').filter({hasText:re}));
                 }
               }
-
               if (!downloaded) {
-                const html = await page.content();
-                console.log('Unable to trigger download for', item.name);
                 console.log('PAGE URL:', page.url());
-                console.log('BODY TEXT:', (await page.locator('body').innerText()).slice(0,5000));
-                console.log('HTML PREFIX:', html.slice(0,5000));
+                console.log('BODY TEXT:', (await page.locator('body').innerText()).slice(0,6000));
                 throw new Error('download not resolved: '+item.name);
               }
               console.log('Downloaded', item.name, fs.statSync(item.out).size, 'bytes');
               await page.close();
             }
-          } finally {
-            await browser.close();
-          }
+          } finally { await browser.close(); }
           JS
           node download.mjs
 
@@ -136,22 +130,15 @@ jobs:
           rm -rf /tmp/rc1629-source /tmp/rc1629-keep
           mkdir -p /tmp/rc1629-source /tmp/rc1629-keep
           unzip -q /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip -d /tmp/rc1629-source
-
           for f in README.md FEATURES-RC16.29.zh-CN.md RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md SHA256SUMS-RC16.29.txt RELEASE-PACKAGE-VERIFY-RC16.29.txt; do
             if [ -f "$f" ]; then cp "$f" "/tmp/rc1629-keep/$f"; fi
           done
-
           rsync -a --delete \
-            --exclude='.git/' \
-            --exclude='.github/' \
-            --exclude='.release/' \
-            --exclude='README.md' \
-            --exclude='FEATURES-RC16.29.zh-CN.md' \
+            --exclude='.git/' --exclude='.github/' --exclude='.release/' \
+            --exclude='README.md' --exclude='FEATURES-RC16.29.zh-CN.md' \
             --exclude='RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md' \
-            --exclude='SHA256SUMS-RC16.29.txt' \
-            --exclude='RELEASE-PACKAGE-VERIFY-RC16.29.txt' \
+            --exclude='SHA256SUMS-RC16.29.txt' --exclude='RELEASE-PACKAGE-VERIFY-RC16.29.txt' \
             /tmp/rc1629-source/ ./
-
           cp /tmp/rc1629-keep/* .
           rm -rf .release
           rm -f .github/workflows/publish-rc1629.yml
@@ -209,16 +196,13 @@ jobs:
           WINDOWS=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip
           SUMS=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SHA256SUMS.txt
           VERIFY=/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-PACKAGE-VERIFY.txt
-
           if gh release view v1.2.0-rc16.29 --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release upload v1.2.0-rc16.29 "$SOURCE" "$WINDOWS" "$SUMS" "$VERIFY" --clobber --repo "$GITHUB_REPOSITORY"
           else
             gh release create v1.2.0-rc16.29 "$SOURCE" "$WINDOWS" "$SUMS" "$VERIFY" \
-              --repo "$GITHUB_REPOSITORY" \
-              --target "$TARGET_SHA" \
+              --repo "$GITHUB_REPOSITORY" --target "$TARGET_SHA" \
               --title "HUIDI Docs Community Local v1.2.0 RC16.29" \
-              --notes-file RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md \
-              --prerelease
+              --notes-file RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md --prerelease
           fi
 
       - name: Final release verification
