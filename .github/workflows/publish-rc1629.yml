@@ -21,7 +21,7 @@ jobs:
           ref: release/rc16.29
           fetch-depth: 0
 
-      - name: Read publish config
+      - name: Read temporary transfer config
         id: cfg
         shell: bash
         run: |
@@ -30,22 +30,102 @@ jobs:
           import json
           from pathlib import Path
           cfg=json.loads(Path('.release/publish-rc1629.json').read_text(encoding='utf-8'))
-          for k in ('source_url','windows_url'):
-              if not cfg.get(k):
-                  raise SystemExit(f'missing {k}')
-          print('source_url='+cfg['source_url'])
-          print('windows_url='+cfg['windows_url'])
+          if not cfg.get('share_url'):
+              raise SystemExit('missing share_url')
+          print('share_url='+cfg['share_url'])
           PY
 
-      - name: Download verified release packages
+      - name: Download verified RC16.29 packages from temporary transfer
         shell: bash
         env:
-          SOURCE_URL: ${{ steps.cfg.outputs.source_url }}
-          WINDOWS_URL: ${{ steps.cfg.outputs.windows_url }}
+          SHARE_URL: ${{ steps.cfg.outputs.share_url }}
         run: |
           set -euo pipefail
-          curl -fL --retry 4 --retry-delay 2 "$SOURCE_URL" -o /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip
-          curl -fL --retry 4 --retry-delay 2 "$WINDOWS_URL" -o /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip
+          mkdir -p /tmp/rc1629-browser
+          cd /tmp/rc1629-browser
+          npm init -y >/dev/null 2>&1
+          npm install --silent playwright-core@1.55.0
+          cat > download.mjs <<'JS'
+          import fs from 'fs';
+          import { chromium } from 'playwright-core';
+
+          const executableCandidates = [
+            '/usr/bin/google-chrome',
+            '/usr/bin/google-chrome-stable',
+            '/usr/bin/chromium',
+            '/usr/bin/chromium-browser'
+          ];
+          const executablePath = executableCandidates.find(p => fs.existsSync(p));
+          if (!executablePath) throw new Error('No Chromium/Chrome executable found on runner');
+
+          const shareUrl = process.env.SHARE_URL;
+          const wanted = [
+            {
+              name: 'HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip',
+              out: '/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip'
+            },
+            {
+              name: 'HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip',
+              out: '/tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip'
+            }
+          ];
+
+          const browser = await chromium.launch({headless:true, executablePath, args:['--no-sandbox','--disable-dev-shm-usage']});
+          try {
+            for (const item of wanted) {
+              const page = await browser.newPage({acceptDownloads:true});
+              await page.goto(shareUrl, {waitUntil:'domcontentloaded', timeout:60000});
+              await page.waitForTimeout(2500);
+
+              let downloaded = false;
+              const tryClickForDownload = async (locator) => {
+                if (await locator.count() < 1) return false;
+                try {
+                  const [download] = await Promise.all([
+                    page.waitForEvent('download', {timeout:12000}),
+                    locator.first().click({timeout:12000})
+                  ]);
+                  await download.saveAs(item.out);
+                  return true;
+                } catch (e) {
+                  return false;
+                }
+              };
+
+              const direct = page.locator('a,button').filter({hasText:item.name});
+              downloaded = await tryClickForDownload(direct);
+
+              if (!downloaded) {
+                const textNode = page.getByText(item.name, {exact:false}).first();
+                if (await textNode.count()) {
+                  try { await textNode.click({timeout:10000}); } catch {}
+                  await page.waitForTimeout(1500);
+                }
+
+                for (const re of [/download/i, /ダウンロード/i, /下载/i, /保存/i]) {
+                  if (downloaded) break;
+                  const btn = page.locator('a,button').filter({hasText:re});
+                  downloaded = await tryClickForDownload(btn);
+                }
+              }
+
+              if (!downloaded) {
+                const html = await page.content();
+                console.log('Unable to trigger download for', item.name);
+                console.log('PAGE URL:', page.url());
+                console.log('BODY TEXT:', (await page.locator('body').innerText()).slice(0,5000));
+                console.log('HTML PREFIX:', html.slice(0,5000));
+                throw new Error('download not resolved: '+item.name);
+              }
+              console.log('Downloaded', item.name, fs.statSync(item.out).size, 'bytes');
+              await page.close();
+            }
+          } finally {
+            await browser.close();
+          }
+          JS
+          node download.mjs
+
           echo "94f1b4e88f25ba23a0749ad3a7dfc3744b3fdbb9b66dadb62c3a8ed6b2c83106  /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-SOURCE.zip" | sha256sum -c -
           echo "61ac9f99ba6fb7500b19662add6434008a0ac27343be6b69801f1df23a9fbe72  /tmp/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip" | sha256sum -c -
 
@@ -73,7 +153,6 @@ jobs:
             /tmp/rc1629-source/ ./
 
           cp /tmp/rc1629-keep/* .
-
           rm -rf .release
           rm -f .github/workflows/publish-rc1629.yml
 
@@ -88,20 +167,16 @@ jobs:
           test ! -f config/feishu.local.json
 
       - name: Commit complete source snapshot
-        id: commit
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "HUIDI Release Bot"
           git config user.email "224401967+su907692083@users.noreply.github.com"
           git add -A
-          if git diff --cached --quiet; then
-            echo "No source changes to commit"
-          else
+          if ! git diff --cached --quiet; then
             git commit -m "release: publish HUIDI Docs Community Local v1.2.0 RC16.29 source"
             git push origin HEAD:release/rc16.29
           fi
-          echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Prepare release checksums
         shell: bash
@@ -122,7 +197,6 @@ jobs:
           gh pr ready 1 --repo "$GITHUB_REPOSITORY" || true
           gh pr merge 1 --repo "$GITHUB_REPOSITORY" --merge --subject "release: HUIDI Docs Community Local v1.2.0 RC16.29" --body "Publish the verified RC16.29 source snapshot and user-facing release documentation."
           git fetch origin main
-          echo "Merged main: $(git rev-parse origin/main)"
 
       - name: Create GitHub prerelease and upload assets
         shell: bash
