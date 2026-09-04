@@ -1,207 +1,263 @@
 # HUIDI Docs Community Local
 
-**本地优先的外贸业务与单据工作台 · Source Available / 源码开放**
+**给外贸业务人员的本地业务与单据工作台**  
+Source Available · Local-first · Windows / Browser
 
-> **自己用免费。自己公司内部用免费。给别人收费提供 HUIDI，或围绕 HUIDI 赚钱，需要商业授权。**
+> 不想每天在 Excel、聊天记录、报价文件、客户资料和不同单据之间反复复制粘贴？  
+> HUIDI Docs 希望把它们串成一条线：**客户 / 询盘 → 商品 → 报价 → PI → 合同 → CI / 装箱单 → 出运**。
 
-## ⬇ Windows 用户直接下载
-
-### [下载 HUIDI Docs Community Local v1.2.0 RC6 Windows 本地版](https://github.com/su907692083/HUIDI-Docs-Community-Local/releases/download/v1.2.0-rc6/HUIDI-Docs-Community-Local-V1.2.0-RC6-WINDOWS.zip)
-
-普通 Windows 用户不需要配置数据库，也不需要部署服务器：
-
-1. 下载上面的 `WINDOWS.zip`
-2. 解压整个 ZIP
-3. 双击 `START-HUIDI-LOCAL.cmd`
-4. 浏览器会自动打开 `http://127.0.0.1:8765/`
-5. 数据默认保存在当前电脑浏览器中，请定期在“备份 / 恢复”导出 JSON 备份
-
-> 当前为 **v1.2.0 RC6 预发布候选版**。建议先用于测试和实际业务试用，重要数据请做好备份。
-
-**[查看 v1.2.0 RC6 Release](https://github.com/su907692083/HUIDI-Docs-Community-Local/releases/tag/v1.2.0-rc6)** · **[下载源码包](https://github.com/su907692083/HUIDI-Docs-Community-Local/releases/download/v1.2.0-rc6/HUIDI-Docs-Community-Local-V1.2.0-RC6-SOURCE.zip)** · **[校验 SHA256](https://github.com/su907692083/HUIDI-Docs-Community-Local/releases/download/v1.2.0-rc6/HUIDI-Docs-Community-Local-V1.2.0-RC6-SHA256SUMS.txt)**
+当前候选版本：**V1.2.0 RC16.29**
 
 ---
 
-## 这是做什么的？
+## 你可以把它理解成什么？
 
-HUIDI Docs Community Local 是给外贸业务人员准备的本地业务与单据工作台。
+它不是一个需要先学 ERP 才能开始用的重系统。
 
-它希望把原本散落在 Excel、聊天记录、文件夹和不同单据里的资料串成一条更完整的本地工作链：
+更接近一个面向外贸人的 **“本地 Excel 工作习惯 + 正式外贸文件 + 客户/商品资料复用”工作台**：
 
-**客户 / 询盘 → 商品 / 产品目录 → 报价单 → PI → 销售合同 → 收款 / 生产 → 商业发票 CI / 装箱单 → 出运 / 复盘**
+- 客户只建一次，后续报价、PI、合同、CI、装箱单继续复用；
+- 商品只建一次，图片、SKU、规格、价格、MOQ、HS Code、包装与重量资料可以继续带到报价和产品目录；
+- 做单时可以先按 **表格 / 工作簿** 的方式核对数据，再输出给客户看的正式文件；
+- 内部核价、成本、工厂执行资料与对客文件分开，避免把内部成本误发给客户；
+- 正式 PDF、Excel、CSV 都使用当前单据数据生成，不需要维护多份互相打架的表格。
 
-如果你担心客户资料、商品资料和单据信息上传到第三方服务器，或者希望断网时仍然能继续制作资料，这个版本就是为这种使用方式准备的。
-
----
-
-## 当前主要能力
-
-- 客户资料与跟进
-- 商品资料与商品图片
-- 询盘 / 订单业务链
-- 产品目录制作
-- 报价单 Quotation
-- 形式发票 Proforma Invoice / PI
-- 销售合同 Sales Contract
-- 商业发票 Commercial Invoice / CI
-- 装箱单 Packing List
-- 单据编辑、实时预览、本机草稿
-- PDF / XLSX / CSV / 打印输出
-- 品牌与收款资料
-- 常用条款与模板
-- 本地邮件草稿
-- 回收站
-- 本地备份 / 恢复
-- Windows 一键本地启动
-- 自有服务器静态部署参考
+核心资料默认保存在你自己的电脑浏览器中。换电脑或清理浏览器前，请先使用 **完整 JSON 备份**。
 
 ---
 
-## 使用授权：先看这一段
+## 一条完整的外贸工作链
 
-### 免费使用
+```text
+客户 / 询盘
+   ↓
+商品资料 / 产品目录
+   ↓
+Quotation 报价单
+   ↓
+Proforma Invoice / PI
+   ↓
+Sales Contract 销售合同
+   ↓
+收款 / 生产 / 验货
+   ↓
+Commercial Invoice / CI + Packing List
+   ↓
+出运 / ETD / ETA / 复盘
+```
 
-以下场景可以免费：
+历史单据保留自己的业务快照。以后客户地址或商品资料发生变化，不会静默篡改已经保存的历史文件；需要时由用户主动同步。
 
-- 你自己在自己的电脑上使用
-- 你部署到自己的 NAS、VPS、服务器或内网使用
-- 你自己的公司内部员工使用
-- 你修改代码适配自己公司的业务流程
-- 你用 HUIDI 做自己公司的报价、PI、合同、CI、装箱单、产品目录，并正常开展自己的外贸业务
+---
+
+## 五类正式外贸单据
+
+HUIDI Docs 当前统一支持：
+
+| 单据 | 用途 |
+| --- | --- |
+| **Quotation / 报价单** | 报价、价格条件、产品明细 |
+| **Proforma Invoice / PI** | 客户确认、付款前形式发票 |
+| **Sales Contract / 销售合同** | 交易约定与签署 |
+| **Commercial Invoice / CI** | 商业发票、出运与清关资料 |
+| **Packing List / 装箱单** | 箱数、重量、体积、包装与出货资料 |
+
+单据之间保留来源与下一步关系，可以从报价继续做 PI，再继续合同、CI、装箱单，而不是每次重新建一张空白文件。
+
+---
+
+## 表格草稿与正式文件，分开处理
+
+很多外贸人习惯先在表格里核数量、价格、箱规和条款，然后才发正式文件。HUIDI Docs 保留这种工作方式。
+
+### 表格 / 工作簿工作区
+
+- **表格工作簿预览**：像 Excel 一样快速扫描单据数据；
+- **客户版 Excel (.xlsx)**：结构接近正式单据，适合客户修改数量或内部审批；
+- **数据版 Excel (.xlsx)**：多工作表，适合采购、财务、仓库、ERP 数据处理；
+- **商品明细 CSV**：一行一个商品，方便导入其它系统；
+- 横版 / 竖版选择会同步影响 PDF、表格预览与客户版 Excel 的方向。
+
+### 正式文件
+
+正式 PDF 走独立的 **Formal Output Gate / 正式输出检查**：在真正导出前检查关键字段、分页、商品行完整性和业务块连续性，尽量避免生成“看起来成功但被截断”的文件。
+
+---
+
+## PDF 不只是一个固定模板
+
+### 5 套统一 PDF 风格
+
+同一套风格可以用于报价、PI、合同、CI、装箱单，不会出现“报价是一套、CI 又变另一套”的割裂感。
+
+1. **经典商务** — 日常外贸、清晰稳妥；
+2. **极简外贸** — 黑白低干扰，适合打印与正式往来；
+3. **正式合同** — 更正式的文书与签署视觉；
+4. **品牌展示** — 更强调品牌、Logo 与展示感；
+5. **清关实用** — 高信息密度、便于核对与打印。
+
+### 品牌颜色可控
+
+你可以设置：品牌主色、预设色或自定义颜色、Logo、Logo 位置与显示范围、页眉 / 页脚文字、签名与公章。
+
+品牌色不仅作用于 PDF，客户版 / 数据版 Excel 的表头与样式也会跟随。
+
+### A4 横版 / 竖版
+
+- **竖版 210 × 297 mm**：适合少量商品、报价、PI、正式合同；
+- **横版 297 × 210 mm**：适合多列商品、物流、重量、装箱和 Packing List；
+- 可手动切换，也可使用自动建议；
+- **紧凑 / 标准** 两种排版密度，不通过无限缩字强塞成一页。
+
+---
+
+## 18 种文档语言模式
+
+固定单据标签、标题和标准术语目前提供以下输出模式：
+
+**中英双语、中文、English、Español、Português、Deutsch、Français、Italiano、Русский、العربية、日本語、한국어、Türkçe、Nederlands、Polski、Tiếng Việt、Bahasa Indonesia、ไทย**。
+
+也就是 **1 种中英双语 + 17 种单语言选择，共 18 种模式**。
+
+> 说明：固定单据标题、字段名、标准标签使用 HUIDI 的 canonical i18n 词典。客户名称、地址、规格、自由备注等业务原文不会在离线状态下被“凭空翻译”；需要翻译自由文本时，应使用实际可用的翻译能力，并人工核对贸易术语、地址、规格和合同内容。
+
+阿拉伯语等 RTL 语言具有对应的文档方向处理。
+
+---
+
+## 内部工具：工厂执行 + 核价与毛利
+
+对客户看的文件和公司内部看的数据不应该混在一起。
+
+### 工厂执行 / Factory Execution
+
+可以整理 Revision、制单 / 审批、生产启动条件、样品确认、Artwork / 包装确认、验货标准与公差、包装确认、质保与工厂交付说明，以及商品、规格、生产数量、MOQ、包装备注、唛头等内部执行资料。
+
+### 内部核算与毛利 / Costing & Margin
+
+可以按商品核对：
+
+- 销售价；
+- 采购 / 生产成本；
+- 包装成本；
+- 国内费用；
+- 其它费用；
+- 综合单位成本；
+- 单位毛利；
+- 毛利率；
+- 建议售价。
+
+并支持成本币种、销售币种、汇率、管理费用率、佣金率、目标毛利率，以及“采用建议售价”。
+
+内部工具支持接近表格的 **Enter / Tab** 连续录入，并可独立导出 **内部 Excel** 与 **A4 横版内部 PDF**。
+
+内部报告会标识 **CONFIDENTIAL / INTERNAL USE ONLY**，用于内部核价与执行，不应该进入客户正式文件。
+
+---
+
+## 商品资料与产品目录真正复用
+
+商品资料可保存本机图片 / 网络图片、商品名称、SKU / 型号、分类、规格、参考价格、币种、单位、MOQ、HS Code、报关品名、原产国、供应商、包装类型、外箱尺寸、装箱数、N.W. / G.W. / CBM、Shipping Marks、来源链接、视频与内部备注。
+
+### RC16.29 重点修复
+
+此前商品库里上传的本机图片以 `data:image/...` 保存，而 Catalog Studio 只认 `http/https`，会导致“商品库有图，目录里没图”。
+
+RC16.29 已修复这条链路：
+
+**商品资料 → 本机图片 / 网络图片 → 产品目录选品 → 目录预览 → PDF**
+
+同时继续复用 SKU、规格、MOQ、HS Code、包装、重量、CBM、唛头等商品主数据，不要求用户到产品目录里重新录一遍。
+
+---
+
+## 飞书资料：把已有表格继续用起来
+
+飞书是可选数据源，不是强制云端依赖。
+
+使用你自己的飞书自建应用和实际授权后，可以读取飞书 Sheets、多维表格 Bitable、预览数据、保存字段映射、复用到客户 / 商品主数据、保留来源信息，并使用可选的协作快照。
+
+HUIDI 只能访问该飞书应用实际拥有权限的文件，不会因为连接了飞书就自动获得整个企业空间的无边界权限。真实 `App Secret` 不进入公开源码和浏览器业务备份。
+
+---
+
+## 其它实用能力
+
+- 客户资料与跟进；
+- 询盘 / 订单业务工作台；
+- 品牌 / 收款资料；
+- 常用条款模板；
+- 本地邮件草稿；
+- 商品与客户 CSV 导入 / 导出；
+- TXT / CSV / TSV / XLSX 资料整理与人工核对；
+- 本地回收站；
+- 完整 JSON 备份 / 恢复；
+- 多标签页本地主数据变化感知；
+- Windows 一键本地启动；
+- 本地 PDF / XLSX / CSV / Print 输出。
+
+---
+
+## Windows 使用
+
+1. 下载 WINDOWS ZIP；
+2. 完整解压，不要只把启动文件拖出来；
+3. 双击 `START-HUIDI-LOCAL.cmd`；
+4. 浏览器会自动打开本地地址；
+5. 默认端口是 `127.0.0.1:8765`，占用时会尝试后续端口。
+
+推荐最新版 **Microsoft Edge / Google Chrome**。
+
+> 不建议直接双击 `public/index.html` 以 `file://` 方式使用。
+
+---
+
+## 本地优先，不等于“永远不联网”
+
+核心客户、商品、业务、单据草稿和导出链可以在本机工作。
+
+只有当你主动使用这些能力时才可能联网，例如网络商品图片、外部网页、打开邮箱、可选飞书数据、需要外部服务的增强翻译 / 整理能力。
+
+Community Local **不包含** HUIDI 生产环境的私有 Supabase、AI Gateway、邮件网关、计费 / 会员后台、私有通知网关和生产密钥。
+
+---
+
+## RC16.29：这一次具体更新了什么？
+
+RC16.29 不是把上面所有能力“一次性新增”，而是在已有 RC16.x 工作台基础上重点完成 **产品目录连通收口**：
+
+- 修复商品本机图片无法进入产品目录；
+- 扩大 Catalog 对商品主数据的复用范围；
+- 产品目录继续按 canonical 商品 ID 读取最新主数据；
+- 删除重复出现的“目录制作流程 / 返回工作台”；
+- 新增 Catalog Connectivity Gate，动态验证 `data:image` 与 `http/https` 图片链路；
+- 保留 RC16.28 Table-first 交互、RC16.27 Single Shell Boot、飞书资料和正式 PDF 核心。
+
+详细说明：[`RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md`](./RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md)  
+完整能力说明：[`FEATURES-RC16.29.zh-CN.md`](./FEATURES-RC16.29.zh-CN.md)
+
+---
+
+## 授权
+
+### 免费
+
+自己在自己的电脑上使用、自己公司内部使用、部署到自己的 NAS / VPS / 服务器 / 内网、修改代码适配自己公司的业务、用 HUIDI 为自己公司的真实外贸业务制作资料和单据。
 
 ### 需要商业授权
 
-以下场景需要取得 HUIDI 商业授权：
-
-- 把 HUIDI 或修改版拿去卖
-- 收费给其他公司安装、部署、维护、升级或定制
-- SaaS、云平台、付费托管
-- OEM / 白标
-- 转售、二次打包收费分发
-- 集成到收费软件或收费解决方案
-- 以会员费、服务费、培训费、技术支持费等方式围绕 HUIDI 向第三方收费
+把 HUIDI 或修改版销售给第三方、收费安装 / 部署 / 维护 / 升级 / 定制、SaaS / 付费托管、OEM / 白标、二次打包收费分发、集成到收费软件 / 收费解决方案，或围绕 HUIDI 对第三方收取会员 / 服务 / 培训 / 技术支持费用。
 
 **商业授权 / 开发合作：微信 `nuliqingxing8`**
 
-完整规则请阅读：
-
-- [`LICENSE`](./LICENSE)
-- [`COMMERCIAL-LICENSE.md`](./COMMERCIAL-LICENSE.md)
-- [`SOURCE-AVAILABLE-SCOPE.md`](./SOURCE-AVAILABLE-SCOPE.md)
+完整规则请阅读 [`LICENSE`](./LICENSE)、[`COMMERCIAL-LICENSE.md`](./COMMERCIAL-LICENSE.md) 与 [`SOURCE-AVAILABLE-SCOPE.md`](./SOURCE-AVAILABLE-SCOPE.md)。
 
 > 本项目属于 **Source Available / 源码开放**，不是 OSI 定义下的 Open Source 软件。
 
 ---
 
-## 本地版的数据放在哪里？
+## 提交问题
 
-当前 Community Local 以本地优先方式运行。核心客户、商品、单据草稿等资料默认保存在当前电脑的浏览器存储中。
+GitHub Issue 建议提供 Windows 版本、Edge / Chrome 版本、出问题的页面、复现步骤、截图，以及是否每次都能复现。
 
-因此请特别注意：
-
-- 换电脑前先备份
-- 清浏览器缓存前先备份
-- 重装浏览器前先备份
-- 重要业务资料建议定期导出 JSON 备份
-
-本地版不会因为“源码开放”就自动把你的客户和单据上传到 HUIDI 云端。
-
----
-
-## 哪些能力可以离线？
-
-核心本地业务链可以在本机运行，包括客户资料、商品资料、本地单据、草稿、部分 PDF / XLSX / CSV 输出、本地备份等。
-
-以下能力在用户主动使用时可能需要联网：
-
-- 网络图片
-- 外部网页
-- 邮箱相关操作
-- 用户自行接入的外部服务
-
-更详细说明请查看：
-
-- [`OFFLINE-CAPABILITY-MATRIX.zh-CN.md`](./OFFLINE-CAPABILITY-MATRIX.zh-CN.md)
-- [`NETWORK-POLICY.md`](./NETWORK-POLICY.md)
-- [`BROWSER-COMPATIBILITY.zh-CN.md`](./BROWSER-COMPATIBILITY.zh-CN.md)
-
----
-
-## 自己服务器怎么部署？
-
-如果你不想只在一台电脑上使用，也可以把静态文件部署到自己的服务器、NAS、内网 Web Server 或自有 VPS。
-
-请先阅读：
-
-- [`SELF-HOSTING.md`](./SELF-HOSTING.md)
-
-自己或自己公司内部部署仍然属于免费范围；**如果你收费帮第三方部署、托管、维护或定制，则需要商业授权。**
-
----
-
-## 本地版明确不包含
-
-Community Local 不包含 HUIDI 生产环境的私有服务，例如：
-
-- HUIDI 生产 Supabase
-- HUIDI AI Gateway
-- 云 AI 自动识别
-- 邮件发送网关
-- 通知 / 飞书同步
-- Founder OS Bridge
-- HUIDI 管理后台
-- 会员、计费、Token 调度和 HUIDI 云商业运营配置
-
-这些能力不属于当前 Community Local 公共源码包。
-
----
-
-## 浏览器建议
-
-优先推荐：
-
-- Microsoft Edge
-- Google Chrome
-
-其他 Chromium 内核浏览器多数情况下可以运行，但由于下载、打印、PDF、文件访问和安全策略存在差异，兼容性可能不同。
-
-详细说明：[`BROWSER-COMPATIBILITY.zh-CN.md`](./BROWSER-COMPATIBILITY.zh-CN.md)
-
----
-
-## 反馈问题
-
-如果你在测试中发现问题，可以通过 GitHub **Issues** 提交：
-
-- 使用的 Windows 版本
-- 浏览器名称与版本
-- 出问题的页面
-- 操作步骤
-- 截图
-- 是否可以稳定复现
-
-不要在公开 Issue 中上传真实客户隐私、订单机密、账号密码、API Key 或其他敏感资料。
-
----
-
-## 当前版本
-
-**HUIDI Docs Community Local v1.2.0 RC6**
-
-- Release Candidate / 发布候选版
-- Source Available / 源码开放
-- 个人自用免费
-- 自己公司内部使用免费
-- 对第三方收费提供软件或相关服务需商业授权
-
-[查看当前 Release](https://github.com/su907692083/HUIDI-Docs-Community-Local/releases/tag/v1.2.0-rc6)
-
----
-
-## 关于历史 `flypigbox` 内部命名
-
-为了避免一次性重命名破坏已经稳定的编辑器、浏览器存储键和内部运行链，Community Local 1.x 仍保留部分历史文件名、全局对象和 storage key。
-
-这些属于内部兼容层；对外品牌统一为 **HUIDI**。
-
-详见 [`LEGACY-COMPATIBILITY.md`](./LEGACY-COMPATIBILITY.md)。
+请不要在公开 Issue 上传真实客户隐私、订单机密、账号密码、App Secret、API Key、银行资料或其它敏感数据。
