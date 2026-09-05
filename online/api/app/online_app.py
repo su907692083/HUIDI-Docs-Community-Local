@@ -48,6 +48,12 @@ class MailSuppression(Base):
 
 
 class MailDispatchPlan(Base):
+    """Read-only legacy history owner.
+
+    New wait-to-send work is stored in MailQueueItem. This table remains only so
+    older records can still be inspected without destructive migration.
+    """
+
     __tablename__ = "mail_dispatch_plans"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
@@ -160,6 +166,7 @@ def dispatch_to_dict(row: MailDispatchPlan) -> dict[str, Any]:
         "review_note": row.review_note,
         "created_at": row.created_at.isoformat() if row.created_at else None,
         "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+        "legacy_history": True,
     }
 
 
@@ -197,42 +204,12 @@ def mail_readiness_payload(db: Session, lead: Lead, mailbox_id: int | None = Non
     suppression = _active_suppression(db, recipient)
     lifecycle_ok = lead.status not in {"replied", "converted", "archived"}
     checks = [
-        {
-            "key": "recipient",
-            "label": "收件人邮箱",
-            "ok": bool(recipient and EMAIL_RX.match(recipient)),
-            "detail": recipient or "尚未确认业务邮箱",
-        },
-        {
-            "key": "draft",
-            "label": "开发信草稿",
-            "ok": bool(lead.draft_subject.strip() and lead.draft_body.strip()),
-            "detail": lead.draft_subject.strip() or "还没有草稿",
-        },
-        {
-            "key": "human_review",
-            "label": "人工确认",
-            "ok": review == "approved",
-            "detail": {"approved": "已确认", "rejected": "需要修改", "unreviewed": "待确认"}[review],
-        },
-        {
-            "key": "suppression",
-            "label": "退订 / 黑名单",
-            "ok": suppression is None,
-            "detail": "允许继续联系" if suppression is None else f"已停止：{suppression.reason}",
-        },
-        {
-            "key": "lifecycle",
-            "label": "客户当前状态",
-            "ok": lifecycle_ok,
-            "detail": "可继续开发" if lifecycle_ok else "客户已回复或已进入正式业务，停止冷开发发送",
-        },
-        {
-            "key": "mailbox",
-            "label": "发送邮箱",
-            "ok": bool(mailbox and mailbox.enabled),
-            "detail": mailbox.email if mailbox and mailbox.enabled else "请选择已启用邮箱",
-        },
+        {"key": "recipient", "label": "收件人邮箱", "ok": bool(recipient and EMAIL_RX.match(recipient)), "detail": recipient or "尚未确认业务邮箱"},
+        {"key": "draft", "label": "开发信草稿", "ok": bool(lead.draft_subject.strip() and lead.draft_body.strip()), "detail": lead.draft_subject.strip() or "还没有草稿"},
+        {"key": "human_review", "label": "人工确认", "ok": review == "approved", "detail": {"approved": "已确认", "rejected": "需要修改", "unreviewed": "待确认"}[review]},
+        {"key": "suppression", "label": "退订 / 黑名单", "ok": suppression is None, "detail": "允许继续联系" if suppression is None else f"已停止：{suppression.reason}"},
+        {"key": "lifecycle", "label": "客户当前状态", "ok": lifecycle_ok, "detail": "可继续开发" if lifecycle_ok else "客户已回复或已进入正式业务，停止冷开发发送"},
+        {"key": "mailbox", "label": "发送邮箱", "ok": bool(mailbox and mailbox.enabled), "detail": mailbox.email if mailbox and mailbox.enabled else "请选择已启用邮箱"},
     ]
     review_ready = all(x["ok"] for x in checks)
     connection_ready = bool(mailbox and mailbox.enabled and mailbox.connection_state == "connected")
@@ -245,78 +222,34 @@ def mail_readiness_payload(db: Session, lead: Lead, mailbox_id: int | None = Non
         "delivery_ready": review_ready and connection_ready,
         "send_enabled": True,
         "delivery_mode": "connected_mailbox",
-        "reason": (
-            "邮件内容已经确认，邮箱连接正常，可以发送。"
-            if review_ready and connection_ready
-            else "请先完成未通过的检查项。"
-        ),
+        "reason": "邮件内容已经确认，邮箱连接正常，可以发送。" if review_ready and connection_ready else "请先完成未通过的检查项。",
     }
 
 
 @app.get("/api/local-sync/health")
 def local_sync_health():
-    return {
-        "ok": True,
-        "schema": LOCAL_STATUS_SCHEMA,
-        "mode": "explicit_confirmation",
-        "automatic_background_upload": False,
-    }
+    return {"ok": True, "schema": LOCAL_STATUS_SCHEMA, "mode": "explicit_confirmation", "automatic_background_upload": False}
 
 
 @app.post("/api/leads/{lead_id}/local-event")
-def receive_local_business_event(
-    lead_id: int,
-    req: LocalBusinessEventRequest,
-    db: Session = Depends(get_db),
-):
+def receive_local_business_event(lead_id: int, req: LocalBusinessEventRequest, db: Session = Depends(get_db)):
     if req.schema != LOCAL_STATUS_SCHEMA:
         raise HTTPException(400, "不支持的 Local 状态同步版本")
     lead = db.get(Lead, lead_id)
     if not lead:
         raise HTTPException(404, "线索不存在")
-
     payload = {
-        "source": req.source,
-        "event": req.event,
-        "customer_id": req.customer_id,
-        "customer_name": req.customer_name,
-        "deal_id": req.deal_id,
-        "deal_title": req.deal_title,
-        "stage": req.stage,
-        "next_action": req.next_action,
-        "next_action_at": req.next_action_at,
-        "document_type": req.document_type,
-        "document_id": req.document_id,
-        "occurred_at": req.occurred_at,
-        "meta": req.meta,
+        "source": req.source, "event": req.event, "customer_id": req.customer_id, "customer_name": req.customer_name,
+        "deal_id": req.deal_id, "deal_title": req.deal_title, "stage": req.stage, "next_action": req.next_action,
+        "next_action_at": req.next_action_at, "document_type": req.document_type, "document_id": req.document_id,
+        "occurred_at": req.occurred_at, "meta": req.meta,
     }
-    detail = req.detail.strip() or " · ".join(
-        x
-        for x in [
-            req.customer_name,
-            req.deal_title,
-            req.stage,
-            req.next_action,
-        ]
-        if x
-    )
-    add_activity(
-        db,
-        lead.id,
-        "local_business_event",
-        req.title.strip() or "本地业务进度更新",
-        detail[:1200],
-        payload,
-    )
+    detail = req.detail.strip() or " · ".join(x for x in [req.customer_name, req.deal_title, req.stage, req.next_action] if x)
+    add_activity(db, lead.id, "local_business_event", req.title.strip() or "本地业务进度更新", detail[:1200], payload)
     lead.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(lead)
-    return {
-        "ok": True,
-        "schema": LOCAL_STATUS_SCHEMA,
-        "lead": lead_to_dict(lead, db),
-        "accepted_event": req.event,
-    }
+    return {"ok": True, "schema": LOCAL_STATUS_SCHEMA, "lead": lead_to_dict(lead, db), "accepted_event": req.event}
 
 
 @app.get("/api/mail/health")
@@ -419,6 +352,7 @@ def lead_mail_readiness(lead_id: int, mailbox_id: int | None = None, db: Session
 
 @app.get("/api/mail/plans")
 def list_dispatch_plans(lead_id: int | None = None, db: Session = Depends(get_db)):
+    """Historical compatibility read. New pending work lives in /api/mail/queue."""
     stmt = select(MailDispatchPlan)
     if lead_id:
         stmt = stmt.where(MailDispatchPlan.lead_id == lead_id)
@@ -428,6 +362,7 @@ def list_dispatch_plans(lead_id: int | None = None, db: Session = Depends(get_db
 
 @app.post("/api/leads/{lead_id}/mail-plan")
 def create_dispatch_plan(lead_id: int, req: DispatchPlanRequest, db: Session = Depends(get_db)):
+    """Compatibility shim: old clients now create a real MailQueueItem, never a new legacy plan."""
     lead = db.get(Lead, lead_id)
     if not lead:
         raise HTTPException(404, "线索不存在")
@@ -435,43 +370,7 @@ def create_dispatch_plan(lead_id: int, req: DispatchPlanRequest, db: Session = D
     if not readiness["review_ready"]:
         failed = [x["label"] for x in readiness["checks"] if not x["ok"]]
         raise HTTPException(400, "发送准备未完成：" + "、".join(failed))
+    from .mail_sync import QueueRequest, queue_message
 
-    fingerprint = _draft_fingerprint(lead)
-    existing = db.scalar(
-        select(MailDispatchPlan)
-        .where(MailDispatchPlan.lead_id == lead.id)
-        .where(MailDispatchPlan.mailbox_id == req.mailbox_id)
-        .where(MailDispatchPlan.draft_fingerprint == fingerprint)
-        .where(MailDispatchPlan.state.in_(["review_ready_only", "ready", "queued"]))
-        .order_by(MailDispatchPlan.id.desc())
-    )
-    if existing:
-        return dispatch_to_dict(existing)
-
-    state = "ready" if readiness["delivery_ready"] else "review_ready_only"
-    row = MailDispatchPlan(
-        lead_id=lead.id,
-        mailbox_id=req.mailbox_id,
-        recipient=_email(lead.contact_email),
-        subject=lead.draft_subject,
-        draft_fingerprint=fingerprint,
-        state=state,
-        review_note=req.review_note.strip(),
-    )
-    db.add(row)
-    add_activity(
-        db,
-        lead.id,
-        "mail_plan_created",
-        "邮件已加入待发送计划",
-        lead.draft_subject,
-        {
-            "mailbox_id": req.mailbox_id,
-            "recipient": _email(lead.contact_email),
-            "delivery_enabled": bool(readiness["delivery_ready"]),
-            "state": state,
-        },
-    )
-    db.commit()
-    db.refresh(row)
-    return dispatch_to_dict(row)
+    queued = queue_message(lead_id, QueueRequest(mailbox_id=req.mailbox_id, confirm=True, max_attempts=3), db)
+    return {**queued, "legacy_compat": True, "legacy_endpoint": "mail-plan"}
