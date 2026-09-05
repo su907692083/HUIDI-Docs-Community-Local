@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from .mail_sequences import run_sequences_once
 from .mail_sync import _sync_all_background, run_queue_once
+from .notification_delivery import run_notification_delivery_once
 from .team_access import Organization
 from .tenant_storage import ControlSessionLocal, reset_current_organization, set_current_organization
 
@@ -35,16 +36,17 @@ def enabled_organization_ids() -> list[int]:
 
 
 def run_tenant_jobs_once() -> dict[str, int]:
-    """Process non-default company queues under their own database context.
+    """Process non-default company background work inside its own database.
 
-    Organization #1 keeps the historical mail workers. This coordinator covers
-    organization #2+ so automatic send, reply sync and follow-up sequences keep
-    working without crossing database boundaries.
+    Organization #1 keeps the historical workers. This coordinator covers
+    organization #2+ so mail, follow-up and external reminders continue working
+    without crossing company boundaries.
     """
     organizations = 0
     queue_runs = 0
     sequence_runs = 0
     sync_runs = 0
+    notification_runs = 0
     for organization_id in enabled_organization_ids():
         token = set_current_organization(organization_id)
         try:
@@ -64,6 +66,11 @@ def run_tenant_jobs_once() -> dict[str, int]:
                 sync_runs += 1
             except Exception:
                 pass
+            try:
+                run_notification_delivery_once(40)
+                notification_runs += 1
+            except Exception:
+                pass
         finally:
             reset_current_organization(token)
     return {
@@ -71,6 +78,7 @@ def run_tenant_jobs_once() -> dict[str, int]:
         "queue_runs": queue_runs,
         "sequence_runs": sequence_runs,
         "sync_runs": sync_runs,
+        "notification_runs": notification_runs,
     }
 
 
@@ -81,8 +89,9 @@ def _runtime_loop() -> None:
             if cycles % 2 == 0:
                 run_tenant_jobs_once()
             else:
-                # Queue and sequence work are latency-sensitive; the full inbox
-                # sync stays on the 60-second cadence of this coordinator.
+                # Queue and sequence work are latency-sensitive. Notification
+                # delivery also gets a 30-second retry pass, while inbox sync
+                # stays on the 60-second full cycle.
                 for organization_id in enabled_organization_ids():
                     token = set_current_organization(organization_id)
                     try:
@@ -92,6 +101,10 @@ def _runtime_loop() -> None:
                             pass
                         try:
                             run_sequences_once(20)
+                        except Exception:
+                            pass
+                        try:
+                            run_notification_delivery_once(40)
                         except Exception:
                             pass
                     finally:
