@@ -62,12 +62,12 @@ MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
 
 @contextmanager
 def schema_migration_lock(engine: Engine) -> Iterator[None]:
-    """Serialize revision writers without storing deployment secrets.
+    """Serialize schema writers without storing deployment secrets.
 
-    PostgreSQL uses a session-scoped advisory lock, so separate worker
-    processes cannot write the same revision concurrently. SQLite/dev uses an
-    in-process lock; production multi-worker deployments are expected to use
-    the explicit PostgreSQL deployment path and schema CLI.
+    PostgreSQL uses a session-scoped advisory lock, so separate worker or
+    deployment processes cannot run HUIDI DDL/revision writes concurrently.
+    SQLite/dev uses an in-process lock; production multi-worker deployments are
+    expected to use the explicit PostgreSQL deployment path and schema CLI.
     """
     if engine.dialect.name == "postgresql":
         connection: Connection = engine.connect()
@@ -118,6 +118,14 @@ def _apply_schema_migrations_unlocked(engine: Engine) -> dict[str, object]:
 
 def apply_schema_migrations(engine: Engine) -> dict[str, object]:
     with schema_migration_lock(engine):
+        return _apply_schema_migrations_unlocked(engine)
+
+
+def upgrade_schema(engine: Engine, metadata: MetaData | None = None) -> dict[str, object]:
+    """Lock the complete compatibility-create + forward-revision section."""
+    with schema_migration_lock(engine):
+        if metadata is not None:
+            metadata.create_all(engine)
         return _apply_schema_migrations_unlocked(engine)
 
 
