@@ -12,6 +12,7 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
 
     def test_home_navigation_is_business_first_and_avoids_duplicate_product_entry(self):
         index = self.text("web/index.html")
+        product = self.text("web/product-brain.js")
         self.assertIn("今天的工作", index)
         self.assertIn("潜在客户", index)
         self.assertIn("形式发票 PI", index)
@@ -19,6 +20,12 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         self.assertIn("数据来源", index)
         self.assertEqual(index.count("data-huidi-product>"), 1)
         self.assertIn('data-huidi-mail-folder="sent"', index)
+        self.assertNotIn("installNav()", product)
+        self.assertNotIn("产品大脑", product)
+        self.assertNotIn("Buying Signals", product)
+        self.assertNotIn("当前 Campaign", product)
+        self.assertIn("产品资料", product)
+        self.assertIn("当前开发重点", product)
 
     def test_beginner_flow_uses_existing_business_owners_instead_of_new_fake_state(self):
         flow = self.text("web/beginner-flow.js")
