@@ -1,7 +1,7 @@
 (()=>{'use strict';
 if(window.HUIDIWorkflowUsabilityClosure)return;
 const $=s=>document.querySelector(s),all=s=>[...document.querySelectorAll(s)];
-let leadScrollY=0,leadOpener=null,businessScroll=0,mailScroll=0,railObserver=null;
+let leadScrollY=0,leadOpener=null,businessScroll=0,mailScroll=0,railObserver=null,refreshQueued=false;
 const throttleTargets='#searchBtn,#findContact,#assessLead,#makeDraft,#approveDraft,#rejectDraft,#saveFollow,#mgSend,#mgPlan,[data-save-deal],[data-hb-search],[data-ci-refresh],[data-wi-find],[data-has-create],[data-ss-save],[data-ss-test]';
 function css(){if($('#huidiWorkflowClosureCss'))return;const s=document.createElement('style');s.id='huidiWorkflowClosureCss';s.textContent=`
 .side .nav a{transition:background .14s ease,color .14s ease}.toolbar{scrollbar-width:thin}.table-wrap{scrollbar-gutter:stable}.table th{z-index:3}.huidi-drawer-rail{position:sticky;top:-1px;z-index:14;display:flex;align-items:center;gap:5px;overflow-x:auto;margin:10px -4px 0;padding:7px 4px;background:rgba(255,255,255,.96);border-top:1px solid #eef1f5;border-bottom:1px solid #e7ebf1;backdrop-filter:blur(8px);scrollbar-width:none}.huidi-drawer-rail::-webkit-scrollbar{display:none}.huidi-drawer-rail button{flex:0 0 auto;border:1px solid #dbe3ed;background:#fff;color:#52657d;border-radius:999px;padding:5px 8px;font-size:9px;font-weight:800;cursor:pointer}.huidi-drawer-rail button.active{background:#eaf2ff;border-color:#bfd3f2;color:#185cb5}.drawer .section{scroll-margin-top:48px}.huidi-busy-once{pointer-events:none!important;opacity:.68!important}.huidi-search-hint{font-size:9px;color:#8693a4;margin-left:auto;white-space:nowrap}.hb-main,.hs-main,.ci-main,.hn-main{scrollbar-gutter:stable}.hb-empty,.hs-empty,.ci-empty,.hn-empty{min-height:84px}.drawer-backdrop .drawer{scroll-behavior:smooth}.huidi-return-flash{animation:huidiReturnFlash .7s ease}@keyframes huidiReturnFlash{0%{box-shadow:0 0 0 3px rgba(23,105,255,.18)}100%{box-shadow:none}}@media(max-width:900px){.huidi-search-hint{display:none}.huidi-drawer-rail{margin-left:-2px;margin-right:-2px}}
@@ -23,7 +23,8 @@ function restoreBusiness(){const main=$('#huidiBusinessMain');if(!main)return;co
 function rememberMail(e){const main=$('#huidiServiceMain');if(!main)return;if(e.target.closest('[data-thread-id]'))mailScroll=main.scrollTop||0;if(e.target.closest('[data-huidi-back-mail],[data-mail-back],[data-mt-back]'))setTimeout(()=>{const m=$('#huidiServiceMain');if(m)m.scrollTop=mailScroll},120)}
 function addSearchHint(){const search=$('.search-grid');if(!search||$('#huidiSearchHint'))return;const span=document.createElement('span');span.id='huidiSearchHint';span.className='huidi-search-hint';span.textContent='Ctrl / ⌘ + K 快速回到找客户';search.insertAdjacentElement('afterend',span)}
 function refresh(){ensureDrawerRail();addSearchHint()}
-function boot(){css();setupNavState();refresh();document.addEventListener('keydown',e=>{runSearchFromKeyboard(e);globalShortcut(e)});document.addEventListener('click',e=>{throttleButton(e);rememberLeadEntry(e);restoreLeadEntry(e);rememberBusiness(e);rememberMail(e)},true);const mo=new MutationObserver(refresh);mo.observe(document.body,{childList:true,subtree:true})}
+function scheduleRefresh(){if(refreshQueued)return;refreshQueued=true;requestAnimationFrame(()=>{refreshQueued=false;refresh()})}
+function boot(){css();setupNavState();refresh();document.addEventListener('keydown',e=>{runSearchFromKeyboard(e);globalShortcut(e)});document.addEventListener('click',e=>{throttleButton(e);rememberLeadEntry(e);restoreLeadEntry(e);rememberBusiness(e);rememberMail(e)},true);const mo=new MutationObserver(scheduleRefresh);mo.observe(document.body,{childList:true,subtree:true})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDIWorkflowUsabilityClosure=Object.freeze({refresh});
+window.HUIDIWorkflowUsabilityClosure=Object.freeze({refresh:scheduleRefresh});
 })();
