@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>HUIDI Online · 外贸工作台</title>
+<link rel="stylesheet" href="/assets/app.css">
+<link rel="stylesheet" href="/assets/daily-workbench.css">
+<link rel="stylesheet" href="/assets/mail-governance.css">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">HUIDI <span>Online</span></div>
+    <div class="nav-title">今天</div>
+    <nav class="nav"><a class="active" data-huidi-nav="today">今天的工作</a><a data-huidi-nav="followups">待跟进</a><a data-huidi-service="mail" data-huidi-mail-folder="inbox">客户回复</a><a data-huidi-notifications>提醒</a></nav>
+    <div class="nav-title">开发客户</div>
+    <nav class="nav"><a data-huidi-nav="find">找客户</a><a data-huidi-service="map">地图找客户</a><a data-huidi-nav="leads">潜在客户</a><a data-huidi-service="company">客户背调</a><a data-huidi-contacts>联系人</a></nav>
+    <div class="nav-title">邮件跟进</div>
+    <nav class="nav"><a data-huidi-service="mail" data-huidi-mail-folder="inbox">收件箱</a><a data-huidi-service="mail" data-huidi-mail-folder="sent">已发送</a><a data-huidi-service="mail" data-huidi-mail-folder="inbox">邮箱设置</a><a data-huidi-service="queue">待发送</a><a data-huidi-sequences>自动跟进</a></nav>
+    <div class="nav-title">客户与业务</div>
+    <nav class="nav"><a data-huidi-business="deals">客户 / 询盘</a><a data-huidi-business="quotation">报价单</a><a data-huidi-business="proforma_invoice">形式发票 PI</a><a data-huidi-business="sales_contract">销售合同</a><a data-huidi-business="commercial_invoice">商业发票 CI</a><a data-huidi-business="packing_list">装箱单</a></nav>
+    <div class="nav-title">产品</div>
+    <nav class="nav"><a data-huidi-product>产品资料</a><a data-huidi-catalog>产品目录</a></nav>
+    <div class="nav-title">查资料</div>
+    <nav class="nav"><a data-huidi-service="intel">市场动态</a><a data-huidi-service="trade">贸易记录</a><a data-huidi-service="tariff">HS 编码 / 关税</a><a data-huidi-service="fx">汇率换算</a><a data-huidi-service="shipping">船期 / 物流</a></nav>
+    <div class="nav-title">管理</div>
+    <nav class="nav"><a data-huidi-audit>操作记录</a><a data-huidi-service-settings hidden>数据来源</a><a data-huidi-admin-safety hidden>使用检查与备份</a></nav>
+    <div class="side-note">每天先看“今天的工作”<br>客户、邮件、询盘和单据沿同一条业务继续。</div>
+  </aside>
+  <main class="main">
+    <div class="top"><div><h1>外贸工作台</h1><p>先处理客户回复和到期事项，再找客户、发邮件、推进询盘、做报价与单据。</p></div><div id="health" class="health">正在检查可用功能…</div></div>
+    <section class="search"><div class="search-grid"><div class="field"><label>产品 / 行业关键词</label><input id="keyword" placeholder="例如：不锈钢铰链、五金配件"></div><div class="field"><label>目标国家 / 地区</label><input id="country" placeholder="例如：德国、日本、美国"></div><div class="field"><label>目标客户类型</label><select id="buyerType"><option value="importer distributor wholesaler">进口商 / 经销商 / 批发商</option><option value="manufacturer factory">制造商 / 工厂</option><option value="retailer ecommerce">零售商 / 电商</option><option value="brand company">品牌商</option></select></div><button class="primary" id="searchBtn">开始找客户</button></div></section>
+    <div class="toolbar"><div class="tabs" id="tabs"><button class="tab active" data-status="">全部</button><button class="tab" data-status="new">新客户</button><button class="tab" data-status="qualified">已筛选</button><button class="tab" data-status="contacted">已联系</button><button class="tab" data-status="replied">已回复</button><button class="tab" data-status="converted">已转询盘</button></div><div class="meta" id="meta"></div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>优先级</th><th>公司</th><th>市场</th><th>匹配分</th><th>为什么值得看</th><th>联系人</th><th>邮箱</th><th>背调</th><th>状态</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table><div id="empty" class="empty">填写产品和目标市场，开始建立第一批潜在客户。</div></div>
+  </main>
+</div>
+<div id="backdrop" class="drawer-backdrop">
+  <aside class="drawer">
+    <button id="closeDrawer" class="close">×</button>
+    <h2 id="dCompany">客户详情</h2><div id="dWebsite" class="muted"></div>
+    <div class="section"><div class="drawer-grid"><div class="field"><label>联系人</label><input id="dContact"></div><div class="field"><label>职位</label><input id="dRole"></div><div class="field"><label>邮箱</label><input id="dEmail"></div><div class="field"><label>状态</label><select id="dStatus"><option value="new">新客户</option><option value="qualified">已筛选</option><option value="contacted">已联系</option><option value="replied">已回复</option><option value="converted">已转询盘</option><option value="archived">归档</option></select></div></div><div class="row" style="margin-top:9px"><button class="secondary" id="saveLead">保存资料</button><button class="secondary" id="findContact">查找公开联系人</button></div></div>
+    <div class="section"><div class="assessment-head"><div><h3>客户背调初筛</h3><div class="muted">先看公开资料；如果已经连接企业核验和贸易数据，也可以继续补充正式资料。</div></div><button class="secondary" id="assessLead">重新评估</button></div><div id="assessmentBox" class="muted" style="margin-top:9px">尚未进行背调初筛。</div></div>
+    <div class="section"><h3>开发信草稿</h3><div class="drawer-grid"><div class="field"><label>邮件语言</label><select id="draftLang"><option value="English">英语</option><option value="中文">中文</option><option value="Español">西班牙语</option><option value="Deutsch">德语</option><option value="Français">法语</option><option value="日本語">日语</option></select></div><div class="field"><label>你的产品 / 卖点</label><input id="productSummary" placeholder="例如：304 不锈钢、可定制尺寸、15 天交期"></div></div><div class="row" style="margin-top:9px"><button class="primary" id="makeDraft">生成草稿</button><button class="secondary" id="approveDraft">确认草稿</button><button class="secondary" id="rejectDraft">需要修改</button></div><div id="draftBox" class="draft" style="margin-top:9px">还没有生成开发信。</div><div class="warning">连接发送邮箱后，可以直接发送、稍后发送或设置自动跟进。发送前会自动检查草稿是否确认、今日发送量、发送间隔、退订名单，以及客户是否已经回复。</div></div>
+    <div class="section"><h3>安排下一次跟进</h3><div class="follow"><div class="field"><label>跟进时间</label><input id="followAt" type="datetime-local"></div><div class="field"><label>备注</label><input id="followNote" placeholder="例如：如未回复，补充产品目录"></div><button class="secondary" id="saveFollow">安排</button></div></div>
+    <div class="section"><h3>开发记录</h3><div id="timeline" class="timeline"><div class="muted">暂无记录。</div></div></div>
+    <div class="section"><div class="bridge-card"><h3>↔ 本地单据工作台</h3><div class="muted">需要离线处理或继续使用成熟单据编辑时，可把当前真实业务带到本地工作台继续处理，不需要重复录入客户和询盘。</div><div class="bridge-flow"><span>当前客户</span><i>→</i><span>询盘</span><i>→</i><span>产品目录 / 报价</span><i>→</i><span>PI / 合同</span><i>→</i><span>CI / 装箱单</span></div><div class="bridge-grid"><div class="field"><label>本地工作台地址</label><input id="localBase" value="http://127.0.0.1:8765"></div><div class="row"><button class="secondary" id="saveLocalBase">记住地址</button><button class="primary" id="syncLocal">同步到本地并转询盘</button></div></div><div id="bridgeStatus" class="bridge-status">选择客户后可同步。</div></div></div>
+  </aside>
+</div>
+<script src="/assets/product-brain-core.js"></script>
+<script src="/assets/app.js"></script>
+<script src="/assets/daily-workbench.js"></script>
+<script src="/assets/beginner-flow.js"></script>
+<script src="/assets/product-brain.js"></script>
+<script src="/assets/product-brain-server.js"></script>
+<script src="/assets/growth-workflow.js"></script>
+<script src="/assets/mail-governance.js"></script>
+<script src="/assets/mail-owner-v3.js"></script>
+<script src="/assets/local-status-sync.js"></script>
+<script src="/assets/business-context.js"></script>
+<script src="/assets/daily-services.js"></script>
+<script src="/assets/mail-thread-ui.js"></script>
+<script src="/assets/map-view.js"></script>
+<script src="/assets/business-center-ui.js"></script>
+<script src="/assets/deal-facts-ui.js"></script>
+<script src="/assets/reference-handoff-guard.js"></script>
+<script src="/assets/daily-navigation.js"></script>
+<script src="/assets/sequence-ui.js"></script>
+<script src="/assets/intelligence-history.js"></script>
+<script src="/assets/team-access.js"></script>
+<script src="/assets/company-settings.js"></script>
+<script src="/assets/audit-ui.js"></script>
+<script src="/assets/service-settings.js"></script>
+<script src="/assets/service-adapter-ui.js"></script>
+<script src="/assets/notification-settings.js"></script>
+<script src="/assets/admin-safety.js"></script>
+<script src="/assets/plain-language.js"></script>
+</body>
+</html>

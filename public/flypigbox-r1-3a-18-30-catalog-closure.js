@@ -14,6 +14,10 @@
   }
   function status(){qsa('.fp30-catalog-status').forEach(node=>node.remove())}
   function labels(){const sub=qs('.top .sub');if(sub)sub.textContent='产品目录工作室';qsa('.advanced-note').forEach(el=>{if(/API|JSON|技术|字段映射/.test(el.textContent))el.classList.add('fp-technical-only')})}
-  function apply(){document.body.dataset.fpCatalogClosure='18.30';sections();status();labels();window.FlypigBOXUI30?.polish?.(document)}
+  function loadHuidiCatalogUx(){
+    if(window.HUIDICatalogUXClosure||document.querySelector('script[data-huidi-catalog-ux]'))return;
+    const script=document.createElement('script');script.src='../huidi-catalog-ux-closure-v1.js?v=HUIDI-CATALOG-UX-V1';script.defer=true;script.dataset.huidiCatalogUx='1';document.head.appendChild(script);
+  }
+  function apply(){document.body.dataset.fpCatalogClosure='18.30';sections();status();labels();loadHuidiCatalogUx();window.FlypigBOXUI30?.polish?.(document)}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{apply();setTimeout(apply,500)},{once:true});else{apply();setTimeout(apply,500)}
 })();
