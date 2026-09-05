@@ -13,15 +13,15 @@
   <aside class="side">
     <div class="brand">HUIDI <span>Online</span></div>
     <div class="nav-title">今天</div>
-    <nav class="nav"><a class="active">工作台</a><a>待跟进</a><a data-huidi-service="mail">客户回复</a><a>提醒</a></nav>
+    <nav class="nav"><a class="active" data-huidi-nav="today">工作台</a><a data-huidi-nav="followups">待跟进</a><a data-huidi-service="mail">客户回复</a><a data-huidi-notifications>提醒</a></nav>
     <div class="nav-title">开发客户</div>
-    <nav class="nav"><a>找客户</a><a data-huidi-service="map">地图找客户</a><a>线索池</a><a data-huidi-service="company">客户背调</a><a>联系人</a></nav>
+    <nav class="nav"><a data-huidi-nav="find">找客户</a><a data-huidi-service="map">地图找客户</a><a data-huidi-nav="leads">线索池</a><a data-huidi-service="company">客户背调</a><a data-huidi-contacts>联系人</a></nav>
     <div class="nav-title">邮件与跟进</div>
     <nav class="nav"><a data-huidi-service="mail">收件箱</a><a data-huidi-service="mail">已发送</a><a data-huidi-service="mail">邮箱账户</a><a data-huidi-service="queue">待发送</a></nav>
     <div class="nav-title">客户与业务</div>
-    <nav class="nav"><a>客户 / 询盘</a><a>报价</a><a>PI</a><a>合同</a><a>CI / 装箱单</a></nav>
+    <nav class="nav"><a data-huidi-business="deals">客户 / 询盘</a><a data-huidi-business="quotation">报价</a><a data-huidi-business="proforma_invoice">PI</a><a data-huidi-business="sales_contract">合同</a><a data-huidi-business="commercial_invoice">CI</a><a data-huidi-business="packing_list">装箱单</a></nav>
     <div class="nav-title">商品与内容</div>
-    <nav class="nav"><a>商品</a><a>产品资料</a><a>产品目录</a></nav>
+    <nav class="nav"><a data-huidi-product>商品</a><a data-huidi-product>产品资料</a><a data-huidi-catalog>产品目录</a></nav>
     <div class="nav-title">外贸工具</div>
     <nav class="nav"><a data-huidi-service="intel">市场情报</a><a data-huidi-service="trade">贸易记录</a><a data-huidi-service="tariff">HS / 关税</a><a data-huidi-service="fx">汇率</a><a data-huidi-service="shipping">船期 / 物流</a></nav>
     <div class="side-note">每天工作 · 邮件收发 · 业务互通<br>联网功能尽量在当前业务里直接完成。</div>
@@ -55,6 +55,9 @@
 <script src="/assets/local-status-sync.js"></script>
 <script src="/assets/daily-services.js"></script>
 <script src="/assets/mail-thread-ui.js"></script>
+<script src="/assets/map-view.js"></script>
+<script src="/assets/business-center-ui.js"></script>
+<script src="/assets/daily-navigation.js"></script>
 <script src="/assets/plain-language.js"></script>
 </body>
 </html>
