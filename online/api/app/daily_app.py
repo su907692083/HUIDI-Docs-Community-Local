@@ -25,6 +25,7 @@ from . import workbench  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
 from . import team_access  # noqa: F401,E402
 from . import backup_restore  # noqa: F401,E402
+from . import production_readiness  # noqa: F401,E402
 from . import tenant_jobs  # noqa: F401,E402
 from . import tenant_webhooks  # noqa: F401,E402
 
