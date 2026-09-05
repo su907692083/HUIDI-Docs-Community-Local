@@ -14,6 +14,8 @@ from . import mail_sequences  # noqa: F401,E402
 from . import product_memory  # noqa: F401,E402
 from . import business_center  # noqa: F401,E402
 from . import contact_center  # noqa: F401,E402
+from . import backup_restore  # noqa: F401,E402
+from . import backup_automation  # noqa: F401,E402
 from . import online_notifications  # noqa: F401,E402
 from . import notification_delivery  # noqa: F401,E402
 from . import intelligence_records  # noqa: F401,E402
@@ -24,7 +26,6 @@ from . import provider_guard  # noqa: F401,E402
 from . import workbench  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
 from . import team_access  # noqa: F401,E402
-from . import backup_restore  # noqa: F401,E402
 from . import production_readiness  # noqa: F401,E402
 from . import tenant_jobs  # noqa: F401,E402
 from . import tenant_webhooks  # noqa: F401,E402
