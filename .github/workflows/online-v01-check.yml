@@ -73,6 +73,9 @@ jobs:
             '/api/team/login',
             '/api/team/me',
             '/api/team/members',
+            '/api/organizations',
+            '/api/organizations/current',
+            '/api/organizations/{organization_id}',
             '/api/services/status',
             '/api/tools/map-leads',
             '/api/tools/trade-news',
@@ -174,6 +177,11 @@ jobs:
             'Team write permission': ('app/team_access.py','你的账号是只读权限'),
             'Team admin permission': ('app/team_access.py','这项设置只允许老板或管理员修改'),
             'Team login UI': ('web/team-access.js','登录 HUIDI'),
+            'Physical tenant database router': ('app/tenant_storage.py','physically separate business database'),
+            'Organization-bound request context': ('app/team_access.py','set_current_organization'),
+            'Tenant background jobs': ('app/tenant_jobs.py','run_tenant_jobs_once'),
+            'Physical tenant isolation regression': ('tests/test_tenant_storage.py','physically separate business databases'),
+            'Organization management UI': ('web/team-access.js','新建公司工作区'),
             'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
             'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
             'FX': ('app/service_hub.py','/api/tools/fx'),
@@ -201,4 +209,4 @@ jobs:
         run: |
           test ! -f .env
           test ! -f ../.env
-          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
+          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
