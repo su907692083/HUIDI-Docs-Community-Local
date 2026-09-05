@@ -219,13 +219,13 @@ def mail_readiness_payload(db: Session, lead: Lead, mailbox_id: int | None = Non
             "key": "suppression",
             "label": "退订 / 黑名单",
             "ok": suppression is None,
-            "detail": "未命中抑制名单" if suppression is None else f"已阻止：{suppression.reason}",
+            "detail": "允许继续联系" if suppression is None else f"已停止：{suppression.reason}",
         },
         {
             "key": "lifecycle",
             "label": "客户当前状态",
             "ok": lifecycle_ok,
-            "detail": "可继续开发" if lifecycle_ok else f"当前为 {lead.status}，停止冷开发发送",
+            "detail": "可继续开发" if lifecycle_ok else "客户已回复或已进入正式业务，停止冷开发发送",
         },
         {
             "key": "mailbox",
@@ -243,12 +243,12 @@ def mail_readiness_payload(db: Session, lead: Lead, mailbox_id: int | None = Non
         "checks": checks,
         "review_ready": review_ready,
         "delivery_ready": review_ready and connection_ready,
-        "send_enabled": False,
-        "delivery_mode": "review_only",
+        "send_enabled": True,
+        "delivery_mode": "connected_mailbox",
         "reason": (
-            "已满足人工审核条件；当前开发版仍未开放真实发送。"
-            if review_ready
-            else "请先处理未通过的检查项。"
+            "邮件内容已经确认，邮箱连接正常，可以发送。"
+            if review_ready and connection_ready
+            else "请先完成未通过的检查项。"
         ),
     }
 
@@ -308,8 +308,6 @@ def receive_local_business_event(
         detail[:1200],
         payload,
     )
-    # A lead that has entered Community Local remains `converted`. Local business
-    # stages belong to the Deal timeline and must not be misused as lead ranking/status.
     lead.updated_at = datetime.now(timezone.utc)
     db.commit()
     db.refresh(lead)
@@ -326,19 +324,10 @@ def mail_health():
     return {
         "ok": True,
         "schema": MAIL_GOVERNANCE_SCHEMA,
-        "send_enabled": False,
-        "delivery_mode": "review_only",
-        "secrets_stored_by_this_module": False,
-        "required_before_delivery": [
-            "OAuth / SMTP secret encryption",
-            "provider connection verification",
-            "daily quota accounting",
-            "send interval enforcement",
-            "bounce handling",
-            "unsubscribe handling",
-            "reply-stop",
-            "audit log",
-        ],
+        "send_enabled": True,
+        "delivery_mode": "connected_mailbox",
+        "providers": ["gmail", "outlook", "smtp"],
+        "features": ["send", "inbox", "sent", "reply_stop", "queue", "retry", "suppression", "audit"],
     }
 
 
@@ -453,19 +442,20 @@ def create_dispatch_plan(lead_id: int, req: DispatchPlanRequest, db: Session = D
         .where(MailDispatchPlan.lead_id == lead.id)
         .where(MailDispatchPlan.mailbox_id == req.mailbox_id)
         .where(MailDispatchPlan.draft_fingerprint == fingerprint)
-        .where(MailDispatchPlan.state == "review_ready_only")
+        .where(MailDispatchPlan.state.in_(["review_ready_only", "ready", "queued"]))
         .order_by(MailDispatchPlan.id.desc())
     )
     if existing:
         return dispatch_to_dict(existing)
 
+    state = "ready" if readiness["delivery_ready"] else "review_ready_only"
     row = MailDispatchPlan(
         lead_id=lead.id,
         mailbox_id=req.mailbox_id,
         recipient=_email(lead.contact_email),
         subject=lead.draft_subject,
         draft_fingerprint=fingerprint,
-        state="review_ready_only",
+        state=state,
         review_note=req.review_note.strip(),
     )
     db.add(row)
@@ -473,13 +463,13 @@ def create_dispatch_plan(lead_id: int, req: DispatchPlanRequest, db: Session = D
         db,
         lead.id,
         "mail_plan_created",
-        "邮件已加入人工待发送计划",
+        "邮件已加入待发送计划",
         lead.draft_subject,
         {
             "mailbox_id": req.mailbox_id,
             "recipient": _email(lead.contact_email),
-            "delivery_enabled": False,
-            "state": "review_ready_only",
+            "delivery_enabled": bool(readiness["delivery_ready"]),
+            "state": state,
         },
     )
     db.commit()
