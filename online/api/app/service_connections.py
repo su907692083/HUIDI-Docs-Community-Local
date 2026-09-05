@@ -3,9 +3,10 @@ from __future__ import annotations
 import base64
 import hashlib
 import os
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Any
 
+import httpx
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import Depends, HTTPException, Request
 from pydantic import BaseModel, Field
@@ -154,8 +155,57 @@ def public_service_status(db: Session, service_key: str) -> dict[str, Any]:
     }
 
 
+def _test_payload(service_key: str) -> dict[str, Any]:
+    if service_key == "company":
+        return {"company": "HUIDI Connection Test", "domain": "", "country": ""}
+    if service_key == "trade":
+        return {"company": "", "product": "stainless steel hardware", "hs_code": "", "country": ""}
+    if service_key == "tariff":
+        return {"hs_code": "830210", "origin": "CN", "destination": "US", "product": "metal hinge"}
+    return {
+        "origin": "Shanghai",
+        "destination": "Los Angeles",
+        "departure_date": date.today().isoformat(),
+        "container": "40HQ",
+    }
+
+
+def test_resolved_service(db: Session, service_key: str) -> dict[str, Any]:
+    resolved = resolve_service_connection(db, service_key)
+    endpoint = str(resolved.get("endpoint_url") or "").strip()
+    if not resolved.get("connected") or not endpoint:
+        raise HTTPException(503, f"{resolved.get('name') or '数据服务'}还没有连接")
+    headers = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "X-HUIDI-Connection-Test": "1",
+    }
+    token = str(resolved.get("token") or "").strip()
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    try:
+        with httpx.Client(timeout=20) as client:
+            response = client.post(endpoint, headers=headers, json=_test_payload(service_key))
+    except httpx.RequestError:
+        raise HTTPException(502, "连接不到这个数据服务，请检查服务地址或网络")
+    if response.status_code in {401, 403}:
+        raise HTTPException(502, "数据服务没有接受当前授权信息，请重新检查")
+    if response.status_code == 404:
+        raise HTTPException(502, "没有找到这个数据服务地址，请重新检查")
+    if response.status_code >= 400:
+        raise HTTPException(502, "数据服务已经响应，但没有通过连接检查")
+    return {
+        "ok": True,
+        "service_key": service_key,
+        "name": resolved["name"],
+        "source": resolved["source"],
+        "message": f"{resolved['name']}连接正常",
+    }
+
+
 @app.get("/api/service-connections")
-def list_service_connections(db: Session = Depends(get_db)):
+def list_service_connections(request: Request, db: Session = Depends(get_db)):
+    _require_manager(request)
     return {
         "ok": True,
         "items": [public_service_status(db, key) for key in SERVICE_DEFS],
@@ -190,6 +240,13 @@ def save_service_connection(
         "service": public_service_status(db, service_key),
         "message": f"{definition['name']}设置已保存",
     }
+
+
+@app.post("/api/service-connections/{service_key}/test")
+def test_service_connection(service_key: str, request: Request, db: Session = Depends(get_db)):
+    _require_manager(request)
+    _definition(service_key)
+    return test_resolved_service(db, service_key)
 
 
 @app.delete("/api/service-connections/{service_key}")
