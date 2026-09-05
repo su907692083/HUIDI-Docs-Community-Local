@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.HUIDIBusinessCenter)return;
-const $=s=>document.querySelector(s),clean=v=>String(v??'').trim(),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s),clean=v=>String(v??'').trim(),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let activeLeadId='',requestedDocument='';
 const docNames={quotation:'报价',proforma_invoice:'PI',sales_contract:'合同',commercial_invoice:'CI',packing_list:'装箱单'};
 const stageNames={new_inquiry:'新询盘',qualified:'已确认需求',quoting:'报价中',negotiating:'沟通中',confirmed:'已确认',production:'生产中',shipping:'出运中',completed:'已完成',lost:'未成交'};
