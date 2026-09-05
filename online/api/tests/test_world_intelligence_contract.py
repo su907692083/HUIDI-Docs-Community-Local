@@ -40,7 +40,11 @@ class WorldIntelligenceContractTests(unittest.TestCase):
 
     def test_world_browser_and_secondary_closure_are_loaded_and_parse(self):
         index = self.text("web/index.html")
-        for file in ["web/world-intelligence-map.js", "web/secondary-page-closure.js"]:
+        for file in [
+            "web/world-intelligence-map.js",
+            "web/world-country-interaction.js",
+            "web/secondary-page-closure.js",
+        ]:
             name = Path(file).name
             self.assertIn(f'/assets/{name}', index)
             result = subprocess.run(["node", "--check", str(ROOT / file)], capture_output=True, text=True)
@@ -60,6 +64,35 @@ class WorldIntelligenceContractTests(unittest.TestCase):
         ]:
             self.assertIn(marker, source)
         self.assertNotIn("conflict severity", source.lower())
+
+    def test_country_shapes_hover_and_click_reuse_existing_detail_owner(self):
+        source = self.text("web/world-country-interaction.js")
+        for marker in [
+            "natural-earth-vector",
+            "ISO_A2_EH",
+            "pointerenter",
+            "pointermove",
+            "wi-country-bubble",
+            "HUIDIWorldIntelligenceMap?.selectMarket",
+            "点击查看当地动态和现有业务",
+            "潜在客户",
+            "联系人",
+            "正式客户",
+            "询盘",
+            "role','button",
+            "Enter",
+        ]:
+            self.assertIn(marker, source)
+        self.assertNotIn("/api/intel/world/country", source)
+        self.assertNotIn("severity", source.lower())
+        self.assertNotIn("risk_level", source.lower())
+
+    def test_country_geometry_failure_keeps_original_world_map_fallback(self):
+        source = self.text("web/world-country-interaction.js")
+        load_pos = source.index("await loadData()")
+        replace_pos = source.index("box.replaceWith(replacement)")
+        self.assertLess(load_pos, replace_pos)
+        self.assertIn("catch(_){return}", source)
 
     def test_secondary_pages_have_consistent_back_and_escape_behavior(self):
         source = self.text("web/secondary-page-closure.js")
