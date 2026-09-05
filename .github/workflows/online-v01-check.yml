@@ -42,6 +42,8 @@ jobs:
         run: node --check web/app.js
       - name: Check Local bridge JavaScript
         run: node --check ../../public/huidi-online-local-bridge-v1.js
+      - name: Online to Local bridge regression
+        run: node tests/bridge_contract.test.cjs
       - name: Verify bridge contract markers
         run: |
           grep -q 'huidi.business.bundle/v1' web/app.js
