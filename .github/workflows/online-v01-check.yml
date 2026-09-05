@@ -7,7 +7,10 @@ on:
       - 'public/online-bridge.html'
       - 'public/huidi-online-local-bridge-v1.js'
       - 'public/product-online-handoff.html'
+      - 'public/document-start.html'
       - 'public/huidi-workspace-r6-rc1628.js'
+      - 'public/huidi-workspace-closure-v1.js'
+      - 'public/huidi-workspace-closure-v1.css'
       - 'public/huidi-notification-center-v1.js'
       - '.github/workflows/online-v01-check.yml'
   push:
@@ -18,7 +21,10 @@ on:
       - 'public/online-bridge.html'
       - 'public/huidi-online-local-bridge-v1.js'
       - 'public/product-online-handoff.html'
+      - 'public/document-start.html'
       - 'public/huidi-workspace-r6-rc1628.js'
+      - 'public/huidi-workspace-closure-v1.js'
+      - 'public/huidi-workspace-closure-v1.css'
       - 'public/huidi-notification-center-v1.js'
       - '.github/workflows/online-v01-check.yml'
 
@@ -52,16 +58,17 @@ jobs:
           node --check web/growth-workflow.js
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
-      - name: Check Local bridge and notification JavaScript
+      - name: Check Local bridge notification and closure JavaScript
         run: |
           node --check ../../public/huidi-online-local-bridge-v1.js
           node --check ../../public/huidi-workspace-r6-rc1628.js
           node --check ../../public/huidi-notification-center-v1.js
+          node --check ../../public/huidi-workspace-closure-v1.js
       - name: Notification Center regression
         run: node tests/notification_center.test.cjs
       - name: Online to Local bridge regression
         run: node tests/bridge_contract.test.cjs
-      - name: Verify Product Brain notification and business bridge contracts
+      - name: Verify Product Brain notification navigation and workspace closure contracts
         run: |
           grep -q 'huidi.product.brain/v1' web/product-brain-core.js
           grep -q 'huidi.campaign.brief/v1' web/product-brain-core.js
@@ -84,6 +91,18 @@ jobs:
           grep -q '用于 Online 开发客户' ../../public/huidi-workspace-r6-rc1628.js
           grep -q 'product-online-handoff.html' ../../public/huidi-workspace-r6-rc1628.js
           grep -q 'huidi-notification-center-v1.js' ../../public/huidi-workspace-r6-rc1628.js
+          grep -q 'huidi-workspace-closure-v1.js' ../../public/huidi-workspace-r6-rc1628.js
+          grep -q 'huidi_workspace_page_state_v1' ../../public/huidi-workspace-closure-v1.js
+          grep -q 'DEFAULT_SIZE=50' ../../public/huidi-workspace-closure-v1.js
+          grep -q 'huidi-quick-drawer' ../../public/huidi-workspace-closure-v1.css
+          grep -q 'huidi_workspace_focus_v1' ../../public/huidi-workspace-closure-v1.js
+          grep -q 'dealSearch' ../../public/document-start.html
+          grep -q 'customerSearch' ../../public/document-start.html
+          grep -q 'productSearch' ../../public/document-start.html
+          grep -q 'productScope' ../../public/document-start.html
+          grep -q 'workspace.html#documents' ../../public/document-start.html
+          ! grep -q 'workspace.html?view=' ../../public/huidi-online-local-bridge-v1.js
+          grep -q 'workspace.html#' ../../public/huidi-online-local-bridge-v1.js
           grep -q 'huidi_local_notifications_v1' ../../public/huidi-notification-center-v1.js
           grep -q 'huidi_local_notification_channels_v1' ../../public/huidi-notification-center-v1.js
           grep -q 'online.bridge.imported' ../../public/huidi-notification-center-v1.js
