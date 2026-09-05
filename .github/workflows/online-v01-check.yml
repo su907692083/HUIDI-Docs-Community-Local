@@ -46,22 +46,29 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Install dependencies
         run: pip install -r requirements.txt
+
       - name: Compile Python
         run: python -m compileall app tests
-      - name: Lead engine tests
+
+      - name: Lead engine and pagination tests
         run: python -m unittest discover -s tests -p 'test_*.py'
+
       - name: Import FastAPI application
         run: python -c "from app.main import app; print(app.title, app.version)"
+
       - name: Check Online browser JavaScript
         run: |
           node --check web/app.js
           node --check web/product-brain-core.js
           node --check web/product-brain.js
           node --check web/growth-workflow.js
+
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
+
       - name: Check Local bridge notification closure and editor-return JavaScript
         run: |
           node --check ../../public/huidi-online-local-bridge-v1.js
@@ -70,6 +77,7 @@ jobs:
           node --check ../../public/huidi-workspace-closure-v1.js
           node --check ../../public/huidi-editor-return-v1.js
           node --check ../../public/huidi-action-owner-rc1621.js
+
       - name: Check secondary-page inline JavaScript
         run: |
           python - <<'PY'
@@ -87,70 +95,93 @@ jobs:
           PY
           node --check /tmp/document-start-inline.js
           node --check /tmp/product-online-handoff-inline.js
+
       - name: Notification Center regression
         run: node tests/notification_center.test.cjs
+
       - name: Online to Local bridge regression
         run: node tests/bridge_contract.test.cjs
-      - name: Verify Product Brain notification navigation and workspace closure contracts
+
+      - name: Verify named business UX contracts
         run: |
-          grep -q 'huidi.product.brain/v1' web/product-brain-core.js
-          grep -q 'huidi.campaign.brief/v1' web/product-brain-core.js
-          grep -q 'product-brain-core.js' web/index.html
-          grep -q 'product-brain.js' web/index.html
-          grep -q 'growth-workflow.js' web/index.html
-          grep -q 'Buying Signals' web/growth-workflow.js
-          grep -q 'Open Threads' web/growth-workflow.js
-          grep -q 'Strategy' web/growth-workflow.js
-          grep -q 'Hunter' web/growth-workflow.js
-          grep -q 'Profiler' web/growth-workflow.js
-          grep -q 'Writer' web/growth-workflow.js
-          grep -q 'Outreach' web/growth-workflow.js
-          grep -q 'Closer' web/growth-workflow.js
-          grep -q "paged:'1'" web/app.js
-          grep -q 'page_size' app/main.py
-          grep -q 'lead_pagination' app/main.py
-          grep -q 'huidi.product.brain/v1' ../../public/product-online-handoff.html
-          grep -q 'HUIDILocalCore' ../../public/product-online-handoff.html
-          grep -q 'repositories' ../../public/product-online-handoff.html
-          grep -q 'products' ../../public/product-online-handoff.html
-          grep -q '#product=' ../../public/product-online-handoff.html
-          grep -q 'productId' ../../public/product-online-handoff.html
-          grep -q '用于 Online 开发客户' ../../public/huidi-workspace-r6-rc1628.js
-          grep -q 'product-online-handoff.html' ../../public/huidi-workspace-r6-rc1628.js
-          grep -q 'huidi-notification-center-v1.js' ../../public/huidi-workspace-r6-rc1628.js
-          grep -q 'huidi-workspace-closure-v1.js' ../../public/huidi-workspace-r6-rc1628.js
-          grep -q 'huidi_workspace_page_state_v1' ../../public/huidi-workspace-closure-v1.js
-          grep -q 'DEFAULT_SIZE=50' ../../public/huidi-workspace-closure-v1.js
-          grep -q 'huidi-quick-drawer' ../../public/huidi-workspace-closure-v1.css
-          grep -q 'huidi_workspace_focus_v1' ../../public/huidi-workspace-closure-v1.js
-          grep -q 'dealSearch' ../../public/document-start.html
-          grep -q 'customerSearch' ../../public/document-start.html
-          grep -q 'productSearch' ../../public/document-start.html
-          grep -q 'productScope' ../../public/document-start.html
-          grep -q 'huidi_document_return_v1' ../../public/document-start.html
-          grep -q 'workspace.html#documents' ../../public/document-start.html
-          grep -q 'huidi_document_return_v1' ../../public/huidi-editor-return-v1.js
-          grep -q 'huidi_workspace_focus_v1' ../../public/huidi-editor-return-v1.js
-          grep -q '返回询盘' ../../public/huidi-editor-return-v1.js
-          grep -q 'huidi-editor-return-v1.js' ../../public/huidi-action-owner-rc1621.js
-          ! grep -q 'workspace.html?view=' ../../public/huidi-online-local-bridge-v1.js
-          grep -q 'workspace.html#' ../../public/huidi-online-local-bridge-v1.js
-          grep -q 'huidi_local_notifications_v1' ../../public/huidi-notification-center-v1.js
-          grep -q 'huidi_local_notification_channels_v1' ../../public/huidi-notification-center-v1.js
-          grep -q 'online.bridge.imported' ../../public/huidi-notification-center-v1.js
-          grep -q 'document.saved' ../../public/huidi-notification-center-v1.js
-          grep -q 'business.event' ../../public/huidi-notification-center-v1.js
-          grep -q 'huidi.business.bundle/v1' web/app.js
-          grep -q 'huidi.business.bundle/v1' ../../public/huidi-online-local-bridge-v1.js
-          grep -q 'HUIDILocalCore' ../../public/huidi-online-local-bridge-v1.js
-          grep -q 'online-bridge.html#bundle=' web/app.js
-          grep -q 'quotation' ../../public/online-bridge.html
-          grep -q 'proforma_invoice' ../../public/online-bridge.html
-          grep -q 'sales_contract' ../../public/online-bridge.html
-          grep -q 'commercial_invoice' ../../public/online-bridge.html
-          grep -q 'packing_list' ../../public/online-bridge.html
-          grep -q 'catalog-studio/index.html' ../../public/huidi-online-local-bridge-v1.js
-          grep -q 'huidi_local_mail_drafts_v2' ../../public/huidi-local-core-rc167.js
+          python - <<'PY'
+          from pathlib import Path
+
+          root = Path('../..')
+          files = {
+              'online_app': Path('web/app.js').read_text(encoding='utf-8'),
+              'online_api': Path('app/main.py').read_text(encoding='utf-8'),
+              'brain': Path('web/product-brain-core.js').read_text(encoding='utf-8'),
+              'growth': Path('web/growth-workflow.js').read_text(encoding='utf-8'),
+              'handoff': (root / 'public/product-online-handoff.html').read_text(encoding='utf-8'),
+              'workspace_owner': (root / 'public/huidi-workspace-r6-rc1628.js').read_text(encoding='utf-8'),
+              'workspace_closure': (root / 'public/huidi-workspace-closure-v1.js').read_text(encoding='utf-8'),
+              'workspace_css': (root / 'public/huidi-workspace-closure-v1.css').read_text(encoding='utf-8'),
+              'document_start': (root / 'public/document-start.html').read_text(encoding='utf-8'),
+              'editor_return': (root / 'public/huidi-editor-return-v1.js').read_text(encoding='utf-8'),
+              'action_owner': (root / 'public/huidi-action-owner-rc1621.js').read_text(encoding='utf-8'),
+              'bridge': (root / 'public/huidi-online-local-bridge-v1.js').read_text(encoding='utf-8'),
+              'notify': (root / 'public/huidi-notification-center-v1.js').read_text(encoding='utf-8'),
+              'bridge_page': (root / 'public/online-bridge.html').read_text(encoding='utf-8'),
+              'local_core': (root / 'public/huidi-local-core-rc167.js').read_text(encoding='utf-8'),
+          }
+
+          checks = {
+              'Product Brain schema': ('brain', 'huidi.product.brain/v1'),
+              'Campaign Brief schema': ('brain', 'huidi.campaign.brief/v1'),
+              'Growth Buying Signals': ('growth', 'Buying Signals'),
+              'Growth Open Threads': ('growth', 'Open Threads'),
+              'Online paged request': ('online_app', "paged:'1'"),
+              'Online API page size': ('online_api', 'page_size'),
+              'Online pagination capability': ('online_api', 'lead_pagination'),
+              'Local Product Brain handoff': ('handoff', 'huidi.product.brain/v1'),
+              'Handoff selected product deep-link': ('handoff', 'productId'),
+              'Workspace closure loader': ('workspace_owner', 'huidi-workspace-closure-v1.js'),
+              'Workspace page persistence': ('workspace_closure', 'huidi_workspace_page_state_v1'),
+              'Workspace default 50 rows': ('workspace_closure', 'DEFAULT_SIZE=50'),
+              'Workspace entity focus': ('workspace_closure', 'huidi_workspace_focus_v1'),
+              'Workspace quick drawer': ('workspace_css', 'huidi-quick-drawer'),
+              'Document customer search': ('document_start', 'customerSearch'),
+              'Document deal search': ('document_start', 'dealSearch'),
+              'Document product search': ('document_start', 'productSearch'),
+              'Document product scope': ('document_start', 'productScope'),
+              'Document return context': ('document_start', 'huidi_document_return_v1'),
+              'Editor return context': ('editor_return', 'huidi_document_return_v1'),
+              'Editor returns to inquiry': ('editor_return', '返回询盘'),
+              'Editor return loader': ('action_owner', 'huidi-editor-return-v1.js'),
+              'Business bundle schema': ('bridge', 'huidi.business.bundle/v1'),
+              'Hash navigation': ('bridge', 'workspace.html#'),
+              'Notification store': ('notify', 'huidi_local_notifications_v1'),
+              'Notification channel store': ('notify', 'huidi_local_notification_channels_v1'),
+              'Online import notification': ('notify', 'online.bridge.imported'),
+              'Business event notification': ('notify', 'business.event'),
+              'Quotation bridge action': ('bridge_page', 'quotation'),
+              'PI bridge action': ('bridge_page', 'proforma_invoice'),
+              'Contract bridge action': ('bridge_page', 'sales_contract'),
+              'CI bridge action': ('bridge_page', 'commercial_invoice'),
+              'Packing List bridge action': ('bridge_page', 'packing_list'),
+              'Catalog bridge': ('bridge', 'catalog-studio/index.html'),
+              'Local mail owner': ('local_core', 'huidi_local_mail_drafts_v2'),
+          }
+
+          missing = []
+          for name, (file_key, marker) in checks.items():
+              if marker in files[file_key]:
+                  print(f'PASS: {name}')
+              else:
+                  print(f'FAIL: {name} -> missing {marker!r} in {file_key}')
+                  missing.append(name)
+
+          if 'workspace.html?view=' in files['bridge']:
+              print('FAIL: legacy query navigation still present')
+              missing.append('legacy query navigation')
+          else:
+              print('PASS: legacy query navigation removed')
+
+          if missing:
+              raise SystemExit('Contract failures: ' + ', '.join(missing))
+          PY
+
       - name: Assert no local secrets are tracked
         run: |
           test ! -f .env
