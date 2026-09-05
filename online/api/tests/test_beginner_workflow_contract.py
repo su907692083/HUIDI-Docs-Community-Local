@@ -68,6 +68,23 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         self.assertIn("邮件主题", sequence)
         self.assertIn("等待时间（小时）", sequence)
 
+    def test_readiness_is_presented_as_usage_check_not_database_training(self):
+        readiness = self.text("app/production_readiness.py")
+        safety = self.text("web/admin-safety.js")
+        self.assertIn("安全保护", readiness)
+        self.assertIn("数据升级", readiness)
+        self.assertIn("使用检查与数据备份", safety)
+        self.assertIn("这里只告诉你结果和下一步", safety)
+        self.assertNotIn("数据库结构版本", readiness)
+        self.assertNotIn("PostgreSQL 服务器数据库", readiness)
+
+    def test_operation_history_uses_business_names_without_internal_record_ids(self):
+        audit = self.text("web/audit-ui.js")
+        self.assertIn("['lead','潜在客户']", audit)
+        self.assertIn("修改数据来源特殊要求", audit)
+        self.assertIn("return map[x.resource_type]||''", audit)
+        self.assertNotIn("客户线索", audit)
+
     def test_data_source_special_transport_settings_are_collapsed_and_plain(self):
         adapter = self.text("web/service-adapter-ui.js")
         settings = self.text("web/service-settings.js")
