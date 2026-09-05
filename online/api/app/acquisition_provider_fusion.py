@@ -12,7 +12,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from .lead_engine import clean_domain, merge_evidence, score_search_result
-from .main import Lead, LeadSearchRequest, SessionLocal, add_activity, lead_to_dict
+from .main import Lead, LeadSearchRequest, SessionLocal, add_activity, lead_to_dict, serper_search
 from .online_app import app
 
 
@@ -27,7 +27,6 @@ _EXCLUDED_DOMAINS = {
     "wikipedia.org", "reddit.com", "amazon.com", "alibaba.com", "made-in-china.com",
     "globalsources.com", "indiamart.com", "pinterest.com", "tiktok.com",
 }
-
 _BUYER_ROLE_TERMS = (
     "procurement", "purchasing", "buyer", "sourcing", "supply chain", "category manager",
     "merchandiser", "import manager", "commodity manager", "采购", "买手", "供应链",
@@ -38,11 +37,19 @@ _OWNER_ROLE_TERMS = ("owner", "founder", "director", "general manager", "managin
 def acquisition_provider_status() -> dict[str, Any]:
     return {
         "serper": SERPER_CONFIGURED,
-        "company_search_fallback": bool(TAVILY_API_KEY),
-        "contact_search_priority": bool(HUNTER_API_KEY),
+        "tavily": bool(TAVILY_API_KEY),
+        "hunter": bool(HUNTER_API_KEY),
         "live_company_search": bool(SERPER_CONFIGURED or TAVILY_API_KEY),
         "live_contact_search": bool(SERPER_CONFIGURED or HUNTER_API_KEY),
+        "company_search_order": [x for x, ready in (("Serper", SERPER_CONFIGURED), ("Tavily", bool(TAVILY_API_KEY))) if ready],
+        "contact_search_order": [x for x, ready in (("Hunter", bool(HUNTER_API_KEY)), ("Serper", SERPER_CONFIGURED)) if ready],
     }
+
+
+@app.get("/api/acquisition/status")
+def acquisition_status():
+    status = acquisition_provider_status()
+    return {"ok": True, **status}
 
 
 def _host_excluded(domain: str) -> bool:
@@ -50,31 +57,8 @@ def _host_excluded(domain: str) -> bool:
     return any(host == blocked or host.endswith("." + blocked) for blocked in _EXCLUDED_DOMAINS)
 
 
-def _friendly_provider_error(response: httpx.Response, label: str) -> JSONResponse:
-    if response.status_code in {401, 403}:
-        message = f"{label}授权信息没有通过，请管理员检查连接"
-        status = 502
-    elif response.status_code == 429:
-        message = f"{label}当前额度或请求频率已到限制，请稍后再试"
-        status = 503
-    elif response.status_code >= 500:
-        message = f"{label}暂时不可用，请稍后再试"
-        status = 503
-    else:
-        message = f"{label}没有成功返回结果"
-        status = 502
-    return JSONResponse({"detail": message}, status_code=status)
-
-
 async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]:
-    query = " ".join(
-        x for x in [
-            req.product_keyword,
-            req.buyer_type,
-            req.country,
-            "company importer distributor buyer official website",
-        ] if x
-    )
+    query = " ".join(x for x in [req.product_keyword, req.buyer_type, req.country, "company importer distributor buyer official website"] if x)
     try:
         async with httpx.AsyncClient(timeout=25) as client:
             response = await client.post(
@@ -90,14 +74,17 @@ async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]
                 },
             )
     except httpx.RequestError as exc:
-        raise RuntimeError("在线找客户服务暂时连接不上") from exc
+        raise RuntimeError("在线找客户备用来源暂时连接不上") from exc
+    if response.status_code in {401, 403}:
+        raise RuntimeError("在线找客户备用来源授权信息没有通过，请管理员检查连接")
+    if response.status_code == 429:
+        raise RuntimeError("在线找客户备用来源当前额度或请求频率已到限制")
     if response.status_code >= 400:
-        error = _friendly_provider_error(response, "在线找客户服务")
-        raise RuntimeError(str(error.body.decode("utf-8", errors="ignore")))
+        raise RuntimeError("在线找客户备用来源没有成功返回结果")
     try:
         payload = response.json()
     except Exception as exc:
-        raise RuntimeError("在线找客户服务返回了无法读取的数据") from exc
+        raise RuntimeError("在线找客户备用来源返回了无法读取的数据") from exc
     rows: list[dict[str, Any]] = []
     for item in (payload.get("results") or [])[:20]:
         if not isinstance(item, dict):
@@ -106,15 +93,103 @@ async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]
         domain = clean_domain(url)
         if not domain or _host_excluded(domain):
             continue
-        rows.append(
-            {
-                "title": str(item.get("title") or domain).strip(),
-                "link": url,
-                "snippet": str(item.get("content") or "").strip(),
-                "search_score": float(item.get("score") or 0),
-            }
-        )
+        rows.append({
+            "title": str(item.get("title") or domain).strip(),
+            "link": url,
+            "snippet": str(item.get("content") or "").strip(),
+            "search_score": float(item.get("score") or 0),
+        })
     return rows
+
+
+async def _company_search_with_failover(req: LeadSearchRequest) -> tuple[str, list[dict[str, Any]], list[str]]:
+    errors: list[str] = []
+    if SERPER_CONFIGURED:
+        try:
+            rows = await serper_search(req)
+            if rows:
+                return "serper", rows, errors
+            errors.append("主搜索来源没有返回候选")
+        except Exception:
+            errors.append("主搜索来源暂时不可用")
+    if TAVILY_API_KEY:
+        try:
+            rows = await _tavily_company_search(req)
+            if rows:
+                return "tavily", rows, errors
+            errors.append("备用搜索来源没有返回候选")
+        except RuntimeError as exc:
+            errors.append(str(exc))
+    return "", [], errors
+
+
+def _persist_company_results(req: LeadSearchRequest, raw: list[dict[str, Any]], provider: str) -> JSONResponse:
+    db = SessionLocal()
+    try:
+        created: list[Lead] = []
+        seen_domains: set[str] = set()
+        for item in raw:
+            link = str(item.get("link") or "")
+            domain = clean_domain(link)
+            if not domain or domain in seen_domains or _host_excluded(domain):
+                continue
+            seen_domains.add(domain)
+            existing = db.scalar(select(Lead).where(Lead.domain == domain))
+            score, reason, breakdown, level = score_search_result(
+                item,
+                product_keyword=req.product_keyword,
+                buyer_type=req.buyer_type,
+                country=req.country,
+            )
+            evidence = {
+                "title": item.get("title"), "url": link, "snippet": item.get("snippet", ""),
+                "source": "online_company_search", "provider": provider,
+                "score_breakdown": breakdown, "priority": level,
+            }
+            if existing:
+                existing.evidence_json = merge_evidence(existing.evidence_json, [evidence])
+                if score > existing.score:
+                    existing.score = score
+                    existing.reason = reason
+                    existing.market_keyword = req.product_keyword
+                    existing.buyer_type = req.buyer_type
+                    existing.country = req.country or existing.country
+                    existing.updated_at = datetime.now(timezone.utc)
+                continue
+            lead = Lead(
+                company_name=(str(item.get("title") or domain).split("|")[0].strip() or domain)[:255],
+                domain=domain, website=link, country=req.country, market_keyword=req.product_keyword,
+                buyer_type=req.buyer_type, score=score, reason=reason,
+                evidence_json=merge_evidence("[]", [evidence]),
+            )
+            db.add(lead); db.flush()
+            add_activity(
+                db, lead.id, "discovered", "发现潜在客户", f"优先级 {level} · 匹配分 {score}",
+                {"breakdown": breakdown, "source": "online_company_search", "provider": provider},
+            )
+            created.append(lead)
+            if len(created) >= req.limit:
+                break
+        db.commit()
+        for lead in created:
+            db.refresh(lead)
+        return JSONResponse({"mode": "live", "provider": provider, "items": [lead_to_dict(x, db) for x in created]})
+    except Exception:
+        db.rollback()
+        return JSONResponse({"detail": "真实客户结果已经返回，但保存时没有成功，请稍后再试"}, status_code=500)
+    finally:
+        db.close()
+
+
+async def _handle_company_search(request: Request) -> JSONResponse:
+    try:
+        req = LeadSearchRequest.model_validate(await request.json())
+    except (ValidationError, ValueError, TypeError):
+        return JSONResponse({"detail": "请填写产品关键词、目标市场和客户类型"}, status_code=422)
+    provider, raw, errors = await _company_search_with_failover(req)
+    if not provider:
+        return JSONResponse({"detail": "；".join(errors) or "在线找客户服务暂时没有可用结果"}, status_code=503)
+    return _persist_company_results(req, raw, provider)
 
 
 def _contact_rank(row: dict[str, Any]) -> tuple[int, float]:
@@ -147,8 +222,7 @@ def _best_hunter_contact(payload: dict[str, Any], domain: str) -> tuple[dict[str
         email = str(row.get("value") or "").strip().lower()
         if not email or "@" not in email or email.rsplit("@", 1)[-1] != domain.lower():
             continue
-        valid.append(row)
-        values.append(email)
+        valid.append(row); values.append(email)
     if not valid:
         return None, []
     valid.sort(key=_contact_rank, reverse=True)
@@ -177,94 +251,7 @@ async def _hunter_domain_search(domain: str) -> dict[str, Any]:
         raise RuntimeError("联系人查找服务返回了无法读取的数据") from exc
 
 
-async def _handle_company_search(request: Request) -> JSONResponse:
-    try:
-        req = LeadSearchRequest.model_validate(await request.json())
-    except (ValidationError, ValueError, TypeError):
-        return JSONResponse({"detail": "请填写产品关键词、目标市场和客户类型"}, status_code=422)
-    try:
-        raw = await _tavily_company_search(req)
-    except RuntimeError as exc:
-        message = str(exc)
-        if message.startswith('{') and 'detail' in message:
-            try:
-                import json
-                message = json.loads(message).get("detail") or message
-            except Exception:
-                pass
-        return JSONResponse({"detail": message}, status_code=502)
-
-    db = SessionLocal()
-    try:
-        created: list[Lead] = []
-        seen_domains: set[str] = set()
-        for item in raw:
-            link = str(item.get("link") or "")
-            domain = clean_domain(link)
-            if not domain or domain in seen_domains or _host_excluded(domain):
-                continue
-            seen_domains.add(domain)
-            existing = db.scalar(select(Lead).where(Lead.domain == domain))
-            score, reason, breakdown, level = score_search_result(
-                item,
-                product_keyword=req.product_keyword,
-                buyer_type=req.buyer_type,
-                country=req.country,
-            )
-            evidence = {
-                "title": item.get("title"),
-                "url": link,
-                "snippet": item.get("snippet", ""),
-                "source": "online_company_search",
-                "score_breakdown": breakdown,
-                "priority": level,
-            }
-            if existing:
-                if score > existing.score:
-                    existing.score = score
-                    existing.reason = reason
-                    existing.market_keyword = req.product_keyword
-                    existing.buyer_type = req.buyer_type
-                    existing.country = req.country or existing.country
-                    existing.evidence_json = merge_evidence(existing.evidence_json, [evidence])
-                    existing.updated_at = datetime.now(timezone.utc)
-                continue
-            lead = Lead(
-                company_name=(str(item.get("title") or domain).split("|")[0].strip() or domain)[:255],
-                domain=domain,
-                website=link,
-                country=req.country,
-                market_keyword=req.product_keyword,
-                buyer_type=req.buyer_type,
-                score=score,
-                reason=reason,
-                evidence_json=merge_evidence("[]", [evidence]),
-            )
-            db.add(lead)
-            db.flush()
-            add_activity(
-                db,
-                lead.id,
-                "discovered",
-                "发现潜在客户",
-                f"优先级 {level} · 匹配分 {score}",
-                {"breakdown": breakdown, "source": "online_company_search"},
-            )
-            created.append(lead)
-            if len(created) >= req.limit:
-                break
-        db.commit()
-        for lead in created:
-            db.refresh(lead)
-        return JSONResponse({"mode": "live", "items": [lead_to_dict(x, db) for x in created]})
-    except Exception:
-        db.rollback()
-        return JSONResponse({"detail": "真实客户结果已经返回，但保存时没有成功，请稍后再试"}, status_code=500)
-    finally:
-        db.close()
-
-
-async def _handle_contact_search(lead_id: int) -> JSONResponse:
+async def _handle_hunter_contact(lead_id: int) -> JSONResponse | None:
     db = SessionLocal()
     try:
         lead = db.get(Lead, lead_id)
@@ -275,35 +262,31 @@ async def _handle_contact_search(lead_id: int) -> JSONResponse:
             return JSONResponse({"detail": "请先确认这个客户的公司官网，再查找联系人"}, status_code=400)
         try:
             payload = await _hunter_domain_search(domain)
-        except RuntimeError as exc:
-            return JSONResponse({"detail": str(exc)}, status_code=502)
+        except RuntimeError:
+            return None if SERPER_CONFIGURED else JSONResponse({"detail": "联系人查找服务暂时不可用，请稍后再试"}, status_code=503)
         best, emails = _best_hunter_contact(payload, domain)
+        if not emails and SERPER_CONFIGURED:
+            return None
         if best:
-            first = str(best.get("first_name") or "").strip()
-            last = str(best.get("last_name") or "").strip()
+            first = str(best.get("first_name") or "").strip(); last = str(best.get("last_name") or "").strip()
             name = " ".join(x for x in [first, last] if x).strip()
             lead.contact_email = str(best.get("value") or "").strip().lower()
-            if name:
-                lead.contact_name = name[:255]
+            if name: lead.contact_name = name[:255]
             role = str(best.get("position") or "").strip()
-            if role:
-                lead.contact_role = role[:255]
+            if role: lead.contact_role = role[:255]
             lead.updated_at = datetime.now(timezone.utc)
-        evidence_rows = []
-        for email in emails[:10]:
-            evidence_rows.append({"title": "公开业务联系人", "url": lead.website, "snippet": email, "source": "verified_contact_search"})
-        if evidence_rows:
-            lead.evidence_json = merge_evidence(lead.evidence_json, evidence_rows)
+        if emails:
+            lead.evidence_json = merge_evidence(lead.evidence_json, [
+                {"title": "公开业务联系人", "url": lead.website, "snippet": email, "source": "verified_contact_search", "provider": "hunter"}
+                for email in emails[:10]
+            ])
         add_activity(
-            db,
-            lead.id,
-            "contact_search",
-            "查找公开联系人",
+            db, lead.id, "contact_search", "查找公开联系人",
             f"发现 {len(emails)} 个同域公开邮箱" if emails else "暂未找到可核验的同域公开邮箱",
-            {"emails": emails[:10], "source": "verified_contact_search"},
+            {"emails": emails[:10], "source": "verified_contact_search", "provider": "hunter"},
         )
         db.commit(); db.refresh(lead)
-        return JSONResponse({"mode": "live", "emails": emails, "lead": lead_to_dict(lead, db)})
+        return JSONResponse({"mode": "live", "provider": "hunter", "emails": emails, "lead": lead_to_dict(lead, db)})
     except Exception:
         db.rollback()
         return JSONResponse({"detail": "联系人结果处理时没有成功，请稍后再试"}, status_code=500)
@@ -313,17 +296,14 @@ async def _handle_contact_search(lead_id: int) -> JSONResponse:
 
 @app.middleware("http")
 async def legacy_acquisition_provider_fusion(request: Request, call_next):
-    """Absorb proven V3.x provider capability into current Online endpoints.
-
-    This does not create a second lead/contact API. It only supplies a real
-    provider fallback to the existing paths when the current Serper owner is not
-    configured, and prefers the dedicated contact provider when available.
-    """
+    """Fuse V3 acquisition providers into the current lead/contact owners only."""
     path = request.url.path
     method = request.method.upper()
-    if method == "POST" and path == "/api/leads/search" and not SERPER_CONFIGURED and TAVILY_API_KEY:
+    if method == "POST" and path == "/api/leads/search" and (SERPER_CONFIGURED or TAVILY_API_KEY):
         return await _handle_company_search(request)
     match = re.fullmatch(r"/api/leads/(\d+)/find-contact", path)
     if method == "POST" and match and HUNTER_API_KEY:
-        return await _handle_contact_search(int(match.group(1)))
+        response = await _handle_hunter_contact(int(match.group(1)))
+        if response is not None:
+            return response
     return await call_next(request)
