@@ -1,0 +1,37 @@
+name: Online V0.1 Check
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-v01-check.yml'
+  push:
+    branches:
+      - 'online/v0.1-lead-workbench'
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-v01-check.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Compile Python
+        run: python -m compileall app tests
+      - name: Lead engine tests
+        run: python -m unittest discover -s tests -p 'test_*.py'
+      - name: Import FastAPI application
+        run: python -c "from app.main import app; print(app.title, app.version)"
+      - name: Assert no local secrets are tracked
+        run: |
+          test ! -f .env
+          test ! -f ../.env
