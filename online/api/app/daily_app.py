@@ -8,6 +8,7 @@ from . import product_memory  # noqa: F401
 from . import business_center  # noqa: F401
 from . import contact_center  # noqa: F401
 from . import online_notifications  # noqa: F401
+from . import intelligence_records  # noqa: F401
 from . import service_hub  # noqa: F401
 from . import provider_guard  # noqa: F401
 from . import workbench  # noqa: F401
