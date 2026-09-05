@@ -31,6 +31,7 @@ from . import service_hub  # noqa: F401,E402
 from . import service_hub_adapter_patch  # noqa: F401,E402
 from . import intelligence_sources  # noqa: F401,E402
 from . import customer_intelligence  # noqa: F401,E402
+from . import world_intelligence  # noqa: F401,E402
 from . import intelligence_source_bridge  # noqa: F401,E402
 from . import today_intelligence  # noqa: F401,E402
 from . import provider_guard  # noqa: F401,E402
