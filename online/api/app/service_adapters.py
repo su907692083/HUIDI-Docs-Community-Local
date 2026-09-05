@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import ipaddress
+import os
+import socket
 from datetime import datetime, timezone
 from typing import Any
+from urllib.parse import urlparse
 
 import httpx
 from fastapi import Depends, HTTPException, Request
@@ -63,7 +67,12 @@ def _adapter_setting(db: Session, service_key: str) -> dict[str, str]:
     credential_name = str(row.credential_name if row else "").strip()
     if not credential_name:
         credential_name = "X-API-Key" if ADAPTERS[adapter_key]["credential"] == "header" else "api_key"
-    return {"service_key": service_key, "adapter_key": adapter_key, "adapter_name": ADAPTERS[adapter_key]["name"], "credential_name": credential_name}
+    return {
+        "service_key": service_key,
+        "adapter_key": adapter_key,
+        "adapter_name": ADAPTERS[adapter_key]["name"],
+        "credential_name": credential_name,
+    }
 
 
 def public_adapter_status(db: Session, service_key: str) -> dict[str, Any]:
@@ -71,17 +80,43 @@ def public_adapter_status(db: Session, service_key: str) -> dict[str, Any]:
     return {**setting, "adapters": {key: value["name"] for key, value in ADAPTERS.items()}}
 
 
+def _private_endpoint_allowed() -> bool:
+    return os.getenv("HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS", "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _validate_endpoint(endpoint: str) -> None:
+    parsed = urlparse(endpoint)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        raise HTTPException(400, "数据服务地址必须是有效的 http 或 https 地址")
+    if _private_endpoint_allowed():
+        return
+    hostname = parsed.hostname.lower()
+    if hostname in {"localhost", "localhost.localdomain"} or hostname.endswith(".local"):
+        raise HTTPException(400, "默认不允许连接服务器本机或内网数据地址")
+    try:
+        addresses = {item[4][0] for item in socket.getaddrinfo(hostname, parsed.port or (443 if parsed.scheme == "https" else 80))}
+    except socket.gaierror:
+        return
+    for address in addresses:
+        try:
+            ip = ipaddress.ip_address(address.split("%", 1)[0])
+        except ValueError:
+            continue
+        if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_multicast or ip.is_unspecified:
+            raise HTTPException(400, "默认不允许连接服务器本机或内网数据地址")
+
+
 def execute_service_request(db: Session, service_key: str, payload: dict[str, Any], *, test: bool = False) -> Any:
     resolved = resolve_service_connection(db, service_key)
     endpoint = str(resolved.get("endpoint_url") or "").strip()
     if not resolved.get("connected") or not endpoint:
         raise HTTPException(503, f"{resolved.get('name') or '数据服务'}还没有连接")
+    _validate_endpoint(endpoint)
     setting = _adapter_setting(db, service_key)
     adapter = ADAPTERS[setting["adapter_key"]]
     token = str(resolved.get("token") or "").strip()
     headers = {"Accept": "application/json"}
     params: dict[str, Any] = {}
-    json_body: dict[str, Any] | None = payload
     if adapter["credential"] == "bearer" and token:
         headers["Authorization"] = f"Bearer {token}"
     elif adapter["credential"] == "header" and token:
@@ -91,15 +126,17 @@ def execute_service_request(db: Session, service_key: str, payload: dict[str, An
     if test:
         headers["X-HUIDI-Connection-Test"] = "1"
     try:
-        with httpx.Client(timeout=20 if test else 35) as client:
+        with httpx.Client(timeout=20 if test else 35, follow_redirects=False) as client:
             if adapter["method"] == "GET":
-                params.update({k: v for k, v in payload.items() if v not in {None, ""}})
+                params.update({k: v for k, v in payload.items() if v is not None and v != ""})
                 response = client.get(endpoint, headers=headers, params=params)
             else:
                 headers["Content-Type"] = "application/json"
-                response = client.post(endpoint, headers=headers, params=params, json=json_body)
+                response = client.post(endpoint, headers=headers, params=params, json=payload)
     except httpx.RequestError as exc:
         raise HTTPException(502, "连接不到这个数据服务，请检查服务地址或网络") from exc
+    if 300 <= response.status_code < 400:
+        raise HTTPException(502, "数据服务返回了跳转地址，请直接填写最终服务地址")
     if response.status_code in {401, 403}:
         raise HTTPException(502, "数据服务没有接受当前授权信息，请重新检查")
     if response.status_code == 404:
@@ -144,7 +181,12 @@ def test_service_adapter(service_key: str, request: Request, db: Session = Depen
         "company": {"company": "HUIDI Connection Test", "domain": "", "country": ""},
         "trade": {"company": "", "product": "stainless steel hardware", "hs_code": "", "country": ""},
         "tariff": {"hs_code": "830210", "origin": "CN", "destination": "US", "product": "metal hinge"},
-        "shipping": {"origin": "Shanghai", "destination": "Los Angeles", "departure_date": datetime.now(timezone.utc).date().isoformat(), "container": "40HQ"},
+        "shipping": {
+            "origin": "Shanghai",
+            "destination": "Los Angeles",
+            "departure_date": datetime.now(timezone.utc).date().isoformat(),
+            "container": "40HQ",
+        },
     }
     execute_service_request(db, service_key, samples.get(service_key, {}), test=True)
     setting = _adapter_setting(db, service_key)
