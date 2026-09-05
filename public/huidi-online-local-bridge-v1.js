@@ -30,7 +30,7 @@ function importBundle(bundle,{productIds=null}={}){const check=validate(bundle);
  try{core.emit?.('online.bridge.imported',{sourceLeadId:clean(bundle.source_lead_id),customerId:customer.id,dealId:deal.id,mailId:mail?.id||'',productIds:deal.product_ids||[]})}catch(_){}
  return{customer,deal,mail,matchedProducts:matches.map(x=>x.product)} }
 function preview(bundle){const check=validate(bundle);const matches=check.ok?matchProducts(bundle.deal?.product_keyword||bundle.lead?.market_keyword):[];return{...check,bundle,matchedProducts:matches.map(x=>({id:x.product.id,name:x.product.name,sku:x.product.sku,score:x.score}))}}
-function openWorkspace(view='deals'){location.href=`./workspace.html?view=${encodeURIComponent(view)}`}
+function openWorkspace(view='deals',entityId=''){if(entityId)sessionStorage.setItem('huidi_workspace_focus_v1',JSON.stringify({view,id:String(entityId),at:Date.now()}));location.href=`./workspace.html#${encodeURIComponent(view)}`}
 function openDocument(type,result){const core=window.HUIDILocalCore;if(!result?.deal||!result?.customer)throw new Error('请先确认导入，再制作单据。');core.context.create({type,dealId:result.deal.id,customerId:result.customer.id,productIds:result.deal.product_ids||[]});location.href=`./editor.html?type=${encodeURIComponent(type)}&doc=${encodeURIComponent(type)}&local=1`}
 function openCatalog(result){if(!result?.deal)throw new Error('请先确认导入，再制作产品目录。');sessionStorage.setItem('flypigbox_catalog_product_ids_v1',JSON.stringify({ids:(result.deal.product_ids||[]).map(String),dealId:result.deal.id,createdAt:now()}));location.href='./catalog-studio/index.html'}
 window.HUIDIOnlineLocalBridge=Object.freeze({schema:SCHEMA,decodeFragment,validate,preview,matchProducts,importBundle,openWorkspace,openDocument,openCatalog});
