@@ -8,6 +8,7 @@ on:
       - 'public/huidi-online-local-bridge-v1.js'
       - 'public/product-online-handoff.html'
       - 'public/huidi-workspace-r6-rc1628.js'
+      - 'public/huidi-notification-center-v1.js'
       - '.github/workflows/online-v01-check.yml'
   push:
     branches:
@@ -18,6 +19,7 @@ on:
       - 'public/huidi-online-local-bridge-v1.js'
       - 'public/product-online-handoff.html'
       - 'public/huidi-workspace-r6-rc1628.js'
+      - 'public/huidi-notification-center-v1.js'
       - '.github/workflows/online-v01-check.yml'
 
 jobs:
@@ -50,13 +52,16 @@ jobs:
           node --check web/growth-workflow.js
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
-      - name: Check Local bridge JavaScript
+      - name: Check Local bridge and notification JavaScript
         run: |
           node --check ../../public/huidi-online-local-bridge-v1.js
           node --check ../../public/huidi-workspace-r6-rc1628.js
+          node --check ../../public/huidi-notification-center-v1.js
+      - name: Notification Center regression
+        run: node tests/notification_center.test.cjs
       - name: Online to Local bridge regression
         run: node tests/bridge_contract.test.cjs
-      - name: Verify Product Brain and business bridge contracts
+      - name: Verify Product Brain notification and business bridge contracts
         run: |
           grep -q 'huidi.product.brain/v1' web/product-brain-core.js
           grep -q 'huidi.campaign.brief/v1' web/product-brain-core.js
@@ -78,6 +83,12 @@ jobs:
           grep -q '#product=' ../../public/product-online-handoff.html
           grep -q '用于 Online 开发客户' ../../public/huidi-workspace-r6-rc1628.js
           grep -q 'product-online-handoff.html' ../../public/huidi-workspace-r6-rc1628.js
+          grep -q 'huidi-notification-center-v1.js' ../../public/huidi-workspace-r6-rc1628.js
+          grep -q 'huidi_local_notifications_v1' ../../public/huidi-notification-center-v1.js
+          grep -q 'huidi_local_notification_channels_v1' ../../public/huidi-notification-center-v1.js
+          grep -q 'online.bridge.imported' ../../public/huidi-notification-center-v1.js
+          grep -q 'document.saved' ../../public/huidi-notification-center-v1.js
+          grep -q 'business.event' ../../public/huidi-notification-center-v1.js
           grep -q 'huidi.business.bundle/v1' web/app.js
           grep -q 'huidi.business.bundle/v1' ../../public/huidi-online-local-bridge-v1.js
           grep -q 'HUIDILocalCore' ../../public/huidi-online-local-bridge-v1.js
