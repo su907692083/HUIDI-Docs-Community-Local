@@ -1,4 +1,6 @@
 from .online_app import app  # noqa: F401
 from . import mail_delivery  # noqa: F401
+from . import workbench  # noqa: F401
 
-# Importing mail_delivery registers real SMTP delivery routes on the same FastAPI app.
+# Daily Workbench is the Online product entrypoint. Importing the modules above
+# registers SMTP delivery, business bridge and daily-work routes on one FastAPI app.
