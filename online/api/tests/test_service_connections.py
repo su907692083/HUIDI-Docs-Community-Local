@@ -2,6 +2,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 os.environ.setdefault("HUIDI_DISABLE_BACKGROUND_JOBS", "1")
 os.environ.setdefault("HUIDI_SECRET_KEY", "ci-only-huidi-service-secret")
@@ -13,8 +14,30 @@ from app.service_connections import (  # noqa: E402
     _encrypt,
     public_service_status,
     resolve_service_connection,
+    test_resolved_service,
 )
 from app.tenant_storage import reset_current_organization, set_current_organization  # noqa: E402
+
+
+class FakeResponse:
+    status_code = 200
+
+
+class FakeHttpClient:
+    last_call = None
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def post(self, url, headers=None, json=None):
+        FakeHttpClient.last_call = {"url": url, "headers": headers or {}, "json": json or {}}
+        return FakeResponse()
 
 
 class ServiceConnectionTests(unittest.TestCase):
@@ -128,6 +151,45 @@ class ServiceConnectionTests(unittest.TestCase):
                     public = public_service_status(db, "company")
                     self.assertEqual(public["source"], "server")
                     self.assertEqual(public["endpoint_url"], "")
+                finally:
+                    db.close()
+            finally:
+                reset_current_organization(token)
+
+    def test_connection_check_uses_saved_authorization_without_exposing_it(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            os.environ["HUIDI_TENANT_DATABASE_URL_TEMPLATE"] = (
+                f"sqlite:///{Path(tmp) / 'service-org-{organization_id}.db'}"
+            )
+            token = set_current_organization(774001)
+            try:
+                db = SessionLocal()
+                try:
+                    db.add(
+                        ServiceConnection(
+                            service_key="tariff",
+                            endpoint_url="https://tariff.example/check",
+                            encrypted_token=_encrypt("tariff-secret"),
+                            enabled=1,
+                            updated_by="Owner",
+                        )
+                    )
+                    db.commit()
+                    with patch("app.service_connections.httpx.Client", FakeHttpClient):
+                        out = test_resolved_service(db, "tariff")
+                    self.assertTrue(out["ok"])
+                    self.assertEqual(out["message"], "HS / 关税连接正常")
+                    self.assertEqual(FakeHttpClient.last_call["url"], "https://tariff.example/check")
+                    self.assertEqual(
+                        FakeHttpClient.last_call["headers"].get("Authorization"),
+                        "Bearer tariff-secret",
+                    )
+                    self.assertEqual(
+                        FakeHttpClient.last_call["headers"].get("X-HUIDI-Connection-Test"),
+                        "1",
+                    )
+                    self.assertEqual(FakeHttpClient.last_call["json"].get("hs_code"), "830210")
+                    self.assertNotIn("tariff-secret", str(out))
                 finally:
                     db.close()
             finally:
