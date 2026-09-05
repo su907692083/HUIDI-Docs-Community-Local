@@ -69,8 +69,11 @@ jobs:
             '/api/leads/{lead_id}/local-event',
             '/api/product-brains',
             '/api/intelligence',
+            '/api/intelligence/{record_id}/normalized',
+            '/api/intelligence/normalize/backfill',
             '/api/intelligence/summary/{lead_id}',
             '/api/business/deals/{deal_id}/reference',
+            '/api/business/deals/{deal_id}/facts',
             '/api/business/deals/{deal_id}/handoff',
             '/api/team/status',
             '/api/team/login',
@@ -117,7 +120,7 @@ jobs:
             web/product-brain-server.js web/growth-workflow.js web/mail-governance.js \
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
             web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
-            web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
+            web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
             web/intelligence-history.js web/team-access.js web/company-settings.js web/audit-ui.js \
             web/service-settings.js web/service-adapter-ui.js web/notification-settings.js \
             web/admin-safety.js web/plain-language.js; do
