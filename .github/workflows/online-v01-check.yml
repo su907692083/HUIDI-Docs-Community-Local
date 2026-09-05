@@ -45,6 +45,7 @@ jobs:
           node --check web/app.js
           node --check web/product-brain-core.js
           node --check web/product-brain.js
+          node --check web/growth-workflow.js
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
       - name: Check Local bridge JavaScript
@@ -57,6 +58,15 @@ jobs:
           grep -q 'huidi.campaign.brief/v1' web/product-brain-core.js
           grep -q 'product-brain-core.js' web/index.html
           grep -q 'product-brain.js' web/index.html
+          grep -q 'growth-workflow.js' web/index.html
+          grep -q 'Buying Signals' web/growth-workflow.js
+          grep -q 'Open Threads' web/growth-workflow.js
+          grep -q 'Strategy' web/growth-workflow.js
+          grep -q 'Hunter' web/growth-workflow.js
+          grep -q 'Profiler' web/growth-workflow.js
+          grep -q 'Writer' web/growth-workflow.js
+          grep -q 'Outreach' web/growth-workflow.js
+          grep -q 'Closer' web/growth-workflow.js
           grep -q 'huidi.product.brain/v1' ../../public/product-online-handoff.html
           grep -q 'HUIDILocalCore' ../../public/product-online-handoff.html
           grep -q 'repositories' ../../public/product-online-handoff.html
