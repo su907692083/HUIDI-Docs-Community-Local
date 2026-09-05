@@ -77,6 +77,7 @@ jobs:
             '/api/intel/customer/{lead_id}',
             '/api/intel/deal/{deal_id}',
             '/api/intel/customer/{lead_id}/use',
+            '/api/intel/customer/{lead_id}/apply-to-draft',
             '/api/business/deals/{deal_id}/reference',
             '/api/business/deals/{deal_id}/facts',
             '/api/business/deals/{deal_id}/handoff',
