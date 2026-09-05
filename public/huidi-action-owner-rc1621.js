@@ -137,6 +137,10 @@
     const checkBtn=$('#huidiLocalCheckHeader');if(checkBtn){checkBtn.textContent='检查';checkBtn.title='辅助检查并定位问题；不会限制导出';}
     const template=$('#fpV3321TemplateHeader');if(template){template.textContent='PDF模板/样式';template.title='调整客户文件的 PDF 视觉模板与品牌样式';}
   }
+  function loadEditorReturn(){
+    if(window.HUIDIEditorReturn||document.querySelector('script[data-huidi-editor-return]'))return;
+    const script=document.createElement('script');script.src='./huidi-editor-return-v1.js?v=HUIDI-CLOSURE-V1';script.defer=true;script.dataset.huidiEditorReturn='1';document.head.appendChild(script);
+  }
   function intercept(event){
     const target=event.target;
     if(!target?.closest)return;
@@ -152,8 +156,8 @@
   window.addEventListener('click',intercept,true);
   document.addEventListener('HUIDI:document-type-changed',()=>{checkToken++;checkBusy=false;lastIssues=[];setTimeout(()=>{normalizeToolbar();normalizeDrawerCopy();},80);});
   document.addEventListener('HUIDI:formal-validation',()=>{ /* result only; never auto-open or block */ });
-  function boot(){normalizeToolbar();normalizeDrawerCopy();[160,500,1100].forEach(ms=>setTimeout(()=>{normalizeToolbar();normalizeDrawerCopy();},ms));}
+  function boot(){loadEditorReturn();normalizeToolbar();normalizeDrawerCopy();[160,500,1100].forEach(ms=>setTimeout(()=>{normalizeToolbar();normalizeDrawerCopy();},ms));}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-  window.HUIDIActionOwner=Object.freeze({version:VERSION,save,check,requestMode,normalizeToolbar,normalizeDrawerCopy});
+  window.HUIDIActionOwner=Object.freeze({version:VERSION,save,check,requestMode,normalizeToolbar,normalizeDrawerCopy,loadEditorReturn});
   html.dataset.huidiActionOwner='rc16.21';
 })();
