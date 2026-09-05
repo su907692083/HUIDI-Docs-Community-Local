@@ -16,13 +16,13 @@
     <nav class="nav"><a>邮件草稿</a><a>跟进</a><a>询盘</a><a>报价与单据</a></nav>
     <div class="nav-title">下一阶段</div>
     <nav class="nav"><a>地图找客户 <span class="soon">规划</span></a><a>外贸情报 <span class="soon">规划</span></a><a>工具箱 <span class="soon">规划</span></a></nav>
-    <div class="side-note">V0.1.2 Business Bridge<br>Online 与 Community Local 保持独立数据边界</div>
+    <div class="side-note">V0.1.3 Product Brain · Business Bridge<br>Online 与 Community Local 保持独立数据边界</div>
   </aside>
   <main class="main">
-    <div class="top"><div><h1>开发客户</h1><p>搜索 → 评分 → 背调 → 联系人 → 开发信 → 跟进 → 同步本地询盘 → 报价与单据。</p></div><div id="health" class="health">正在检查服务…</div></div>
+    <div class="top"><div><h1>开发客户</h1><p>产品事实源 → 搜索 → 评分 → 背调 → 联系人 → 开发信 → 跟进 → 同步本地询盘 → 报价与单据。</p></div><div id="health" class="health">正在检查服务…</div></div>
     <section class="search"><div class="search-grid"><div class="field"><label>产品 / 行业关键词</label><input id="keyword" placeholder="例如 stainless steel hinges / hardware"></div><div class="field"><label>目标国家 / 地区</label><input id="country" placeholder="例如 Germany"></div><div class="field"><label>目标客户类型</label><input id="buyerType" value="importer distributor wholesaler"></div><button class="primary" id="searchBtn">搜索潜在客户</button></div></section>
     <div class="toolbar"><div class="tabs" id="tabs"><button class="tab active" data-status="">全部</button><button class="tab" data-status="new">新线索</button><button class="tab" data-status="qualified">已筛选</button><button class="tab" data-status="contacted">已联系</button><button class="tab" data-status="replied">已回复</button><button class="tab" data-status="converted">已转询盘</button></div><div class="meta" id="meta"></div></div>
-    <div class="table-wrap"><table class="table"><thead><tr><th>优先级</th><th>公司</th><th>市场</th><th>匹配分</th><th>为什么值得看</th><th>联系人</th><th>邮箱</th><th>背调</th><th>状态</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table><div id="empty" class="empty">输入产品关键词和目标市场，开始建立第一批候选客户。</div></div>
+    <div class="table-wrap"><table class="table"><thead><tr><th>优先级</th><th>公司</th><th>市场</th><th>匹配分</th><th>为什么值得看</th><th>联系人</th><th>邮箱</th><th>背调</th><th>状态</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table><div id="empty" class="empty">先建立产品大脑或输入产品关键词和目标市场，开始建立第一批候选客户。</div></div>
   </main>
 </div>
 <div id="backdrop" class="drawer-backdrop">
@@ -37,6 +37,8 @@
     <div class="section"><div class="bridge-card"><h3>↔ 同步到 Community Local</h3><div class="muted">产生真实机会后，把这条线索写入你现有的客户中心 + 询盘；本机再自动匹配商品，继续产品目录、邮件草稿和正式单据。</div><div class="bridge-flow"><span>Online 线索</span><i>→</i><span>客户中心</span><i>→</i><span>询盘</span><i>→</i><span>Catalog / 报价</span><i>→</i><span>PI / 合同</span><i>→</i><span>CI / PL</span></div><div class="bridge-grid"><div class="field"><label>本地工作台地址</label><input id="localBase" value="http://127.0.0.1:8765"></div><div class="row"><button class="secondary" id="saveLocalBase">记住地址</button><button class="primary" id="syncLocal">同步到本地并转询盘</button></div></div><div id="bridgeStatus" class="bridge-status">选择线索后可同步。</div></div></div>
   </aside>
 </div>
+<script src="/assets/product-brain-core.js"></script>
 <script src="/assets/app.js"></script>
+<script src="/assets/product-brain.js"></script>
 </body>
 </html>
