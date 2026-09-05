@@ -79,6 +79,9 @@ jobs:
             '/api/intel/customer/{lead_id}/use',
             '/api/intel/customer/{lead_id}/apply-to-draft',
             '/api/intel/today-actions',
+            '/api/intel/sources',
+            '/api/intel/sources/{source_id}',
+            '/api/intel/sources/{source_id}/test',
             '/api/business/deals/{deal_id}/reference',
             '/api/business/deals/{deal_id}/facts',
             '/api/business/deals/{deal_id}/handoff',
@@ -129,7 +132,7 @@ jobs:
             web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
             web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
             web/intelligence-history.js web/customer-intelligence.js web/today-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js \
-            web/service-settings.js web/service-adapter-ui.js web/notification-settings.js \
+            web/service-settings.js web/intelligence-source-settings.js web/service-adapter-ui.js web/notification-settings.js \
             web/admin-safety.js web/plain-language.js; do
               node --check "$file"
           done
@@ -247,6 +250,7 @@ jobs:
           python - <<'PY'
           from sqlalchemy import func, select
           from app.daily_app import app
+          from app.intelligence_sources import IntelligenceFeedSource
           from app.main import Lead, SessionLocal
           from app.schema_migrations import LATEST_SCHEMA_REVISION
           from app.tenant_storage import reset_current_organization, set_current_organization, tenant_schema_status
@@ -267,8 +271,17 @@ jobs:
                       evidence_json='[]',
                       status='qualified',
                   )
-                  db.add(row); db.commit()
+                  db.add(row)
+                  db.add(IntelligenceFeedSource(
+                      name='Tenant One Trade Office',
+                      feed_url='https://tenant-one.example/news.xml',
+                      category='policy',
+                      source_type='official',
+                      enabled=1,
+                  ))
+                  db.commit()
                   assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==1
+                  assert int(db.scalar(select(func.count(IntelligenceFeedSource.id)).where(IntelligenceFeedSource.name=='Tenant One Trade Office')) or 0)==1
                   status=tenant_schema_status(1)
                   assert status['current_revision']==LATEST_SCHEMA_REVISION
                   assert status['serialized_writes'] is True
@@ -282,6 +295,7 @@ jobs:
               db=SessionLocal()
               try:
                   assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==0
+                  assert int(db.scalar(select(func.count(IntelligenceFeedSource.id)).where(IntelligenceFeedSource.name=='Tenant One Trade Office')) or 0)==0
                   status=tenant_schema_status(2)
                   assert status['current_revision']==LATEST_SCHEMA_REVISION
                   assert status['serialized_writes'] is True
