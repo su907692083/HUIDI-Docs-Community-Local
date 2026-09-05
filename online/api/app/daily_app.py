@@ -4,6 +4,7 @@ from . import mail_delivery  # noqa: F401
 from . import mail_sync  # noqa: F401
 from . import product_memory  # noqa: F401
 from . import service_hub  # noqa: F401
+from . import provider_guard  # noqa: F401
 from . import workbench  # noqa: F401
 
 # Daily Workbench is the Online product entrypoint. The imported modules register
