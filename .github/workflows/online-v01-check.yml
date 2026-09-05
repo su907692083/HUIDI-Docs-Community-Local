@@ -4,12 +4,16 @@ on:
   pull_request:
     paths:
       - 'online/**'
+      - 'public/online-bridge.html'
+      - 'public/huidi-online-local-bridge-v1.js'
       - '.github/workflows/online-v01-check.yml'
   push:
     branches:
       - 'online/v0.1-lead-workbench'
     paths:
       - 'online/**'
+      - 'public/online-bridge.html'
+      - 'public/huidi-online-local-bridge-v1.js'
       - '.github/workflows/online-v01-check.yml'
 
 jobs:
@@ -23,6 +27,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Install dependencies
         run: pip install -r requirements.txt
       - name: Compile Python
@@ -31,6 +38,23 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_*.py'
       - name: Import FastAPI application
         run: python -c "from app.main import app; print(app.title, app.version)"
+      - name: Check Online browser JavaScript
+        run: node --check web/app.js
+      - name: Check Local bridge JavaScript
+        run: node --check ../../public/huidi-online-local-bridge-v1.js
+      - name: Verify bridge contract markers
+        run: |
+          grep -q 'huidi.business.bundle/v1' web/app.js
+          grep -q 'huidi.business.bundle/v1' ../../public/huidi-online-local-bridge-v1.js
+          grep -q 'HUIDILocalCore' ../../public/huidi-online-local-bridge-v1.js
+          grep -q 'online-bridge.html#bundle=' web/app.js
+          grep -q 'quotation' ../../public/online-bridge.html
+          grep -q 'proforma_invoice' ../../public/online-bridge.html
+          grep -q 'sales_contract' ../../public/online-bridge.html
+          grep -q 'commercial_invoice' ../../public/online-bridge.html
+          grep -q 'packing_list' ../../public/online-bridge.html
+          grep -q 'catalog-studio/index.html' ../../public/huidi-online-local-bridge-v1.js
+          grep -q 'huidi_local_mail_drafts_v2' ../../public/huidi-local-core-rc167.js
       - name: Assert no local secrets are tracked
         run: |
           test ! -f .env
