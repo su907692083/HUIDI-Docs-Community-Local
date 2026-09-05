@@ -70,10 +70,10 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-复制 `online/.env.example` 后至少配置：
+复制 `online/.env.example` 后至少配置 `HUIDI_SECRET_KEY`。示例文件保持空值，请自行生成并长期保存一个稳定的长随机字符串：
 
 ```env
-HUIDI_SECRET_KEY=请换成稳定的长随机字符串
+HUIDI_SECRET_KEY=
 ```
 
 然后启动：
