@@ -2,7 +2,7 @@
 
 > 在线版开发线：把“商品事实 → 开发客户 → 客户背调 → 联系人 → 开发信 → 跟进 → 客户/询盘 → 产品目录 → 报价 → PI → 合同 → CI / 装箱单”接成同一条业务链。
 
-当前阶段：**V0.1.3 Product Brain + Lead Workbench + Business Bridge V1**
+当前阶段：**V0.1.3 Product Brain + Growth Workflow + Business Bridge V1**
 
 ## 产品方向
 
@@ -14,6 +14,7 @@ Community Local 继续保持本地优先、离线可用和低学习成本；Onli
 - Buyer / Procurement / Sourcing / Purchasing 联系线索
 - 透明买家评分与 A/B/C/D 优先级
 - 客户背调初筛与证据缺口
+- Buying Signals / Open Threads / 下一步建议
 - AI 开发信草稿
 - 人工确认 / 退回修改
 - 跟进时间和开发记录
@@ -24,7 +25,9 @@ Community Local 继续保持本地优先、离线可用和低学习成本；Onli
 
 ```text
 Community Local 商品资料
-        ↓ 用户明确选择一个商品
+        ↓ 商品页“用于 Online 开发客户”
+显式选择一个真实商品
+        ↓
 Product Brain 产品事实源
         ↓
 目标市场 / 客户类型 / Campaign Brief
@@ -35,13 +38,13 @@ Product Brain 产品事实源
         ↓
 来源证据 + 公司官网 + Buying Signals
         ↓
-客户背调初筛
+客户背调初筛 + Open Threads
         ↓
 采购 / Buyer 联系线索
         ↓
-AI 开发信草稿（可调用 Product Brain 真实事实）
+AI 开发信草稿（调用 Product Brain 真实事实）
         ↓
-人工确认 / 安排跟进
+人工确认 / 安排跟进 / Next Best Action
         ↓
 真实机会
         ↓
@@ -87,7 +90,11 @@ HUIDI 明确区分三层：
 
 ## Community Local → Online 商品交接
 
-开发分支新增：
+Community Local 商品资料库现在直接出现：
+
+**用于 Online 开发客户**
+
+点击后进入：
 
 `http://127.0.0.1:8765/product-online-handoff.html`
 
@@ -119,7 +126,18 @@ Online 默认开发地址：
 - Product Brain 事实摘要
 - 禁止承诺项
 
-“开发客户”页面顶部会显示当前 Product Brain，并可一键把商品关键词带入搜索；在线索详情生成开发信时也可以点击“使用当前产品大脑事实”。
+“开发客户”页面顶部会显示当前 Product Brain，并可一键把商品关键词带入搜索；在线索详情生成开发信时也可以使用当前 Product Brain 事实。
+
+## Growth Workflow：客户详情不再只是“看资料”
+
+每条线索详情现在会根据真实状态给出：
+
+- **Next Best Action**：当前最值得做的下一步
+- **Buying Signals**：只从已保存的公开证据里识别采购、项目、招聘、融资、扩张等信号
+- **Open Threads**：联系人、贸易证据、开发信、跟进计划等尚未收口事项
+- **角色进度**：Strategy / Hunter / Profiler / Writer / Outreach / Closer
+
+这些角色不是六个独立按钮，而是同一条业务链的状态视图。没有公开证据时不会编造 Buying Signal。
 
 ## Business Bridge V1
 
@@ -205,7 +223,7 @@ HUIDILocalCore.context.create({
 
 工商注册、官方公司状态、海关采购历史尚未接入时明确显示 **“未验证”**。
 
-每条线索保留独立 `LeadActivity` 时间线，用于记录发现、联系人查询、背调、草稿、跟进、同步等动作。后续 Buying Signals / Open Threads 会继续挂在 Customer Memory / Deal，而不是写进 Product Brain。
+每条线索保留独立 `LeadActivity` 时间线，用于记录发现、联系人查询、背调、草稿、跟进、同步等动作。Buying Signals / Open Threads 属于 Lead / Customer Memory，不写进 Product Brain。
 
 ## 开发信与跟进
 
@@ -230,10 +248,13 @@ HUIDILocalCore.context.create({
 - OpenAI-compatible LLM Provider
 - Table-first Lead Workbench
 - Product Brain 浏览器事实层（V0.1.3，后续迁移服务器持久化）
+- Campaign Brief
+- Growth Workflow
 - `LeadAssessment`
 - `LeadActivity`
 - HUIDI Business Bundle V1
 - Local Product → Online Product Brain handoff
+- Community Local 商品页显式 Online 入口
 - Docker 启动骨架
 - GitHub Actions Online 专项门禁
 
@@ -290,9 +311,11 @@ Online PR 自动检查：
 - Buyer scoring regression
 - FastAPI import
 - Online browser JS syntax
-- Product Brain core / UI JS syntax
+- Product Brain core / UI / Growth Workflow JS syntax
 - Local bridge JS syntax
+- Community Local R6 商品入口 JS syntax
 - Local Product → Online handoff marker
+- 商品页 Online 入口 marker
 - Business Bundle / 五类单据 / Catalog / Mail 契约 marker
 - 真实 Node bridge regression：客户、询盘、邮件、商品关联、重复同步去重、Quotation Context、Catalog Context
 - Product Brain core regression
@@ -300,10 +323,10 @@ Online PR 自动检查：
 
 ## 下一阶段
 
-1. **Product Brain 服务器持久化 + Local 商品页直接入口**：保持商品唯一 Owner，不复制产品主数据。
+1. **Product Brain 服务器持久化**：保持 Community Local 商品是主数据 Owner，Online 只保存获客所需扩展知识和映射。
 2. **邮件账户层**：Gmail / Outlook / SMTP、发送审批、配额、退订、黑名单、Bounce、回复停止。
 3. **真实背调 Provider**：公司注册、官方商业信息、可选海关 / 贸易数据。
-4. **Buying Signals**：招聘、招标、项目、融资、官网更新等证据进入 Lead / Customer Memory。
+4. **Buying Signals Provider**：招聘、招标、项目、融资、官网更新等证据持续进入 Lead / Customer Memory。
 5. **地图找客户**：地图 Provider、城市 / 区域搜索、产业聚类，进入同一线索池。
 6. **外贸情报**：市场、HS、关税、物流、风险、贸易日历，关联商品、客户和报价。
 7. **Local → Online 回传**：在用户明确授权下回传回复状态 / 单据阶段，并定义冲突策略。
