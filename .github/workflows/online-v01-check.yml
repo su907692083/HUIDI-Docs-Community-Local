@@ -51,8 +51,24 @@ jobs:
             '/api/mail/delivery-health',
             '/api/mail/accounts/{mailbox_id}/smtp',
             '/api/mail/accounts/{mailbox_id}/test',
+            '/api/mail/connect/{provider}/start',
+            '/api/mail/connect/{provider}/callback',
+            '/api/mail/messages',
+            '/api/mail/sync-all',
+            '/api/mail/queue',
+            '/api/mail/queue/run',
             '/api/leads/{lead_id}/send',
+            '/api/leads/{lead_id}/queue',
             '/api/leads/{lead_id}/local-event',
+            '/api/product-brains',
+            '/api/services/status',
+            '/api/tools/map-leads',
+            '/api/tools/trade-news',
+            '/api/tools/company-check',
+            '/api/tools/trade-data',
+            '/api/tools/tariff',
+            '/api/tools/fx',
+            '/api/tools/shipping',
           }
           missing=required-paths
           if missing: raise SystemExit('Missing routes: '+', '.join(sorted(missing)))
@@ -65,9 +81,11 @@ jobs:
           node --check web/daily-workbench.js
           node --check web/product-brain-core.js
           node --check web/product-brain.js
+          node --check web/product-brain-server.js
           node --check web/growth-workflow.js
           node --check web/mail-governance.js
           node --check web/local-status-sync.js
+          node --check web/daily-services.js
 
       - name: Product Brain regression
         run: node tests/product_brain.test.cjs
@@ -111,18 +129,25 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-          root=Path('../..')
           checks={
             'Daily Workbench UI': ('web/index.html','daily-workbench.js'),
             'Daily summary API': ('app/workbench.py','/api/workbench/today'),
-            'Real SMTP delivery': ('app/mail_delivery.py','/api/leads/{lead_id}/send'),
-            'Encrypted SMTP secret': ('app/mail_delivery.py','HUIDI_SECRET_KEY'),
-            'SMTP connection test': ('app/mail_delivery.py','/api/mail/accounts/{mailbox_id}/test'),
-            'Mail quota': ('app/mail_delivery.py','daily_limit'),
-            'Mail interval': ('app/mail_delivery.py','min_interval_seconds'),
-            'Mail suppression': ('app/mail_delivery.py','_active_suppression'),
+            'Real mail delivery': ('app/mail_delivery.py','/api/leads/{lead_id}/send'),
+            'Connected Gmail Outlook': ('app/mail_provider.py','send_connected_message'),
+            'Inbox and reply sync': ('app/mail_sync.py','mail_reply_received'),
+            'Mail queue retry': ('app/mail_sync.py','retrying'),
+            'Reply stop': ('app/mail_sync.py','reply_stop'),
             'Mail audit log': ('app/mail_delivery.py','MailDeliveryLog'),
-            'SMTP send UI': ('web/mail-governance.js','立即发送'),
+            'Simple service center': ('web/daily-services.js','地图找客户'),
+            'Server product persistence': ('app/product_memory.py','ProductBrainRecord'),
+            'Product server sync': ('web/product-brain-server.js','/api/product-brains/import'),
+            'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
+            'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
+            'FX': ('app/service_hub.py','/api/tools/fx'),
+            'Company data slot': ('app/service_hub.py','HUIDI_COMPANY_LOOKUP_URL'),
+            'Trade data slot': ('app/service_hub.py','HUIDI_TRADE_DATA_URL'),
+            'Tariff data slot': ('app/service_hub.py','HUIDI_TARIFF_LOOKUP_URL'),
+            'Shipping data slot': ('app/service_hub.py','HUIDI_SHIPPING_API_URL'),
             'Local status schema': ('app/online_app.py','huidi.local.business.status/v1'),
             'Product Brain schema': ('web/product-brain-core.js','huidi.product.brain/v1'),
             'Online pagination': ('app/main.py','lead_pagination'),
@@ -143,4 +168,4 @@ jobs:
         run: |
           test ! -f .env
           test ! -f ../.env
-          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|SMTP_PASSWORD=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
+          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
