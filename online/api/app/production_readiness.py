@@ -14,7 +14,7 @@ from .main import SessionLocal
 from .notification_delivery import NotificationRoute
 from .online_app import MailboxAccount, app
 from .service_connections import SERVICE_DEFS, public_service_status
-from .tenant_storage import current_organization_id, tenant_database_url
+from .tenant_storage import current_organization_id, tenant_database_url, tenant_schema_status
 
 
 def _require_manager(request: Request) -> None:
@@ -91,13 +91,46 @@ def build_production_readiness() -> dict[str, Any]:
         if db_url.startswith("sqlite:///"):
             message = "当前公司使用独立本地数据文件。"
             state = "optional" if production else "ready"
-            action = "正式大规模多人使用时建议切换到服务器数据库。" if production else ""
+            action = "正式大规模多人使用时建议切换到 PostgreSQL 服务器数据库。" if production else ""
             items.append(_item("数据保护", "业务数据库", state, message, action))
         else:
             items.append(_item("数据保护", "业务数据库", "ready", "当前公司使用独立服务器数据库。"))
     except Exception:
         items.append(
             _item("数据保护", "业务数据库", "action", "当前公司的数据库没有正确连接。", "先修复数据库连接。")
+        )
+
+    try:
+        schema = tenant_schema_status(organization_id)
+        if schema.get("up_to_date"):
+            items.append(
+                _item(
+                    "数据保护",
+                    "数据库结构版本",
+                    "ready",
+                    f"当前结构版本 {schema.get('current_revision')}，已与程序要求一致。",
+                )
+            )
+        else:
+            pending = "、".join(str(x) for x in (schema.get("pending") or [])) or "未知"
+            items.append(
+                _item(
+                    "数据保护",
+                    "数据库结构版本",
+                    "action",
+                    f"数据库还有待完成的结构升级：{pending}",
+                    "先完成数据库结构升级，再继续正式上线。",
+                )
+            )
+    except Exception:
+        items.append(
+            _item(
+                "数据保护",
+                "数据库结构版本",
+                "action",
+                "无法确认当前数据库结构版本。",
+                "检查数据库连接和结构升级记录。",
+            )
         )
 
     latest = _latest_backup(organization_id)
