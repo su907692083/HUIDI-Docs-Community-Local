@@ -68,6 +68,13 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         self.assertNotIn(">OAuth2<", mail)
         self.assertNotIn("Message-ID", mail)
 
+    def test_mail_conversation_returns_to_today_and_uses_friendly_errors(self):
+        thread = self.text("web/mail-thread-ui.js")
+        self.assertIn("同一客户的连续来往邮件", thread)
+        self.assertIn("HUIDIBeginnerFlow?.refresh?.()", thread)
+        self.assertIn("friendly(e)", thread)
+        self.assertNotIn("alert(e.message||e)", thread)
+
     def test_inquiry_flow_uses_chinese_document_names_and_refreshes_next_action(self):
         business = self.text("web/business-center-ui.js")
         self.assertIn("把当前潜在客户转为询盘", business)
@@ -100,6 +107,23 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         self.assertIn("修改数据来源特殊要求", audit)
         self.assertIn("return map[x.resource_type]||''", audit)
         self.assertNotIn("客户线索", audit)
+
+    def test_team_management_hides_platform_and_company_internal_ids(self):
+        team = self.text("web/team-access.js")
+        self.assertIn("公司账号", team)
+        self.assertIn("不同公司的客户、邮件、产品和业务不会混在一起", team)
+        self.assertNotIn("正式部署中开启团队登录", team)
+        self.assertNotIn("平台工作区", team)
+        self.assertNotIn("公司 #", team)
+
+    def test_connected_data_history_never_prints_raw_json_to_users(self):
+        history = self.text("web/intelligence-history.js")
+        self.assertIn("compactNormalized", history)
+        self.assertIn("贸易记录", history)
+        self.assertIn("关税资料", history)
+        self.assertIn("船期 / 物流", history)
+        self.assertNotIn("JSON.stringify(r)", history)
+        self.assertNotIn("compactResult", history)
 
     def test_data_source_special_transport_settings_are_collapsed_and_plain(self):
         adapter = self.text("web/service-adapter-ui.js")
