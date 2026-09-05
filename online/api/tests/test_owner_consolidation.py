@@ -21,7 +21,7 @@ class OwnerConsolidationTests(unittest.TestCase):
         self.assertIn("Read-only legacy history owner", online_app)
         self.assertIn("queue_message", online_app)
         self.assertIn("mail_plan_compat_queued", compat)
-        self.assertIn("never a new legacy plan", compat)
+        self.assertIn("without creating any new", compat)
         self.assertIn("without_new_legacy_row", regression)
 
     def test_today_reply_action_is_cleared_by_thread_or_direct_send(self):
