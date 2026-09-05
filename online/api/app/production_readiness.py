@@ -22,17 +22,11 @@ def _require_manager(request: Request) -> None:
     if not isinstance(member, dict) or not member:
         return
     if str(member.get("role") or "") not in {"owner", "admin"}:
-        raise HTTPException(403, "只有老板或管理员可以查看上线检查")
+        raise HTTPException(403, "只有老板或管理员可以查看使用检查")
 
 
 def _item(group: str, name: str, state: str, message: str, action: str = "") -> dict[str, str]:
-    return {
-        "group": group,
-        "name": name,
-        "state": state,
-        "message": message,
-        "action": action,
-    }
+    return {"group": group, "name": name, "state": state, "message": message, "action": action}
 
 
 def _latest_backup(organization_id: int) -> dict[str, Any] | None:
@@ -58,15 +52,15 @@ def build_production_readiness() -> dict[str, Any]:
 
     secret = os.getenv("HUIDI_SECRET_KEY", "").strip()
     if len(secret) >= 32:
-        items.append(_item("安全与账号", "服务器安全密钥", "ready", "已配置，可保护邮箱和数据服务授权。"))
+        items.append(_item("安全与账号", "安全保护", "ready", "重要邮箱和数据授权已经受到保护。"))
     else:
         items.append(
             _item(
                 "安全与账号",
-                "服务器安全密钥",
+                "安全保护",
                 "action",
-                "还没有设置足够强的安全密钥。",
-                "上线前设置一条长期不变的随机安全密钥。",
+                "重要账号和授权还缺少长期安全保护。",
+                "正式使用前，请让部署人员完成安全保护设置。",
             )
         )
 
@@ -80,7 +74,7 @@ def build_production_readiness() -> dict[str, Any]:
                 "团队登录",
                 "action",
                 "正式多人使用时还没有开启团队登录。",
-                "如果会有多名业务员使用，请在上线前开启团队登录。",
+                "如果会有多名业务员使用，请在正式使用前开启团队登录。",
             )
         )
     else:
@@ -89,47 +83,36 @@ def build_production_readiness() -> dict[str, Any]:
     try:
         db_url = tenant_database_url(organization_id)
         if db_url.startswith("sqlite:///"):
-            message = "当前公司使用独立本地数据文件。"
             state = "optional" if production else "ready"
-            action = "正式大规模多人使用时建议切换到 PostgreSQL 服务器数据库。" if production else ""
-            items.append(_item("数据保护", "业务数据库", state, message, action))
+            action = "正式多人长期使用时，建议迁移到服务器业务数据服务。" if production else ""
+            items.append(_item("数据保护", "业务数据", state, "当前公司的业务数据独立保存。", action))
         else:
-            items.append(_item("数据保护", "业务数据库", "ready", "当前公司使用独立服务器数据库。"))
+            items.append(_item("数据保护", "业务数据", "ready", "当前公司的业务数据独立保存在服务器。"))
     except Exception:
-        items.append(
-            _item("数据保护", "业务数据库", "action", "当前公司的数据库没有正确连接。", "先修复数据库连接。")
-        )
+        items.append(_item("数据保护", "业务数据", "action", "当前公司的业务数据没有正确连接。", "请让管理员检查业务数据服务。"))
 
     try:
         schema = tenant_schema_status(organization_id)
         if schema.get("up_to_date"):
-            items.append(
-                _item(
-                    "数据保护",
-                    "数据库结构版本",
-                    "ready",
-                    f"当前结构版本 {schema.get('current_revision')}，已与程序要求一致。",
-                )
-            )
+            items.append(_item("数据保护", "数据升级", "ready", "业务数据已经与当前程序版本保持一致。"))
         else:
-            pending = "、".join(str(x) for x in (schema.get("pending") or [])) or "未知"
             items.append(
                 _item(
                     "数据保护",
-                    "数据库结构版本",
+                    "数据升级",
                     "action",
-                    f"数据库还有待完成的结构升级：{pending}",
-                    "先完成数据库结构升级，再继续正式上线。",
+                    "还有待完成的数据升级。",
+                    "请让部署人员完成数据升级后再继续正式使用。",
                 )
             )
     except Exception:
         items.append(
             _item(
                 "数据保护",
-                "数据库结构版本",
+                "数据升级",
                 "action",
-                "无法确认当前数据库结构版本。",
-                "检查数据库连接和结构升级记录。",
+                "暂时无法确认数据升级状态。",
+                "请让管理员检查业务数据连接和升级状态。",
             )
         )
 
@@ -142,65 +125,31 @@ def build_production_readiness() -> dict[str, Any]:
         except Exception:
             age_hours = 999999
         if age_hours <= 48:
-            items.append(_item("数据保护", "最近备份", "ready", "最近 48 小时内有一份已校验备份。"))
+            items.append(_item("数据保护", "最近备份", "ready", "最近 48 小时内有一份已检查备份。"))
         else:
-            items.append(
-                _item("数据保护", "最近备份", "action", "最近一份备份已经超过 48 小时。", "现在创建一份新备份。")
-            )
+            items.append(_item("数据保护", "最近备份", "action", "最近一份备份已经超过 48 小时。", "现在创建一份新备份。"))
     else:
-        items.append(
-            _item("数据保护", "最近备份", "action", "当前公司还没有已校验备份。", "上线前先创建第一份公司备份。")
-        )
+        items.append(_item("数据保护", "最近备份", "action", "当前公司还没有可用备份。", "正式使用前先创建第一份公司备份。"))
 
     auto = backup_automation_status()
     if not auto.get("enabled"):
-        items.append(
-            _item(
-                "数据保护",
-                "自动备份",
-                "optional",
-                "自动备份已关闭。",
-                "建议开启自动备份，减少依赖人工操作。",
-            )
-        )
+        items.append(_item("数据保护", "自动备份", "optional", "自动备份已关闭。", "建议开启自动备份，减少依赖人工操作。"))
     elif auto.get("status") == "failed":
-        items.append(
-            _item(
-                "数据保护",
-                "自动备份",
-                "action",
-                "最近一次自动备份没有完成。",
-                "打开数据备份检查原因，并先手动创建一份新备份。",
-            )
-        )
+        items.append(_item("数据保护", "自动备份", "action", "最近一次自动备份没有完成。", "打开数据备份检查原因，并先手动创建一份新备份。"))
     elif auto.get("status") == "external_required":
         items.append(
             _item(
                 "数据保护",
                 "自动备份",
                 "optional",
-                "当前使用服务器数据库，需要由数据库服务负责自动备份。",
-                "请在数据库服务中确认自动备份和恢复策略已经开启。",
+                "当前业务数据由服务器统一保存，需要在服务器侧确认自动备份。",
+                "请让部署人员确认自动备份和恢复方案已经开启。",
             )
         )
     elif auto.get("last_success_at"):
-        items.append(
-            _item(
-                "数据保护",
-                "自动备份",
-                "ready",
-                f"自动备份已运行，当前按约 {auto.get('interval_hours', 24)} 小时检查一次。",
-            )
-        )
+        items.append(_item("数据保护", "自动备份", "ready", f"自动备份已运行，当前约每 {auto.get('interval_hours', 24)} 小时检查一次。"))
     else:
-        items.append(
-            _item(
-                "数据保护",
-                "自动备份",
-                "optional",
-                f"自动备份已开启，将按约 {auto.get('interval_hours', 24)} 小时保存一次。",
-            )
-        )
+        items.append(_item("数据保护", "自动备份", "optional", f"自动备份已开启，将约每 {auto.get('interval_hours', 24)} 小时保存一次。"))
 
     db = SessionLocal()
     try:
@@ -210,45 +159,38 @@ def build_production_readiness() -> dict[str, Any]:
                 select(func.count(MailboxAccount.id))
                 .where(MailboxAccount.enabled == 1)
                 .where(MailboxAccount.connection_state == "connected")
-            )
-            or 0
+            ) or 0
         )
         if mailbox_connected > 0:
-            items.append(
-                _item("邮件", "发送邮箱", "ready", f"已有 {mailbox_connected} 个邮箱连接正常，可用于日常收发。")
-            )
+            items.append(_item("邮件", "发送邮箱", "ready", f"已有 {mailbox_connected} 个邮箱连接正常，可用于日常收发。"))
         elif mailbox_total > 0:
-            items.append(
-                _item("邮件", "发送邮箱", "action", "已经添加邮箱，但还没有连接成功。", "先完成邮箱连接检查。")
-            )
+            items.append(_item("邮件", "发送邮箱", "action", "已经添加邮箱，但还没有连接成功。", "先完成邮箱连接检查。"))
         else:
-            items.append(
-                _item("邮件", "发送邮箱", "action", "还没有添加发送邮箱。", "至少连接一个常用邮箱。")
-            )
+            items.append(_item("邮件", "发送邮箱", "action", "还没有添加发送邮箱。", "至少连接一个常用邮箱。"))
 
         if os.getenv("HUIDI_MAIL_EVENT_KEY", "").strip():
-            items.append(_item("邮件", "退信与退订回传", "ready", "外部邮件状态回传已经有保护。"))
+            items.append(_item("邮件", "退信与退订保护", "ready", "退信、退订等外部邮件状态已经有安全保护。"))
         else:
             items.append(
                 _item(
                     "邮件",
-                    "退信与退订回传",
+                    "退信与退订保护",
                     "optional",
-                    "还没有设置外部邮件状态回传保护。",
-                    "如果会接退信或退订回调，上线前补上这一项。",
+                    "还没有开启外部退信和退订状态保护。",
+                    "如果需要接收外部退信或退订状态，请让管理员补上这一项。",
                 )
             )
 
         if os.getenv("SERPER_API_KEY", "").strip():
-            items.append(_item("开发客户", "找客户 / 地图 / 市场动态", "ready", "在线搜索服务已连接。"))
+            items.append(_item("开发客户", "找客户 / 地图 / 市场动态", "ready", "在线找客户来源已连接。"))
         else:
             items.append(
                 _item(
                     "开发客户",
                     "找客户 / 地图 / 市场动态",
                     "action",
-                    "在线找客户服务还没有连接。",
-                    "连接在线搜索服务后才能返回真实客户结果。",
+                    "在线找客户来源还没有连接。",
+                    "连接真实在线来源后才能返回真实客户结果。",
                 )
             )
 
@@ -258,55 +200,30 @@ def build_production_readiness() -> dict[str, Any]:
             if status.get("connected"):
                 connected_services += 1
         if connected_services:
-            items.append(
-                _item(
-                    "外贸数据",
-                    "企业 / 贸易 / 关税 / 船期",
-                    "ready",
-                    f"已有 {connected_services} 类外贸数据服务可使用。",
-                )
-            )
+            items.append(_item("外贸资料", "企业 / 贸易 / 关税 / 船期", "ready", f"已有 {connected_services} 类外贸资料可以使用。"))
         else:
             items.append(
                 _item(
-                    "外贸数据",
+                    "外贸资料",
                     "企业 / 贸易 / 关税 / 船期",
                     "optional",
-                    "这些增强数据服务目前都还没有连接。",
+                    "这些增强资料目前都还没有连接。",
                     "按业务需要逐项连接，不影响基础客户开发和邮件工作。",
                 )
             )
 
-        reminder_count = int(
-            db.scalar(select(func.count(NotificationRoute.id)).where(NotificationRoute.enabled == 1)) or 0
-        )
+        reminder_count = int(db.scalar(select(func.count(NotificationRoute.id)).where(NotificationRoute.enabled == 1)) or 0)
         if reminder_count:
             items.append(_item("提醒", "外部提醒", "ready", f"已有 {reminder_count} 个团队提醒方式开启。"))
         else:
-            items.append(
-                _item(
-                    "提醒",
-                    "外部提醒",
-                    "optional",
-                    "目前只使用 HUIDI 站内提醒。",
-                    "需要时再连接飞书、企业微信或钉钉。",
-                )
-            )
+            items.append(_item("提醒", "外部提醒", "optional", "目前只使用 HUIDI 站内提醒。", "需要时再连接飞书、企业微信或钉钉。"))
     finally:
         db.close()
 
     if os.getenv("LLM_API_KEY", "").strip():
-        items.append(_item("AI 辅助", "开发信与内容", "ready", "AI 写信服务已连接。"))
+        items.append(_item("AI 辅助", "开发信与内容", "ready", "AI 写信能力已连接。"))
     else:
-        items.append(
-            _item(
-                "AI 辅助",
-                "开发信与内容",
-                "optional",
-                "AI 写信服务还没有连接，将使用基础模板能力。",
-                "需要更强写信能力时再连接。",
-            )
-        )
+        items.append(_item("AI 辅助", "开发信与内容", "optional", "AI 写信能力还没有连接，将使用基础模板。", "需要更强写信能力时再连接。"))
 
     actions = sum(1 for item in items if item["state"] == "action")
     ready = sum(1 for item in items if item["state"] == "ready")
