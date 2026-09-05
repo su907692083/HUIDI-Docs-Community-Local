@@ -69,6 +69,8 @@ def _friendly_action(method: str, path: str) -> tuple[str, str]:
         return "team", "添加团队成员" if method == "POST" and path.rstrip("/") == "/api/team/members" else "调整团队成员"
     if path.startswith("/api/organizations"):
         return "team", "新建公司工作区" if method == "POST" and path.rstrip("/") == "/api/organizations" else "调整公司工作区"
+    if path.startswith("/api/service-connections"):
+        return "settings", "修改数据服务"
     if path.startswith("/api/tools/"):
         return "intelligence", "查询外贸资料"
     if path.startswith("/api/intelligence"):
@@ -92,6 +94,7 @@ def _resource(path: str) -> tuple[str, str]:
         (r"/api/mail/accounts/(\d+)", "mailbox"),
         (r"/api/mail/sequences/(\d+)", "sequence"),
         (r"/api/product-brains/([^/?]+)", "product"),
+        (r"/api/service-connections/([^/?]+)", "service"),
     ]
     for pattern, kind in patterns:
         match = re.search(pattern, path)
@@ -111,6 +114,8 @@ def _resource(path: str) -> tuple[str, str]:
         return "team", ""
     if path.startswith("/api/organizations"):
         return "organization", ""
+    if path.startswith("/api/service-connections"):
+        return "service", ""
     return "business", ""
 
 
