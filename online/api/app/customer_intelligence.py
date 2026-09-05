@@ -8,6 +8,7 @@ import json
 import os
 import re
 from datetime import datetime, timedelta, timezone
+from email.utils import parsedate_to_datetime
 from typing import Any
 from urllib.parse import urlparse
 from xml.etree import ElementTree as ET
@@ -27,6 +28,7 @@ from .online_app import app
 GNEWS_API_KEY = os.getenv("GNEWS_API_KEY", "").strip()
 SERPER_API_KEY = os.getenv("SERPER_API_KEY", "").strip()
 CACHE_HOURS = max(1, min(24, int(os.getenv("HUIDI_INTEL_CACHE_HOURS", "6") or "6")))
+CHAT_MAX_DAYS = max(3, min(60, int(os.getenv("HUIDI_INTEL_CHAT_MAX_DAYS", "21") or "21")))
 MAX_SOURCE_ITEMS = 10
 
 CATEGORY_NAMES = {
@@ -63,12 +65,14 @@ WEATHER_TERMS = (
 
 
 class ContextUseRequest(BaseModel):
+    item_id: str = Field(default="", max_length=80)
     title: str = Field(min_length=2, max_length=500)
     link: str = Field(default="", max_length=2000)
     source: str = Field(default="", max_length=255)
     category: str = Field(default="general", max_length=40)
     suggestion_zh: str = Field(default="", max_length=1200)
     suggestion_en: str = Field(default="", max_length=1200)
+    source_checked: bool = False
 
 
 def _clean(value: Any, limit: int = 2000) -> str:
@@ -113,10 +117,13 @@ def _configured_rss_sources() -> list[dict[str, str]]:
         name = _clean(item.get("name") or "行业来源", 120)
         url = _clean(item.get("url"), 1500)
         lane = _clean(item.get("category") or item.get("lane") or "industry", 40).lower()
+        source_type = _clean(item.get("source_type") or item.get("type") or "industry", 40).lower()
         if lane not in CATEGORY_NAMES:
             lane = "industry"
+        if source_type not in {"official", "association", "industry", "media"}:
+            source_type = "industry"
         if url and _safe_public_url(url):
-            rows.append({"name": name, "url": url, "category": lane})
+            rows.append({"name": name, "url": url, "category": lane, "source_type": source_type})
     return rows
 
 
@@ -137,6 +144,87 @@ def _classify(text: str, preferred: str = "") -> str:
     return "general"
 
 
+def _parse_published_at(value: Any) -> datetime | None:
+    text = _clean(value, 120)
+    if not text:
+        return None
+    lowered = text.lower()
+    now = datetime.now(timezone.utc)
+    if lowered == "yesterday":
+        return now - timedelta(days=1)
+    relative = re.search(r"(\d+)\s*(minute|hour|day|week)s?\s+ago", lowered)
+    if relative:
+        amount = int(relative.group(1))
+        unit = relative.group(2)
+        delta = {
+            "minute": timedelta(minutes=amount),
+            "hour": timedelta(hours=amount),
+            "day": timedelta(days=amount),
+            "week": timedelta(weeks=amount),
+        }[unit]
+        return now - delta
+    try:
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except Exception:
+        pass
+    try:
+        parsed = parsedate_to_datetime(text)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+    except Exception:
+        pass
+    for fmt in ("%b %d, %Y", "%B %d, %Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(text, fmt).replace(tzinfo=timezone.utc)
+        except Exception:
+            continue
+    return None
+
+
+def _freshness(date_value: Any, category: str) -> dict[str, Any]:
+    published = _parse_published_at(date_value)
+    if not published:
+        return {"status": "unknown", "label": "时间待核对", "age_days": None, "chat_allowed": False}
+    age_days = max(0, int((datetime.now(timezone.utc) - published).total_seconds() // 86400))
+    limit = {
+        "weather": 3,
+        "geopolitics": 7,
+        "shipping": min(CHAT_MAX_DAYS, 21),
+        "policy": min(max(CHAT_MAX_DAYS, 30), 45),
+        "company": min(max(CHAT_MAX_DAYS, 30), 45),
+    }.get(category, CHAT_MAX_DAYS)
+    if age_days <= limit:
+        status, label = "fresh", "近期"
+    elif age_days <= limit * 2:
+        status, label = "aging", "较早"
+    else:
+        status, label = "stale", "过期参考"
+    return {
+        "status": status,
+        "label": label,
+        "age_days": age_days,
+        "chat_allowed": status == "fresh" and category != "geopolitics",
+    }
+
+
+def _source_profile(item: dict[str, Any]) -> dict[str, str]:
+    source_type = _clean(item.get("source_type"), 40).lower()
+    feed = _clean(item.get("feed"), 60).lower()
+    if source_type == "official":
+        return {"type": "official", "label": "官方来源", "level": "direct"}
+    if source_type == "association":
+        return {"type": "association", "label": "行业协会", "level": "direct"}
+    if source_type == "industry":
+        return {"type": "industry", "label": "行业来源", "level": "configured"}
+    if feed in {"google_news_rss", "gnews", "serper_news"}:
+        return {"type": "media", "label": "媒体聚合", "level": "reference"}
+    return {"type": "media", "label": "公开来源", "level": "reference"}
+
+
 def _topic_label(category: str) -> str:
     return {
         "policy": "trade rules and import requirements",
@@ -149,12 +237,18 @@ def _topic_label(category: str) -> str:
     }.get(category, "the local market")
 
 
-def _chat_advice(category: str, country: str, product: str) -> dict[str, str]:
+def _chat_advice(category: str, country: str, product: str, freshness: dict[str, Any]) -> dict[str, str]:
     place = country or "your market"
     if category == "geopolitics":
         return {
             "level": "谨慎",
             "zh": "涉及政治、冲突或制裁，不建议主动拿来寒暄。只有确认确实影响客户所在地时，才适合先关心对方是否安全，再谈业务。",
+            "en": "",
+        }
+    if not freshness.get("chat_allowed"):
+        return {
+            "level": "仅参考",
+            "zh": "这条信息发布时间较早或暂时无法确认，不建议直接拿来和客户开场；可以先打开原文核对最新情况。",
             "en": "",
         }
     if category == "weather":
@@ -204,7 +298,21 @@ def _score_item(item: dict[str, Any], *, country: str, product: str, company: st
         reasons.append("可能影响交易或交付")
     if item.get("category") == "company":
         score += 12
-    return min(100, score), "；".join(dict.fromkeys(reasons)) or "作为当前市场背景参考"
+    freshness = item.get("freshness") or {}
+    if freshness.get("status") == "fresh":
+        score += 8
+    elif freshness.get("status") == "stale":
+        score -= 18
+    elif freshness.get("status") == "unknown":
+        score -= 6
+    source = item.get("source_profile") or {}
+    if source.get("type") == "official":
+        score += 8
+        reasons.append("来自官方来源")
+    elif source.get("type") == "association":
+        score += 5
+        reasons.append("来自行业协会")
+    return max(0, min(100, score)), "；".join(dict.fromkeys(reasons)) or "作为当前市场背景参考"
 
 
 def _decorate(item: dict[str, Any], *, country: str, product: str, company: str, preferred: str = "") -> dict[str, Any] | None:
@@ -212,10 +320,14 @@ def _decorate(item: dict[str, Any], *, country: str, product: str, company: str,
     link = _clean(item.get("link") or item.get("url"), 2000)
     if not title:
         return None
+    if link and not _safe_public_url(link):
+        link = ""
     summary = _clean(item.get("summary") or item.get("description") or item.get("snippet"), 1200)
     source = _clean(item.get("source") or item.get("publisher") or "公开新闻", 255)
     date = _clean(item.get("date") or item.get("publishedAt") or item.get("published_at"), 120)
     category = _classify(f"{title} {summary}", preferred or _clean(item.get("category"), 40).lower())
+    freshness = _freshness(date, category)
+    source_profile = _source_profile(item)
     base = {
         "title": title,
         "link": link,
@@ -224,9 +336,13 @@ def _decorate(item: dict[str, Any], *, country: str, product: str, company: str,
         "summary": summary,
         "category": category,
         "category_name": CATEGORY_NAMES.get(category, "当地动态"),
+        "feed": _clean(item.get("feed"), 60),
+        "source_type": _clean(item.get("source_type"), 40),
+        "source_profile": source_profile,
+        "freshness": freshness,
     }
     score, reason = _score_item(base, country=country, product=product, company=company)
-    chat = _chat_advice(category, country, product)
+    chat = _chat_advice(category, country, product, freshness)
     marker = hashlib.sha1(f"{title}|{link}".encode("utf-8", errors="ignore")).hexdigest()[:16]
     base.update(
         {
@@ -260,6 +376,7 @@ async def _google_news(client: httpx.AsyncClient, query: str, preferred: str) ->
                     "summary": item.findtext("description") or "",
                     "category": preferred,
                     "feed": "google_news_rss",
+                    "source_type": "media",
                 }
             )
         return rows
@@ -289,6 +406,7 @@ async def _gnews(client: httpx.AsyncClient, query: str, preferred: str) -> list[
                     "summary": item.get("description") or item.get("content") or "",
                     "category": preferred,
                     "feed": "gnews",
+                    "source_type": "media",
                 }
             )
         return rows
@@ -316,6 +434,7 @@ async def _serper_news(client: httpx.AsyncClient, query: str, preferred: str) ->
                 "summary": item.get("snippet") or "",
                 "category": preferred,
                 "feed": "serper_news",
+                "source_type": "media",
             }
             for item in (data.get("news") or [])[:MAX_SOURCE_ITEMS]
         ]
@@ -341,6 +460,7 @@ async def _custom_rss(client: httpx.AsyncClient, source: dict[str, str]) -> list
                         "summary": item.findtext("description") or "",
                         "category": source["category"],
                         "feed": "configured_rss",
+                        "source_type": source["source_type"],
                     }
                 )
             return rows
@@ -356,6 +476,7 @@ async def _custom_rss(client: httpx.AsyncClient, source: dict[str, str]) -> list
                     "summary": entry.findtext("a:summary", default="", namespaces=ns),
                     "category": source["category"],
                     "feed": "configured_rss",
+                    "source_type": source["source_type"],
                 }
             )
         return rows
@@ -380,6 +501,7 @@ def _queries(*, country: str, product: str, company: str) -> list[tuple[str, str
 async def _collect(*, country: str, product: str, company: str, limit: int = 20) -> dict[str, Any]:
     queries = _queries(country=country, product=product, company=company)
     tasks: list[Any] = []
+    sources = _configured_rss_sources()
     async with httpx.AsyncClient(timeout=18, follow_redirects=True, headers={"User-Agent": "HUIDI-Online/0.1"}) as client:
         for preferred, query in queries:
             tasks.append(_google_news(client, query, preferred))
@@ -387,7 +509,7 @@ async def _collect(*, country: str, product: str, company: str, limit: int = 20)
                 tasks.append(_gnews(client, query, preferred))
             if preferred in {"company", "policy"}:
                 tasks.append(_serper_news(client, query, preferred))
-        for source in _configured_rss_sources():
+        for source in sources:
             tasks.append(_custom_rss(client, source))
         batches = await asyncio.gather(*tasks, return_exceptions=True)
 
@@ -407,14 +529,22 @@ async def _collect(*, country: str, product: str, company: str, limit: int = 20)
             continue
         seen.add(key)
         items.append(item)
-    items.sort(key=lambda x: (int(x.get("relevance") or 0), bool(x.get("date"))), reverse=True)
+    freshness_rank = {"fresh": 3, "unknown": 2, "aging": 1, "stale": 0}
+    items.sort(
+        key=lambda x: (
+            int(x.get("relevance") or 0),
+            freshness_rank.get((x.get("freshness") or {}).get("status"), 0),
+        ),
+        reverse=True,
+    )
     return {
         "items": items[: max(1, min(40, limit))],
         "sources": {
             "google_news": True,
             "gnews": bool(GNEWS_API_KEY),
             "serper_news": bool(SERPER_API_KEY),
-            "configured_rss": len(_configured_rss_sources()),
+            "configured_rss": len(sources),
+            "official_or_association": sum(1 for x in sources if x.get("source_type") in {"official", "association"}),
         },
         "note": "公开新闻用于市场背景和聊天参考；政策、冲突、制裁等内容必须打开来源核对，不自动写入正式报价、合同或产品事实。",
     }
@@ -456,6 +586,41 @@ def _decorate_cached(result: Any, *, country: str, product: str, company: str) -
     }
 
 
+def _verified_customer_item(db: Session, lead: Lead, req: ContextUseRequest) -> dict[str, Any]:
+    row = _latest_record(db, lead_id=lead.id)
+    if not row:
+        raise HTTPException(409, "请先更新一次客户动态，再选择沟通参考")
+    payload = _decorate_cached(
+        safe_json(row.result_json, {}),
+        country=lead.country.strip(),
+        product=lead.market_keyword.strip(),
+        company=lead.company_name.strip(),
+    )
+    wanted_id = _clean(req.item_id, 80)
+    wanted_title = _clean(req.title, 500).lower()
+    wanted_link = _clean(req.link, 2000)
+    for item in payload.get("items") or []:
+        if wanted_id and item.get("id") == wanted_id:
+            return item
+        if _clean(item.get("title"), 500).lower() == wanted_title and (
+            not wanted_link or _clean(item.get("link"), 2000) == wanted_link
+        ):
+            return item
+    raise HTTPException(409, "这条动态已经变化，请刷新客户动态后重新选择")
+
+
+def _insert_opening(body: str, opening: str) -> str:
+    body = str(body or "").strip()
+    opening = str(opening or "").strip()
+    if not body or not opening or opening.lower() in body.lower():
+        return body
+    lines = body.splitlines()
+    if lines and re.match(r"^(dear|hi|hello)\b", lines[0].strip(), re.I):
+        rest = "\n".join(lines[1:]).lstrip()
+        return f"{lines[0].strip()}\n\n{opening}\n\n{rest}".strip()
+    return f"{opening}\n\n{body}".strip()
+
+
 async def _brief_for_context(
     db: Session,
     *,
@@ -474,6 +639,8 @@ async def _brief_for_context(
             "ok": True,
             "cached": True,
             "record_id": cached.id,
+            "lead_id": lead_id,
+            "deal_id": deal_id,
             "checked_at": cached.checked_at.isoformat() if cached.checked_at else None,
             "context": {"country": country, "product": product, "company": company},
             **payload,
@@ -508,6 +675,8 @@ async def _brief_for_context(
         "ok": True,
         "cached": False,
         "record_id": record_id,
+        "lead_id": lead_id,
+        "deal_id": deal_id,
         "checked_at": checked_at,
         "context": {"country": country, "product": product, "company": company},
         **payload,
@@ -516,15 +685,18 @@ async def _brief_for_context(
 
 @app.get("/api/intel/status")
 def intelligence_status():
+    sources = _configured_rss_sources()
     return {
         "ok": True,
         "sources": {
             "全球新闻": "可用（Google News RSS）",
             "GNews": "已连接" if GNEWS_API_KEY else "可选，未连接",
             "现有在线搜索": "已连接" if SERPER_API_KEY else "可选，未连接",
-            "行业 / 协会来源": len(_configured_rss_sources()),
+            "行业 / 协会来源": len(sources),
+            "官方 / 协会来源": sum(1 for x in sources if x.get("source_type") in {"official", "association"}),
         },
         "cache_hours": CACHE_HOURS,
+        "chat_max_days": CHAT_MAX_DAYS,
         "policy_note": "政策与地缘事件以公开来源为线索，必须查看原文核对；HUIDI 不使用演示冲突等级作为事实。",
     }
 
@@ -537,6 +709,8 @@ async def daily_intelligence(
 ):
     return {
         "ok": True,
+        "lead_id": None,
+        "deal_id": None,
         "context": {"country": country.strip(), "product": keyword.strip(), "company": ""},
         **(await _collect(country=country.strip(), product=keyword.strip(), company="", limit=limit)),
     }
@@ -591,19 +765,80 @@ def use_customer_context(lead_id: int, req: ContextUseRequest, db: Session = Dep
     lead = db.get(Lead, lead_id)
     if not lead:
         raise HTTPException(404, "没有找到这个客户")
+    item = _verified_customer_item(db, lead, req)
     add_activity(
         db,
         lead.id,
         "customer_context_selected",
         "已选为本次沟通参考",
-        req.title,
+        item["title"],
         {
-            "link": req.link,
-            "source": req.source,
-            "category": req.category,
-            "suggestion_zh": req.suggestion_zh,
-            "suggestion_en": req.suggestion_en,
+            "item_id": item["id"],
+            "link": item.get("link", ""),
+            "source": item.get("source", ""),
+            "source_type": (item.get("source_profile") or {}).get("type", ""),
+            "category": item.get("category", "general"),
+            "freshness": item.get("freshness") or {},
+            "suggestion_zh": (item.get("chat") or {}).get("zh", ""),
+            "suggestion_en": (item.get("chat") or {}).get("en", ""),
+            "source_checked": bool(req.source_checked),
         },
     )
     db.commit()
-    return {"ok": True, "lead_id": lead.id, "message": "已记入客户开发记录。发送前仍由你确认。"}
+    return {"ok": True, "lead_id": lead.id, "item": item, "message": "已记入客户开发记录。发送前仍由你确认。"}
+
+
+@app.post("/api/intel/customer/{lead_id}/apply-to-draft")
+def apply_customer_context_to_draft(lead_id: int, req: ContextUseRequest, db: Session = Depends(get_db)):
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(404, "没有找到这个客户")
+    if not lead.draft_body.strip():
+        raise HTTPException(400, "请先生成开发信草稿，再把合适的客户动态带进去")
+    item = _verified_customer_item(db, lead, req)
+    freshness = item.get("freshness") or {}
+    chat = item.get("chat") or {}
+    opening = _clean(chat.get("en"), 1200)
+    if not freshness.get("chat_allowed") or not opening:
+        raise HTTPException(400, "这条动态不适合直接带入客户沟通，请只作为背景参考")
+    if item.get("needs_source_check") and not req.source_checked:
+        raise HTTPException(400, "这类政策或敏感信息请先打开原文核对日期和内容，再带入开发信")
+    old_body = lead.draft_body
+    new_body = _insert_opening(old_body, opening)
+    if new_body != old_body:
+        lead.draft_body = new_body
+        lead.updated_at = datetime.now(timezone.utc)
+        add_activity(
+            db,
+            lead.id,
+            "draft_context_applied",
+            "客户动态已带入开发信",
+            item["title"],
+            {
+                "item_id": item["id"],
+                "link": item.get("link", ""),
+                "source": item.get("source", ""),
+                "category": item.get("category", "general"),
+                "opening": opening,
+                "source_checked": bool(req.source_checked),
+            },
+        )
+        add_activity(
+            db,
+            lead.id,
+            "draft_rejected",
+            "草稿内容已更新，需要重新确认",
+            "已带入客户动态开场，请发送前重新确认整封邮件。",
+            {"reason": "customer_context_applied"},
+        )
+        db.commit()
+        db.refresh(lead)
+    return {
+        "ok": True,
+        "lead_id": lead.id,
+        "applied": new_body != old_body,
+        "draft_subject": lead.draft_subject,
+        "draft_body": lead.draft_body,
+        "item": item,
+        "message": "已带入开发信草稿，并取消旧的确认状态；请重新检查后再确认发送。",
+    }
