@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .intelligence_records import record_intelligence
 from .lead_engine import clean_domain
 from .main import Lead, add_activity, get_db
 from .online_app import app
@@ -42,12 +43,16 @@ class NewsRequest(BaseModel):
     keyword: str = Field(min_length=2, max_length=200)
     country: str = Field(default="", max_length=120)
     limit: int = Field(default=12, ge=1, le=30)
+    lead_id: int | None = None
+    deal_id: int | None = None
 
 
 class FXRequest(BaseModel):
     base: str = Field(default="USD", min_length=3, max_length=3)
     quote: str = Field(default="CNY", min_length=3, max_length=3)
     amount: float = Field(default=1, gt=0, le=1000000000)
+    lead_id: int | None = None
+    deal_id: int | None = None
 
 
 class CompanyCheckRequest(BaseModel):
@@ -55,6 +60,7 @@ class CompanyCheckRequest(BaseModel):
     domain: str = Field(default="", max_length=255)
     country: str = Field(default="", max_length=120)
     lead_id: int | None = None
+    deal_id: int | None = None
 
 
 class TradeDataRequest(BaseModel):
@@ -63,6 +69,7 @@ class TradeDataRequest(BaseModel):
     hs_code: str = Field(default="", max_length=40)
     country: str = Field(default="", max_length=120)
     lead_id: int | None = None
+    deal_id: int | None = None
 
 
 class TariffRequest(BaseModel):
@@ -70,6 +77,8 @@ class TariffRequest(BaseModel):
     origin: str = Field(default="", max_length=120)
     destination: str = Field(default="", max_length=120)
     product: str = Field(default="", max_length=255)
+    lead_id: int | None = None
+    deal_id: int | None = None
 
 
 class ShippingRequest(BaseModel):
@@ -77,6 +86,8 @@ class ShippingRequest(BaseModel):
     destination: str = Field(min_length=2, max_length=255)
     departure_date: str = Field(default="", max_length=40)
     container: str = Field(default="40HQ", max_length=40)
+    lead_id: int | None = None
+    deal_id: int | None = None
 
 
 def _configured(name: str) -> bool:
@@ -118,6 +129,34 @@ def _serper(path: str, payload: dict[str, Any]) -> dict[str, Any]:
         if r.status_code >= 400:
             raise HTTPException(502, "在线数据暂时没有返回，请稍后再试")
         return r.json()
+
+
+def _record_and_note(
+    db: Session,
+    kind: str,
+    title: str,
+    query: dict[str, Any],
+    result: Any,
+    lead_id: int | None,
+    deal_id: int | None,
+    activity_title: str,
+) -> int | None:
+    if not lead_id and not deal_id:
+        return None
+    row = record_intelligence(db, kind, title, query, result, lead_id=lead_id, deal_id=deal_id)
+    if lead_id:
+        lead = db.get(Lead, lead_id)
+        if lead:
+            add_activity(
+                db,
+                lead.id,
+                f"{kind}_checked",
+                activity_title,
+                title,
+                {"intelligence_record_id": row.id, "deal_id": deal_id},
+            )
+    db.commit()
+    return row.id
 
 
 @app.post("/api/tools/map-leads")
@@ -179,7 +218,7 @@ def import_map_lead(req: MapLeadImportRequest, db: Session = Depends(get_db)):
 
 
 @app.post("/api/tools/trade-news")
-def trade_news(req: NewsRequest):
+def trade_news(req: NewsRequest, db: Session = Depends(get_db)):
     q = " ".join(x for x in [req.keyword, req.country, "trade market sourcing"] if x)
     data = _serper("news", {"q": q, "num": req.limit})
     items = []
@@ -193,32 +232,54 @@ def trade_news(req: NewsRequest):
                 "date": x.get("date") or "",
             }
         )
-    return {"ok": True, "query": q, "items": items}
+    record_id = _record_and_note(
+        db,
+        "market_news",
+        q,
+        {"keyword": req.keyword, "country": req.country},
+        items,
+        req.lead_id,
+        req.deal_id,
+        "已补充市场情报",
+    )
+    return {"ok": True, "query": q, "items": items, "record_id": record_id}
 
 
 @app.post("/api/tools/fx")
-def fx(req: FXRequest):
+def fx(req: FXRequest, db: Session = Depends(get_db)):
     base = req.base.upper()
     quote = req.quote.upper()
     if base == quote:
-        return {"ok": True, "base": base, "quote": quote, "rate": 1, "amount": req.amount, "converted": req.amount, "date": date.today().isoformat()}
-    with httpx.Client(timeout=20) as client:
-        r = client.get("https://api.frankfurter.app/latest", params={"from": base, "to": quote})
-        if r.status_code >= 400:
-            raise HTTPException(502, "汇率暂时无法读取，请稍后再试")
-        data = r.json()
-    rate = float((data.get("rates") or {}).get(quote) or 0)
-    if rate <= 0:
-        raise HTTPException(502, "暂时没有找到这组货币的汇率")
-    return {
-        "ok": True,
-        "base": base,
-        "quote": quote,
-        "rate": rate,
-        "amount": req.amount,
-        "converted": round(req.amount * rate, 6),
-        "date": data.get("date") or date.today().isoformat(),
-    }
+        result = {"ok": True, "base": base, "quote": quote, "rate": 1, "amount": req.amount, "converted": req.amount, "date": date.today().isoformat()}
+    else:
+        with httpx.Client(timeout=20) as client:
+            r = client.get("https://api.frankfurter.app/latest", params={"from": base, "to": quote})
+            if r.status_code >= 400:
+                raise HTTPException(502, "汇率暂时无法读取，请稍后再试")
+            data = r.json()
+        rate = float((data.get("rates") or {}).get(quote) or 0)
+        if rate <= 0:
+            raise HTTPException(502, "暂时没有找到这组货币的汇率")
+        result = {
+            "ok": True,
+            "base": base,
+            "quote": quote,
+            "rate": rate,
+            "amount": req.amount,
+            "converted": round(req.amount * rate, 6),
+            "date": data.get("date") or date.today().isoformat(),
+        }
+    record_id = _record_and_note(
+        db,
+        "fx",
+        f"{base} → {quote}",
+        {"base": base, "quote": quote, "amount": req.amount},
+        result,
+        req.lead_id,
+        req.deal_id,
+        "已记录本次汇率",
+    )
+    return {**result, "record_id": record_id}
 
 
 def _external_provider(env_url: str, env_token: str, payload: dict[str, Any], missing_message: str) -> Any:
@@ -241,50 +302,64 @@ def _external_provider(env_url: str, env_token: str, payload: dict[str, Any], mi
 
 @app.post("/api/tools/company-check")
 def company_check(req: CompanyCheckRequest, db: Session = Depends(get_db)):
+    query = req.model_dump(exclude={"lead_id", "deal_id"}, exclude_none=True)
     data = _external_provider(
         "HUIDI_COMPANY_LOOKUP_URL",
         "HUIDI_COMPANY_LOOKUP_TOKEN",
-        req.model_dump(exclude_none=True),
+        query,
         "还没有连接企业核验数据服务",
     )
-    if req.lead_id:
-        lead = db.get(Lead, req.lead_id)
-        if lead:
-            add_activity(db, lead.id, "company_provider_checked", "已补充企业核验资料", req.company, {"provider_result": data})
-            db.commit()
-    return {"ok": True, "result": data}
+    record_id = _record_and_note(db, "company", req.company, query, data, req.lead_id, req.deal_id, "已补充企业核验资料")
+    return {"ok": True, "result": data, "record_id": record_id}
 
 
 @app.post("/api/tools/trade-data")
 def trade_data(req: TradeDataRequest, db: Session = Depends(get_db)):
+    query = req.model_dump(exclude={"lead_id", "deal_id"}, exclude_none=True)
     data = _external_provider(
         "HUIDI_TRADE_DATA_URL",
         "HUIDI_TRADE_DATA_TOKEN",
-        req.model_dump(exclude_none=True),
+        query,
         "还没有连接贸易数据服务",
     )
-    if req.lead_id:
-        lead = db.get(Lead, req.lead_id)
-        if lead:
-            add_activity(db, lead.id, "trade_provider_checked", "已补充贸易记录", req.company or req.product, {"provider_result": data})
-            db.commit()
-    return {"ok": True, "result": data}
+    record_id = _record_and_note(
+        db,
+        "trade",
+        req.company or req.product or req.hs_code,
+        query,
+        data,
+        req.lead_id,
+        req.deal_id,
+        "已补充贸易记录",
+    )
+    return {"ok": True, "result": data, "record_id": record_id}
 
 
 @app.post("/api/tools/tariff")
-def tariff(req: TariffRequest):
+def tariff(req: TariffRequest, db: Session = Depends(get_db)):
+    query = req.model_dump(exclude={"lead_id", "deal_id"})
     data = _external_provider(
         "HUIDI_TARIFF_LOOKUP_URL",
         "HUIDI_TARIFF_LOOKUP_TOKEN",
-        req.model_dump(),
+        query,
         "还没有连接关税数据服务",
     )
-    return {"ok": True, "result": data}
+    record_id = _record_and_note(
+        db,
+        "tariff",
+        f"{req.hs_code} · {req.origin} → {req.destination}",
+        query,
+        data,
+        req.lead_id,
+        req.deal_id,
+        "已补充关税资料",
+    )
+    return {"ok": True, "result": data, "record_id": record_id}
 
 
 @app.post("/api/tools/shipping")
-def shipping(req: ShippingRequest):
-    payload = req.model_dump()
+def shipping(req: ShippingRequest, db: Session = Depends(get_db)):
+    payload = req.model_dump(exclude={"lead_id", "deal_id"})
     if not payload["departure_date"]:
         payload["departure_date"] = date.today().isoformat()
     data = _external_provider(
@@ -293,4 +368,16 @@ def shipping(req: ShippingRequest):
         payload,
         "还没有连接船期或物流数据服务",
     )
-    return {"ok": True, "result": data, "checked_at": datetime.now(timezone.utc).isoformat()}
+    checked_at = datetime.now(timezone.utc).isoformat()
+    result = {"result": data, "checked_at": checked_at}
+    record_id = _record_and_note(
+        db,
+        "shipping",
+        f"{req.origin} → {req.destination}",
+        payload,
+        result,
+        req.lead_id,
+        req.deal_id,
+        "已补充船期 / 物流资料",
+    )
+    return {"ok": True, **result, "record_id": record_id}
