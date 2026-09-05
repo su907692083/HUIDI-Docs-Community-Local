@@ -7,10 +7,12 @@ from unittest.mock import patch
 os.environ.setdefault("HUIDI_DISABLE_BACKGROUND_JOBS", "1")
 os.environ.setdefault("HUIDI_SECRET_KEY", "ci-only-adapter-secret")
 
+from fastapi import HTTPException  # noqa: E402
 from app.daily_app import app  # noqa: F401,E402
 from app.main import SessionLocal  # noqa: E402
 from app.service_adapters import (  # noqa: E402
     ServiceAdapterSetting,
+    _validate_endpoint,
     execute_service_request,
     public_adapter_status,
 )
@@ -50,12 +52,18 @@ class FakeClient:
 class ServiceAdapterTests(unittest.TestCase):
     def setUp(self):
         self.old_template = os.environ.get("HUIDI_TENANT_DATABASE_URL_TEMPLATE")
+        self.old_private = os.environ.get("HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS")
+        os.environ.pop("HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS", None)
 
     def tearDown(self):
         if self.old_template is None:
             os.environ.pop("HUIDI_TENANT_DATABASE_URL_TEMPLATE", None)
         else:
             os.environ["HUIDI_TENANT_DATABASE_URL_TEMPLATE"] = self.old_template
+        if self.old_private is None:
+            os.environ.pop("HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS", None)
+        else:
+            os.environ["HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS"] = self.old_private
 
     def _configure(self, tmp, org):
         os.environ["HUIDI_TENANT_DATABASE_URL_TEMPLATE"] = f"sqlite:///{Path(tmp) / 'adapter-{organization_id}.db'}"
@@ -128,6 +136,17 @@ class ServiceAdapterTests(unittest.TestCase):
                     db_b.close()
             finally:
                 reset_current_organization(token_b)
+
+    def test_private_or_local_service_endpoints_are_blocked_by_default(self):
+        for url in ["http://127.0.0.1:8080/data", "http://localhost/data", "http://10.10.0.8/data"]:
+            with self.subTest(url=url):
+                with self.assertRaises(HTTPException) as ctx:
+                    _validate_endpoint(url)
+                self.assertEqual(ctx.exception.status_code, 400)
+
+    def test_private_service_endpoint_requires_explicit_opt_in(self):
+        os.environ["HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS"] = "1"
+        _validate_endpoint("http://127.0.0.1:8080/data")
 
 
 if __name__ == "__main__":
