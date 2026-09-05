@@ -116,7 +116,7 @@ jobs:
       - name: Check Online browser JavaScript
         run: |
           for file in \
-            web/app.js web/daily-workbench.js web/product-brain-core.js web/product-brain.js \
+            web/app.js web/daily-workbench.js web/beginner-flow.js web/product-brain-core.js web/product-brain.js \
             web/product-brain-server.js web/growth-workflow.js web/mail-governance.js \
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
             web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
