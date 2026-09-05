@@ -43,6 +43,7 @@ class SchemaMigrationTests(unittest.TestCase):
                     self.assertIn("huidi_schema_migrations", tables)
                     self.assertIn("online_intelligence_projections", tables)
                     self.assertIn("intelligence_feed_sources", tables)
+                    self.assertIn("lead_industry_preferences", tables)
                 finally:
                     reset_current_organization(token)
 
