@@ -73,6 +73,12 @@ def _friendly_action(method: str, path: str) -> tuple[str, str]:
         return "settings", "检查数据服务"
     if path.startswith("/api/service-connections"):
         return "settings", "修改数据服务"
+    if path.startswith("/api/notification-routes") and path.rstrip("/").endswith("/test"):
+        return "settings", "检查提醒方式"
+    if path.startswith("/api/notification-routes") and path.rstrip("/").endswith("/run"):
+        return "settings", "立即检查提醒"
+    if path.startswith("/api/notification-routes"):
+        return "settings", "修改提醒方式"
     if path.startswith("/api/tools/"):
         return "intelligence", "查询外贸资料"
     if path.startswith("/api/intelligence"):
@@ -97,6 +103,7 @@ def _resource(path: str) -> tuple[str, str]:
         (r"/api/mail/sequences/(\d+)", "sequence"),
         (r"/api/product-brains/([^/?]+)", "product"),
         (r"/api/service-connections/([^/?]+)", "service"),
+        (r"/api/notification-routes/(\d+)", "reminder"),
     ]
     for pattern, kind in patterns:
         match = re.search(pattern, path)
@@ -118,6 +125,8 @@ def _resource(path: str) -> tuple[str, str]:
         return "organization", ""
     if path.startswith("/api/service-connections"):
         return "service", ""
+    if path.startswith("/api/notification-routes"):
+        return "reminder", ""
     return "business", ""
 
 
