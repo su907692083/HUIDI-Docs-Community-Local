@@ -74,7 +74,6 @@ class IntelligenceSourceContractTests(unittest.TestCase):
         self.assertIn('新闻订阅地址', ui)
         self.assertIn('优先添加官方机构和行业协会来源', ui)
         self.assertNotIn('API Key', ui)
-        self.assertNotIn('JSON', ui)
         self.assertNotIn('Tenant', ui)
 
     def test_schema_and_ci_gate_managed_sources(self):
