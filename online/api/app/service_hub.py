@@ -15,6 +15,7 @@ from .intelligence_records import record_intelligence
 from .lead_engine import clean_domain
 from .main import Lead, add_activity, get_db
 from .online_app import app
+from .service_connections import public_service_status, resolve_service_connection
 
 
 SERPER_API_KEY = os.getenv("SERPER_API_KEY", "").strip()
@@ -94,7 +95,11 @@ def _configured(name: str) -> bool:
     return bool(os.getenv(name, "").strip())
 
 
-def _provider_status() -> dict[str, Any]:
+def _provider_status(db: Session) -> dict[str, Any]:
+    company = public_service_status(db, "company")
+    trade = public_service_status(db, "trade")
+    tariff_status = public_service_status(db, "tariff")
+    shipping_status = public_service_status(db, "shipping")
     return {
         "mail": {
             "gmail": _configured("GMAIL_CLIENT_ID") and _configured("GMAIL_CLIENT_SECRET"),
@@ -104,17 +109,23 @@ def _provider_status() -> dict[str, Any]:
         "lead_search": bool(SERPER_API_KEY),
         "map_search": bool(SERPER_API_KEY),
         "trade_news": bool(SERPER_API_KEY),
-        "company_check": _configured("HUIDI_COMPANY_LOOKUP_URL"),
-        "trade_data": _configured("HUIDI_TRADE_DATA_URL"),
-        "tariff": _configured("HUIDI_TARIFF_LOOKUP_URL"),
+        "company_check": company["connected"],
+        "trade_data": trade["connected"],
+        "tariff": tariff_status["connected"],
         "fx": True,
-        "shipping": _configured("HUIDI_SHIPPING_API_URL"),
+        "shipping": shipping_status["connected"],
+        "company_sources": {
+            "company_check": company["source"],
+            "trade_data": trade["source"],
+            "tariff": tariff_status["source"],
+            "shipping": shipping_status["source"],
+        },
     }
 
 
 @app.get("/api/services/status")
-def service_status():
-    return {"ok": True, "services": _provider_status()}
+def service_status(db: Session = Depends(get_db)):
+    return {"ok": True, "services": _provider_status(db)}
 
 
 def _serper(path: str, payload: dict[str, Any]) -> dict[str, Any]:
@@ -282,11 +293,12 @@ def fx(req: FXRequest, db: Session = Depends(get_db)):
     return {**result, "record_id": record_id}
 
 
-def _external_provider(env_url: str, env_token: str, payload: dict[str, Any], missing_message: str) -> Any:
-    url = os.getenv(env_url, "").strip()
-    if not url:
+def _external_provider(db: Session, service_key: str, payload: dict[str, Any], missing_message: str) -> Any:
+    service = resolve_service_connection(db, service_key)
+    url = str(service.get("endpoint_url") or "").strip()
+    if not service.get("connected") or not url:
         raise HTTPException(503, missing_message)
-    token = os.getenv(env_token, "").strip()
+    token = str(service.get("token") or "").strip()
     headers = {"Accept": "application/json"}
     if token:
         headers["Authorization"] = f"Bearer {token}"
@@ -303,12 +315,7 @@ def _external_provider(env_url: str, env_token: str, payload: dict[str, Any], mi
 @app.post("/api/tools/company-check")
 def company_check(req: CompanyCheckRequest, db: Session = Depends(get_db)):
     query = req.model_dump(exclude={"lead_id", "deal_id"}, exclude_none=True)
-    data = _external_provider(
-        "HUIDI_COMPANY_LOOKUP_URL",
-        "HUIDI_COMPANY_LOOKUP_TOKEN",
-        query,
-        "还没有连接企业核验数据服务",
-    )
+    data = _external_provider(db, "company", query, "还没有连接企业核验数据服务")
     record_id = _record_and_note(db, "company", req.company, query, data, req.lead_id, req.deal_id, "已补充企业核验资料")
     return {"ok": True, "result": data, "record_id": record_id}
 
@@ -316,12 +323,7 @@ def company_check(req: CompanyCheckRequest, db: Session = Depends(get_db)):
 @app.post("/api/tools/trade-data")
 def trade_data(req: TradeDataRequest, db: Session = Depends(get_db)):
     query = req.model_dump(exclude={"lead_id", "deal_id"}, exclude_none=True)
-    data = _external_provider(
-        "HUIDI_TRADE_DATA_URL",
-        "HUIDI_TRADE_DATA_TOKEN",
-        query,
-        "还没有连接贸易数据服务",
-    )
+    data = _external_provider(db, "trade", query, "还没有连接贸易数据服务")
     record_id = _record_and_note(
         db,
         "trade",
@@ -338,12 +340,7 @@ def trade_data(req: TradeDataRequest, db: Session = Depends(get_db)):
 @app.post("/api/tools/tariff")
 def tariff(req: TariffRequest, db: Session = Depends(get_db)):
     query = req.model_dump(exclude={"lead_id", "deal_id"})
-    data = _external_provider(
-        "HUIDI_TARIFF_LOOKUP_URL",
-        "HUIDI_TARIFF_LOOKUP_TOKEN",
-        query,
-        "还没有连接关税数据服务",
-    )
+    data = _external_provider(db, "tariff", query, "还没有连接关税数据服务")
     record_id = _record_and_note(
         db,
         "tariff",
@@ -362,12 +359,7 @@ def shipping(req: ShippingRequest, db: Session = Depends(get_db)):
     payload = req.model_dump(exclude={"lead_id", "deal_id"})
     if not payload["departure_date"]:
         payload["departure_date"] = date.today().isoformat()
-    data = _external_provider(
-        "HUIDI_SHIPPING_API_URL",
-        "HUIDI_SHIPPING_API_TOKEN",
-        payload,
-        "还没有连接船期或物流数据服务",
-    )
+    data = _external_provider(db, "shipping", payload, "还没有连接船期或物流数据服务")
     checked_at = datetime.now(timezone.utc).isoformat()
     result = {"result": data, "checked_at": checked_at}
     record_id = _record_and_note(
