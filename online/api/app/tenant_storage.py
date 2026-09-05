@@ -94,6 +94,28 @@ def ensure_tenant_schema(organization_id: int) -> Engine:
     return engine
 
 
+def dispose_tenant_engine(organization_id: int) -> None:
+    """Drop pooled business connections after an administrative restore.
+
+    Organization #1 shares the historical primary engine with the control plane,
+    so it is disposed but kept registered. Organization #2+ are rebuilt lazily
+    on the next business request.
+    """
+    organization_id = max(1, int(organization_id))
+    with _engine_lock:
+        engine = _tenant_engines.get(organization_id)
+        if engine is not None:
+            engine.dispose()
+        if organization_id == 1:
+            _tenant_engines[1] = primary_engine
+            _tenant_sessions[1] = sessionmaker(
+                bind=primary_engine, autoflush=False, autocommit=False
+            )
+        else:
+            _tenant_engines.pop(organization_id, None)
+            _tenant_sessions.pop(organization_id, None)
+
+
 class TenantSessionRouter:
     """Drop-in replacement for the historical SessionLocal sessionmaker.
 
