@@ -3,6 +3,8 @@ from uuid import uuid4
 
 from sqlalchemy import select
 
+from app.daily_app import app  # noqa: F401
+from app.mail_sync import MailQueueItem
 from app.main import Lead, LeadActivity, SessionLocal, add_activity
 from app.online_app import (
     DispatchPlanRequest,
@@ -58,6 +60,8 @@ class MailGovernanceTests(unittest.TestCase):
         self.mailbox_id = self.mailbox.id
 
     def tearDown(self):
+        for row in self.db.scalars(select(MailQueueItem).where(MailQueueItem.lead_id == self.lead_id)).all():
+            self.db.delete(row)
         for row in self.db.scalars(select(MailDispatchPlan).where(MailDispatchPlan.lead_id == self.lead_id)).all():
             self.db.delete(row)
         for row in self.db.scalars(select(LeadActivity).where(LeadActivity.lead_id == self.lead_id)).all():
@@ -96,8 +100,11 @@ class MailGovernanceTests(unittest.TestCase):
         first = create_dispatch_plan(self.lead_id, req, self.db)
         second = create_dispatch_plan(self.lead_id, req, self.db)
         self.assertEqual(first["id"], second["id"])
-        self.assertEqual(first["state"], "review_ready_only")
+        self.assertEqual(first["state"], "queued")
         self.assertEqual(first["recipient"], self.email)
+        self.assertTrue(first["legacy_compat"])
+        self.assertEqual(self.db.query(MailQueueItem).filter(MailQueueItem.lead_id == self.lead_id).count(), 1)
+        self.assertEqual(self.db.query(MailDispatchPlan).filter(MailDispatchPlan.lead_id == self.lead_id).count(), 0)
 
     def test_replied_or_converted_lead_stops_cold_outreach_plan(self):
         self.lead.status = "replied"
