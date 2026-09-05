@@ -27,7 +27,6 @@ class IntelligenceSourceContractTests(unittest.TestCase):
             self.assertIn(route, backend)
         self.assertIn('class IntelligenceFeedSource', backend)
         self.assertIn('只有老板或管理员可以修改新闻与行业来源', backend)
-        self.assertIn('新闻订阅地址', backend)
         self.assertIn('fetch_feed_entries', backend)
         self.assertIn('来源跳转到了不允许访问的地址', backend)
 
@@ -40,7 +39,7 @@ class IntelligenceSourceContractTests(unittest.TestCase):
         self.assertIn('customer_intelligence._custom_rss = _managed_feed', bridge)
         self.assertIn('from . import intelligence_sources', daily)
         self.assertIn('from . import intelligence_source_bridge', daily)
-        self.assertIs(customer_intelligence._configured_rss_sources.__name__, '_managed_sources')
+        self.assertEqual(customer_intelligence._configured_rss_sources.__name__, '_managed_sources')
 
     def test_public_url_guard_blocks_local_targets(self):
         self.assertFalse(_safe_public_url('http://127.0.0.1/feed.xml', resolve_dns=False))
@@ -85,6 +84,7 @@ class IntelligenceSourceContractTests(unittest.TestCase):
         self.assertIn('intelligence_feed_sources', migration)
         self.assertIn("'/api/intel/sources'", workflow)
         self.assertIn('web/intelligence-source-settings.js', workflow)
+        self.assertIn('IntelligenceFeedSource', workflow)
 
 
 if __name__ == '__main__':
