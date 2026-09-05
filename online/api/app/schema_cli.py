@@ -9,7 +9,7 @@ from sqlalchemy import create_engine, text
 
 from .daily_app import app  # noqa: F401 - register the complete Online metadata
 from .main import Base
-from .schema_migrations import apply_schema_migrations, schema_migration_status
+from .schema_migrations import schema_migration_status, upgrade_schema
 from .team_access import Organization
 from .tenant_storage import ControlSessionLocal, tenant_database_url
 
@@ -60,12 +60,10 @@ def upgrade_database(organization_id: int) -> dict[str, Any]:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
         # V0.1 compatibility baseline: create any currently known business
-        # tables first, then apply/record forward revisions. This makes schema
-        # changes explicit in deployment while keeping existing SQLite installs
-        # non-destructive. A later major release can retire create_all after all
-        # historical tables have dedicated migrations.
-        Base.metadata.create_all(engine)
-        status = apply_schema_migrations(engine)
+        # tables first, then apply/record forward revisions. The complete DDL +
+        # revision section is serialized by upgrade_schema(), so two deployment
+        # processes cannot race on the same PostgreSQL company database.
+        status = upgrade_schema(engine, Base.metadata)
         return {"organization_id": organization_id, "connected": True, **status}
     finally:
         engine.dispose()
