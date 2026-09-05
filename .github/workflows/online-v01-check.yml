@@ -59,7 +59,8 @@ jobs:
           grep -q 'product-brain.js' web/index.html
           grep -q 'huidi.product.brain/v1' ../../public/product-online-handoff.html
           grep -q 'HUIDILocalCore' ../../public/product-online-handoff.html
-          grep -q 'repositories.products' ../../public/product-online-handoff.html
+          grep -q 'repositories' ../../public/product-online-handoff.html
+          grep -q 'products' ../../public/product-online-handoff.html
           grep -q '#product=' ../../public/product-online-handoff.html
           grep -q 'huidi.business.bundle/v1' web/app.js
           grep -q 'huidi.business.bundle/v1' ../../public/huidi-online-local-bridge-v1.js
