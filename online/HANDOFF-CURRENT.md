@@ -2,251 +2,291 @@
 
 更新时间：2026-09-05
 
-> 本文件是新 ChatGPT / Codex 会话的接管入口。不要仅凭聊天记忆继续施工；先核 GitHub 当前状态。
+> 本文件是新会话接管入口。禁止只凭旧聊天记忆施工；先核对 Online 开发分支当前 head、PR #2 与最新 `Online V0.1 Check`。
 
-## 1. 仓库与正式边界
+## 1. 正式边界
 
-- Repo：`su907692083/HUIDI-Docs-Community-Local`
+- 仓库：`su907692083/HUIDI-Docs-Community-Local`
 - 正式主线：`main`
-- Community Local 正式发布仍为：`v1.2.0-rc16.29` / RC16.29
+- Community Local 正式发布：`v1.2.0-rc16.29` / RC16.29
 - Online 开发分支：`online/v0.1-lead-workbench`
 - Online Draft PR：`#2`
-- PR 定位：`HUIDI Online — Foreign Trade Daily Workbench`
-- 当前 PR 必须继续保持 Draft，除非用户明确要求合并。
-- 不要把 Online 施工直接覆盖或破坏已发布的 Community Local 主线。
+- PR 必须继续保持 Draft，除非用户明确要求合并。
+- 禁止为了 Online 施工覆盖或回退 Community Local 正式主线。
 
-新会话首先执行：
-1. 读取 PR #2 当前 metadata / head SHA / changed files。
-2. 查看最新 `Online V0.1 Check`。
-3. 读取本文件、`online/README.md`、`online/DAILY-WORKBENCH-CONTRACT.zh-CN.md`、`online/STAGE2-CLOSURE-CONTRACT.zh-CN.md`、`online/UX-CLOSURE-CONTRACT.zh-CN.md`。
-4. 只读核对以后再继续施工。
+本次交接文件更新前的已验证功能基线：
 
-## 2. 产品定位——这是最重要的原则
+`833165d57bbb0264ce85e63abe8e51cf919070ab`
 
-HUIDI Online **不是“获客小工具”或“单据工具网页版”**。
+对应 `Online V0.1 Check`：completed / success。
 
-最终定位：
+更新本文件后必须重新读取 PR 当前 head 与最新 Check，不要把上述 SHA 当作永远固定的最终 head。
 
-**外贸人的每日专属工作台 / Foreign Trade Daily Workbench**。
+## 2. 产品定位
 
-用户每天打开它，核心路径应当是：
+HUIDI Online 不是“获客附属工具”，也不是“单据工作台网页版”。
 
-`今天 → 待跟进 → 客户回复 → 找新客户 → 背调 → 联系人 → AI 开发信 → 真实邮件发送 → 询盘 / 业务 → 商品 / 产品目录 → Quotation → PI → Contract → CI / Packing List → 出运 / 下一步`
+定位：
 
-单据只是工作流的一部分，不是整个产品。
+**Foreign Trade Daily Workbench / 外贸人的每日专属工作台**。
 
-设计原则：
-- 简单、快捷、高效、一页式优先。
-- 表格优先，少跳页，详情优先使用右侧抽屉。
-- 复杂能力必须隐藏在用户自然动作后面，不要让用户学 Agent / Prompt / 技术参数。
-- 所有实用能力必须尽量真实调用业务场景，避免“规划卡片”“假按钮”“演示功能”。
-- Online 是联网主产品，可以充分利用外部 Provider、API、SMTP、OAuth、地图、贸易数据、汇率、物流、关税、通知等能力。
-- Community Local 作为本地/离线模式、文件/单据能力和隐私补充，不再限制 Online 的联网能力。
+日常业务主链：
 
-## 3. 已经形成的核心业务链
+`今天 → 待跟进 → 客户回复 → 找客户 → 地图找客户 → 客户背调 → 联系人 → 产品资料 → AI 开发信 → 真实邮件 → 邮件往来 / 回复 → 客户 / 询盘 → 商品 / 产品目录 → Quotation → PI → Contract → CI / Packing List → 出运 → 下一步`
 
-### Product / Growth
+单据只是主链的一部分。
 
-`Local Product → Product Brain → Campaign / ICP → Lead Search → A/B/C/D 透明评分 → Buying Signals → Due-Diligence → Contact → AI Draft → Mail → Follow-up`
+产品规则：
+- 用户界面只说业务员看得懂的话，避免技术实现词。
+- 一页式、表格、右侧详情、少跳页、少低频渲染。
+- 在线能力必须接回 Customer / Lead / Product / Deal / Mail / Document / Next Action，禁止孤立工具。
+- 未连接真实数据源时明确显示“未连接”，不能用演示客户、演示联系人或猜测数据冒充真实结果。
+- Community Local 是本地/离线、文件和成熟单据能力补充，不限制 Online 的真实联网能力。
 
-### Business
+## 3. 当前已经落地的 Online 主链
 
-`Lead → Customer / Inquiry → Catalog → Quotation → PI → Sales Contract → Commercial Invoice → Packing List`
+### 今天 / Daily Workbench
 
-### Bridge
+首页读取真实业务数据库，已形成：
+- 今天到期跟进
+- 已逾期跟进
+- 今天收到的客户回复
+- 今天已发送
+- 发送失败
+- 待发送
+- 已转询盘
+- 邮箱连接状态
+- 最近业务变化
+- 业务下一步到期提醒
+- 自动跟进异常提醒
+
+提醒中心聚合真正需要行动的事情，不把普通操作日志全部刷成提醒。
+
+### 找客户 / 背调 / 联系人
+
+已形成：
+- 真实在线搜索接入位
+- A/B/C/D 透明评分
+- 域名去重
+- 公开来源证据
+- 联系人 / 业务邮箱发现
+- 客户背调初筛
+- Buying Signals / 下一步建议
+- 地图找客户
+- 地图结果一键进入同一 Lead 线索池
+
+没有真实在线搜索配置时，不再生成假客户或假联系人。
+
+### 产品资料
+
+`huidi.product.brain/v1` 仍作为产品事实模型，并已增加服务器端持久化。
+
+事实边界继续保持：
+- 正式规格 / MOQ / 价格 / 交期 / 认证 / 案例 / 包装 / HS / 原产国可长期复用。
+- 临时网页搜索、客户信号、AI 临时判断不能污染正式产品事实。
+- Local 商品可以显式交给 Online，并保留原商品关联。
+
+### 真实邮件闭环
+
+当前已不再是永久 review-only。
+
+已形成：
+- Gmail 账号连接
+- Outlook 账号连接
+- 其他企业邮箱连接
+- 多发送邮箱
+- 凭据加密保存
+- 邮箱连接检查
+- 真实发送
+- 收件箱 / 已发送同步
+- 同一客户邮件往来
+- HUIDI 内直接回复客户
+- 自动 Reply detection
+- 客户回复后自动停止冷开发
+- 每日发送量限制
+- 最小发送间隔
+- 退订 / 黑名单
+- Bounce / unsubscribe / complaint 回写入口
+- 发送审计与 Message-ID
+- 待发送 Queue
+- 失败 Retry
+
+### 自动跟进
+
+已形成服务器端自动跟进计划：
+- 一套计划最多 8 步
+- 每一步内容和间隔必须先人工确认
+- 给具体客户启用时再次确认
+- 到时间后复用现有真实发送治理
+- 客户回复立即停止后续步骤
+- 客户退订 / 被抑制立即停止
+- 转询盘 / 归档立即停止
+- 连续发送异常自动暂停
+- 暂停异常进入提醒中心
+- 可暂停 / 继续 / 停止
+
+禁止把这套能力改成无审核的批量群发器。
+
+### 客户 / 询盘 / 业务推进
+
+Online 已有持续保存的 Customer / Deal，不再只是临时转换结果。
+
+同一业务保存：
+- 客户
+- 联系人
+- 邮箱
+- 国家 / 官网
+- 询盘 / Deal
+- 当前阶段
+- 成交判断
+- 金额 / 币种
+- 客户需求
+- 下一步
+- 下一步日期
+- 已关联单据
+
+Quotation / PI / Contract / CI / Packing List 继续沿同一业务对象进入成熟单据链，不能重复创建第二套客户资料。
+
+### 联网业务资料
+
+已增加 `OnlineIntelligenceRecord` 持久化。
+
+企业核验、贸易记录、市场情报、关税、汇率、船期 / 物流查询可以挂回当前 Lead / Deal，保存：
+- 查询类型
+- 查询条件
+- 返回结果
+- 查询时间
+- Lead / Deal 关联
+
+客户详情已有“联网资料”回看区。
+
+从某个客户详情打开市场情报、关税、汇率、船期时，会自动带当前客户上下文；从首页单独打开时保持普通临时查询。
+
+### 团队权限（单家公司）
+
+已形成真实服务器权限层：
+- 老板
+- 管理员
+- 业务员
+- 只读成员
+- 密码只保存 PBKDF2 摘要
+- 安全登录 Cookie
+- 只读成员不能修改资料或发送邮件
+- 业务员可以做日常客户 / 邮件业务
+- 业务员不能管理团队或改关键邮箱连接
+- 老板 / 管理员可管理成员和关键设置
+
+单人部署默认不增加登录复杂度；正式多人部署可启用团队登录。
+
+**注意：多家公司 / 多租户数据隔离尚未完成。**
+
+当前团队权限是“一家公司内部多人协作”。不要把它描述成已经完成 SaaS 多租户隔离。
+
+## 4. Community Local 互通
 
 Online → Local：`huidi.business.bundle/v1`
 
 Local → Online：`huidi.local.business.status/v1`
 
-Local → Online 目前采用显式用户确认；不要偷偷上传整套本机客户库 / 商品库 / 单据历史。
+原则：
+- Online 真实机会进入 Local 时复用现有 Customer / Deal / Product / Mail / Document Owner。
+- Online 获客评分不能替代 Deal 成交概率。
+- 搜索关键词不能自动创造正式商品。
+- Local → Online 继续显式确认，禁止偷偷上传整套本机数据库。
+- PR #2 施工不能破坏 RC16.29 正式主线。
 
-## 4. 已完成的主要能力
+## 5. 当前真实数据服务状态
 
-### Lead / Customer Development
-- FastAPI Online API
-- Serper 搜索入口
-- Demo fallback
-- 域名去重
-- A/B/C/D 透明评分
-- 产品匹配 / 买家角色 / 市场 / 采购信号 / 官网 / 联系性等 breakdown
-- 联系人 / 公开业务邮箱查找
-- 客户背调初筛
-- Buying Signals
-- Open Threads
-- Next Best Action
-- Lead Activity 时间线
-- Follow-up
-- Lead → HUIDI Customer / Inquiry Bridge
-
-### Product Brain
-- `huidi.product.brain/v1`
-- Product Brain / Lead-Customer Memory / Runtime Context 分层
-- Local 商品显式交给 Online
-- 保留 Local Product ID
-- 商品事实不能被临时网页搜索或 AI 推断污染
-
-### Community Local UX Closure
-- Deals / Customers / Products / Documents / Mail 分页
-- 默认 50 行，可切 20 / 50 / 100 / 200
-- 只重绘当前列表
-- 客户 / 询盘 / 商品统一快速详情抽屉
-- document-start 搜索式选择
-- 二级页返回上下文
-- Hash 导航统一
-- Catalog 常用 / 高级分层
-- Notification Center
-- Mail 与 customerId + dealId + Online Lead 关联
-
-### Bidirectional Business Bridge
-- Online Lead → Local Customer + Deal + Mail + Product match
-- Local Deal → Online Lead Timeline 状态回传
-- Lead A/B/C/D 评分与 Deal probability / stage 分离
-
-## 5. 邮件能力——方向已经改为“真实可用”，不要再阉割
-
-用户明确要求：Online 是联网版，**SMTP 等真实能力必须开放**。
-
-已施工方向包括：
-- 多发送邮箱
-- SMTP host / port
-- STARTTLS / SSL-TLS / Plain
-- SMTP username + password / app password
-- `HUIDI_SECRET_KEY` 加密保存凭据
-- SMTP 连接测试
-- 真实 `send_message()` 路径
-- 每日额度
-- 最小发送间隔
-- 退订 / 黑名单
-- 回复 / 转询盘 / 归档后停止冷开发
-- 发送审计日志
-- Message-ID
-- 成功发送后 Lead 状态推进到 `contacted`
-
-注意：
-- 不要再把 Online 邮件改回永久 `review_only`。
-- 可以保留发送前治理与确认，但不能把真实 SMTP 能力藏掉或禁用掉。
-- 后续优先继续 Gmail OAuth2 / Outlook OAuth2 / Inbox / Thread / Reply detection / Bounce / Unsubscribe / Queue / Retry。
-
-## 6. Daily Workbench 方向
-
-Online 首页要成为每天打开的主页面，不是“开发客户搜索页”。
-
-真实摘要应来自数据库，例如：
-- 今日发送
-- 发送失败
-- 待处理线索
-- 客户回复
-- 已转询盘
-- 已配置 / 已连接邮箱
-- 待跟进
-- 最近业务活动
-- 今日下一步
-
-导航应该围绕日常工作，而不是技术模块：
-
-**今日工作**
-- 工作台
-- 待跟进
-- 客户回复
-- 通知 / 待办
-
-**开发客户**
-- 找客户
-- 地图找客户
-- 线索池
-- 背调
-- 联系人
-
-**邮件与跟进**
-- 收件箱
-- 已发送
-- 草稿
-- 邮箱账户
-- 跟进序列
-
-**客户与业务**
-- 客户
-- 询盘 / Deal
-- 报价
-- PI
-- 合同
-- CI / PL
-
-**商品与内容**
-- 商品
-- Product Brain
-- 产品目录
-
-**外贸工具 / Intelligence**
-- Trade Intelligence
+代码已经形成统一的真实连接位：
+- 在线搜索 / 地图 / 市场动态
+- 企业核验
+- 贸易 / 海关数据
 - HS / Tariff
 - FX
 - Shipping / Schedule
-- Tool Box
 
-## 7. 研究过的第三方项目与融合原则
+其中：
+- 汇率已经有真实在线读取路径。
+- 在线搜索 / 地图 / 市场动态在配置真实搜索服务后工作。
+- 企业核验 / 贸易数据 / 关税 / 船期物流需要部署时配置实际商业数据服务地址与授权。
 
-研究源包括：
-- `1099271/smart-lead-agent`
-- `Tommy-old/b2b-buyer-discovery`
-- `kakacells/Customer_background_check_version1.2`
-- `uyoufu/UZonMail`
-- `chnjames/tradehot-skill`
-- `dongsheng123132/ai-tungke`
-- `tshwangq/awesome-foreign-trade`
-- `CreatiBI/cli`
-- `howarliu1993/NPI-repo`
-- `eicloud/eicloud.github.io`
-- `SuperGokou/caijiwaimao`
-- `wanlang0118/xian-yu-guan-li`
+没有配置的数据服务必须显示“未连接”，不能假装有正式数据。
 
-原则：
-- Apache-2.0 / MIT：可在保留许可与归属后择优改造。
-- GPL / 未明确 LICENSE / README 自述许可 / Internal / 禁止商业用途：只研究产品思路与架构，HUIDI 独立重写，不直接复制源码。
-- 不把多个仓库简单拼接成“功能杂货铺”；所有能力必须回到 HUIDI 的 Customer / Product / Lead / Deal / Mail / Document / Next Action 主模型。
+## 6. 用户界面语言要求
 
-## 8. 下一阶段优先级
+用户明确要求小白友好。
 
-优先继续：
+产品页面优先使用：
+- 产品资料
+- 连接 Gmail / 连接 Outlook / 连接其他邮箱
+- 收件箱 / 已发送 / 邮件往来
+- 稍后发送
+- 自动跟进
+- 企业核验
+- 贸易记录
+- 汇率
+- 船期 / 物流
+- 团队 / 业务员 / 只读成员
 
-1. Gmail OAuth2 + Outlook OAuth2
-2. Inbox / Sent / Thread / Reply detection
-3. 客户回复自动写入 Lead / Customer / Deal Timeline，并停止冷开发序列
-4. Mail Queue / Retry / Bounce / Unsubscribe
-5. Product Brain 服务端持久化
-6. 真实公司 / 工商 / 海关背调 Provider
-7. 地图找客户
-8. Trade Intelligence
-9. HS / Tariff
-10. FX
-11. Shipping / Schedule
-12. Online 多租户 / 用户 / 团队 / 权限 / 协作
-13. 生产级 Secret / Notification Router / Audit
+不要在普通用户页面堆：
+- SMTP / OAuth / Provider
+- Agent / Prompt
+- Thread / Queue / Retry 等实现词
+- 代码仓库、开源项目来源、内部技术说明
 
-## 9. 施工纪律
+内部代码和开发 Contract 可以保留准确技术术语，但不能污染产品 UI。
 
-新会话禁止：
-- 不看 PR 当前状态就直接改代码。
-- 从旧版本 / 旧聊天记忆拼装回退。
-- 直接改 `main`。
-- 把 Online 再定位回“单据为主”。
-- 把真实联网能力阉割成 Demo。
-- 为每个新功能单独造 Customer / Product / Inquiry 数据孤岛。
-- 把临时搜索 / AI 推断写成正式 Product Brain 事实。
-- 大数据量页面重新回到一次渲染全部 DOM。
+## 7. 研究与商业许可纪律
 
-新会话每轮建议流程：
-1. Read-only audit。
-2. 明确唯一 Owner / Contract。
-3. 最小范围施工。
-4. Python / JS 语法与专项回归。
-5. GitHub Actions 全绿。
-6. 明确“已实现 / 仍未实现”，不要夸大。
-7. PR #2 保持 Draft，除非用户明确要求合并。
+历史研究过多个外贸获客、背调、邮件、贸易情报项目。
 
-## 10. 给新会话的第一句话
+纪律：
+- 许可明确且兼容商业使用的内容按许可要求处理。
+- GPL、许可不明确、Internal、禁止商业用途等项目只研究思路，由 HUIDI 独立重写。
+- 禁止为了赶功能直接复制导致商业许可污染。
+- 所有融合必须回到 HUIDI 自己的业务模型，不能拼成杂货铺。
 
-用户可以直接复制：
+## 8. 当前仍未完成 / 下一阶段
 
-> 你现在接手我的 `su907692083/HUIDI-Docs-Community-Local` 项目。先不要施工。请读取 `online/HANDOFF-CURRENT.md`、`online/README.md`、PR #2、`online/v0.1-lead-workbench` 当前 head 和最新 Online V0.1 Check，做只读接管审计。正式 `main` / Community Local RC16.29 不要动。Online 定位是“外贸人的每日专属工作台”，不是获客附属页或单据工具；真实联网能力（SMTP、OAuth、搜索、背调、地图、贸易数据等）应充分发挥并接入实际业务链。只读审计完成后先向我汇报当前基线、已完成能力、未完成能力、下一施工优先级，再等我说开始施工。
+优先级建议：
+
+1. **多公司 / 多租户强隔离**：Customer / Lead / Product / Deal / Mail / Document / Intelligence 必须一起隔离，不能只做公司下拉框。
+2. 团队审计：谁改了客户、谁发了邮件、谁改了业务阶段。
+3. 选定并正式接入企业核验商业数据服务。
+4. 选定并正式接入贸易 / 海关数据服务。
+5. 选定并正式接入 HS / Tariff 数据服务。
+6. 选定并正式接入 Shipping / Schedule 数据服务。
+7. 把联网资料进一步投影进 Deal / Quotation / 出运决策，而不是只在客户详情回看。
+8. 生产级外部通知路由、安静时段、失败重试与成员路由。
+9. 正式部署的 Secret 管理、备份、数据库迁移与恢复验证。
+10. 持续精简首页与高频路径，避免功能增长后重新变复杂。
+
+## 9. 每轮施工门禁
+
+每次施工必须：
+1. 先核当前 head，禁止从旧聊天内容猜基线。
+2. 只改 Online 开发分支，除非用户明确要求动 main。
+3. Python 编译。
+4. 全部业务回归。
+5. Online 浏览器脚本语法检查。
+6. 邮件真实发送路径回归。
+7. Reply-stop / Queue / Retry / 自动跟进回归。
+8. Product / Business / Intelligence / Team 权限回归。
+9. Local Bridge / Catalog / Notification Owner 回归。
+10. Secrets 不入库。
+11. `Online V0.1 Check` 全绿后才能把该 head 称为新绿线。
+12. PR #2 保持 Draft，除非用户明确要求合并。
+
+## 10. 新会话接管顺序
+
+新会话先只读：
+1. 当前 PR #2 metadata / head SHA / changed files。
+2. 最新 `Online V0.1 Check`。
+3. 本文件。
+4. `online/README.md`。
+5. `online/DAILY-WORKBENCH-CONTRACT.zh-CN.md`。
+6. `online/STAGE2-CLOSURE-CONTRACT.zh-CN.md`。
+7. `online/UX-CLOSURE-CONTRACT.zh-CN.md`。
+8. 对照实际代码确认文档没有漂移。
+
+然后向用户汇报：当前基线、已完成、未完成、CI 是否全绿、下一施工优先级。用户明确说“开始施工”以后再修改代码。
