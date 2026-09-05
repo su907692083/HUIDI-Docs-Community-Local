@@ -2,367 +2,369 @@
 
 更新时间：2026-09-06
 
-> 本文件是 Online 新会话接管入口。先核 PR #2 当前 head 和该 exact head 的 `Online V0.1 Check`，禁止从旧聊天、旧 SHA 或旧待办清单直接施工。
+> 本文件是 Online 新会话接管入口。任何新会话先读取 PR #2 当前 head，再核该 exact head 的 `Online V0.1 Check`。禁止从旧聊天、旧 SHA、旧待办清单直接施工。
 
-## 1. 正式边界与最近已验证绿线
+## 1. 正式边界
 
 - 仓库：`su907692083/HUIDI-Docs-Community-Local`
 - 正式主线：`main`
-- `main`：`765e8cfe82eb49aabb2f75abb1da0cfbe4c936eb`
-- Community Local 正式发布：`v1.2.0-rc16.29 / RC16.29`
-- Online 开发分支：`online/v0.1-lead-workbench`
+- main 基线：`765e8cfe82eb49aabb2f75abb1da0cfbe4c936eb`
+- Community Local：`v1.2.0-rc16.29 / RC16.29`
+- Online 分支：`online/v0.1-lead-workbench`
 - Online PR：`#2`
 - PR 必须保持 **Draft / 未合并**，除非用户明确要求。
-- Online 施工不得覆盖、回退或破坏 Community Local 正式主线。
+- 禁止为了 Online 施工覆盖、回退或改写 Community Local 正式基线。
 
-本文件更新前最后一条完整验证绿线：
+本文件更新前最后一条已完整验证的功能候选绿线：
 
-`c32ba07ada2c8e237f0659def5772e8b82320ac6`
+`bb858089fc453db17d7de9bba2c49b9c32cea80b`
 
-对应 `Online V0.1 Check` run `33983408601`：**completed / success**。
+对应 `Online V0.1 Check` run `33986006601`：
+- `validate`：success
+- `postgres_schema`：success
 
-该 run 已同时通过：
-- 常规全业务 `validate` job。
-- 真实 PostgreSQL 16 `postgres_schema` job。
-- PostgreSQL 公司 #1 / #2 独立数据库 upgrade + check。
-- 公司 #1 写入的 Lead 在公司 #2 查询为 0。
-- 第三个空 PostgreSQL 公司库上两个独立 schema upgrade 进程并发抢锁，均成功完成，未出现重复建表 / 重复 revision。
+该 run 已通过全部 Python 业务回归、Online 浏览器脚本、Product / Local Bridge / Notification 合同、Secrets 扫描，以及真实 PostgreSQL 16 的多公司结构升级、并发升级锁和公司数据物理隔离。
 
-本文件更新本身会产生新 head，因此新会话仍必须重新读取 PR 当前 head 与该 head 的最新 Check；只有 exact current head 的两个 job 均为 success 才可称新绿线。
+**注意：本文件提交后会产生新的 head。新会话仍必须重新核最终 exact head，不能直接把上面的 pre-handoff SHA 当最终绿线。**
 
 ## 2. 产品定位与主链
 
-HUIDI Online = **外贸人的每日专属工作台 / Foreign Trade Daily Workbench**。
+HUIDI Online = **外贸人的每日专属工作台**。
 
-主链：
+用户主链固定为：
 
-`今天 → 待跟进 → 客户待回复 → 找客户 → 地图找客户 → 客户背调 → 联系人 → 产品资料 → AI 开发信 → 真实邮箱 → 稍后发送 / 自动跟进 → 客户 / 询盘 → 商品 / 产品目录 → 报价 → PI → 合同 → CI / 装箱单 → 出运 → 下一步`
+`今天 → 待跟进 → 客户回复 → 找客户 → 地图找客户 → 客户背调 → 联系人 → 产品资料 → 开发信 → 真实邮件 → 自动跟进 → 客户 / 询盘 → 产品目录 → 报价单 → 形式发票 PI → 销售合同 → 商业发票 CI → 装箱单 → 出运 → 下一步`
 
-原则：
-- 普通用户只看大白话，不堆 SMTP / OAuth / API / Provider / Queue / Tenant / Schema 等内部词。
-- 未连接真实数据源时明确显示“未连接”，禁止演示数据冒充正式客户或业务数据。
-- 联网结果必须回到 Lead / Customer / Deal / Product / Mail / Document / Next Action。
-- 联网参考不会自动污染正式产品事实、价格、合同、装箱资料。
-- Community Local 是本地 / 离线和成熟单据能力补充，不是 Online 联网能力上限。
+产品原则：
+- 中文为主，大白话优先。
+- 普通业务员不需要理解 SMTP、OAuth、API、Provider、Queue、Tenant、Schema、Database 等内部实现词。
+- 缺少真实数据来源时明确显示“未连接”，禁止演示数据冒充真实客户或真实业务资料。
+- 能力不能做成孤立工具，必须继续回到客户、邮件、询盘、产品、单据或下一步。
+- 联网资料只作为参考，未经人工确认不得自动改写价格、产品事实、合同或装箱数据。
+- Community Local 是本地 / 离线和成熟单据编辑补充，不是 Online 联网能力上限。
 
-## 3. 今天 / Daily Workbench
+## 3. 本轮已完成：小白中文工作流收口
 
-当前“今天”已经是行动清单：
-- 按**当前公司的工作时区**划分今天。
-- Lead 跟进到期 / 逾期进入“今天待推进”。
-- Deal / 询盘 `next_action_at` 到期 / 逾期也进入“今天待推进”。
-- 客户来信只有在**尚未处理**时进入“客户待回复”。
-- 同一邮件线程后续已回复，则从待回复移除。
-- 即使不是在线程页回复，只要客户来信后存在成功发信记录，也视为已处理。
-- “待发送”只统计真实 `MailQueueItem`，不再统计旧 `MailDispatchPlan`。
+### 3.1 首页新增“工作引导”
 
-公司工作时区由 `CompanySetting` 持久化在每家公司的独立业务库，老板 / 管理员可用“工作时间”选择中国大陆、日本、英国、美国东部等地区；普通业务员无需理解时区代码。
+新增 `web/beginner-flow.js`，直接读取真实 `/api/workbench/today`，不建立另一套新手数据库或假状态。
 
-## 4. 找客户 / 产品 / 真实邮件
+它会按真实状态告诉用户“现在最该做什么”：
+- 有客户回复 → 先回复客户。
+- 有逾期跟进 / 询盘下一步 → 先处理逾期事项。
+- 还没连接邮箱 → 先连接常用邮箱。
+- 有待发送邮件 → 先检查待发送。
+- 还没有潜在客户 → 先找第一批客户。
+- 已有询盘 / 下一步 → 优先推进已有业务。
+- 当前无紧急事项 → 再继续开发新客户。
 
-### 找客户 / 地图 / 背调 / 联系人
+首页工作链显示：
+`① 找客户 → ② 联系客户 → ③ 跟进回复 → ④ 询盘 / 报价 → ⑤ 单据 / 出运`
+
+所有动作继续调用现有真实 Owner：
+- `HUIDIDailyServices`
+- `HUIDIBusinessCenter`
+- `HUIDIProductBrain`
+- `/api/workbench/today`
+
+### 3.2 左侧导航按用户工作顺序重排
+
+当前入口以用户熟悉的业务词为主：
+- 今天的工作
+- 待跟进
+- 客户回复
+- 找客户
+- 地图找客户
+- 潜在客户
+- 客户背调
+- 联系人
+- 收件箱 / 已发送 / 邮箱设置 / 待发送 / 自动跟进
+- 客户 / 询盘
+- 报价单
+- 形式发票 PI
+- 销售合同
+- 商业发票 CI
+- 装箱单
+- 产品资料 / 产品目录
+- 市场动态 / 贸易记录 / HS 编码与关税 / 汇率 / 船期物流
+- 操作记录
+- 数据来源（老板 / 管理员）
+- 使用检查与备份（老板 / 管理员）
+
+修复了左栏过长时底部项目被遮挡的问题：左栏独立滚动，底部说明不再绝对定位压住导航。
+
+### 3.3 邮箱与邮件往来
 
 已完成：
-- 真实在线搜索接入位。
-- 无真实搜索服务时不生成假客户 / 假联系人。
-- A/B/C/D 透明 Lead 评分。
-- 域名去重与公开证据。
-- 地图找客户并进入同一 Lead 线索池。
-- 客户背调初筛与公开联系人发现。
+- 收件箱和已发送现在是精确落点，不再都先打开同一个页面。
+- Gmail / Outlook 保持一键连接。
+- 其他邮箱只给用户显示：服务器地址、端口、安全方式、邮箱账号、邮箱密码 / 专用密码。
+- 普通用户界面不再解释 SMTP / OAuth2 / Message-ID / 安全密钥等内部词。
+- 邮件失败使用统一中文友好错误，不直接抛底层数据库 / 网络异常文本。
+- “邮件往来”按同一客户整理，HUIDI 内直接回复后会刷新“今天”和工作引导。
+- 客户已回复、退订、转正式询盘或进入阻止名单后，后续冷开发自动停止。
 
-### 产品资料
+### 3.4 产品资料单入口
 
-`huidi.product.brain/v1` 已服务端持久化。
+运行时不再动态插入第二个“产品大脑 / 事实源”导航。
 
-正式规格、MOQ、价格、交期、认证、包装、HS、原产国等属于长期产品事实；临时搜索、客户信号与 AI 推断不得自动改写正式事实。
+现在产品只有一个用户入口：**产品资料**。
 
-### 真实邮件闭环
+产品页保留真实底层 `huidi.product.brain/v1` 与服务端持久化能力，但用户看到的是：
+- 产品名称 / 型号
+- 规格
+- 参考价格
+- MOQ
+- 交期
+- 找客户关键词
+- 认证
+- 产品卖点
+- 客户案例
+- 公司优势
+- 允许表达的承诺 / 不允许自动承诺的内容
+- HS 编码
+- 原产国
+- 包装 / 箱规 / 每箱数量 / CBM
 
-已完成：
-- Gmail / Outlook / SMTP / 企业邮箱连接。
-- SMTP 真实发送底层。
+页面不再显示 Product Brain、Campaign、Buying Signals 等内部产品词。
+
+### 3.5 客户详情与业务推进
+
+旧增长流程中的 Strategy / Hunter / Profiler / Writer / Outreach / Closer 等词已从用户界面移除。
+
+统一显示为：
+- 产品准备
+- 客户发现
+- 客户背调
+- 邮件准备
+- 联系客户
+- 业务推进
+
+“Buying Signals”改成 **近期采购迹象 · 公开资料**，并明确：
+- 只来自已经保存的公开证据。
+- 招聘、融资、项目、采购等只代表“值得核实”。
+- 不自动当成交事实。
+
+“Open Threads”改成 **尚未处理**。
+
+### 3.6 询盘 / 报价 / 单据链
+
+询盘界面统一中文业务名：
+- 把当前潜在客户转为询盘
+- 报价单
+- 形式发票 PI
+- 销售合同
+- 商业发票 CI
+- 装箱单
+
+保存询盘进度、转询盘、自动跟进状态改变、直接邮件回复后都会刷新 `Today + Beginner Flow`，让首页下一步跟真实业务状态同步。
+
+### 3.7 数据来源、联网资料与错误提示
+
+“数据服务”统一改为 **数据来源**。
+
+老板 / 管理员日常只看到：
+- 服务商提供的连接地址
+- 授权信息
+- 是否启用
+- 检查连接
+
+特殊连接细节折叠在：
+**服务商特殊要求（一般不用改）**
+
+默认选择：
+**标准授权（推荐）**
+
+联网资料列表不再 `JSON.stringify` 原始结果给用户。现在按 HUIDI 标准字段显示企业、贸易、关税、汇率、船期等可读摘要；原始数据仍在后端保留用于审计和重新标准化。
+
+全局 `plain-language.js` 已增加常见网络、权限、数据、升级、重复、校验错误的中文友好转换，并包住旧模块的 `alert()`，尽量避免底层英文错误漏到普通用户。
+
+### 3.8 团队、提醒、操作记录、使用检查
+
+团队页面：
+- 只说公司、成员、老板、管理员、业务员、只读成员。
+- 不再显示“平台工作区 / 公司 #编号 / 正式部署”等面向技术人员的词。
+- 平台管理方的入口改成“公司账号”。
+- 不同公司的客户、邮件、产品和业务继续物理隔离。
+
+提醒设置：
+- 中文说明飞书 / 企业微信 / 钉钉等接收地址。
+- 支持不打扰时间、去重、失败自动再试。
+- 错误统一走友好提示。
+
+操作记录：
+- 分类统一成潜在客户 / 客户 / 邮件 / 跟进 / 询盘 / 产品 / 联网资料 / 团队。
+- 不把内部记录 ID 当主要用户信息。
+- “数据服务接入方式”类动作显示成“数据来源 / 特殊要求”。
+
+“上线检查”统一改成 **使用检查与数据备份**。
+
+老板 / 管理员看到的是：
+- 安全保护
+- 团队登录
+- 业务数据
+- 数据升级
+- 最近备份 / 自动备份
+- 发送邮箱
+- 退信与退订保护
+- 找客户 / 地图 / 市场动态
+- 外贸资料
+- 外部提醒
+- AI 写信
+
+不再在用户界面教学 PostgreSQL、revision、数据库结构版本等内部实现。
+
+## 4. 已完成的真实邮件闭环
+
+底层能力仍全部保留：
+- Gmail / Outlook / 其他企业邮箱。
+- 真实发送。
 - 收件箱 / 已发送同步。
 - 同客户邮件往来与 HUIDI 内直接回复。
 - Reply detection / Reply-stop。
-- 每日发送量、发送间隔、退订 / 黑名单。
+- 每日发送量、发送间隔、退订 / 阻止名单。
 - Bounce / unsubscribe / complaint 回写。
-- Queue / Retry。
-- 自动跟进序列，回复 / 退订 / 转询盘 / 归档后自动停止。
+- 真实待发送队列、失败自动再试。
+- 自动跟进序列。
+- 回复 / 退订 / 转询盘 / 归档后自动停止。
 
-#### 旧 mail-plan 已退役为只读历史
+旧 `MailDispatchPlan` 仅保留历史兼容读取，不再成为新待发送 Owner；新“稍后发送”和首页待发送只认真实 `MailQueueItem`。
 
-`MailDispatchPlan` 仅保留历史读取，禁止再成为新待发送 Owner。
+## 5. 客户 / 询盘 / 单据与联网业务参考
 
-当前规则：
-- 新 UI “稍后发送”只写真实 `MailQueueItem`。
-- 首页待发送只认真实 Queue。
-- 历史客户端继续调用 `/api/leads/{lead_id}/mail-plan` 时，也会兼容转入真实 Queue。
-- 同一客户 + 同一草稿 + 同一发送邮箱重复调用旧入口，返回同一个 Queue ID。
-- 旧入口不会再新增 `MailDispatchPlan` 记录。
+Online 已持续保存 Customer / Deal：公司、联系人、邮箱、国家、官网、阶段、概率、金额、币种、需求、下一步和单据关联共用同一业务 Owner。
 
-## 5. Customer / Deal / 单据与联网业务参考
+联网资料双层保存：
+- 原始真实数据：`OnlineIntelligenceRecord`
+- HUIDI 标准字段：`OnlineIntelligenceProjection`
+- 标准模型：`huidi.intelligence.normalized/v1`
 
-Online 已持续保存 Customer / Deal：客户、联系人、邮箱、国家、官网、阶段、概率、金额、币种、需求、下一步和单据关联共用同一业务 Owner。
+标准字段覆盖企业核验、贸易记录、HS / 关税、汇率、船期 / 物流和市场动态。
 
-Quotation / PI / Contract / CI / Packing List 沿同一笔业务进入成熟单据链。
-
-联网资料进入单据前必须人工确认；确认后单独记录谁、何时、用于哪种单据，仍不会自动改写正式业务事实。
-
-### Raw + HUIDI 标准字段双层结构
-
-原始数据继续由 `OnlineIntelligenceRecord` 保存，便于：
-- 审计真实数据商返回。
-- 以后更换数据商。
-- 修正标准化规则后重新 backfill。
-
-新增 `OnlineIntelligenceProjection`，标准 schema：
-
-`huidi.intelligence.normalized/v1`
-
-`intelligence_normalizer.py` 当前只抽取数据商**实际返回过**的字段，不猜、不补、不制造默认值。
-
-稳定标准字段已覆盖：
-- 企业核验：企业名称、登记号、企业状态、国家、地址、官网、成立时间、行业、员工量、风险 / 信用。
-- 贸易记录：记录数、最近贸易日期、金额、币种、HS、产品、来源地、目的地、供应商、买家。
-- HS / 关税：HS、原产地、目的地、进口关税、VAT / 进口税、其他税费、生效日、描述。
-- 汇率：基准币、目标币、汇率、金额、换算结果、日期。
-- 船期 / 物流：起运地、目的地、承运人、航线 / 服务、船名、航次、ETD、ETA、运输天数、柜型、运费参考、币种。
-- 市场情报：可复用的新闻标题 / 来源 / 日期 / 链接摘要。
-
-未知供应商结构仍保留原始 JSON，但标准 `facts` 为空并明确显示“暂未识别出稳定业务字段”，禁止编造。
-
-### Deal 标准业务参考
-
-每笔询盘可读取：
-
+每笔询盘可以读取：
 `huidi.deal.intelligence/v1`
 
-当前稳定聚合：
-- `company`
-- `pricing_reference`
-- `trade_reference`
-- `shipping_reference`
-- `missing`
-- `suggestions`
-- `reference_ids`
-
-询盘详情新增“大白话”**联网业务参考**卡，直接显示企业状态、HS / 关税、参考汇率、贸易记录、船期等。
-
-规则：
-- 默认只作核对 / 决策。
-- 不自动改 `Deal.amount`。
+联网资料默认只作核对：
+- 不自动改金额。
 - 不自动改客户需求。
 - 不自动改产品资料。
 - 不自动改合同条款。
 - 不自动改装箱数量。
-- 只有用户明确确认“带入单据参考”后，`online_business_reference` 与 `online_business_facts` 才进入 document handoff。
 
-### 历史联网资料
+只有用户明确确认“带入单据参考”后，标准业务参考才进入单据 handoff。
 
-新增：
-- `GET /api/intelligence/{record_id}/normalized`
-- `POST /api/intelligence/normalize/backfill`
-- `GET /api/business/deals/{deal_id}/facts`
+## 6. 外贸真实数据来源
 
-老板 / 管理员可以把历史 raw 记录重新生成当前标准 projection，而不改原始数据。
-
-## 6. 正式外贸数据服务适配层
-
-公司级数据服务连接继续保存：企业核验、贸易 / 海关、HS / 关税、船期 / 物流。
-
-`ServiceAdapterSetting` 让真实业务查询不再假定所有数据商都是同一种 POST + Bearer 接口。当前支持：
-- 常见授权。
-- 请求头密钥。
-- 查询参数密钥。
-- 无授权 JSON。
-
-业务员仍只使用“企业核验 / 贸易记录 / 关税 / 船期”等业务入口；老板 / 管理员在“数据服务”里选择接入方式并检查连接。
+当前接入底座已经支持企业核验、贸易 / 海关、HS / 关税、船期 / 物流等真实数据服务，且可以处理多种常见授权方式。
 
 安全规则：
 - 授权信息加密保存且不回显。
 - 每家公司设置物理隔离。
-- 默认只允许公网 http / https 数据服务。
-- 默认拒绝 localhost、loopback、私网、link-local 等服务器本机 / 内网地址。
-- 默认不自动跟随数据服务跳转。
-- 企业确实需要可信内网服务时，部署方必须显式开启 `HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS=1`。
+- 默认拒绝服务器本机 / 私网等不安全地址。
+- 默认不自动跟随服务跳转。
 
-注意：**稳定 HUIDI 标准字段与通用接入底座已完成，但具体商业数据商的供应商专用字段 profile 仍需在实际选定工商 / 海关 / 关税 / 船期服务后施工和现场验证。** 未配置时继续显示“未连接”。
+**尚未假装完成的部分：**具体商业数据商还必须在实际选定并采购账号后做供应商专属字段映射和现场验证。未配置时继续显示“未连接”，绝不制造工商、海关、关税或船期数据。
 
 ## 7. 团队、多公司、审计与提醒
 
-已完成真实多公司物理隔离：
-- 公司 #1 保留历史 `DATABASE_URL`。
+已完成：
+- 公司 #1 保留历史业务数据库。
 - 公司 #2+ 使用独立业务数据库。
-- 登录请求先确定公司，再进入该公司的业务数据库。
-- Lead、Customer、Deal、Product、Mail、Queue、Sequence、Intelligence、Reminder、Audit、Backup 等沿公司边界隔离。
+- 登录后按公司进入正确业务数据库。
+- Lead、Customer、Deal、Product、Mail、Queue、Sequence、Intelligence、Reminder、Audit、Backup 均沿公司边界隔离。
 - 后台邮件、自动跟进、提醒、自动备份按公司分别执行。
-
-角色：老板、管理员、业务员、只读成员。
-
-操作记录自动记录业务动作，不保存密码、邮件正文、授权内容或完整表单原文。
-
-提醒已完成：
-- HUIDI 站内提醒。
-- 飞书 / 企业微信 / 钉钉 / 其他通知入口。
-- 安静时段、去重、失败重试。
-- 客户回复、逾期跟进、邮件异常、询盘业务、备份异常。
-- 单人模式和默认公司也会自动运行外部提醒。
+- 角色：老板、管理员、业务员、只读成员。
+- 操作记录不保存密码、邮件正文、授权内容或完整表单原文。
+- 站内提醒 + 飞书 / 企业微信 / 钉钉 / 其他通知入口。
+- 安静时段、去重、失败自动再试。
 
 ## 8. 数据保护与 PostgreSQL 生产底座
 
-### SQLite
-
-已完成：
+SQLite 已完成：
 - 公司独立业务备份。
 - 手动恢复。
 - 恢复前安全备份。
-- 公司边界 / 完整性 / 安全密钥一致性保护。
-- 自动备份，默认约 24 小时 / 公司。
-- 自动备份失败进入提醒和上线检查。
+- 公司边界 / 完整性 / 安全保护一致性校验。
+- 自动备份。
+- 备份失败进入提醒和使用检查。
 
-### PostgreSQL
+生产服务器数据库明确支持：
+**PostgreSQL + psycopg**
 
-当前明确支持的生产服务器数据库路径为：
+已完成：
+- 每家公司物理独立数据库。
+- `huidi.online.schema/v1` revision ledger。
+- 显式 `schema_cli` status / check / upgrade。
+- PostgreSQL advisory lock 串行化升级。
+- GitHub CI 启动真实 PostgreSQL 16。
+- 公司 1 / 公司 2 独立数据库升级与隔离验证。
+- 第三家公司两个独立升级进程并发抢锁压力验证。
 
-`PostgreSQL + psycopg`
+仍保留的技术边界：
+- V0.1 为兼容历史 SQLite，仍保留 `SQLAlchemy create_all()` 兼容底座。
+- 完整历史迁移链 / Alembic 风格所有旧表 migration 尚未全部补齐。
+- PostgreSQL 正式备份 / PITR / 恢复演练应使用数据库服务本身的生产能力，不拿 SQLite 文件恢复冒充。
 
-`requirements.txt` 已正式包含 `psycopg[binary]`。
+## 9. CI / 门禁
 
-`.env.example` 只承诺 PostgreSQL，不再泛写 MySQL / 任意数据库。
-
-多公司生产配置原则：
-- 公司 #1 的 `DATABASE_URL` 指向独立 PostgreSQL 数据库，例如 `huidi_org_1`。
-- 多公司模板变量 `HUIDI_TENANT_DATABASE_URL_TEMPLATE` 指向同一数据库服务，并在数据库名位置保留 `{organization_id}` 占位符，例如 `huidi_org_{organization_id}`。
-
-每家公司继续使用物理独立数据库。
-
-### Schema revision ledger
-
-新增：
-
-`huidi.online.schema/v1`
-
-账本表：
-
-`huidi_schema_migrations`
-
-当前 latest revision：
-
-`20260906_001_intelligence_projection`
-
-当前已有 revision：
-1. `20260905_000_online_v01_baseline`
-2. `20260906_001_intelligence_projection`
-
-`tenant_storage` 对每家公司数据库执行 forward revision，并提供 `tenant_schema_status()`。
-
-上线检查新增“数据库结构版本”，只有当前 revision 与程序 latest 一致才判定 ready。
-
-### 显式部署命令
-
-从 `online/api` 执行：
-
-```text
-python -m app.schema_cli check --all
-python -m app.schema_cli upgrade --all
-python -m app.schema_cli check --all
-```
-
-也支持：
-- `--organization <id>`
-- `--include-disabled`
-
-命令不会输出数据库 URL / 密码。
-
-### PostgreSQL 并发升级锁
-
-`schema_migrations.py` 使用 PostgreSQL `pg_advisory_lock` 对 HUIDI schema writer 串行化。
-
-显式 `schema_cli upgrade` 与 `tenant_storage.ensure_tenant_schema()` 均通过统一 `upgrade_schema()` Owner，使**兼容 create_all + forward revision** 在同一个锁区间内执行。
-
-CI 已实际验证：第三个空 PostgreSQL 公司库中同时启动两个独立 upgrade 进程，二者均成功且 revision 无重复。
-
-### 仍需明确的数据库边界
-
-当前还**不能**声称完整 Alembic / 完整历史 migration 已完成。
-
-V0.1 为兼容历史 SQLite 安装，仍保留 SQLAlchemy `Base.metadata.create_all()` 作为 compatibility floor；forward revision、显式部署命令和 PostgreSQL 锁已经建立，但未来需要逐步把所有历史表结构转换成独立 migration，最终才能完全退役 runtime create_all。
-
-PostgreSQL 生产备份 / PITR / 恢复也必须由实际数据库服务进行并现场演练，不能拿 SQLite 文件备份冒充。
-
-## 9. 上线检查
-
-老板 / 管理员已有“上线检查”，以大白话检查：
-- 服务器安全设置。
-- 团队登录。
-- 公司业务数据库。
-- **数据库结构版本**。
-- 手动 / 自动备份。
-- 发送邮箱。
-- 退信 / 退订保护。
-- 找客户服务。
-- 外贸数据服务。
-- 外部提醒。
-- AI 写信能力。
-
-缺失项分“需要处理 / 按需开启”，避免把增强功能误判成整个系统不可用。
-
-## 10. CI / 门禁
-
-`.github/workflows/online-v01-check.yml` 当前有两条 job。
+`.github/workflows/online-v01-check.yml` 当前包含两条 job：
 
 ### validate
-
-负责：
 - Python 编译。
 - 全部 `test_*.py` 业务回归。
-- Daily App 路由导入检查。
-- Online 浏览器 JS 语法。
-- Product Brain。
-- Local Bridge / Catalog / Workspace / Notification Owner。
+- Daily App 路由检查。
+- 全部 Online 浏览器 JS 语法检查，包括 `beginner-flow.js`。
+- Product Brain 回归。
+- Local Bridge / Workspace / Notification Owner。
 - 二级页面脚本。
-- Online → Local bridge。
-- 命名能力合同。
+- named Online contracts。
 - Secrets 不入库。
 
 ### postgres_schema
+- PostgreSQL 16 容器。
+- 公司 1 / 2 / 3 独立数据库。
+- schema upgrade / check。
+- 双进程并发升级锁压力测试。
+- 公司数据物理隔离验证。
 
-使用真实 PostgreSQL 16 容器：
-- 创建 `huidi_org_1 / 2 / 3`。
-- 公司 #1 / #2 schema `upgrade → check`。
-- 公司 #1 写入 Lead 后，公司 #2 查询必须为 0。
-- 公司 #1 / #2 必须达到 latest revision。
-- 公司 #3 两个独立 upgrade 进程并发执行，验证 PostgreSQL advisory lock。
+新增 `test_beginner_workflow_contract.py` 专门防止中文小白体验回退，包括：
+- 首页业务导航。
+- 单一产品入口。
+- 工作引导复用真实 Owner。
+- 客户详情不回退英文角色词。
+- 邮箱设置不回退技术术语。
+- 询盘 / 单据中文命名。
+- 自动跟进刷新下一步。
+- 使用检查不变成数据库培训页。
+- 操作记录不暴露内部编号。
+- 团队管理不回退平台工作区 / 公司编号。
+- 联网资料不再把 raw JSON 直接展示给用户。
+- 数据来源特殊连接方式保持折叠。
+- 左侧导航可滚动。
 
-只有 exact current head 的**两个 job 都 success** 才可称新绿线。
+任何一轮只有 **exact current head 的 `validate` 和 `postgres_schema` 都为 completed / success** 才能称为新绿线。
 
-能力合同包括：
-- `online/api/tests/online_contracts.py`
-- `test_owner_consolidation.py`
-- `test_normalized_intelligence_contract.py`
-- `test_intelligence_normalization.py`
-- `test_schema_migrations.py`
-- `test_schema_cli.py`
+## 10. 当前真正未完成 / 下一优先级
 
-## 11. 当前真正未完成 / 下一优先级
-
-不要再把以下内容列为未完成：Gmail、Outlook、Reply-stop、Queue、自动跟进、Product 持久化、团队权限、多公司隔离、操作审计、外部提醒、SQLite 备份恢复、自动备份、公司时区、数据服务通用适配、HUIDI 标准联网字段、Deal 联网参考、PostgreSQL 驱动、schema revision ledger、schema CLI、PostgreSQL CI 或 PostgreSQL 并发 migration lock。
+不要再把以下内容重复列为未完成：
+Gmail / Outlook、真实发送、Inbox / Sent、邮件往来、Reply-stop、Queue / Retry、自动跟进、产品持久化、Customer / Deal、团队权限、多公司物理隔离、操作审计、外部提醒、SQLite 备份恢复、自动备份、公司时区、外贸数据通用适配、HUIDI 联网标准字段、Deal facts、PostgreSQL runtime、schema ledger、schema CLI、PostgreSQL CI、并发升级锁、中文小白工作流。
 
 下一优先级：
-1. **选定并适配真实商业数据商**：企业工商 / 公司核验、贸易海关、HS / Tariff、Shipping / Schedule；在稳定 HUIDI schema 下面增加供应商专用 mapping profile。
-2. 使用真实 Gmail / Outlook 与真实商业数据账号做部署现场验收；自动测试不能替代第三方真实凭证。
-3. 为 PostgreSQL / 托管数据库建立正式 backup / PITR / restore runbook，并在实际部署环境做恢复演练。
-4. 逐步把历史 `create_all` 覆盖的结构迁成正式 revision / migration，最终移除 runtime create_all；当前不能虚称完整 Alembic 已完成。
-5. 继续压缩旧兼容邮件代码；确认无人再使用历史 `/api/mail/plans` 后，再正式归档历史表。
-6. 继续精简首页与设置区，功能增长后不能重新变成 ERP 式复杂页面。
+1. 选定并现场适配真实商业数据商：工商 / 企业核验、贸易海关、HS / Tariff、Shipping / Schedule。
+2. 用真实 Gmail / Outlook 客户账号和真实商业数据账号做部署现场验收；自动测试不能替代第三方真实凭证验证。
+3. 正式 PostgreSQL 备份 / PITR / 恢复演练。
+4. 逐步补齐历史 migration，最终降低对 `create_all()` 兼容底座的依赖。
+5. 继续压缩历史邮件兼容 Owner；确认无人依赖旧 `/api/mail/plans` 后再做正式迁移 / 归档。
+6. 后续任何功能增长都必须继续复用“今天 / 工作引导 / 当前客户 / 当前询盘”主链，禁止重新堆成 ERP 式模块墙。
+7. 真实用户试用时重点观察：首次连接邮箱、首次找客户、首次转询盘、首次做报价、首次恢复备份这五个关键步骤是否仍有卡点。
 
-## 12. 新会话接管顺序
+## 11. 新会话接管顺序
 
 1. 读取 PR #2 当前 head，确认 Draft / 未合并 / base main。
-2. 查 exact head 的 `Online V0.1 Check`，确认 `validate` 和 `postgres_schema` 两条 job。
-3. 若红灯，先看失败日志，只修实际失败点。
-4. 读取本文件和相关 Owner，禁止从旧聊天猜文件结构。
+2. 查 exact head 的 `Online V0.1 Check`。
+3. 若红灯，只看真实失败日志，只修实际失败点。
+4. 读取本文件与相关 Owner，禁止从旧聊天猜结构。
 5. 只在 Online 分支施工。
-6. 施工后跑完整门禁。
-7. 两条 job 全绿才更新本文件并锁新基线。
+6. 施工后跑完整两条门禁。
+7. 两条 job 全绿才锁新基线。
 8. 未经用户明确要求，禁止 merge main。
