@@ -7,6 +7,7 @@ on:
       - 'public/online-bridge.html'
       - 'public/huidi-online-local-bridge-v1.js'
       - 'public/product-online-handoff.html'
+      - 'public/huidi-workspace-r6-rc1628.js'
       - '.github/workflows/online-v01-check.yml'
   push:
     branches:
@@ -16,6 +17,7 @@ on:
       - 'public/online-bridge.html'
       - 'public/huidi-online-local-bridge-v1.js'
       - 'public/product-online-handoff.html'
+      - 'public/huidi-workspace-r6-rc1628.js'
       - '.github/workflows/online-v01-check.yml'
 
 jobs:
@@ -49,7 +51,9 @@ jobs:
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
       - name: Check Local bridge JavaScript
-        run: node --check ../../public/huidi-online-local-bridge-v1.js
+        run: |
+          node --check ../../public/huidi-online-local-bridge-v1.js
+          node --check ../../public/huidi-workspace-r6-rc1628.js
       - name: Online to Local bridge regression
         run: node tests/bridge_contract.test.cjs
       - name: Verify Product Brain and business bridge contracts
@@ -72,6 +76,8 @@ jobs:
           grep -q 'repositories' ../../public/product-online-handoff.html
           grep -q 'products' ../../public/product-online-handoff.html
           grep -q '#product=' ../../public/product-online-handoff.html
+          grep -q '用于 Online 开发客户' ../../public/huidi-workspace-r6-rc1628.js
+          grep -q 'product-online-handoff.html' ../../public/huidi-workspace-r6-rc1628.js
           grep -q 'huidi.business.bundle/v1' web/app.js
           grep -q 'huidi.business.bundle/v1' ../../public/huidi-online-local-bridge-v1.js
           grep -q 'HUIDILocalCore' ../../public/huidi-online-local-bridge-v1.js
