@@ -173,3 +173,95 @@ jobs:
           test ! -f .env
           test ! -f ../.env
           ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
+
+  postgres_schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: huidi_org_1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d huidi_org_1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/huidi_org_1
+      HUIDI_TENANT_DATABASE_URL_TEMPLATE: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/huidi_org_{organization_id}
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_SECRET_KEY: ci-only-postgres-huidi-secret-key
+      HUIDI_TEAM_ACCESS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create second company database
+        env:
+          PGPASSWORD: postgres
+        run: psql -h 127.0.0.1 -U postgres -d huidi_org_1 -v ON_ERROR_STOP=1 -c 'CREATE DATABASE huidi_org_2;'
+
+      - name: Upgrade PostgreSQL company schemas
+        run: |
+          python -m app.schema_cli upgrade --organization 1
+          python -m app.schema_cli upgrade --organization 2
+          python -m app.schema_cli check --organization 1
+          python -m app.schema_cli check --organization 2
+
+      - name: Verify PostgreSQL physical tenant isolation
+        run: |
+          python - <<'PY'
+          from sqlalchemy import func, select
+          from app.daily_app import app
+          from app.main import Lead, SessionLocal
+          from app.schema_migrations import LATEST_SCHEMA_REVISION
+          from app.tenant_storage import reset_current_organization, set_current_organization, tenant_schema_status
+
+          token=set_current_organization(1)
+          try:
+              db=SessionLocal()
+              try:
+                  row=Lead(
+                      company_name='Postgres Tenant One Buyer',
+                      domain='tenant-one.example',
+                      website='https://tenant-one.example',
+                      country='DE',
+                      market_keyword='hinge',
+                      buyer_type='importer',
+                      score=70,
+                      reason='postgres tenant isolation gate',
+                      evidence_json='[]',
+                      status='qualified',
+                  )
+                  db.add(row); db.commit()
+                  assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==1
+                  assert tenant_schema_status(1)['current_revision']==LATEST_SCHEMA_REVISION
+              finally:
+                  db.close()
+          finally:
+              reset_current_organization(token)
+
+          token=set_current_organization(2)
+          try:
+              db=SessionLocal()
+              try:
+                  assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==0
+                  assert tenant_schema_status(2)['current_revision']==LATEST_SCHEMA_REVISION
+              finally:
+                  db.close()
+          finally:
+              reset_current_organization(token)
+          print('PostgreSQL tenant isolation PASS')
+          PY
