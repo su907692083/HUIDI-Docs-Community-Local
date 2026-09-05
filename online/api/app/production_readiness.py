@@ -3,12 +3,12 @@ from __future__ import annotations
 import json
 import os
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Any
 
 from fastapi import HTTPException, Request
 from sqlalchemy import func, select
 
+from .backup_automation import backup_automation_status
 from .backup_restore import _backup_dir
 from .main import SessionLocal
 from .notification_delivery import NotificationRoute
@@ -117,6 +117,56 @@ def build_production_readiness() -> dict[str, Any]:
     else:
         items.append(
             _item("数据保护", "最近备份", "action", "当前公司还没有已校验备份。", "上线前先创建第一份公司备份。")
+        )
+
+    auto = backup_automation_status()
+    if not auto.get("enabled"):
+        items.append(
+            _item(
+                "数据保护",
+                "自动备份",
+                "optional",
+                "自动备份已关闭。",
+                "建议开启自动备份，减少依赖人工操作。",
+            )
+        )
+    elif auto.get("status") == "failed":
+        items.append(
+            _item(
+                "数据保护",
+                "自动备份",
+                "action",
+                "最近一次自动备份没有完成。",
+                "打开数据备份检查原因，并先手动创建一份新备份。",
+            )
+        )
+    elif auto.get("status") == "external_required":
+        items.append(
+            _item(
+                "数据保护",
+                "自动备份",
+                "optional",
+                "当前使用服务器数据库，需要由数据库服务负责自动备份。",
+                "请在数据库服务中确认自动备份和恢复策略已经开启。",
+            )
+        )
+    elif auto.get("last_success_at"):
+        items.append(
+            _item(
+                "数据保护",
+                "自动备份",
+                "ready",
+                f"自动备份已运行，当前按约 {auto.get('interval_hours', 24)} 小时检查一次。",
+            )
+        )
+    else:
+        items.append(
+            _item(
+                "数据保护",
+                "自动备份",
+                "optional",
+                f"自动备份已开启，将按约 {auto.get('interval_hours', 24)} 小时保存一次。",
+            )
         )
 
     db = SessionLocal()
