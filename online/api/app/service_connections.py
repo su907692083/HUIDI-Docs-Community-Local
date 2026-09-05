@@ -131,14 +131,26 @@ def resolve_service_connection(db: Session, service_key: str) -> dict[str, Any]:
 
 
 def public_service_status(db: Session, service_key: str) -> dict[str, Any]:
-    resolved = resolve_service_connection(db, service_key)
+    definition = _definition(service_key)
+    row = db.scalar(select(ServiceConnection).where(ServiceConnection.service_key == service_key))
+    if row:
+        return {
+            "service_key": service_key,
+            "name": definition["name"],
+            "connected": bool(row.enabled and row.endpoint_url.strip()),
+            "source": "company",
+            "endpoint_url": row.endpoint_url.strip(),
+            "token_saved": bool(row.encrypted_token),
+        }
+    endpoint = os.getenv(definition["url_env"], "").strip()
+    token = os.getenv(definition["token_env"], "").strip()
     return {
-        "service_key": resolved["service_key"],
-        "name": resolved["name"],
-        "connected": bool(resolved["connected"]),
-        "source": resolved["source"],
-        "endpoint_url": resolved["endpoint_url"] if resolved["source"] == "company" else "",
-        "token_saved": bool(resolved["token_saved"]),
+        "service_key": service_key,
+        "name": definition["name"],
+        "connected": bool(endpoint),
+        "source": "server" if endpoint else "none",
+        "endpoint_url": "",
+        "token_saved": bool(token),
     }
 
 
