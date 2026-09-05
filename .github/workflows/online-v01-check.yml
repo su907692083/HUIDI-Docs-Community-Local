@@ -208,10 +208,12 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Create second company database
+      - name: Create additional company databases
         env:
           PGPASSWORD: postgres
-        run: psql -h 127.0.0.1 -U postgres -d huidi_org_1 -v ON_ERROR_STOP=1 -c 'CREATE DATABASE huidi_org_2;'
+        run: |
+          psql -h 127.0.0.1 -U postgres -d huidi_org_1 -v ON_ERROR_STOP=1 -c 'CREATE DATABASE huidi_org_2;'
+          psql -h 127.0.0.1 -U postgres -d huidi_org_1 -v ON_ERROR_STOP=1 -c 'CREATE DATABASE huidi_org_3;'
 
       - name: Upgrade PostgreSQL company schemas
         run: |
@@ -219,6 +221,19 @@ jobs:
           python -m app.schema_cli upgrade --organization 2
           python -m app.schema_cli check --organization 1
           python -m app.schema_cli check --organization 2
+
+      - name: Stress concurrent PostgreSQL schema upgrade lock
+        run: |
+          set -euo pipefail
+          python -m app.schema_cli upgrade --organization 3 > /tmp/huidi-schema-a.json &
+          PID_A=$!
+          python -m app.schema_cli upgrade --organization 3 > /tmp/huidi-schema-b.json &
+          PID_B=$!
+          wait "$PID_A"
+          wait "$PID_B"
+          cat /tmp/huidi-schema-a.json
+          cat /tmp/huidi-schema-b.json
+          python -m app.schema_cli check --organization 3
 
       - name: Verify PostgreSQL physical tenant isolation
         run: |
@@ -247,7 +262,9 @@ jobs:
                   )
                   db.add(row); db.commit()
                   assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==1
-                  assert tenant_schema_status(1)['current_revision']==LATEST_SCHEMA_REVISION
+                  status=tenant_schema_status(1)
+                  assert status['current_revision']==LATEST_SCHEMA_REVISION
+                  assert status['serialized_writes'] is True
               finally:
                   db.close()
           finally:
@@ -258,7 +275,9 @@ jobs:
               db=SessionLocal()
               try:
                   assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==0
-                  assert tenant_schema_status(2)['current_revision']==LATEST_SCHEMA_REVISION
+                  status=tenant_schema_status(2)
+                  assert status['current_revision']==LATEST_SCHEMA_REVISION
+                  assert status['serialized_writes'] is True
               finally:
                   db.close()
           finally:
