@@ -39,6 +39,7 @@ from . import provider_guard  # noqa: F401,E402
 # priority with Serper fallback. All paths still write the same Lead objects.
 from . import acquisition_provider_fusion  # noqa: F401,E402
 from . import workbench  # noqa: F401,E402
+from . import growth_funnel  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
 from . import team_access  # noqa: F401,E402
 from . import production_readiness  # noqa: F401,E402
