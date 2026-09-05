@@ -22,6 +22,8 @@ class ProductionReadinessTests(unittest.TestCase):
             "APP_ENV",
             "HUIDI_TEAM_ACCESS",
             "SERPER_API_KEY",
+            "TAVILY_API_KEY",
+            "HUNTER_API_KEY",
             "HUIDI_MAIL_EVENT_KEY",
             "LLM_API_KEY",
         ]}
@@ -42,10 +44,12 @@ class ProductionReadinessTests(unittest.TestCase):
         os.environ["APP_ENV"] = "development"
         os.environ["HUIDI_TEAM_ACCESS"] = "0"
         os.environ["SERPER_API_KEY"] = ""
+        os.environ["TAVILY_API_KEY"] = ""
+        os.environ["HUNTER_API_KEY"] = ""
         os.environ["HUIDI_MAIL_EVENT_KEY"] = ""
         os.environ["LLM_API_KEY"] = ""
 
-    def test_readiness_reports_real_backup_and_mail_state(self):
+    def test_readiness_reports_real_backup_mail_and_acquisition_state(self):
         with tempfile.TemporaryDirectory() as tmp:
             self._configure(tmp)
             token = set_current_organization(882001)
@@ -71,10 +75,27 @@ class ProductionReadinessTests(unittest.TestCase):
                 self.assertEqual(by_name["安全保护"]["state"], "ready")
                 self.assertEqual(by_name["最近备份"]["state"], "ready")
                 self.assertEqual(by_name["发送邮箱"]["state"], "ready")
-                self.assertEqual(by_name["找客户 / 地图 / 市场动态"]["state"], "action")
+                self.assertEqual(by_name["在线找客户"]["state"], "action")
+                self.assertEqual(by_name["联系人查找"]["state"], "action")
+                self.assertEqual(by_name["地图与搜索新闻"]["state"], "optional")
                 self.assertIn("数据升级", by_name)
                 self.assertFalse(any("PostgreSQL" in item["message"] for item in out["items"]))
                 self.assertFalse(out["ready_for_daily_use"])
+            finally:
+                reset_current_organization(token)
+
+    def test_tavily_and_hunter_can_make_core_acquisition_ready_without_serper(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            self._configure(tmp)
+            os.environ["TAVILY_API_KEY"] = "ci-tavily-placeholder"
+            os.environ["HUNTER_API_KEY"] = "ci-hunter-placeholder"
+            token = set_current_organization(882003)
+            try:
+                out = build_production_readiness()
+                by_name = {item["name"]: item for item in out["items"]}
+                self.assertEqual(by_name["在线找客户"]["state"], "ready")
+                self.assertEqual(by_name["联系人查找"]["state"], "ready")
+                self.assertEqual(by_name["地图与搜索新闻"]["state"], "optional")
             finally:
                 reset_current_organization(token)
 
