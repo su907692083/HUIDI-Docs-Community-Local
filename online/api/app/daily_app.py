@@ -38,6 +38,7 @@ from . import provider_guard  # noqa: F401,E402
 # Serper remains primary, Tavily is real-company failover, Hunter is contact
 # priority with Serper fallback. All paths still write the same Lead objects.
 from . import acquisition_provider_fusion  # noqa: F401,E402
+from . import history_pagination  # noqa: F401,E402
 from . import workbench  # noqa: F401,E402
 from . import growth_funnel  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
