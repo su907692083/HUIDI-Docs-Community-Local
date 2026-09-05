@@ -1,13 +1,14 @@
 # HUIDI Docs Online · Lead Workbench
 
-> 在线版开发线：把“开发客户”直接接到 HUIDI 已有的客户、询盘、商品、产品目录、邮件草稿、报价、PI、合同、CI 和装箱单业务链。
+> 在线版开发线：把“商品事实 → 开发客户 → 客户背调 → 联系人 → 开发信 → 跟进 → 客户/询盘 → 产品目录 → 报价 → PI → 合同 → CI / 装箱单”接成同一条业务链。
 
-当前阶段：**V0.1.1 Lead Workbench + Business Bridge V1**
+当前阶段：**V0.1.3 Product Brain + Lead Workbench + Business Bridge V1**
 
 ## 产品方向
 
 Community Local 继续保持本地优先、离线可用和低学习成本；Online 专门承接必须联网或更适合云端的能力：
 
+- 从 HUIDI 商品资料建立 Product Brain 产品事实源
 - 搜索潜在客户公司
 - 发现公司官网与公开业务邮箱
 - Buyer / Procurement / Sourcing / Purchasing 联系线索
@@ -16,25 +17,29 @@ Community Local 继续保持本地优先、离线可用和低学习成本；Onli
 - AI 开发信草稿
 - 人工确认 / 退回修改
 - 跟进时间和开发记录
-- 合格线索同步到 Community Local
+- 合格线索显式同步到 Community Local
 - 继续产品目录、报价、PI、合同、CI / Packing List
 
 ## 已经做通的主链
 
 ```text
-产品 / 市场 / 客户类型
+Community Local 商品资料
+        ↓ 用户明确选择一个商品
+Product Brain 产品事实源
+        ↓
+目标市场 / 客户类型 / Campaign Brief
         ↓
 搜索潜在公司
         ↓
 透明买家评分 A/B/C/D
         ↓
-来源证据 + 公司官网
+来源证据 + 公司官网 + Buying Signals
         ↓
 客户背调初筛
         ↓
 采购 / Buyer 联系线索
         ↓
-AI 开发信草稿
+AI 开发信草稿（可调用 Product Brain 真实事实）
         ↓
 人工确认 / 安排跟进
         ↓
@@ -51,11 +56,74 @@ Online → Local 显式同步桥
 PI → Contract → CI / Packing List
 ```
 
+## Product Brain：商品资料真正成为“开发客户事实源”
+
+V0.1.3 新增 Product Brain。它不是第二套商品库，而是把现有商品资料整理成 Online 获客和开发信可以安全调用的正式事实。
+
+一份 Product Brain 可以维护：
+
+- 商品名称 / SKU / 分类 / 系列
+- 规格 / 核心参数
+- 参考价 / 价格区间
+- MOQ / 交期
+- 认证 / 资质
+- 已确认的差异化卖点
+- 可公开的客户案例
+- 公司基本盘
+- 允许 AI 对外引用的事实 / 承诺
+- **禁止 AI 擅自承诺的内容**
+- HS Code / 原产国 / 包装 / 箱规 / CBM
+- 目标搜索关键词
+
+### Product Brain 的数据纪律
+
+HUIDI 明确区分三层：
+
+1. **Product Brain（持久事实）**：规格、价格、MOQ、交期、认证、案例、经过确认的卖点。
+2. **Lead / Customer Memory（客户动态）**：Buying Signals、客户画像、联系人、回复、跟进、Deal 状态。
+3. **Runtime Context（临时上下文）**：某次搜索结果、某封邮件正在生成的中间内容、临时模型判断。
+
+临时搜索内容不会自动写回正式产品参数，避免 AI 把猜测当事实。
+
+## Community Local → Online 商品交接
+
+开发分支新增：
+
+`http://127.0.0.1:8765/product-online-handoff.html`
+
+这里直接读取现有：
+
+`HUIDILocalCore.repositories.products`
+
+用户**明确选择一个商品**后才打开 Online，并把该商品的正式资料以 URL Fragment 带到 Product Brain。
+
+- 不自动上传整个本机商品库
+- 不后台同步
+- 不覆盖 Community Local 商品
+- Online 可继续补充认证 / 案例 / 差异化 / 禁止承诺
+- Local 商品 ID 会保留，后续用于稳定映射
+
+Online 默认开发地址：
+
+`http://127.0.0.1:8080/`
+
+## Campaign Brief
+
+当前 Product Brain 会形成一份轻量 Campaign Brief：
+
+- 当前产品
+- 产品关键词
+- 目标国家
+- 买家类型
+- 推荐切入卖点
+- Product Brain 事实摘要
+- 禁止承诺项
+
+“开发客户”页面顶部会显示当前 Product Brain，并可一键把商品关键词带入搜索；在线索详情生成开发信时也可以点击“使用当前产品大脑事实”。
+
 ## Business Bridge V1
 
-这一版已经不再只是 API 返回一个“customer / inquiry payload”。
-
-Online 线索详情增加 **“同步到本地并转询盘”**：
+Online 线索详情已有 **“同步到本地并转询盘”**：
 
 1. Online 生成 `huidi.business.bundle/v1`。
 2. 打开用户自己的 `127.0.0.1` Community Local 桥接页。
@@ -65,7 +133,7 @@ Online 线索详情增加 **“同步到本地并转询盘”**：
 6. 用户点击“确认导入本机”后才写入现有 `HUIDILocalCore`。
 7. 导入后直接进入客户、询盘、邮件、Catalog 或五类正式单据。
 
-### Local 复用的是现有数据 Owner
+### Local 复用现有数据 Owner
 
 - 客户：`huidi_local_customers_v1`
 - 商品：`huidi_local_products_v1`
@@ -95,18 +163,9 @@ Online 线索详情增加 **“同步到本地并转询盘”**：
 
 Online 的搜索关键词**不能自动创造正式商品**。
 
-桥接页只匹配用户已经在 Community Local 商品资料库中维护的：
+桥接页只匹配用户已经在 Community Local 商品资料库中维护的：名称、SKU、分类、规格、备注、报关品名。
 
-- 名称
-- SKU
-- 分类
-- 规格
-- 备注
-- 报关品名
-
-用户确认勾选后才写入询盘 `product_ids`。
-
-没有匹配到商品也不会阻断客户 / 询盘导入，可以之后在本地继续选择。
+用户确认勾选后才写入询盘 `product_ids`。没有匹配到商品也不会阻断客户 / 询盘导入。
 
 ## Catalog 与五类正式单据
 
@@ -130,44 +189,30 @@ HUIDILocalCore.context.create({
 })
 ```
 
-所以单据使用的是同一个客户、同一个询盘和同一批商品。后续保存仍由现有 `linkDocumentRecord()` 回挂原 Deal，保持 Quotation → PI → Contract → CI / PL 的原有链路。
+所以单据继续使用同一个客户、同一个询盘和同一批商品；保存后仍由现有 Document linkage 回挂原 Deal。
 
 ## 透明买家评分
 
-HUIDI 不把“AI 分数”当黑盒结论。当前评分拆成：
+当前评分拆成：产品匹配、买家角色、目标市场、采购 / 进口信号、独立官网、可联系性、商业主体信号、供应端 / 目录站扣分。
 
-- 产品匹配
-- 买家角色信号
-- 目标市场
-- 采购 / 进口信号
-- 独立官网
-- 可联系性
-- 商业主体信号
-- 供应端 / 目录站扣分
+最终只用于跟进优先级 A / B / C / D。
 
-最终只用于跟进优先级：A / B / C / D。
+**Online lead score 与 Local Deal probability 是两个字段。** 获客匹配分不会冒充成交概率。
 
-**Online lead score 与 Local Deal probability 是两个字段。** 获客匹配分不会冒充业务员判断的成交概率。
+## 客户背调与 Customer Memory
 
-## 客户背调初筛
+当前根据已掌握证据判断：基础资料完整度、公司存在信号、联系人、数字资产 / 官网证据、业务匹配度。
 
-当前根据 HUIDI 已经真正掌握的证据判断：
+工商注册、官方公司状态、海关采购历史尚未接入时明确显示 **“未验证”**。
 
-- 基础资料完整度
-- 公司存在信号
-- 联系人资料
-- 数字资产 / 官网证据
-- 业务匹配度
-
-工商注册、官方公司状态、海关采购历史尚未接入时明确显示 **“未验证”**，不会把“没有数据”错误算成高风险。
-
-这一层定位是销售资格判断，不是征信报告、法律尽调或官方海关核验。
+每条线索保留独立 `LeadActivity` 时间线，用于记录发现、联系人查询、背调、草稿、跟进、同步等动作。后续 Buying Signals / Open Threads 会继续挂在 Customer Memory / Deal，而不是写进 Product Brain。
 
 ## 开发信与跟进
 
 - OpenAI-compatible LLM
 - 无 LLM 时普通模板降级
 - 多语言开发信入口
+- 可主动调用当前 Product Brain 事实
 - 草稿人工确认 / 退回修改
 - 下一次跟进日期
 - 线索活动时间线
@@ -184,10 +229,11 @@ HUIDI 不把“AI 分数”当黑盒结论。当前评分拆成：
 - Serper Search Provider
 - OpenAI-compatible LLM Provider
 - Table-first Lead Workbench
+- Product Brain 浏览器事实层（V0.1.3，后续迁移服务器持久化）
 - `LeadAssessment`
 - `LeadActivity`
 - HUIDI Business Bundle V1
-- Local Bridge confirmation page
+- Local Product → Online Product Brain handoff
 - Docker 启动骨架
 - GitHub Actions Online 专项门禁
 
@@ -205,9 +251,9 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8080
 
 Online：`http://127.0.0.1:8080/`
 
-Community Local 默认桥接地址：`http://127.0.0.1:8765`
+Community Local：`http://127.0.0.1:8765`
 
-只看 UI / 演示流程不需要外部 API。
+只看 UI / Product Brain / 演示流程不需要外部 API。
 
 真实搜索：
 
@@ -223,38 +269,44 @@ LLM_BASE_URL=https://api.openai.com/v1
 LLM_MODEL=gpt-4o-mini
 ```
 
-## 本轮研究的外贸开源项目
+## 本轮研究的外贸项目
 
 - `1099271/smart-lead-agent`：FindKP / Writer / MailManager、多搜索、多 LLM
 - `Tommy-old/b2b-buyer-discovery`：买家搜索、规则 + AI 评分、联系方式、开发信
-- `kakacells/Customer_background_check_version1.2`：背调维度、置信度、降级验证方法
+- `kakacells/Customer_background_check_version1.2`：背调维度、置信度、降级验证
 - `uyoufu/UZonMail`：邮箱、多账号、模板、追踪、退订、发送治理
 - `chnjames/tradehot-skill`：外贸情报、HS、关税、风险、贸易日历
-- `dongsheng123132/ai-tungke`：地图获客、区域遍历、产业集群方法
+- `dongsheng123132/ai-tungke`：地图获客、区域遍历、产业集群
 - `tshwangq/awesome-foreign-trade`：外贸资源导航与工具箱
+- `SuperGokou/caijiwaimao`：Product Brain、Campaign / ICP、客户 / 决策人记忆、Buying Signals、Open Threads、Brain/Memory 分层方法
 
-没有明确允许复用的项目只作为产品 / 架构参考，由 HUIDI 自己重写。第三方归属和许可边界见 `THIRD-PARTY-NOTICES.md`。
+`caijiwaimao` 的 README 标注为内部机密资料而非开放软件许可，所以 HUIDI 只做产品 / 架构研究，**不复制其 HTML、CSS、Demo、内部文案或 Prompt**。详细边界见 `THIRD-PARTY-NOTICES.md`。
 
 ## CI 门禁
 
-Online PR 现在会自动检查：
+Online PR 自动检查：
 
 - Python 编译
 - Buyer scoring regression
 - FastAPI import
 - Online browser JS syntax
+- Product Brain core / UI JS syntax
 - Local bridge JS syntax
+- Local Product → Online handoff marker
 - Business Bundle / 五类单据 / Catalog / Mail 契约 marker
-- **真实 Node bridge regression**：客户导入、询盘导入、邮件导入、商品关联、重复同步去重、Quotation Context、Catalog Context
+- 真实 Node bridge regression：客户、询盘、邮件、商品关联、重复同步去重、Quotation Context、Catalog Context
+- Product Brain core regression
 - 本地 Secrets 不入库
 
 ## 下一阶段
 
-1. **邮件账户层**：Gmail / Outlook / SMTP、发送审批、配额、退订、黑名单、Bounce、回复停止。
-2. **真实背调 Provider**：公司注册、官方商业信息、可选海关 / 贸易数据，证据分层。
-3. **地图找客户**：地图 Provider、城市 / 区域搜索、产业聚类、进入同一线索池。
-4. **外贸情报**：市场、HS、关税、物流、风险、贸易日历，并能关联客户、商品和报价。
-5. **Local → Online 回传**：在不破坏 Local 主动外联阻断的前提下，用用户确认的显式桥接回传回复状态 / 单据阶段；再定义冲突策略。
+1. **Product Brain 服务器持久化 + Local 商品页直接入口**：保持商品唯一 Owner，不复制产品主数据。
+2. **邮件账户层**：Gmail / Outlook / SMTP、发送审批、配额、退订、黑名单、Bounce、回复停止。
+3. **真实背调 Provider**：公司注册、官方商业信息、可选海关 / 贸易数据。
+4. **Buying Signals**：招聘、招标、项目、融资、官网更新等证据进入 Lead / Customer Memory。
+5. **地图找客户**：地图 Provider、城市 / 区域搜索、产业聚类，进入同一线索池。
+6. **外贸情报**：市场、HS、关税、物流、风险、贸易日历，关联商品、客户和报价。
+7. **Local → Online 回传**：在用户明确授权下回传回复状态 / 单据阶段，并定义冲突策略。
 
 ## 在线公开前仍必须完成
 
@@ -266,6 +318,6 @@ Online PR 现在会自动检查：
 - 邮箱发送治理
 - 审计日志
 - 团队协作
-- 正式双向同步冲突策略
+- Product Brain / Customer Memory / Deal 的云端持久化与冲突策略
 
-**目标不是“抓越多邮箱越好”，而是让外贸人从值得联系的客户开始，一路推进到真实询盘和正式单据。**
+**目标不是“抓越多邮箱越好”，而是先把自己的商品事实说清楚，再找到值得联系的客户，把真正的机会一路推进到正式单据。**
