@@ -76,13 +76,24 @@ HUIDI does not import the upstream README or create a derivative copy of the GPL
 
 **Research reference only. HUIDI does not copy the upstream HTML, CSS, demo screens, internal text, prompts or other source.** HUIDI V0.1.3 independently implements its own Product Brain, Campaign Brief, Growth Workflow, Buying Signals/Open Threads view, and Local → Online product handoff around HUIDI's existing product/customer/inquiry/document data contracts.
 
+## 9. xian-yu-guan-li notification system
+
+- Project: `wanlang0118/xian-yu-guan-li`
+- Repository: https://github.com/wanlang0118/xian-yu-guan-li
+- Reviewed commit: `8ca2890478d9e8750b537fceb06b7b5e0ded0948`
+- Studied areas: a reusable notification-channel record (`name / type / config / enabled`), per-account channel routing, and dispatch concepts covering DingTalk, Feishu/Lark, Bark, email, generic webhook, WeChat and Telegram.
+- The reviewed Docker metadata explicitly labels the upstream project `仅供学习使用，禁止商业用途`.
+
+**Research reference only. HUIDI does not copy the upstream Python database manager, sender implementation, HTML, or channel-specific source.** HUIDI independently implements a local-first notification event model and one-page notification center around `HUIDILocalCore`. Community Local stores in-app reminders and optional channel addresses locally but does not silently send those addresses over the network; future outbound delivery is reserved for an Online/server-side encrypted routing layer.
+
 ---
 
 ## HUIDI integration policy
 
 1. **Apache-2.0 / MIT:** compatible components may be adapted when useful, with required notices retained.
 2. **GPL-3.0:** do not casually mix source into HUIDI's Online codebase; evaluate derivative-work obligations before any direct reuse.
-3. **No clear license / README-only / confidential notice:** treat as research reference and independently reimplement.
+3. **No clear license / README-only / confidential / non-commercial notice:** treat as research reference and independently reimplement.
 4. Preserve source URLs and evidence for externally sourced business data.
 5. Keep durable product/customer facts separate from temporary search or model context.
-6. Never present upstream work as HUIDI original work.
+6. Keep Community Local local-first: external notification endpoints are configuration only until the user explicitly enables an Online/server delivery layer.
+7. Never present upstream work as HUIDI original work.
