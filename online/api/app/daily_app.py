@@ -44,6 +44,7 @@ from . import growth_funnel  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
 from . import team_access  # noqa: F401,E402
 from . import production_readiness  # noqa: F401,E402
+from . import acquisition_status_bridge  # noqa: F401,E402
 from . import tenant_jobs  # noqa: F401,E402
 from . import tenant_webhooks  # noqa: F401,E402
 
