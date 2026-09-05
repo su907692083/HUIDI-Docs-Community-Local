@@ -5,7 +5,7 @@ import hashlib
 import os
 import smtplib
 import ssl
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from email.message import EmailMessage
 from email.utils import make_msgid
 from typing import Any
@@ -16,18 +16,17 @@ from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, ForeignKey, Integer, String, Text, func, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
-from .main import Base, Lead, LeadActivity, add_activity, engine, get_db, lead_to_dict
+from .mail_provider import has_connected_token, send_connected_message
+from .main import Base, Lead, add_activity, engine, get_db, lead_to_dict
 from .online_app import (
     EMAIL_RX,
     MailDispatchPlan,
-    MailSuppression,
     MailboxAccount,
     _active_suppression,
     _draft_fingerprint,
     _draft_review_state,
     _email,
     app,
-    dispatch_to_dict,
     mailbox_to_dict,
 )
 
@@ -82,7 +81,7 @@ class SmtpSendRequest(BaseModel):
 def _fernet() -> Fernet:
     raw = os.getenv("HUIDI_SECRET_KEY", "").strip()
     if not raw:
-        raise HTTPException(503, "未配置 HUIDI_SECRET_KEY，无法安全保存 SMTP 凭据")
+        raise HTTPException(503, "请先设置服务器安全密钥，才能安全保存邮箱密码")
     key = base64.urlsafe_b64encode(hashlib.sha256(raw.encode("utf-8")).digest())
     return Fernet(key)
 
@@ -95,7 +94,7 @@ def _decrypt_secret(value: str) -> str:
     try:
         return _fernet().decrypt(value.encode("ascii")).decode("utf-8")
     except InvalidToken as exc:
-        raise HTTPException(503, "SMTP 凭据无法解密，请确认 HUIDI_SECRET_KEY 未变化") from exc
+        raise HTTPException(503, "邮箱密码无法读取，请确认服务器安全密钥没有变化") from exc
 
 
 def credential_to_dict(row: MailboxCredential | None) -> dict[str, Any] | None:
@@ -169,43 +168,53 @@ def _last_sent(db: Session, mailbox_id: int) -> MailDeliveryLog | None:
     )
 
 
+def _connected_mode(db: Session, mailbox: MailboxAccount, cred: MailboxCredential | None) -> tuple[bool, str, str]:
+    if mailbox.auth_mode == "oauth2" and mailbox.provider in {"gmail", "outlook"}:
+        ok = has_connected_token(db, mailbox.id) and mailbox.connection_state == "connected"
+        return ok, mailbox.provider, "已连接" if ok else "请重新连接邮箱"
+    ok = bool(cred and cred.secret_ciphertext and mailbox.connection_state == "connected")
+    return ok, "smtp", "已连接" if ok else "请先完成邮箱连接测试"
+
+
 def delivery_readiness(db: Session, lead: Lead, mailbox: MailboxAccount) -> dict[str, Any]:
     recipient = _email(lead.contact_email)
     suppression = _active_suppression(db, recipient)
     review = _draft_review_state(db, lead.id)
     cred = _credential(db, mailbox.id)
+    connected, mode, connection_detail = _connected_mode(db, mailbox, cred)
     sent_today = _sent_today(db, mailbox.id)
     last = _last_sent(db, mailbox.id)
     interval_ok = True
     wait_seconds = 0
     if last and last.created_at:
-        elapsed = (datetime.now(timezone.utc) - last.created_at.replace(tzinfo=timezone.utc) if last.created_at.tzinfo is None else datetime.now(timezone.utc) - last.created_at).total_seconds()
+        created = last.created_at.replace(tzinfo=timezone.utc) if last.created_at.tzinfo is None else last.created_at
+        elapsed = (datetime.now(timezone.utc) - created).total_seconds()
         wait_seconds = max(0, int(mailbox.min_interval_seconds - elapsed))
         interval_ok = wait_seconds <= 0
 
     checks = [
         {"key": "recipient", "label": "收件人邮箱", "ok": bool(recipient and EMAIL_RX.match(recipient)), "detail": recipient or "缺少邮箱"},
-        {"key": "draft", "label": "邮件草稿", "ok": bool(lead.draft_subject.strip() and lead.draft_body.strip()), "detail": lead.draft_subject.strip() or "缺少草稿"},
-        {"key": "human_review", "label": "人工确认", "ok": review == "approved", "detail": "已确认" if review == "approved" else "待确认"},
-        {"key": "suppression", "label": "退订 / 黑名单", "ok": suppression is None, "detail": "允许发送" if suppression is None else f"已阻止：{suppression.reason}"},
+        {"key": "draft", "label": "邮件内容", "ok": bool(lead.draft_subject.strip() and lead.draft_body.strip()), "detail": lead.draft_subject.strip() or "还没有邮件内容"},
+        {"key": "human_review", "label": "发送确认", "ok": review == "approved", "detail": "已确认" if review == "approved" else "待确认"},
+        {"key": "suppression", "label": "联系状态", "ok": suppression is None, "detail": "可以联系" if suppression is None else f"已停止：{suppression.reason}"},
         {"key": "lifecycle", "label": "客户状态", "ok": lead.status not in {"replied", "converted", "archived"}, "detail": lead.status},
         {"key": "mailbox", "label": "发送邮箱", "ok": bool(mailbox.enabled), "detail": mailbox.email},
-        {"key": "credential", "label": "SMTP 连接", "ok": bool(cred and cred.secret_ciphertext and mailbox.connection_state == "connected"), "detail": "已连接" if cred and mailbox.connection_state == "connected" else "未完成连接测试"},
-        {"key": "quota", "label": "今日额度", "ok": sent_today < mailbox.daily_limit, "detail": f"已发送 {sent_today} / {mailbox.daily_limit}"},
-        {"key": "interval", "label": "发送间隔", "ok": interval_ok, "detail": "可发送" if interval_ok else f"请等待 {wait_seconds} 秒"},
+        {"key": "credential", "label": "邮箱连接", "ok": connected, "detail": connection_detail},
+        {"key": "quota", "label": "今日发送量", "ok": sent_today < mailbox.daily_limit, "detail": f"已发送 {sent_today} / {mailbox.daily_limit}"},
+        {"key": "interval", "label": "发送间隔", "ok": interval_ok, "detail": "可以发送" if interval_ok else f"请等待 {wait_seconds} 秒"},
     ]
     return {
         "schema": MAIL_DELIVERY_SCHEMA,
         "lead_id": lead.id,
         "mailbox": mailbox_to_dict(mailbox),
-        "credential": credential_to_dict(cred),
+        "credential": credential_to_dict(cred) if mode == "smtp" else {"connected": connected},
         "checks": checks,
         "delivery_ready": all(x["ok"] for x in checks),
         "sent_today": sent_today,
         "daily_limit": mailbox.daily_limit,
         "wait_seconds": wait_seconds,
         "send_enabled": True,
-        "delivery_mode": "smtp",
+        "delivery_mode": mode,
     }
 
 
@@ -215,8 +224,7 @@ def delivery_health():
         "ok": True,
         "schema": MAIL_DELIVERY_SCHEMA,
         "send_enabled": True,
-        "providers": ["smtp"],
-        "credential_storage": "encrypted_with_HUIDI_SECRET_KEY",
+        "providers": ["smtp", "gmail", "outlook"],
         "governance": ["human_review", "daily_quota", "min_interval", "suppression", "reply_stop", "audit_log"],
     }
 
@@ -228,7 +236,7 @@ def save_smtp_credentials(mailbox_id: int, req: SmtpCredentialRequest, db: Sessi
         raise HTTPException(404, "邮箱账户不存在")
     security = req.security.strip().lower()
     if security not in SMTP_SECURITY:
-        raise HTTPException(400, "security 仅支持 ssl / starttls / plain")
+        raise HTTPException(400, "连接方式不支持")
     row = _credential(db, mailbox_id)
     if not row:
         row = MailboxCredential(mailbox_id=mailbox_id)
@@ -263,7 +271,7 @@ def test_smtp_connection(mailbox_id: int, db: Session = Depends(get_db)):
         raise HTTPException(404, "邮箱账户不存在")
     cred = _credential(db, mailbox_id)
     if not cred or not cred.secret_ciphertext:
-        raise HTTPException(400, "请先保存 SMTP 配置")
+        raise HTTPException(400, "请先保存邮箱连接信息")
     try:
         client = _smtp_client(cred)
         client.noop()
@@ -276,7 +284,7 @@ def test_smtp_connection(mailbox_id: int, db: Session = Depends(get_db)):
         mailbox.connection_state = "error"
         mailbox.updated_at = datetime.now(timezone.utc)
         db.commit()
-        raise HTTPException(502, f"SMTP 连接失败：{type(exc).__name__}: {exc}") from exc
+        raise HTTPException(502, f"邮箱连接失败：{type(exc).__name__}: {exc}") from exc
 
 
 @app.get("/api/leads/{lead_id}/delivery-readiness")
@@ -293,7 +301,7 @@ def lead_delivery_readiness(lead_id: int, mailbox_id: int, db: Session = Depends
 @app.post("/api/leads/{lead_id}/send")
 def send_lead_email(lead_id: int, req: SmtpSendRequest, db: Session = Depends(get_db)):
     if not req.confirm:
-        raise HTTPException(400, "发送前必须显式确认 confirm=true")
+        raise HTTPException(400, "发送前必须确认邮件内容")
     lead = db.get(Lead, lead_id)
     mailbox = db.get(MailboxAccount, req.mailbox_id)
     if not lead:
@@ -304,9 +312,6 @@ def send_lead_email(lead_id: int, req: SmtpSendRequest, db: Session = Depends(ge
     failed = [x for x in readiness["checks"] if not x["ok"]]
     if failed:
         raise HTTPException(400, "发送条件未满足：" + "、".join(x["label"] for x in failed))
-    cred = _credential(db, mailbox.id)
-    if not cred:
-        raise HTTPException(400, "SMTP 凭据不存在")
 
     message_id = make_msgid(domain=(mailbox.email.split("@")[-1] if "@" in mailbox.email else None))
     msg = EmailMessage()
@@ -331,9 +336,16 @@ def send_lead_email(lead_id: int, req: SmtpSendRequest, db: Session = Depends(ge
     db.refresh(log)
 
     try:
-        client = _smtp_client(cred)
-        client.send_message(msg)
-        client.quit()
+        provider_message_id = ""
+        if mailbox.auth_mode == "oauth2" and mailbox.provider in {"gmail", "outlook"}:
+            provider_message_id = send_connected_message(db, mailbox, msg)
+        else:
+            cred = _credential(db, mailbox.id)
+            if not cred:
+                raise RuntimeError("邮箱连接信息不存在")
+            client = _smtp_client(cred)
+            client.send_message(msg)
+            client.quit()
         log.state = "sent"
         mailbox.connection_state = "connected"
         if lead.status in {"new", "qualified"}:
@@ -355,7 +367,12 @@ def send_lead_email(lead_id: int, req: SmtpSendRequest, db: Session = Depends(ge
             "mail_sent",
             "开发邮件已发送",
             lead.draft_subject.strip(),
-            {"mailbox_id": mailbox.id, "recipient": _email(lead.contact_email), "message_id": message_id},
+            {
+                "mailbox_id": mailbox.id,
+                "recipient": _email(lead.contact_email),
+                "message_id": message_id,
+                "provider_message_id": provider_message_id,
+            },
         )
         db.commit()
         db.refresh(log)
@@ -373,7 +390,7 @@ def send_lead_email(lead_id: int, req: SmtpSendRequest, db: Session = Depends(ge
             {"mailbox_id": mailbox.id, "recipient": _email(lead.contact_email)},
         )
         db.commit()
-        raise HTTPException(502, "SMTP 发送失败：" + log.error) from exc
+        raise HTTPException(502, "邮件发送失败：" + log.error) from exc
 
 
 @app.get("/api/mail/deliveries")
