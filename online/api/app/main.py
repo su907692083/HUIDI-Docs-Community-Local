@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
-from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, create_engine, select
+from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, create_engine, func, or_, select
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from .lead_engine import clean_domain, merge_evidence, score_search_result
@@ -148,7 +148,14 @@ def safe_json(value: str, fallback: Any):
         return fallback
 
 
-def add_activity(db: Session, lead_id: int, event_type: str, title: str, detail: str = "", payload: dict[str, Any] | None = None):
+def add_activity(
+    db: Session,
+    lead_id: int,
+    event_type: str,
+    title: str,
+    detail: str = "",
+    payload: dict[str, Any] | None = None,
+):
     db.add(
         LeadActivity(
             lead_id=lead_id,
@@ -258,22 +265,23 @@ def demo_results(req: LeadSearchRequest) -> list[dict[str, Any]]:
 
 
 def build_due_diligence(lead: Lead) -> dict[str, Any]:
-    """Build a conservative evidence-based assessment from data HUIDI actually has.
-
-    Missing official registry/customs data is marked unverified instead of being scored as bad.
-    This is a sales qualification aid, not a credit report or legal due-diligence opinion.
-    """
-
+    """Build a conservative evidence-based assessment from data HUIDI actually has."""
     evidence = safe_json(lead.evidence_json, [])
-    same_domain_email = bool(lead.contact_email and lead.domain and lead.contact_email.lower().endswith("@" + lead.domain.lower()))
+    same_domain_email = bool(
+        lead.contact_email and lead.domain and lead.contact_email.lower().endswith("@" + lead.domain.lower())
+    )
 
     basic = min(100.0, 25 + (25 if lead.domain else 0) + (20 if lead.country else 0) + (30 if lead.contact_email else 0))
     company = min(100.0, 35 + (35 if lead.domain else 0) + min(30, len(evidence) * 5))
-    contact = min(100.0, (35 if lead.contact_email else 0) + (25 if same_domain_email else 0) + (20 if lead.contact_name else 0) + (20 if lead.contact_role else 0))
+    contact = min(
+        100.0,
+        (35 if lead.contact_email else 0)
+        + (25 if same_domain_email else 0)
+        + (20 if lead.contact_name else 0)
+        + (20 if lead.contact_role else 0),
+    )
     digital = min(100.0, (45 if lead.website else 0) + min(40, len(evidence) * 8) + (15 if lead.linkedin_url else 0))
     fit = max(0.0, min(100.0, lead.score))
-
-    # Trade history must never be fabricated from ordinary web search evidence.
     trade = 0.0
     trade_status = "unverified"
 
@@ -336,7 +344,7 @@ def build_due_diligence(lead: Lead) -> dict[str, Any]:
     }
 
 
-app = FastAPI(title="HUIDI Docs Online", version="0.1.1")
+app = FastAPI(title="HUIDI Docs Online", version="0.1.4")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -351,20 +359,70 @@ def health():
     return {
         "ok": True,
         "service": "HUIDI Docs Online",
-        "version": "0.1.1",
+        "version": "0.1.4",
         "search_provider": "serper" if SERPER_API_KEY else "demo",
         "llm": bool(LLM_API_KEY),
         "mail_send": False,
         "due_diligence": "evidence_based_v0.1",
+        "lead_pagination": True,
     }
 
 
 @app.get("/api/leads")
-def list_leads(status: str | None = None, db: Session = Depends(get_db)):
-    stmt = select(Lead).order_by(Lead.score.desc(), Lead.id.desc())
+def list_leads(
+    status: str | None = None,
+    paged: bool = False,
+    page: int = 1,
+    page_size: int = 50,
+    q: str = "",
+    country: str = "",
+    db: Session = Depends(get_db),
+):
+    """List leads.
+
+    `paged=false` preserves the V0.1 array response for compatibility.
+    `paged=true` returns a bounded page envelope for the Online workbench.
+    """
+    conditions = []
     if status:
-        stmt = stmt.where(Lead.status == status)
-    return [lead_to_dict(x, db) for x in db.scalars(stmt).all()]
+        conditions.append(Lead.status == status)
+    if country.strip():
+        conditions.append(Lead.country == country.strip())
+    if q.strip():
+        pattern = f"%{q.strip()}%"
+        conditions.append(
+            or_(
+                Lead.company_name.ilike(pattern),
+                Lead.domain.ilike(pattern),
+                Lead.market_keyword.ilike(pattern),
+                Lead.contact_email.ilike(pattern),
+            )
+        )
+
+    stmt = select(Lead)
+    if conditions:
+        stmt = stmt.where(*conditions)
+    stmt = stmt.order_by(Lead.score.desc(), Lead.id.desc())
+
+    if not paged:
+        return [lead_to_dict(x, db) for x in db.scalars(stmt).all()]
+
+    page = max(1, int(page or 1))
+    page_size = max(10, min(200, int(page_size or 50)))
+    count_stmt = select(func.count(Lead.id))
+    if conditions:
+        count_stmt = count_stmt.where(*conditions)
+    total = int(db.scalar(count_stmt) or 0)
+    pages = max(1, (total + page_size - 1) // page_size)
+    page = min(page, pages)
+    rows = db.scalars(stmt.offset((page - 1) * page_size).limit(page_size)).all()
+    return {
+        "items": [lead_to_dict(x, db) for x in rows],
+        "page": page,
+        "page_size": page_size,
+        "total": total,
+        "pages": pages,
+    }
 
 
 @app.post("/api/leads/search")
@@ -418,7 +476,14 @@ async def search_leads(req: LeadSearchRequest, db: Session = Depends(get_db)):
         )
         db.add(lead)
         db.flush()
-        add_activity(db, lead.id, "discovered", "发现潜在客户", f"优先级 {level} · 匹配分 {score}", {"breakdown": breakdown})
+        add_activity(
+            db,
+            lead.id,
+            "discovered",
+            "发现潜在客户",
+            f"优先级 {level} · 匹配分 {score}",
+            {"breakdown": breakdown},
+        )
         created.append(lead)
         if len(created) >= req.limit:
             break
@@ -455,7 +520,11 @@ async def find_contact(lead_id: int, db: Session = Depends(get_db)):
     if not lead:
         raise HTTPException(404, "线索不存在")
     if not SERPER_API_KEY:
-        return {"mode": "demo", "message": "配置 SERPER_API_KEY 后可搜索公开采购联系人与业务邮箱。", "lead": lead_to_dict(lead, db)}
+        return {
+            "mode": "demo",
+            "message": "配置 SERPER_API_KEY 后可搜索公开采购联系人与业务邮箱。",
+            "lead": lead_to_dict(lead, db),
+        }
 
     query = f'site:{lead.domain} (procurement OR buyer OR sourcing OR purchasing OR contact OR sales) email'
     results = await serper_query(query, 12)
@@ -465,7 +534,14 @@ async def find_contact(lead_id: int, db: Session = Depends(get_db)):
     for row in results:
         text = f"{row.get('title','')} {row.get('snippet','')}"
         candidates.extend(email_rx.findall(text))
-        rows.append({"title": row.get("title"), "url": row.get("link"), "snippet": row.get("snippet", ""), "source": "contact_search"})
+        rows.append(
+            {
+                "title": row.get("title"),
+                "url": row.get("link"),
+                "snippet": row.get("snippet", ""),
+                "source": "contact_search",
+            }
+        )
 
     same_domain = []
     for email in dict.fromkeys(candidates):
@@ -475,7 +551,14 @@ async def find_contact(lead_id: int, db: Session = Depends(get_db)):
         lead.contact_email = same_domain[0]
     lead.evidence_json = merge_evidence(lead.evidence_json, rows)
     lead.updated_at = datetime.now(timezone.utc)
-    add_activity(db, lead.id, "contact_search", "查找公开联系人", f"发现 {len(same_domain)} 个同域邮箱", {"emails": same_domain[:10]})
+    add_activity(
+        db,
+        lead.id,
+        "contact_search",
+        "查找公开联系人",
+        f"发现 {len(same_domain)} 个同域邮箱",
+        {"emails": same_domain[:10]},
+    )
     db.commit()
     db.refresh(lead)
     return {"mode": "live", "emails": same_domain, "lead": lead_to_dict(lead, db)}
@@ -501,7 +584,13 @@ def assess_lead(lead_id: int, db: Session = Depends(get_db)):
         report_json=json.dumps(report, ensure_ascii=False),
     )
     db.add(row)
-    add_activity(db, lead.id, "assessment", "完成客户背调初筛", f"置信度 {report['confidence']} · {report['readiness']}")
+    add_activity(
+        db,
+        lead.id,
+        "assessment",
+        "完成客户背调初筛",
+        f"置信度 {report['confidence']} · {report['readiness']}",
+    )
     db.commit()
     db.refresh(row)
     return assessment_to_dict(row)
@@ -650,4 +739,4 @@ def home():
     index = WEB_DIR / "index.html"
     if index.exists():
         return FileResponse(index)
-    return {"service": "HUIDI Docs Online", "version": "0.1.1"}
+    return {"service": "HUIDI Docs Online", "version": "0.1.4"}
