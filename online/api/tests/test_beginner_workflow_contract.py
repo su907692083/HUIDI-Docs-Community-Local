@@ -40,6 +40,34 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         for internal_word in ["Queue", "Tenant", "Schema", "Database", "Endpoint"]:
             self.assertIn(f"['{internal_word}'", plain)
 
+    def test_mail_setup_keeps_transport_details_out_of_beginner_copy(self):
+        mail = self.text("web/mail-governance.js")
+        self.assertIn("连接其他邮箱", mail)
+        self.assertIn("服务器地址", mail)
+        self.assertIn("自动安全连接（推荐）", mail)
+        self.assertIn("邮箱密码 / 专用密码", mail)
+        self.assertIn("邮件已发送成功", mail)
+        self.assertNotIn("SMTP 已开放", mail)
+        self.assertNotIn("HUIDI_SECRET_KEY", mail)
+        self.assertNotIn(">OAuth2<", mail)
+        self.assertNotIn("Message-ID", mail)
+
+    def test_inquiry_flow_uses_chinese_document_names_and_refreshes_next_action(self):
+        business = self.text("web/business-center-ui.js")
+        self.assertIn("把当前潜在客户转为询盘", business)
+        self.assertIn("形式发票 PI", business)
+        self.assertIn("商业发票 CI", business)
+        self.assertIn("销售合同", business)
+        self.assertIn("保存询盘进度", business)
+        self.assertIn("HUIDIBeginnerFlow?.refresh?.()", business)
+
+    def test_automatic_followup_returns_state_to_beginner_workflow(self):
+        sequence = self.text("web/sequence-ui.js")
+        self.assertIn("客户回复、退订或进入正式询盘后", sequence)
+        self.assertIn("HUIDIBeginnerFlow?.refresh?.()", sequence)
+        self.assertIn("邮件主题", sequence)
+        self.assertIn("等待时间（小时）", sequence)
+
     def test_data_source_special_transport_settings_are_collapsed_and_plain(self):
         adapter = self.text("web/service-adapter-ui.js")
         settings = self.text("web/service-settings.js")
