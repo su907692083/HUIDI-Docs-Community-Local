@@ -83,6 +83,8 @@ jobs:
             '/api/intelligence/summary/{lead_id}',
             '/api/intel/status',
             '/api/intel/daily',
+            '/api/intel/world',
+            '/api/intel/world/country',
             '/api/intel/customer/{lead_id}',
             '/api/intel/deal/{deal_id}',
             '/api/intel/customer/{lead_id}/use',
@@ -141,10 +143,10 @@ jobs:
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
             web/daily-services.js web/mail-thread-ui.js web/mail-list-pagination-ui.js web/map-view.js web/business-center-ui.js \
             web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
-            web/sequence-pagination-ui.js web/industry-playbook-ui.js web/intelligence-history.js web/customer-intelligence.js web/today-intelligence.js \
-            web/team-access.js web/company-settings.js web/audit-ui.js web/service-settings.js \
+            web/sequence-pagination-ui.js web/industry-playbook-ui.js web/intelligence-history.js web/customer-intelligence.js \
+            web/world-intelligence-map.js web/today-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js web/service-settings.js \
             web/intelligence-source-settings.js web/service-adapter-ui.js web/notification-settings.js \
-            web/admin-safety.js web/plain-language.js; do
+            web/admin-safety.js web/secondary-page-closure.js web/plain-language.js; do
               node --check "$file"
           done
 
