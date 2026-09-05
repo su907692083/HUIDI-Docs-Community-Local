@@ -78,6 +78,7 @@ jobs:
             '/api/intel/deal/{deal_id}',
             '/api/intel/customer/{lead_id}/use',
             '/api/intel/customer/{lead_id}/apply-to-draft',
+            '/api/intel/today-actions',
             '/api/business/deals/{deal_id}/reference',
             '/api/business/deals/{deal_id}/facts',
             '/api/business/deals/{deal_id}/handoff',
@@ -127,7 +128,7 @@ jobs:
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
             web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
             web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
-            web/intelligence-history.js web/customer-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js \
+            web/intelligence-history.js web/customer-intelligence.js web/today-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js \
             web/service-settings.js web/service-adapter-ui.js web/notification-settings.js \
             web/admin-safety.js web/plain-language.js; do
               node --check "$file"
