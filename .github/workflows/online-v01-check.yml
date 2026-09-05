@@ -64,6 +64,23 @@ jobs:
           node --check ../../public/huidi-workspace-r6-rc1628.js
           node --check ../../public/huidi-notification-center-v1.js
           node --check ../../public/huidi-workspace-closure-v1.js
+      - name: Check secondary-page inline JavaScript
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          for source, target in [
+              ('../../public/document-start.html', '/tmp/document-start-inline.js'),
+              ('../../public/product-online-handoff.html', '/tmp/product-online-handoff-inline.js'),
+          ]:
+              text = Path(source).read_text(encoding='utf-8')
+              blocks = [m.group(1) for m in re.finditer(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', text, re.S | re.I)]
+              if not blocks:
+                  raise SystemExit(f'No inline script found in {source}')
+              Path(target).write_text('\n'.join(blocks), encoding='utf-8')
+          PY
+          node --check /tmp/document-start-inline.js
+          node --check /tmp/product-online-handoff-inline.js
       - name: Notification Center regression
         run: node tests/notification_center.test.cjs
       - name: Online to Local bridge regression
@@ -88,6 +105,7 @@ jobs:
           grep -q 'repositories' ../../public/product-online-handoff.html
           grep -q 'products' ../../public/product-online-handoff.html
           grep -q '#product=' ../../public/product-online-handoff.html
+          grep -q 'productId' ../../public/product-online-handoff.html
           grep -q '用于 Online 开发客户' ../../public/huidi-workspace-r6-rc1628.js
           grep -q 'product-online-handoff.html' ../../public/huidi-workspace-r6-rc1628.js
           grep -q 'huidi-notification-center-v1.js' ../../public/huidi-workspace-r6-rc1628.js
