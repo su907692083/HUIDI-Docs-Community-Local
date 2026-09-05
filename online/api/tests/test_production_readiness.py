@@ -68,10 +68,12 @@ class ProductionReadinessTests(unittest.TestCase):
                 create_company_backup("manual")
                 out = build_production_readiness()
                 by_name = {item["name"]: item for item in out["items"]}
-                self.assertEqual(by_name["服务器安全密钥"]["state"], "ready")
+                self.assertEqual(by_name["安全保护"]["state"], "ready")
                 self.assertEqual(by_name["最近备份"]["state"], "ready")
                 self.assertEqual(by_name["发送邮箱"]["state"], "ready")
                 self.assertEqual(by_name["找客户 / 地图 / 市场动态"]["state"], "action")
+                self.assertIn("数据升级", by_name)
+                self.assertFalse(any("PostgreSQL" in item["message"] for item in out["items"]))
                 self.assertFalse(out["ready_for_daily_use"])
             finally:
                 reset_current_organization(token)
