@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import re
+import threading
 from datetime import datetime, timedelta, timezone
 from email.utils import parseaddr
 from typing import Any
@@ -17,12 +17,13 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from .mail_delivery import SmtpSendRequest, send_lead_email
 from .mail_provider import access_token, begin_connection, finish_connection, has_connected_token
-from .main import Base, Lead, LeadActivity, SessionLocal, add_activity, engine, get_db
+from .main import Base, Lead, SessionLocal, add_activity, engine, get_db
 from .online_app import MailSuppression, MailboxAccount, _email, app
 
 
 class MailboxMessage(Base):
     __tablename__ = "mailbox_messages"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     mailbox_id: Mapped[int] = mapped_column(ForeignKey("mailbox_accounts.id"), index=True)
@@ -43,6 +44,7 @@ class MailboxMessage(Base):
 
 class MailQueueItem(Base):
     __tablename__ = "mail_queue_items"
+    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     lead_id: Mapped[int] = mapped_column(ForeignKey("leads.id"), index=True)
@@ -75,16 +77,23 @@ class MailEventRequest(BaseModel):
     provider_message_id: str = Field(default="", max_length=512)
 
 
-def _dt(value: Any) -> datetime:
+def _utc_dt(value: Any) -> datetime:
     if isinstance(value, datetime):
-        return value
+        return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
     text = str(value or "").strip()
     if not text:
         return datetime.now(timezone.utc)
     try:
-        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+        parsed = datetime.fromisoformat(text.replace("Z", "+00:00"))
+        return parsed.replace(tzinfo=timezone.utc) if parsed.tzinfo is None else parsed.astimezone(timezone.utc)
     except Exception:
         return datetime.now(timezone.utc)
+
+
+def _db_time(value: datetime | None) -> datetime:
+    if value is None:
+        return datetime.now(timezone.utc).replace(tzinfo=None)
+    return _utc_dt(value).replace(tzinfo=None)
 
 
 def _sender_email(value: str) -> str:
@@ -144,12 +153,20 @@ def _upsert_suppression(db: Session, email: str, reason: str, source: str) -> No
 
 
 def _bounce_target(subject: str, snippet: str, sender: str) -> str:
-    s = f"{subject} {snippet}".lower()
+    text = f"{subject} {snippet}".lower()
     sender_l = sender.lower()
-    bounce = any(x in sender_l for x in ["mailer-daemon", "postmaster"]) or any(
-        x in s for x in ["undeliverable", "delivery status notification", "delivery failed", "mail delivery failed", "退信", "无法送达"]
+    is_bounce = any(x in sender_l for x in ["mailer-daemon", "postmaster"]) or any(
+        x in text
+        for x in [
+            "undeliverable",
+            "delivery status notification",
+            "delivery failed",
+            "mail delivery failed",
+            "退信",
+            "无法送达",
+        ]
     )
-    if not bounce:
+    if not is_bounce:
         return ""
     matches = re.findall(r"[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}", f"{subject} {snippet}", re.I)
     return _email(matches[0]) if matches else ""
@@ -157,6 +174,8 @@ def _bounce_target(subject: str, snippet: str, sender: str) -> str:
 
 def _record_message(db: Session, mailbox: MailboxAccount, item: dict[str, Any]) -> tuple[MailboxMessage, bool]:
     provider_id = str(item.get("provider_message_id") or "").strip()
+    if not provider_id:
+        raise ValueError("message id required")
     existing = db.scalar(
         select(MailboxMessage)
         .where(MailboxMessage.mailbox_id == mailbox.id)
@@ -182,7 +201,7 @@ def _record_message(db: Session, mailbox: MailboxAccount, item: dict[str, Any]) 
         recipients_json=json.dumps(item.get("recipients") or [], ensure_ascii=False),
         subject=str(item.get("subject") or "")[:4000],
         snippet=str(item.get("snippet") or "")[:8000],
-        received_at=_dt(item.get("received_at")),
+        received_at=_db_time(_utc_dt(item.get("received_at"))),
         lead_id=lead.id if lead else None,
         has_unsubscribe=1 if item.get("has_unsubscribe") else 0,
     )
@@ -228,20 +247,27 @@ def _gmail_messages(db: Session, mailbox: MailboxAccount, folder: str, limit: in
         )
         if listing.status_code >= 400:
             raise HTTPException(502, "收取 Gmail 邮件失败，请重新连接后再试")
-        result = []
+        result: list[dict[str, Any]] = []
         for ref in listing.json().get("messages", []):
             mid = str(ref.get("id") or "")
             if not mid:
                 continue
-            r = client.get(
+            response = client.get(
                 f"https://gmail.googleapis.com/gmail/v1/users/me/messages/{mid}",
                 headers=headers,
-                params={"format": "metadata", "metadataHeaders": ["From", "To", "Subject", "Message-ID", "List-Unsubscribe"]},
+                params={
+                    "format": "metadata",
+                    "metadataHeaders": ["From", "To", "Subject", "Message-ID", "List-Unsubscribe"],
+                },
             )
-            if r.status_code >= 400:
+            if response.status_code >= 400:
                 continue
-            data = r.json()
-            hs = {str(x.get("name") or "").lower(): str(x.get("value") or "") for x in (data.get("payload") or {}).get("headers", [])}
+            data = response.json()
+            header_rows = (data.get("payload") or {}).get("headers", [])
+            hs = {str(x.get("name") or "").lower(): str(x.get("value") or "") for x in header_rows}
+            received = datetime.now(timezone.utc)
+            if data.get("internalDate"):
+                received = datetime.fromtimestamp(int(data["internalDate"]) / 1000, tz=timezone.utc)
             result.append(
                 {
                     "provider_message_id": mid,
@@ -253,7 +279,7 @@ def _gmail_messages(db: Session, mailbox: MailboxAccount, folder: str, limit: in
                     "recipients": [x.strip() for x in hs.get("to", "").split(",") if x.strip()],
                     "subject": hs.get("subject", ""),
                     "snippet": str(data.get("snippet") or ""),
-                    "received_at": datetime.fromtimestamp(int(data.get("internalDate") or 0) / 1000, tz=timezone.utc) if data.get("internalDate") else datetime.now(timezone.utc),
+                    "received_at": received,
                     "has_unsubscribe": bool(hs.get("list-unsubscribe")),
                 }
             )
@@ -270,14 +296,24 @@ def _outlook_messages(db: Session, mailbox: MailboxAccount, folder: str, limit: 
         "$select": "id,conversationId,internetMessageId,from,toRecipients,subject,bodyPreview,receivedDateTime,internetMessageHeaders",
     }
     with httpx.Client(timeout=30) as client:
-        r = client.get(f"https://graph.microsoft.com/v1.0/me/mailFolders/{mail_folder}/messages", headers=headers, params=params)
-        if r.status_code >= 400:
+        response = client.get(
+            f"https://graph.microsoft.com/v1.0/me/mailFolders/{mail_folder}/messages",
+            headers=headers,
+            params=params,
+        )
+        if response.status_code >= 400:
             raise HTTPException(502, "收取 Outlook 邮件失败，请重新连接后再试")
-        result = []
-        for data in r.json().get("value", []):
+        result: list[dict[str, Any]] = []
+        for data in response.json().get("value", []):
             sender = ((data.get("from") or {}).get("emailAddress") or {}).get("address") or ""
-            recipients = [((x.get("emailAddress") or {}).get("address") or "") for x in data.get("toRecipients", [])]
-            headers_map = {str(x.get("name") or "").lower(): str(x.get("value") or "") for x in data.get("internetMessageHeaders", [])}
+            recipients = [
+                ((x.get("emailAddress") or {}).get("address") or "")
+                for x in data.get("toRecipients", [])
+            ]
+            headers_map = {
+                str(x.get("name") or "").lower(): str(x.get("value") or "")
+                for x in data.get("internetMessageHeaders", [])
+            }
             result.append(
                 {
                     "provider_message_id": str(data.get("id") or ""),
@@ -289,7 +325,7 @@ def _outlook_messages(db: Session, mailbox: MailboxAccount, folder: str, limit: 
                     "recipients": [x for x in recipients if x],
                     "subject": str(data.get("subject") or ""),
                     "snippet": str(data.get("bodyPreview") or ""),
-                    "received_at": _dt(data.get("receivedDateTime")),
+                    "received_at": _utc_dt(data.get("receivedDateTime")),
                     "has_unsubscribe": bool(headers_map.get("list-unsubscribe")),
                 }
             )
@@ -298,15 +334,20 @@ def _outlook_messages(db: Session, mailbox: MailboxAccount, folder: str, limit: 
 
 def sync_mailbox(db: Session, mailbox: MailboxAccount, limit: int = 50) -> dict[str, Any]:
     if mailbox.provider not in {"gmail", "outlook"} or mailbox.auth_mode != "oauth2":
-        raise HTTPException(400, "这个邮箱不需要收件同步")
+        raise HTTPException(400, "这个邮箱不需要自动收取")
     if not has_connected_token(db, mailbox.id):
         raise HTTPException(400, "这个邮箱还没有完成连接")
     added = 0
     for folder in ["inbox", "sent"]:
-        rows = _gmail_messages(db, mailbox, folder, limit) if mailbox.provider == "gmail" else _outlook_messages(db, mailbox, folder, limit)
+        rows = (
+            _gmail_messages(db, mailbox, folder, limit)
+            if mailbox.provider == "gmail"
+            else _outlook_messages(db, mailbox, folder, limit)
+        )
         for item in rows:
             _, created = _record_message(db, mailbox, item)
-            added += 1 if created else 0
+            if created:
+                added += 1
     mailbox.connection_state = "connected"
     mailbox.updated_at = datetime.now(timezone.utc)
     db.commit()
@@ -314,29 +355,52 @@ def sync_mailbox(db: Session, mailbox: MailboxAccount, limit: int = 50) -> dict[
 
 
 @app.get("/api/mail/connect/{provider}/start")
-def mail_connect_start(provider: str, request: Request, mailbox_id: int | None = None, db: Session = Depends(get_db)):
+def mail_connect_start(
+    provider: str,
+    request: Request,
+    mailbox_id: int | None = None,
+    db: Session = Depends(get_db),
+):
     callback = str(request.url_for("mail_connect_callback", provider=provider))
     return begin_connection(db, provider, callback, mailbox_id)
 
 
-@app.get("/api/mail/connect/{provider}/callback", name="mail_connect_callback", response_class=HTMLResponse)
-def mail_connect_callback(provider: str, code: str = "", state: str = "", error: str = "", db: Session = Depends(get_db)):
+@app.get(
+    "/api/mail/connect/{provider}/callback",
+    name="mail_connect_callback",
+    response_class=HTMLResponse,
+)
+def mail_connect_callback(
+    provider: str,
+    code: str = "",
+    state: str = "",
+    error: str = "",
+    db: Session = Depends(get_db),
+):
     if error:
-        return HTMLResponse("<meta charset='utf-8'><h2>邮箱没有连接成功</h2><p>请关闭此页后重新连接。</p>", status_code=400)
+        return HTMLResponse(
+            "<meta charset='utf-8'><h2>邮箱没有连接成功</h2><p>请关闭此页后重新连接。</p>",
+            status_code=400,
+        )
     out = finish_connection(db, state, code)
     safe_email = str(out.get("email") or "").replace("<", "&lt;").replace(">", "&gt;")
     return HTMLResponse(
         "<meta charset='utf-8'><title>邮箱已连接</title>"
         "<body style='font-family:system-ui;padding:40px;background:#f6f8fb'>"
         "<div style='max-width:520px;margin:auto;background:white;padding:28px;border-radius:16px'>"
-        f"<h2>邮箱已连接</h2><p>{safe_email}</p><p>现在可以回到 HUIDI 查看收件、回复和发送记录。</p></div>"
+        f"<h2>邮箱已连接</h2><p>{safe_email}</p>"
+        "<p>现在可以回到 HUIDI 查看收件、回复和发送记录。</p></div>"
         "<script>try{window.opener&&window.opener.postMessage({type:'huidi-mail-connected'},'*')}catch(e){};setTimeout(()=>window.close(),1200)</script>"
         "</body>"
     )
 
 
 @app.post("/api/mail/accounts/{mailbox_id}/sync")
-def sync_mailbox_route(mailbox_id: int, limit: int = Query(default=50, ge=1, le=100), db: Session = Depends(get_db)):
+def sync_mailbox_route(
+    mailbox_id: int,
+    limit: int = Query(default=50, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
     mailbox = db.get(MailboxAccount, mailbox_id)
     if not mailbox:
         raise HTTPException(404, "邮箱不存在")
@@ -386,7 +450,7 @@ def queue_message(lead_id: int, req: QueueRequest, db: Session = Depends(get_db)
     mailbox = db.get(MailboxAccount, req.mailbox_id)
     if not lead or not mailbox:
         raise HTTPException(404, "没有找到线索或发送邮箱")
-    when = req.send_at or datetime.now(timezone.utc)
+    when = _db_time(req.send_at or datetime.now(timezone.utc))
     row = MailQueueItem(
         lead_id=lead.id,
         mailbox_id=mailbox.id,
@@ -397,7 +461,14 @@ def queue_message(lead_id: int, req: QueueRequest, db: Session = Depends(get_db)
         next_attempt_at=when,
     )
     db.add(row)
-    add_activity(db, lead.id, "mail_queued", "邮件已加入待发送", lead.draft_subject, {"mailbox_id": mailbox.id, "send_at": when.isoformat()})
+    add_activity(
+        db,
+        lead.id,
+        "mail_queued",
+        "邮件已加入待发送",
+        lead.draft_subject,
+        {"mailbox_id": mailbox.id, "send_at": when.isoformat()},
+    )
     db.commit()
     db.refresh(row)
     return _queue_dict(row)
@@ -415,7 +486,7 @@ def list_queue(state: str = "", db: Session = Depends(get_db)):
 def run_queue_once(limit: int = 20) -> dict[str, Any]:
     db = SessionLocal()
     try:
-        now = datetime.now(timezone.utc)
+        now = datetime.now(timezone.utc).replace(tzinfo=None)
         rows = db.scalars(
             select(MailQueueItem)
             .where(MailQueueItem.state.in_(["queued", "retrying"]))
@@ -423,7 +494,7 @@ def run_queue_once(limit: int = 20) -> dict[str, Any]:
             .order_by(MailQueueItem.next_attempt_at.asc())
             .limit(limit)
         ).all()
-        done = 0
+        sent = 0
         failed = 0
         for row in rows:
             row.state = "sending"
@@ -431,13 +502,17 @@ def run_queue_once(limit: int = 20) -> dict[str, Any]:
             row.updated_at = datetime.now(timezone.utc)
             db.commit()
             try:
-                out = send_lead_email(row.lead_id, SmtpSendRequest(mailbox_id=row.mailbox_id, confirm=True), db=db)
+                out = send_lead_email(
+                    row.lead_id,
+                    SmtpSendRequest(mailbox_id=row.mailbox_id, confirm=True),
+                    db=db,
+                )
                 row.state = "sent"
                 row.delivery_log_id = int((out.get("delivery") or {}).get("id") or 0) or None
                 row.last_error = ""
                 row.updated_at = datetime.now(timezone.utc)
                 db.commit()
-                done += 1
+                sent += 1
             except Exception as exc:
                 row.last_error = str(exc)[:2000]
                 if row.attempts >= row.max_attempts:
@@ -445,10 +520,11 @@ def run_queue_once(limit: int = 20) -> dict[str, Any]:
                     failed += 1
                 else:
                     row.state = "retrying"
-                    row.next_attempt_at = datetime.now(timezone.utc) + timedelta(minutes=min(60, 2 ** row.attempts))
+                    delay = timedelta(minutes=min(60, 2 ** row.attempts))
+                    row.next_attempt_at = (datetime.now(timezone.utc) + delay).replace(tzinfo=None)
                 row.updated_at = datetime.now(timezone.utc)
                 db.commit()
-        return {"ok": True, "processed": len(rows), "sent": done, "failed": failed}
+        return {"ok": True, "processed": len(rows), "sent": sent, "failed": failed}
     finally:
         db.close()
 
@@ -471,7 +547,14 @@ def receive_mail_event(
     _upsert_suppression(db, req.email, req.event, "mail_event")
     lead = db.scalar(select(Lead).where(func.lower(Lead.contact_email) == _email(req.email)))
     if lead:
-        add_activity(db, lead.id, f"mail_{req.event}", "邮件状态有变化", reason, {"provider_message_id": req.provider_message_id})
+        add_activity(
+            db,
+            lead.id,
+            f"mail_{req.event}",
+            "邮件状态有变化",
+            reason,
+            {"provider_message_id": req.provider_message_id},
+        )
     db.commit()
     return {"ok": True}
 
@@ -494,38 +577,39 @@ def _sync_all_background() -> None:
         db.close()
 
 
-_runtime_task: asyncio.Task | None = None
+_runtime_stop = threading.Event()
+_runtime_thread: threading.Thread | None = None
+_runtime_lock = threading.Lock()
 
 
-async def _runtime_loop() -> None:
+def _runtime_loop() -> None:
     cycles = 0
-    while True:
+    while not _runtime_stop.is_set():
         try:
-            await asyncio.to_thread(run_queue_once, 20)
+            run_queue_once(20)
             if cycles % 6 == 0:
-                await asyncio.to_thread(_sync_all_background)
+                _sync_all_background()
         except Exception:
             pass
         cycles += 1
-        await asyncio.sleep(30)
+        _runtime_stop.wait(30)
 
 
-def _start_runtime_jobs() -> None:
-    global _runtime_task
-    if _runtime_task is None or _runtime_task.done():
-        _runtime_task = asyncio.create_task(_runtime_loop())
+def _ensure_runtime_thread() -> None:
+    global _runtime_thread
+    if os.getenv("HUIDI_DISABLE_BACKGROUND_JOBS", "").strip() == "1":
+        return
+    if os.getenv("CI", "").strip().lower() in {"1", "true", "yes"}:
+        return
+    with _runtime_lock:
+        if _runtime_thread and _runtime_thread.is_alive():
+            return
+        _runtime_thread = threading.Thread(
+            target=_runtime_loop,
+            name="huidi-mail-worker",
+            daemon=True,
+        )
+        _runtime_thread.start()
 
 
-async def _stop_runtime_jobs() -> None:
-    global _runtime_task
-    if _runtime_task and not _runtime_task.done():
-        _runtime_task.cancel()
-        try:
-            await _runtime_task
-        except asyncio.CancelledError:
-            pass
-    _runtime_task = None
-
-
-app.add_event_handler("startup", _start_runtime_jobs)
-app.add_event_handler("shutdown", _stop_runtime_jobs)
+_ensure_runtime_thread()
