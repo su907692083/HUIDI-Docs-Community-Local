@@ -43,6 +43,8 @@ _EXCLUDED_PATHS = {"/api/team/login", "/api/team/logout"}
 
 
 def _friendly_action(method: str, path: str) -> tuple[str, str]:
+    if path.startswith("/api/leads") and "/queue" in path:
+        return "mail", "加入待发送"
     if "/send" in path or "/reply" in path:
         return "mail", "发送邮件"
     if "/sequence" in path or "/sequences" in path:
@@ -71,12 +73,18 @@ def _friendly_action(method: str, path: str) -> tuple[str, str]:
         return "team", "添加团队成员" if method == "POST" and path.rstrip("/") == "/api/team/members" else "调整团队成员"
     if path.startswith("/api/organizations"):
         return "team", "新建公司工作区" if method == "POST" and path.rstrip("/") == "/api/organizations" else "调整公司工作区"
+    if path.startswith("/api/company-settings"):
+        return "settings", "修改公司工作时间"
     if path.startswith("/api/backups") and path.rstrip("/").endswith("/restore"):
         return "settings", "恢复公司业务备份"
     if path.startswith("/api/backups") and path.rstrip("/").endswith("/verify"):
         return "settings", "检查公司业务备份"
     if path.rstrip("/") == "/api/backups" and method == "POST":
         return "settings", "创建公司业务备份"
+    if path.startswith("/api/service-adapters") and path.rstrip("/").endswith("/test"):
+        return "settings", "检查数据服务接入"
+    if path.startswith("/api/service-adapters"):
+        return "settings", "修改数据服务接入方式"
     if path.startswith("/api/service-connections") and path.rstrip("/").endswith("/test"):
         return "settings", "检查数据服务"
     if path.startswith("/api/service-connections"):
@@ -111,6 +119,7 @@ def _resource(path: str) -> tuple[str, str]:
         (r"/api/mail/sequences/(\d+)", "sequence"),
         (r"/api/product-brains/([^/?]+)", "product"),
         (r"/api/service-connections/([^/?]+)", "service"),
+        (r"/api/service-adapters/([^/?]+)", "service"),
         (r"/api/notification-routes/(\d+)", "reminder"),
         (r"/api/backups/([0-9A-Za-z-]+)", "backup"),
     ]
@@ -132,7 +141,9 @@ def _resource(path: str) -> tuple[str, str]:
         return "team", ""
     if path.startswith("/api/organizations"):
         return "organization", ""
-    if path.startswith("/api/service-connections"):
+    if path.startswith("/api/company-settings"):
+        return "company_setting", "work_time"
+    if path.startswith("/api/service-connections") or path.startswith("/api/service-adapters"):
         return "service", ""
     if path.startswith("/api/notification-routes"):
         return "reminder", ""
@@ -275,9 +286,7 @@ def audit_summary(request: Request, db: Session = Depends(get_db)):
     if role not in {"owner", "admin"} and current_member_id:
         conditions.append(AuditEvent.actor_member_id == current_member_id)
     total = int(db.scalar(select(func.count(AuditEvent.id)).where(*conditions)) or 0)
-    failed = int(
-        db.scalar(select(func.count(AuditEvent.id)).where(*conditions, AuditEvent.success == 0)) or 0
-    )
+    failed = int(db.scalar(select(func.count(AuditEvent.id)).where(*conditions, AuditEvent.success == 0)) or 0)
     actors = db.execute(
         select(AuditEvent.actor_name, func.count(AuditEvent.id))
         .where(*conditions)
