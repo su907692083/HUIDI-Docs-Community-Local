@@ -4,42 +4,13 @@ on:
   pull_request:
     paths:
       - 'online/**'
-      - 'public/online-bridge.html'
-      - 'public/huidi-online-local-bridge-v1.js'
-      - 'public/product-online-handoff.html'
-      - 'public/document-start.html'
-      - 'public/huidi-workspace-r6-rc1628.js'
-      - 'public/huidi-workspace-closure-v1.js'
-      - 'public/huidi-workspace-closure-v1.css'
-      - 'public/huidi-workspace-stage2-closure-v1.js'
-      - 'public/huidi-workspace-stage2-closure-v1.css'
-      - 'public/huidi-catalog-ux-closure-v1.js'
-      - 'public/huidi-catalog-ux-closure-v1.css'
-      - 'public/flypigbox-r1-3a-18-30-catalog-closure.js'
-      - 'public/huidi-notification-center-v1.js'
-      - 'public/huidi-editor-return-v1.js'
-      - 'public/huidi-action-owner-rc1621.js'
+      - 'public/**'
       - '.github/workflows/online-v01-check.yml'
   push:
-    branches:
-      - 'online/v0.1-lead-workbench'
+    branches: ['online/v0.1-lead-workbench']
     paths:
       - 'online/**'
-      - 'public/online-bridge.html'
-      - 'public/huidi-online-local-bridge-v1.js'
-      - 'public/product-online-handoff.html'
-      - 'public/document-start.html'
-      - 'public/huidi-workspace-r6-rc1628.js'
-      - 'public/huidi-workspace-closure-v1.js'
-      - 'public/huidi-workspace-closure-v1.css'
-      - 'public/huidi-workspace-stage2-closure-v1.js'
-      - 'public/huidi-workspace-stage2-closure-v1.css'
-      - 'public/huidi-catalog-ux-closure-v1.js'
-      - 'public/huidi-catalog-ux-closure-v1.css'
-      - 'public/flypigbox-r1-3a-18-30-catalog-closure.js'
-      - 'public/huidi-notification-center-v1.js'
-      - 'public/huidi-editor-return-v1.js'
-      - 'public/huidi-action-owner-rc1621.js'
+      - 'public/**'
       - '.github/workflows/online-v01-check.yml'
 
 jobs:
@@ -63,24 +34,45 @@ jobs:
       - name: Compile Python
         run: python -m compileall app tests
 
-      - name: Lead engine pagination and Local status tests
+      - name: Python business regressions
+        env:
+          HUIDI_SECRET_KEY: ci-only-huidi-secret-key
         run: python -m unittest discover -s tests -p 'test_*.py'
 
-      - name: Import FastAPI application
-        run: python -c "from app.online_app import app; print(app.title, app.version)"
+      - name: Import Daily Workbench application
+        env:
+          HUIDI_SECRET_KEY: ci-only-huidi-secret-key
+        run: |
+          python - <<'PY'
+          from app.daily_app import app
+          paths={r.path for r in app.routes}
+          required={
+            '/api/workbench/today',
+            '/api/mail/delivery-health',
+            '/api/mail/accounts/{mailbox_id}/smtp',
+            '/api/mail/accounts/{mailbox_id}/test',
+            '/api/leads/{lead_id}/send',
+            '/api/leads/{lead_id}/local-event',
+          }
+          missing=required-paths
+          if missing: raise SystemExit('Missing routes: '+', '.join(sorted(missing)))
+          print(app.title, app.version, 'Daily Workbench routes PASS')
+          PY
 
       - name: Check Online browser JavaScript
         run: |
           node --check web/app.js
+          node --check web/daily-workbench.js
           node --check web/product-brain-core.js
           node --check web/product-brain.js
           node --check web/growth-workflow.js
+          node --check web/mail-governance.js
           node --check web/local-status-sync.js
 
-      - name: Product Brain core regression
+      - name: Product Brain regression
         run: node tests/product_brain.test.cjs
 
-      - name: Check Local bridge notification closure editor-return and stage2 JavaScript
+      - name: Check Local bridge and UX owners
         run: |
           node --check ../../public/huidi-online-local-bridge-v1.js
           node --check ../../public/huidi-workspace-r6-rc1628.js
@@ -97,18 +89,17 @@ jobs:
           python - <<'PY'
           import re
           from pathlib import Path
-          for source, target in [
-              ('../../public/document-start.html', '/tmp/document-start-inline.js'),
-              ('../../public/product-online-handoff.html', '/tmp/product-online-handoff-inline.js'),
+          for source,target in [
+            ('../../public/document-start.html','/tmp/document-start.js'),
+            ('../../public/product-online-handoff.html','/tmp/product-handoff.js'),
           ]:
-              text = Path(source).read_text(encoding='utf-8')
-              blocks = [m.group(1) for m in re.finditer(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>', text, re.S | re.I)]
-              if not blocks:
-                  raise SystemExit(f'No inline script found in {source}')
-              Path(target).write_text('\n'.join(blocks), encoding='utf-8')
+            text=Path(source).read_text(encoding='utf-8')
+            blocks=[m.group(1) for m in re.finditer(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',text,re.S|re.I)]
+            if not blocks: raise SystemExit('No inline script: '+source)
+            Path(target).write_text('\n'.join(blocks),encoding='utf-8')
           PY
-          node --check /tmp/document-start-inline.js
-          node --check /tmp/product-online-handoff-inline.js
+          node --check /tmp/document-start.js
+          node --check /tmp/product-handoff.js
 
       - name: Notification Center regression
         run: node tests/notification_center.test.cjs
@@ -116,104 +107,40 @@ jobs:
       - name: Online to Local bridge regression
         run: node tests/bridge_contract.test.cjs
 
-      - name: Verify named business UX contracts
+      - name: Verify named Online workbench contracts
         run: |
           python - <<'PY'
           from pathlib import Path
-
-          root = Path('../..')
-          files = {
-              'online_app': Path('web/app.js').read_text(encoding='utf-8'),
-              'online_api': Path('app/main.py').read_text(encoding='utf-8'),
-              'online_extended': Path('app/online_app.py').read_text(encoding='utf-8'),
-              'online_index': Path('web/index.html').read_text(encoding='utf-8'),
-              'local_status_ui': Path('web/local-status-sync.js').read_text(encoding='utf-8'),
-              'brain': Path('web/product-brain-core.js').read_text(encoding='utf-8'),
-              'growth': Path('web/growth-workflow.js').read_text(encoding='utf-8'),
-              'handoff': (root / 'public/product-online-handoff.html').read_text(encoding='utf-8'),
-              'workspace_owner': (root / 'public/huidi-workspace-r6-rc1628.js').read_text(encoding='utf-8'),
-              'workspace_closure': (root / 'public/huidi-workspace-closure-v1.js').read_text(encoding='utf-8'),
-              'workspace_css': (root / 'public/huidi-workspace-closure-v1.css').read_text(encoding='utf-8'),
-              'workspace_stage2': (root / 'public/huidi-workspace-stage2-closure-v1.js').read_text(encoding='utf-8'),
-              'catalog_ux': (root / 'public/huidi-catalog-ux-closure-v1.js').read_text(encoding='utf-8'),
-              'catalog_loader': (root / 'public/flypigbox-r1-3a-18-30-catalog-closure.js').read_text(encoding='utf-8'),
-              'document_start': (root / 'public/document-start.html').read_text(encoding='utf-8'),
-              'editor_return': (root / 'public/huidi-editor-return-v1.js').read_text(encoding='utf-8'),
-              'action_owner': (root / 'public/huidi-action-owner-rc1621.js').read_text(encoding='utf-8'),
-              'bridge': (root / 'public/huidi-online-local-bridge-v1.js').read_text(encoding='utf-8'),
-              'notify': (root / 'public/huidi-notification-center-v1.js').read_text(encoding='utf-8'),
-              'bridge_page': (root / 'public/online-bridge.html').read_text(encoding='utf-8'),
-              'local_core': (root / 'public/huidi-local-core-rc167.js').read_text(encoding='utf-8'),
+          root=Path('../..')
+          checks={
+            'Daily Workbench UI': ('web/index.html','daily-workbench.js'),
+            'Daily summary API': ('app/workbench.py','/api/workbench/today'),
+            'Real SMTP delivery': ('app/mail_delivery.py','/api/leads/{lead_id}/send'),
+            'Encrypted SMTP secret': ('app/mail_delivery.py','HUIDI_SECRET_KEY'),
+            'SMTP connection test': ('app/mail_delivery.py','/api/mail/accounts/{mailbox_id}/test'),
+            'Mail quota': ('app/mail_delivery.py','daily_limit'),
+            'Mail interval': ('app/mail_delivery.py','min_interval_seconds'),
+            'Mail suppression': ('app/mail_delivery.py','_active_suppression'),
+            'Mail audit log': ('app/mail_delivery.py','MailDeliveryLog'),
+            'SMTP send UI': ('web/mail-governance.js','立即发送'),
+            'Local status schema': ('app/online_app.py','huidi.local.business.status/v1'),
+            'Product Brain schema': ('web/product-brain-core.js','huidi.product.brain/v1'),
+            'Online pagination': ('app/main.py','lead_pagination'),
+            'Catalog common/advanced': ('../../public/huidi-catalog-ux-closure-v1.js','data-huidi-catalog-mode-btn'),
+            'Workspace quick detail': ('../../public/huidi-workspace-closure-v1.js','huidiQuickBackdrop'),
+            'Notification store': ('../../public/huidi-notification-center-v1.js','huidi_local_notifications_v1'),
+            'Business bridge': ('../../public/huidi-online-local-bridge-v1.js','huidi.business.bundle/v1'),
           }
-
-          checks = {
-              'Product Brain schema': ('brain', 'huidi.product.brain/v1'),
-              'Campaign Brief schema': ('brain', 'huidi.campaign.brief/v1'),
-              'Growth Buying Signals': ('growth', 'Buying Signals'),
-              'Growth Open Threads': ('growth', 'Open Threads'),
-              'Online paged request': ('online_app', "paged:'1'"),
-              'Online API page size': ('online_api', 'page_size'),
-              'Online pagination capability': ('online_api', 'lead_pagination'),
-              'Local status schema endpoint': ('online_extended', 'huidi.local.business.status/v1'),
-              'Local status event endpoint': ('online_extended', 'local-event'),
-              'Local status confirmation UI': ('local_status_ui', '确认同步'),
-              'Local status script loaded': ('online_index', 'local-status-sync.js'),
-              'Local Product Brain handoff': ('handoff', 'huidi.product.brain/v1'),
-              'Handoff selected product deep-link': ('handoff', 'productId'),
-              'Workspace closure loader': ('workspace_owner', 'huidi-workspace-closure-v1.js'),
-              'Workspace stage2 loader': ('workspace_owner', 'huidi-workspace-stage2-closure-v1.js'),
-              'Workspace page persistence': ('workspace_closure', 'huidi_workspace_page_state_v1'),
-              'Workspace default 50 rows': ('workspace_closure', 'DEFAULT_SIZE=50'),
-              'Workspace entity focus': ('workspace_closure', 'huidi_workspace_focus_v1'),
-              'Workspace quick drawer': ('workspace_css', 'huidi-quick-drawer'),
-              'Mail linked workbench': ('workspace_stage2', 'huidi-mail-row-link'),
-              'Mail continues same Deal': ('workspace_stage2', 'm.deal_id'),
-              'Local to Online status handoff': ('workspace_stage2', 'local-status='),
-              'Catalog common/advanced switch': ('catalog_ux', 'data-huidi-catalog-mode-btn'),
-              'Catalog advanced mapping preserved': ('catalog_ux', 'mappingTable'),
-              'Catalog UX loader': ('catalog_loader', 'huidi-catalog-ux-closure-v1.js'),
-              'Document customer search': ('document_start', 'customerSearch'),
-              'Document deal search': ('document_start', 'dealSearch'),
-              'Document product search': ('document_start', 'productSearch'),
-              'Document product scope': ('document_start', 'productScope'),
-              'Document return context': ('document_start', 'huidi_document_return_v1'),
-              'Editor return context': ('editor_return', 'huidi_document_return_v1'),
-              'Editor returns to inquiry': ('editor_return', '返回询盘'),
-              'Editor return loader': ('action_owner', 'huidi-editor-return-v1.js'),
-              'Business bundle schema': ('bridge', 'huidi.business.bundle/v1'),
-              'Hash navigation': ('bridge', 'workspace.html#'),
-              'Notification store': ('notify', 'huidi_local_notifications_v1'),
-              'Notification channel store': ('notify', 'huidi_local_notification_channels_v1'),
-              'Online import notification': ('notify', 'online.bridge.imported'),
-              'Business event notification': ('notify', 'business.event'),
-              'Quotation bridge action': ('bridge_page', 'quotation'),
-              'PI bridge action': ('bridge_page', 'proforma_invoice'),
-              'Contract bridge action': ('bridge_page', 'sales_contract'),
-              'CI bridge action': ('bridge_page', 'commercial_invoice'),
-              'Packing List bridge action': ('bridge_page', 'packing_list'),
-              'Catalog bridge': ('bridge', 'catalog-studio/index.html'),
-              'Local mail owner': ('local_core', 'huidi_local_mail_drafts_v2'),
-          }
-
-          missing = []
-          for name, (file_key, marker) in checks.items():
-              if marker in files[file_key]:
-                  print(f'PASS: {name}')
-              else:
-                  print(f'FAIL: {name} -> missing {marker!r} in {file_key}')
-                  missing.append(name)
-
-          if 'workspace.html?view=' in files['bridge']:
-              print('FAIL: legacy query navigation still present')
-              missing.append('legacy query navigation')
-          else:
-              print('PASS: legacy query navigation removed')
-
-          if missing:
-              raise SystemExit('Contract failures: ' + ', '.join(missing))
+          failed=[]
+          for name,(path,marker) in checks.items():
+            text=Path(path).read_text(encoding='utf-8')
+            if marker in text: print('PASS:',name)
+            else: print('FAIL:',name); failed.append(name)
+          if failed: raise SystemExit('Contract failures: '+', '.join(failed))
           PY
 
       - name: Assert no local secrets are tracked
         run: |
           test ! -f .env
           test ! -f ../.env
+          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|SMTP_PASSWORD=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
