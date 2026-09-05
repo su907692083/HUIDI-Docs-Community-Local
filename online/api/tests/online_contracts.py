@@ -52,7 +52,7 @@ CHECKS = {
     "Default company reminder runtime": ("app/tenant_jobs.py", "run_default_company_reminders_once"),
     "Automatic backup tenant coordinator": ("app/tenant_jobs.py", "run_all_automatic_backups_once"),
     "Physical tenant isolation regression": ("tests/test_tenant_storage.py", "physically_separate_business_databases"),
-    "Organization management UI": ("web/team-access.js", "新建公司工作区"),
+    "Organization management UI": ("web/team-access.js", "新建公司账号"),
     "Tenant audit middleware": ("app/audit_log.py", "audit_middleware"),
     "Audit privacy regression": ("tests/test_audit_log.py", "does_not_store_sensitive_request_content"),
     "Audit tenant isolation": ("tests/test_audit_log.py", "physically_isolated_by_company"),
