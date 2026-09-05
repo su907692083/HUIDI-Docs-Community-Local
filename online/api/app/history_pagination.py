@@ -6,6 +6,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 from sqlalchemy import String, case, cast, func, literal, or_, select
 
+from .mail_sequences import MailSequenceEnrollment, _enrollment_dict
 from .mail_sync import MailQueueItem, MailboxMessage, _message_dict, _queue_dict
 from .main import Lead, SessionLocal
 from .online_app import app
@@ -65,6 +66,25 @@ def _queue_page(request: Request) -> JSONResponse:
         page = min(page, pages)
         rows = db.scalars(stmt.order_by(MailQueueItem.id.desc()).offset((page - 1) * page_size).limit(page_size)).all()
         return JSONResponse({"items": [_queue_dict(x) for x in rows], "total": total, "page": page, "page_size": page_size, "pages": pages})
+    finally:
+        db.close()
+
+
+def _sequence_page(request: Request) -> JSONResponse:
+    q = request.query_params
+    page = _int(q.get("page"), 1, 1, 1_000_000)
+    page_size = _int(q.get("page_size"), 50, 20, 200)
+    state = str(q.get("state") or "").strip()
+    db = SessionLocal()
+    try:
+        stmt = select(MailSequenceEnrollment)
+        if state:
+            stmt = stmt.where(MailSequenceEnrollment.state == state)
+        total = int(db.scalar(select(func.count()).select_from(stmt.subquery())) or 0)
+        pages = max(1, (total + page_size - 1) // page_size)
+        page = min(page, pages)
+        rows = db.scalars(stmt.order_by(MailSequenceEnrollment.id.desc()).offset((page - 1) * page_size).limit(page_size)).all()
+        return JSONResponse({"items": [_enrollment_dict(x, db) for x in rows], "total": total, "page": page, "page_size": page_size, "pages": pages})
     finally:
         db.close()
 
@@ -129,4 +149,6 @@ async def paged_business_history(request: Request, call_next):
         return _queue_page(request)
     if path == "/api/mail/threads":
         return _threads_page(request)
+    if path == "/api/mail/sequence-enrollments":
+        return _sequence_page(request)
     return await call_next(request)
