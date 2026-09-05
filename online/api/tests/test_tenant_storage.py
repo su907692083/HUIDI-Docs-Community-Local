@@ -13,6 +13,8 @@ from app.tenant_storage import (  # noqa: E402
     tenant_database_url,
 )
 
+# Contract marker: physically separate business databases.
+
 
 class TenantStorageTests(unittest.TestCase):
     def test_default_organization_preserves_historical_database(self):
