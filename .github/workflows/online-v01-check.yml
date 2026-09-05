@@ -70,6 +70,7 @@ jobs:
             '/api/intelligence',
             '/api/intelligence/summary/{lead_id}',
             '/api/business/deals/{deal_id}/reference',
+            '/api/business/deals/{deal_id}/handoff',
             '/api/team/status',
             '/api/team/login',
             '/api/team/me',
@@ -86,6 +87,11 @@ jobs:
             '/api/notification-routes/{route_id}',
             '/api/notification-routes/{route_id}/test',
             '/api/notification-routes/run',
+            '/api/backups',
+            '/api/backups/{backup_id}/verify',
+            '/api/backups/{backup_id}/download',
+            '/api/backups/{backup_id}/restore',
+            '/api/production/readiness',
             '/api/services/status',
             '/api/tools/map-leads',
             '/api/tools/trade-news',
@@ -114,6 +120,7 @@ jobs:
           node --check web/mail-thread-ui.js
           node --check web/map-view.js
           node --check web/business-center-ui.js
+          node --check web/reference-handoff-guard.js
           node --check web/daily-navigation.js
           node --check web/sequence-ui.js
           node --check web/intelligence-history.js
@@ -121,6 +128,7 @@ jobs:
           node --check web/audit-ui.js
           node --check web/service-settings.js
           node --check web/notification-settings.js
+          node --check web/admin-safety.js
           node --check web/plain-language.js
 
       - name: Product Brain regression
@@ -189,8 +197,11 @@ jobs:
             'Deal business reference': ('app/deal_reference.py','build_deal_reference'),
             'Deal document needs': ('app/deal_reference.py','DOC_NEEDS'),
             'Deal reference does not rewrite facts': ('tests/test_deal_reference.py','without_rewriting_business_facts'),
-            'Deal reference UI': ('web/business-center-ui.js','业务参考'),
-            'Deal reference bridge continuity': ('web/business-center-ui.js','online_business_reference'),
+            'Deal reference requires confirmation': ('tests/test_deal_reference.py','never_enters_document_bundle_without_human_confirmation'),
+            'Confirmed reference approval record': ('app/deal_reference.py','DealReferenceApproval'),
+            'Confirmed reference handoff endpoint': ('app/deal_reference.py','build_document_handoff'),
+            'Reference handoff user guard': ('web/reference-handoff-guard.js','confirm_reference'),
+            'Reference handoff guard loaded': ('web/index.html','reference-handoff-guard.js'),
             'Team password hashing': ('app/team_access.py','pbkdf2_sha256'),
             'Team write permission': ('app/team_access.py','你的账号是只读权限'),
             'Team admin permission': ('app/team_access.py','这项设置只允许老板或管理员修改'),
@@ -208,6 +219,9 @@ jobs:
             'Audit data service changes': ('app/audit_log.py','修改数据服务'),
             'Audit data service check': ('app/audit_log.py','检查数据服务'),
             'Audit reminder settings': ('app/audit_log.py','修改提醒方式'),
+            'Audit backup create': ('app/audit_log.py','创建公司业务备份'),
+            'Audit backup restore': ('app/audit_log.py','恢复公司业务备份'),
+            'Audit reference confirmation': ('app/audit_log.py','确认单据业务参考'),
             'Company data service storage': ('app/service_connections.py','ServiceConnection'),
             'Encrypted data service authorization': ('app/service_connections.py','_encrypt'),
             'Data service tenant isolation': ('tests/test_service_connections.py','physically_isolated'),
@@ -227,6 +241,17 @@ jobs:
             'External reminder quiet hours': ('app/notification_delivery.py','_in_quiet_hours'),
             'External reminder settings UI': ('web/notification-settings.js','提醒方式'),
             'External reminder beginner timezone': ('web/notification-settings.js','中国大陆'),
+            'Business backup schema': ('app/backup_restore.py','huidi.online.business-backup/v1'),
+            'Business backup excludes control plane': ('tests/test_backup_restore.py','never_contains_control_plane_tables'),
+            'Business backup tenant isolation': ('tests/test_backup_restore.py','bound_to_the_current_company'),
+            'Business restore safety backup': ('tests/test_backup_restore.py','keeps_a_safety_backup'),
+            'Business restore safety key guard': ('tests/test_backup_restore.py','server_safety_key_changed'),
+            'Business restore engine refresh': ('app/tenant_storage.py','dispose_tenant_engine'),
+            'Production readiness API': ('app/production_readiness.py','build_production_readiness'),
+            'Production readiness regression': ('tests/test_production_readiness.py','reports_real_backup_and_mail_state'),
+            'Admin readiness UI': ('web/admin-safety.js','上线检查'),
+            'Backup restore beginner UI': ('web/admin-safety.js','请输入“恢复”'),
+            'Backup directory source guard': ('../../.gitignore','online/api/backups/'),
             'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
             'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
             'FX': ('app/service_hub.py','/api/tools/fx'),
