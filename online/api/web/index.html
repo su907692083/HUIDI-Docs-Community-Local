@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HUIDI Docs Online · 开发客户</title>
+  <style>
+    :root{--bg:#f5f7fb;--card:#fff;--line:#e5eaf2;--text:#172033;--muted:#6d7688;--blue:#1769ff;--blue2:#0d4fcb;--green:#159a61;--amber:#d88a00;--red:#d94b55;--shadow:0 12px 32px rgba(23,42,84,.08)}
+    *{box-sizing:border-box}body{margin:0;font-family:Inter,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text)}
+    button,input,select,textarea{font:inherit}.app{display:grid;grid-template-columns:224px 1fr;min-height:100vh}.side{background:#0f1d36;color:#dfe8fb;padding:20px 14px;position:sticky;top:0;height:100vh}.brand{font-weight:800;font-size:20px;padding:8px 10px 22px}.brand span{color:#55a0ff}.nav a{display:block;padding:10px 12px;border-radius:10px;color:#b9c7df;text-decoration:none;margin:3px 0}.nav a.active,.nav a:hover{background:#18315c;color:#fff}.side-note{position:absolute;bottom:18px;left:18px;right:18px;font-size:12px;line-height:1.6;color:#8091ad}
+    .main{padding:24px 28px 48px}.top{display:flex;justify-content:space-between;gap:20px;align-items:flex-start;margin-bottom:18px}.top h1{margin:0;font-size:25px}.top p{margin:7px 0 0;color:var(--muted)}.health{padding:8px 12px;background:#eaf6ef;color:#137a4d;border-radius:999px;font-size:13px}
+    .search{background:var(--card);border:1px solid var(--line);box-shadow:var(--shadow);border-radius:16px;padding:18px;margin-bottom:16px}.search-grid{display:grid;grid-template-columns:1.4fr .8fr 1fr auto;gap:10px}.field label{display:block;font-size:12px;color:var(--muted);margin:0 0 6px}.field input,.field select,.drawer input,.drawer textarea,.drawer select{width:100%;height:40px;border:1px solid #dbe2ed;border-radius:9px;padding:0 11px;background:#fff;color:var(--text)}.drawer textarea{height:120px;padding:10px;resize:vertical}.primary{border:0;background:var(--blue);color:#fff;border-radius:9px;padding:0 18px;height:40px;font-weight:700;cursor:pointer}.primary:hover{background:var(--blue2)}
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin:14px 0 9px}.tabs{display:flex;gap:7px}.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 11px;color:var(--muted);cursor:pointer}.tab.active{background:#eaf2ff;color:var(--blue);border-color:#cfe0ff}.meta{font-size:13px;color:var(--muted)}
+    .table-wrap{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:auto}.table{width:100%;border-collapse:collapse;min-width:1040px}.table th{font-size:12px;color:#70798b;text-align:left;background:#f8faff;padding:10px;border-bottom:1px solid var(--line);position:sticky;top:0}.table td{padding:10px;border-bottom:1px solid #edf0f5;font-size:13px;vertical-align:middle}.table tr:hover td{background:#fbfdff}.company{font-weight:700}.sub{font-size:11px;color:var(--muted);margin-top:3px}.score{font-variant-numeric:tabular-nums;font-weight:800}.score.high{color:var(--green)}.score.mid{color:var(--amber)}.badge{display:inline-flex;padding:4px 7px;border-radius:999px;font-size:11px;background:#eef2f8;color:#5e6878}.action{border:1px solid #d9e2ee;background:#fff;border-radius:8px;padding:6px 8px;margin-right:4px;cursor:pointer;color:#31405b}.action:hover{border-color:#a9c8ff;color:var(--blue)}
+    .empty{padding:56px 20px;text-align:center;color:var(--muted)}
+    .drawer-backdrop{display:none;position:fixed;inset:0;background:rgba(10,20,40,.24);z-index:10}.drawer-backdrop.open{display:block}.drawer{position:absolute;right:0;top:0;width:min(520px,94vw);height:100%;background:#fff;box-shadow:-20px 0 60px rgba(0,0,0,.12);padding:22px;overflow:auto}.drawer h2{margin:0 0 4px}.drawer .section{border-top:1px solid var(--line);padding-top:15px;margin-top:15px}.drawer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.drawer .row{display:flex;gap:8px;flex-wrap:wrap}.drawer .muted{font-size:12px;color:var(--muted)}.draft{white-space:pre-wrap;background:#f8faff;border:1px solid var(--line);padding:12px;border-radius:10px;font-size:13px;line-height:1.6}.close{float:right;border:0;background:#f0f3f8;width:32px;height:32px;border-radius:50%;cursor:pointer}
+    @media(max-width:900px){.app{grid-template-columns:1fr}.side{display:none}.main{padding:16px}.search-grid{grid-template-columns:1fr 1fr}.search-grid .primary{grid-column:1/-1}.drawer-grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">HUIDI <span>Online</span></div>
+    <nav class="nav">
+      <a class="active">开发客户</a>
+      <a>线索池</a><a>客户</a><a>询盘</a><a>报价与单据</a><a>邮件</a><a>团队</a>
+    </nav>
+    <div class="side-note">V0.1 Foundation<br>Online 与 Community Local 独立演进</div>
+  </aside>
+  <main class="main">
+    <div class="top"><div><h1>开发客户</h1><p>先找到值得联系的公司，再进入联系人、开发信与询盘。</p></div><div id="health" class="health">正在检查服务…</div></div>
+
+    <section class="search">
+      <div class="search-grid">
+        <div class="field"><label>产品 / 行业关键词</label><input id="keyword" placeholder="例如 stainless steel hinges / hardware" /></div>
+        <div class="field"><label>目标国家 / 地区</label><input id="country" placeholder="例如 Germany" /></div>
+        <div class="field"><label>客户类型</label><input id="buyerType" value="importer distributor wholesaler" /></div>
+        <button class="primary" id="searchBtn">搜索潜在客户</button>
+      </div>
+    </section>
+
+    <div class="toolbar"><div class="tabs" id="tabs"><button class="tab active" data-status="">全部</button><button class="tab" data-status="new">新线索</button><button class="tab" data-status="qualified">已筛选</button><button class="tab" data-status="contacted">已联系</button><button class="tab" data-status="replied">已回复</button><button class="tab" data-status="converted">已转询盘</button></div><div class="meta" id="meta"></div></div>
+
+    <div class="table-wrap"><table class="table"><thead><tr><th>公司</th><th>国家</th><th>匹配度</th><th>为什么值得看</th><th>联系人</th><th>邮箱</th><th>状态</th><th>操作</th></tr></thead><tbody id="tbody"></tbody></table><div id="empty" class="empty">先输入产品关键词和目标市场，搜索潜在客户。</div></div>
+  </main>
+</div>
+<div id="backdrop" class="drawer-backdrop"><aside class="drawer"><button id="closeDrawer" class="close">×</button><h2 id="dCompany">线索详情</h2><div id="dWebsite" class="muted"></div>
+  <div class="section"><div class="drawer-grid"><div class="field"><label>联系人</label><input id="dContact" /></div><div class="field"><label>职位</label><input id="dRole" /></div><div class="field"><label>邮箱</label><input id="dEmail" /></div><div class="field"><label>状态</label><select id="dStatus"><option value="new">新线索</option><option value="qualified">已筛选</option><option value="contacted">已联系</option><option value="replied">已回复</option><option value="converted">已转询盘</option><option value="archived">归档</option></select></div></div><div class="row" style="margin-top:10px"><button class="action" id="saveLead">保存资料</button><button class="action" id="findContact">查找公开联系人</button></div></div>
+  <div class="section"><h3>开发信草稿</h3><div class="drawer-grid"><div class="field"><label>输出语言</label><select id="draftLang"><option>English</option><option>中文</option><option>Español</option><option>Deutsch</option><option>Français</option><option>日本語</option></select></div><div class="field"><label>你的产品 / 卖点</label><input id="productSummary" /></div></div><div class="row" style="margin-top:10px"><button class="primary" id="makeDraft">生成草稿</button></div><div id="draftBox" class="draft" style="margin-top:10px">还没有生成开发信。</div></div>
+  <div class="section"><h3>转入 HUIDI 业务链</h3><p class="muted">合格线索产生真实机会后，再转成客户 + 询盘，后续继续报价、PI、合同、CI / 装箱单。</p><button class="primary" id="convertLead">转为询盘</button></div>
+</aside></div>
+<script>
+let leads=[], current=null, status='';
+const $=s=>document.querySelector(s); const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+async function api(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});if(!r.ok){let t=await r.text();throw new Error(t||r.statusText)}return r.json()}
+async function health(){try{const h=await api('/api/health');$('#health').textContent=h.search_provider==='serper'?'在线搜索已连接':'演示模式 · 未配置搜索 API';}catch{$('#health').textContent='服务异常'}}
+function stateName(s){return({new:'新线索',qualified:'已筛选',contacted:'已联系',replied:'已回复',converted:'已转询盘',archived:'归档'})[s]||s}
+function render(){const rows=leads.filter(x=>!status||x.status===status);$('#meta').textContent=`${rows.length} 条线索`;$('#empty').style.display=rows.length?'none':'block';$('#tbody').innerHTML=rows.map(x=>`<tr><td><div class="company">${esc(x.company_name)}</div><div class="sub"><a href="${esc(x.website)}" target="_blank">${esc(x.domain)}</a></div></td><td>${esc(x.country||'—')}</td><td><span class="score ${x.score>=75?'high':x.score>=60?'mid':''}">${Math.round(x.score)}</span></td><td>${esc(x.reason)}</td><td>${esc(x.contact_name||x.contact_role||'—')}</td><td>${esc(x.contact_email||'—')}</td><td><span class="badge">${stateName(x.status)}</span></td><td><button class="action" onclick="openLead(${x.id})">查看</button><button class="action" onclick="qualify(${x.id})">筛选</button></td></tr>`).join('')}
+async function load(){leads=await api('/api/leads');render()}
+window.qualify=async id=>{await api('/api/leads/'+id,{method:'PATCH',body:JSON.stringify({status:'qualified'})});await load()}
+window.openLead=id=>{current=leads.find(x=>x.id===id);if(!current)return;$('#dCompany').textContent=current.company_name;$('#dWebsite').innerHTML=`${esc(current.country||'')} · <a href="${esc(current.website)}" target="_blank">${esc(current.domain)}</a><br>${esc(current.reason)}`;$('#dContact').value=current.contact_name||'';$('#dRole').value=current.contact_role||'';$('#dEmail').value=current.contact_email||'';$('#dStatus').value=current.status;$('#productSummary').value=current.market_keyword||'';$('#draftBox').textContent=current.draft_subject?current.draft_subject+'\n\n'+current.draft_body:'还没有生成开发信。';$('#backdrop').classList.add('open')}
+$('#closeDrawer').onclick=()=>$('#backdrop').classList.remove('open');$('#backdrop').onclick=e=>{if(e.target===$('#backdrop'))$('#backdrop').classList.remove('open')}
+$('#tabs').onclick=e=>{if(!e.target.matches('.tab'))return;document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));e.target.classList.add('active');status=e.target.dataset.status;render()}
+$('#searchBtn').onclick=async()=>{const k=$('#keyword').value.trim();if(!k)return alert('先填写产品 / 行业关键词');$('#searchBtn').disabled=true;$('#searchBtn').textContent='搜索中…';try{const r=await api('/api/leads/search',{method:'POST',body:JSON.stringify({product_keyword:k,country:$('#country').value.trim(),buyer_type:$('#buyerType').value.trim(),limit:12})});await load();if(r.mode==='demo')alert('当前未配置 SERPER_API_KEY，显示的是演示线索。')}catch(e){alert('搜索失败：'+e.message)}finally{$('#searchBtn').disabled=false;$('#searchBtn').textContent='搜索潜在客户'}}
+$('#saveLead').onclick=async()=>{if(!current)return;await api('/api/leads/'+current.id,{method:'PATCH',body:JSON.stringify({contact_name:$('#dContact').value,contact_role:$('#dRole').value,contact_email:$('#dEmail').value,status:$('#dStatus').value})});await load();openLead(current.id)}
+$('#findContact').onclick=async()=>{if(!current)return;try{const r=await api(`/api/leads/${current.id}/find-contact`,{method:'POST'});if(r.mode==='demo')alert(r.message);await load();openLead(current.id)}catch(e){alert(e.message)}}
+$('#makeDraft').onclick=async()=>{if(!current)return;$('#makeDraft').disabled=true;try{const r=await api(`/api/leads/${current.id}/draft`,{method:'POST',body:JSON.stringify({language:$('#draftLang').value,product_summary:$('#productSummary').value})});await load();openLead(current.id)}catch(e){alert(e.message)}finally{$('#makeDraft').disabled=false}}
+$('#convertLead').onclick=async()=>{if(!current)return;if(!confirm('确认把这条线索转换为 HUIDI 客户 + 询盘？'))return;const r=await api(`/api/leads/${current.id}/convert`,{method:'POST',body:'{}'});alert(`已生成桥接数据：${r.customer.name} → ${r.inquiry.title}`);await load();openLead(current.id)}
+health();load();
+</script>
+</body></html>
