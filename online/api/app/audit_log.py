@@ -53,6 +53,8 @@ def _friendly_action(method: str, path: str) -> tuple[str, str]:
         return "mail", "回写邮件状态"
     if path.startswith("/api/mail/"):
         return "mail", "更新邮件与跟进"
+    if path.startswith("/api/business/deals") and path.rstrip("/").endswith("/handoff"):
+        return "business", "确认单据业务参考"
     if path.startswith("/api/business/from-lead"):
         return "business", "转为客户 / 询盘"
     if path.startswith("/api/business/deals"):
@@ -69,6 +71,12 @@ def _friendly_action(method: str, path: str) -> tuple[str, str]:
         return "team", "添加团队成员" if method == "POST" and path.rstrip("/") == "/api/team/members" else "调整团队成员"
     if path.startswith("/api/organizations"):
         return "team", "新建公司工作区" if method == "POST" and path.rstrip("/") == "/api/organizations" else "调整公司工作区"
+    if path.startswith("/api/backups") and path.rstrip("/").endswith("/restore"):
+        return "settings", "恢复公司业务备份"
+    if path.startswith("/api/backups") and path.rstrip("/").endswith("/verify"):
+        return "settings", "检查公司业务备份"
+    if path.rstrip("/") == "/api/backups" and method == "POST":
+        return "settings", "创建公司业务备份"
     if path.startswith("/api/service-connections") and path.rstrip("/").endswith("/test"):
         return "settings", "检查数据服务"
     if path.startswith("/api/service-connections"):
@@ -104,6 +112,7 @@ def _resource(path: str) -> tuple[str, str]:
         (r"/api/product-brains/([^/?]+)", "product"),
         (r"/api/service-connections/([^/?]+)", "service"),
         (r"/api/notification-routes/(\d+)", "reminder"),
+        (r"/api/backups/([0-9A-Za-z-]+)", "backup"),
     ]
     for pattern, kind in patterns:
         match = re.search(pattern, path)
@@ -127,6 +136,8 @@ def _resource(path: str) -> tuple[str, str]:
         return "service", ""
     if path.startswith("/api/notification-routes"):
         return "reminder", ""
+    if path.startswith("/api/backups"):
+        return "backup", ""
     return "business", ""
 
 
