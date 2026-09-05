@@ -6,6 +6,7 @@ on:
       - 'online/**'
       - 'public/online-bridge.html'
       - 'public/huidi-online-local-bridge-v1.js'
+      - 'public/product-online-handoff.html'
       - '.github/workflows/online-v01-check.yml'
   push:
     branches:
@@ -14,6 +15,7 @@ on:
       - 'online/**'
       - 'public/online-bridge.html'
       - 'public/huidi-online-local-bridge-v1.js'
+      - 'public/product-online-handoff.html'
       - '.github/workflows/online-v01-check.yml'
 
 jobs:
@@ -39,13 +41,26 @@ jobs:
       - name: Import FastAPI application
         run: python -c "from app.main import app; print(app.title, app.version)"
       - name: Check Online browser JavaScript
-        run: node --check web/app.js
+        run: |
+          node --check web/app.js
+          node --check web/product-brain-core.js
+          node --check web/product-brain.js
+      - name: Product Brain core regression
+        run: node tests/product_brain.test.cjs
       - name: Check Local bridge JavaScript
         run: node --check ../../public/huidi-online-local-bridge-v1.js
       - name: Online to Local bridge regression
         run: node tests/bridge_contract.test.cjs
-      - name: Verify bridge contract markers
+      - name: Verify Product Brain and business bridge contracts
         run: |
+          grep -q 'huidi.product.brain/v1' web/product-brain-core.js
+          grep -q 'huidi.campaign.brief/v1' web/product-brain-core.js
+          grep -q 'product-brain-core.js' web/index.html
+          grep -q 'product-brain.js' web/index.html
+          grep -q 'huidi.product.brain/v1' ../../public/product-online-handoff.html
+          grep -q 'HUIDILocalCore' ../../public/product-online-handoff.html
+          grep -q 'repositories.products' ../../public/product-online-handoff.html
+          grep -q '#product=' ../../public/product-online-handoff.html
           grep -q 'huidi.business.bundle/v1' web/app.js
           grep -q 'huidi.business.bundle/v1' ../../public/huidi-online-local-bridge-v1.js
           grep -q 'HUIDILocalCore' ../../public/huidi-online-local-bridge-v1.js
