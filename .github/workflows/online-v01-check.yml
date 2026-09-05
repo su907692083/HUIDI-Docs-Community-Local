@@ -11,6 +11,11 @@ on:
       - 'public/huidi-workspace-r6-rc1628.js'
       - 'public/huidi-workspace-closure-v1.js'
       - 'public/huidi-workspace-closure-v1.css'
+      - 'public/huidi-workspace-stage2-closure-v1.js'
+      - 'public/huidi-workspace-stage2-closure-v1.css'
+      - 'public/huidi-catalog-ux-closure-v1.js'
+      - 'public/huidi-catalog-ux-closure-v1.css'
+      - 'public/flypigbox-r1-3a-18-30-catalog-closure.js'
       - 'public/huidi-notification-center-v1.js'
       - 'public/huidi-editor-return-v1.js'
       - 'public/huidi-action-owner-rc1621.js'
@@ -27,6 +32,11 @@ on:
       - 'public/huidi-workspace-r6-rc1628.js'
       - 'public/huidi-workspace-closure-v1.js'
       - 'public/huidi-workspace-closure-v1.css'
+      - 'public/huidi-workspace-stage2-closure-v1.js'
+      - 'public/huidi-workspace-stage2-closure-v1.css'
+      - 'public/huidi-catalog-ux-closure-v1.js'
+      - 'public/huidi-catalog-ux-closure-v1.css'
+      - 'public/flypigbox-r1-3a-18-30-catalog-closure.js'
       - 'public/huidi-notification-center-v1.js'
       - 'public/huidi-editor-return-v1.js'
       - 'public/huidi-action-owner-rc1621.js'
@@ -53,11 +63,11 @@ jobs:
       - name: Compile Python
         run: python -m compileall app tests
 
-      - name: Lead engine and pagination tests
+      - name: Lead engine pagination and Local status tests
         run: python -m unittest discover -s tests -p 'test_*.py'
 
       - name: Import FastAPI application
-        run: python -c "from app.main import app; print(app.title, app.version)"
+        run: python -c "from app.online_app import app; print(app.title, app.version)"
 
       - name: Check Online browser JavaScript
         run: |
@@ -65,16 +75,20 @@ jobs:
           node --check web/product-brain-core.js
           node --check web/product-brain.js
           node --check web/growth-workflow.js
+          node --check web/local-status-sync.js
 
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
 
-      - name: Check Local bridge notification closure and editor-return JavaScript
+      - name: Check Local bridge notification closure editor-return and stage2 JavaScript
         run: |
           node --check ../../public/huidi-online-local-bridge-v1.js
           node --check ../../public/huidi-workspace-r6-rc1628.js
           node --check ../../public/huidi-notification-center-v1.js
           node --check ../../public/huidi-workspace-closure-v1.js
+          node --check ../../public/huidi-workspace-stage2-closure-v1.js
+          node --check ../../public/huidi-catalog-ux-closure-v1.js
+          node --check ../../public/flypigbox-r1-3a-18-30-catalog-closure.js
           node --check ../../public/huidi-editor-return-v1.js
           node --check ../../public/huidi-action-owner-rc1621.js
 
@@ -111,12 +125,18 @@ jobs:
           files = {
               'online_app': Path('web/app.js').read_text(encoding='utf-8'),
               'online_api': Path('app/main.py').read_text(encoding='utf-8'),
+              'online_extended': Path('app/online_app.py').read_text(encoding='utf-8'),
+              'online_index': Path('web/index.html').read_text(encoding='utf-8'),
+              'local_status_ui': Path('web/local-status-sync.js').read_text(encoding='utf-8'),
               'brain': Path('web/product-brain-core.js').read_text(encoding='utf-8'),
               'growth': Path('web/growth-workflow.js').read_text(encoding='utf-8'),
               'handoff': (root / 'public/product-online-handoff.html').read_text(encoding='utf-8'),
               'workspace_owner': (root / 'public/huidi-workspace-r6-rc1628.js').read_text(encoding='utf-8'),
               'workspace_closure': (root / 'public/huidi-workspace-closure-v1.js').read_text(encoding='utf-8'),
               'workspace_css': (root / 'public/huidi-workspace-closure-v1.css').read_text(encoding='utf-8'),
+              'workspace_stage2': (root / 'public/huidi-workspace-stage2-closure-v1.js').read_text(encoding='utf-8'),
+              'catalog_ux': (root / 'public/huidi-catalog-ux-closure-v1.js').read_text(encoding='utf-8'),
+              'catalog_loader': (root / 'public/flypigbox-r1-3a-18-30-catalog-closure.js').read_text(encoding='utf-8'),
               'document_start': (root / 'public/document-start.html').read_text(encoding='utf-8'),
               'editor_return': (root / 'public/huidi-editor-return-v1.js').read_text(encoding='utf-8'),
               'action_owner': (root / 'public/huidi-action-owner-rc1621.js').read_text(encoding='utf-8'),
@@ -134,13 +154,24 @@ jobs:
               'Online paged request': ('online_app', "paged:'1'"),
               'Online API page size': ('online_api', 'page_size'),
               'Online pagination capability': ('online_api', 'lead_pagination'),
+              'Local status schema endpoint': ('online_extended', 'huidi.local.business.status/v1'),
+              'Local status event endpoint': ('online_extended', 'local-event'),
+              'Local status confirmation UI': ('local_status_ui', '确认同步'),
+              'Local status script loaded': ('online_index', 'local-status-sync.js'),
               'Local Product Brain handoff': ('handoff', 'huidi.product.brain/v1'),
               'Handoff selected product deep-link': ('handoff', 'productId'),
               'Workspace closure loader': ('workspace_owner', 'huidi-workspace-closure-v1.js'),
+              'Workspace stage2 loader': ('workspace_owner', 'huidi-workspace-stage2-closure-v1.js'),
               'Workspace page persistence': ('workspace_closure', 'huidi_workspace_page_state_v1'),
               'Workspace default 50 rows': ('workspace_closure', 'DEFAULT_SIZE=50'),
               'Workspace entity focus': ('workspace_closure', 'huidi_workspace_focus_v1'),
               'Workspace quick drawer': ('workspace_css', 'huidi-quick-drawer'),
+              'Mail linked workbench': ('workspace_stage2', 'huidi-mail-row-link'),
+              'Mail continues same Deal': ('workspace_stage2', 'm.deal_id'),
+              'Local to Online status handoff': ('workspace_stage2', 'local-status='),
+              'Catalog common/advanced switch': ('catalog_ux', 'data-huidi-catalog-mode-btn'),
+              'Catalog advanced mapping preserved': ('catalog_ux', 'mappingTable'),
+              'Catalog UX loader': ('catalog_loader', 'huidi-catalog-ux-closure-v1.js'),
               'Document customer search': ('document_start', 'customerSearch'),
               'Document deal search': ('document_start', 'dealSearch'),
               'Document product search': ('document_start', 'productSearch'),
