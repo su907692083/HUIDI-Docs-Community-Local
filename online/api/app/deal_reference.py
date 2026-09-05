@@ -33,6 +33,7 @@ DOC_NEEDS = {
 }
 
 ALLOWED_DOCS = set(DOC_NEEDS)
+DEAL_FACT_SCHEMA = "huidi.deal.intelligence/v1"
 
 
 class DealReferenceApproval(Base):
@@ -81,7 +82,8 @@ def build_deal_reference(db: Session, deal: OnlineDeal, document: str = "") -> d
         row = latest.get(kind)
         if not row:
             continue
-        payload = intelligence_dict(row)
+        payload = intelligence_dict(row, db)
+        normalized = payload.get("normalized") if isinstance(payload.get("normalized"), dict) else {}
         references.append(
             {
                 "kind": kind,
@@ -90,6 +92,10 @@ def build_deal_reference(db: Session, deal: OnlineDeal, document: str = "") -> d
                 "checked_at": payload.get("checked_at"),
                 "record_id": row.id,
                 "count": counts.get(kind, 0),
+                "summary": str(normalized.get("summary") or ""),
+                "facts": normalized.get("facts") if isinstance(normalized.get("facts"), dict) else {},
+                "context": normalized.get("context") if isinstance(normalized.get("context"), dict) else {},
+                "has_business_facts": bool(normalized.get("has_business_facts")),
             }
         )
 
@@ -129,6 +135,52 @@ def build_deal_reference(db: Session, deal: OnlineDeal, document: str = "") -> d
     }
 
 
+def build_deal_facts(db: Session, deal: OnlineDeal, document: str = "") -> dict[str, Any]:
+    reference = build_deal_reference(db, deal, document)
+    facts_by_kind = {
+        str(item.get("kind")): item.get("facts") or {}
+        for item in reference.get("references", [])
+        if isinstance(item, dict) and item.get("kind")
+    }
+    company = facts_by_kind.get("company", {})
+    tariff = facts_by_kind.get("tariff", {})
+    fx = facts_by_kind.get("fx", {})
+    shipping = facts_by_kind.get("shipping", {})
+    trade = facts_by_kind.get("trade", {})
+    return {
+        "schema": DEAL_FACT_SCHEMA,
+        "deal_id": deal.id,
+        "document": document,
+        "company": {
+            key: company[key]
+            for key in ("legal_name", "registration_number", "status", "country", "address", "website", "credit_or_risk")
+            if key in company
+        },
+        "pricing_reference": {
+            "hs_code": tariff.get("hs_code"),
+            "origin": tariff.get("origin"),
+            "destination": tariff.get("destination"),
+            "import_duty_rate": tariff.get("import_duty_rate"),
+            "vat_rate": tariff.get("vat_rate"),
+            "other_tax_rate": tariff.get("other_tax_rate"),
+            "fx_base": fx.get("base"),
+            "fx_quote": fx.get("quote"),
+            "fx_rate": fx.get("rate"),
+            "fx_date": fx.get("date"),
+        },
+        "trade_reference": trade,
+        "shipping_reference": shipping,
+        "missing": reference.get("missing", []),
+        "suggestions": reference.get("suggestions", []),
+        "reference_ids": [
+            int(item["record_id"])
+            for item in reference.get("references", [])
+            if item.get("record_id")
+        ],
+        "note": "这些字段来自已保存的联网结果，只用于核对和决策，不会自动写入报价金额、合同条款、产品资料或装箱数据。",
+    }
+
+
 def _approved_by(request: Request | None) -> str:
     if request is None:
         return "单人使用"
@@ -149,11 +201,13 @@ def build_document_handoff(
         raise HTTPException(400, "不支持这个单据类型")
     bundle = business_bundle(deal.id, document, db)
     reference = build_deal_reference(db, deal, document)
+    facts = build_deal_facts(db, deal, document)
     out: dict[str, Any] = {
         "bundle": bundle,
         "reference_available": bool(reference.get("has_reference")),
         "reference_included": False,
         "reference": reference,
+        "facts": facts,
     }
     if not confirm_reference or not reference.get("has_reference"):
         return out
@@ -181,6 +235,7 @@ def build_document_handoff(
     out["bundle"] = {
         **bundle,
         "online_business_reference": confirmed_reference,
+        "online_business_facts": facts,
         "reference_confirmation": confirmed_reference["confirmation"],
     }
     out["reference_included"] = True
@@ -198,6 +253,18 @@ def deal_reference(
     if not deal:
         raise HTTPException(404, "没有找到这笔业务")
     return build_deal_reference(db, deal, document.strip())
+
+
+@app.get("/api/business/deals/{deal_id}/facts")
+def deal_facts(
+    deal_id: int,
+    document: str = Query(default="", max_length=60),
+    db: Session = Depends(get_db),
+):
+    deal = db.get(OnlineDeal, deal_id)
+    if not deal:
+        raise HTTPException(404, "没有找到这笔业务")
+    return build_deal_facts(db, deal, document.strip())
 
 
 @app.post("/api/business/deals/{deal_id}/handoff")
