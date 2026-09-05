@@ -76,6 +76,8 @@ jobs:
             '/api/organizations',
             '/api/organizations/current',
             '/api/organizations/{organization_id}',
+            '/api/audit/records',
+            '/api/audit/summary',
             '/api/services/status',
             '/api/tools/map-leads',
             '/api/tools/trade-news',
@@ -108,6 +110,7 @@ jobs:
           node --check web/sequence-ui.js
           node --check web/intelligence-history.js
           node --check web/team-access.js
+          node --check web/audit-ui.js
           node --check web/plain-language.js
 
       - name: Product Brain regression
@@ -180,8 +183,12 @@ jobs:
             'Physical tenant database router': ('app/tenant_storage.py','physically separate business database'),
             'Organization-bound request context': ('app/team_access.py','set_current_organization'),
             'Tenant background jobs': ('app/tenant_jobs.py','run_tenant_jobs_once'),
-            'Physical tenant isolation regression': ('tests/test_tenant_storage.py','physically separate business databases'),
+            'Physical tenant isolation regression': ('tests/test_tenant_storage.py','physically_separate_business_databases'),
             'Organization management UI': ('web/team-access.js','新建公司工作区'),
+            'Tenant audit middleware': ('app/audit_log.py','audit_middleware'),
+            'Audit privacy regression': ('tests/test_audit_log.py','does_not_store_sensitive_request_content'),
+            'Audit tenant isolation': ('tests/test_audit_log.py','physically_isolated_by_company'),
+            'Operation history UI': ('web/audit-ui.js','操作记录'),
             'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
             'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
             'FX': ('app/service_hub.py','/api/tools/fx'),
