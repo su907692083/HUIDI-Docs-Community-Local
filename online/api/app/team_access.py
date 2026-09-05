@@ -153,19 +153,22 @@ def _is_public_path(path: str) -> bool:
 def _admin_only_path(path: str) -> bool:
     if path.startswith("/api/team/members"):
         return True
-    if path.startswith("/api/mail/accounts") and any(
-        x in path for x in ["/smtp", "/test"]
-    ):
+    if path.startswith("/api/mail/accounts"):
+        return True
+    if path.startswith("/api/mail/connect"):
         return True
     return False
 
 
 def _permission_error(member: TeamMember, request: Request) -> str | None:
+    path = request.url.path
     if request.method in {"GET", "HEAD", "OPTIONS"}:
+        return None
+    if path == "/api/team/logout":
         return None
     if member.role == "viewer":
         return "你的账号是只读权限，不能修改资料或发送邮件"
-    if _admin_only_path(request.url.path) and member.role not in {"owner", "admin"}:
+    if _admin_only_path(path) and member.role not in {"owner", "admin"}:
         return "这项设置只允许老板或管理员修改"
     return None
 
