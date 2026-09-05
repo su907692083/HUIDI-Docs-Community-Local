@@ -57,10 +57,10 @@ class WorkflowUsabilityContractTests(unittest.TestCase):
         ]:
             self.assertIn(marker, source)
 
-    def test_contacts_no_longer_depend_on_half_second_tab_click(self):
+    def test_contacts_use_direct_workbench_owner_before_compatibility_fallback(self):
         source = self.text("web/daily-navigation.js")
         self.assertIn("window.HUIDILeadWorkbench?.open", source)
-        self.assertNotIn("setTimeout(()=>document.querySelector(`[data-open=", source.replace("120)", ""))
+        self.assertIn("return window.HUIDILeadWorkbench.open(id)", source)
         self.assertNotIn("550", source)
 
 
