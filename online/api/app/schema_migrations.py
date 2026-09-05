@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import threading
+from contextlib import contextmanager
 from datetime import datetime, timezone
-from typing import Callable
+from typing import Callable, Iterator
 
-from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, Text, inspect, select
-from sqlalchemy.engine import Engine
+from sqlalchemy import Column, DateTime, Integer, MetaData, String, Table, Text, inspect, select, text
+from sqlalchemy.engine import Connection, Engine
 
 
 SCHEMA_SERIES = "huidi.online.schema/v1"
 LATEST_SCHEMA_REVISION = "20260906_001_intelligence_projection"
+# Stable signed bigint used only to serialize HUIDI schema revisions inside one
+# PostgreSQL database. It contains no customer or deployment-specific data.
+POSTGRES_MIGRATION_LOCK_ID = 6843443791448361
+_local_migration_lock = threading.Lock()
 
 _meta = MetaData()
 _migration_table = Table(
@@ -54,13 +60,43 @@ MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
 ]
 
 
+@contextmanager
+def schema_migration_lock(engine: Engine) -> Iterator[None]:
+    """Serialize revision writers without storing deployment secrets.
+
+    PostgreSQL uses a session-scoped advisory lock, so separate worker
+    processes cannot write the same revision concurrently. SQLite/dev uses an
+    in-process lock; production multi-worker deployments are expected to use
+    the explicit PostgreSQL deployment path and schema CLI.
+    """
+    if engine.dialect.name == "postgresql":
+        connection: Connection = engine.connect()
+        try:
+            connection.execute(
+                text("SELECT pg_advisory_lock(:lock_id)"),
+                {"lock_id": POSTGRES_MIGRATION_LOCK_ID},
+            )
+            yield
+        finally:
+            try:
+                connection.execute(
+                    text("SELECT pg_advisory_unlock(:lock_id)"),
+                    {"lock_id": POSTGRES_MIGRATION_LOCK_ID},
+                )
+            finally:
+                connection.close()
+        return
+    with _local_migration_lock:
+        yield
+
+
 def _applied(engine: Engine) -> set[str]:
     _migration_table.create(engine, checkfirst=True)
     with engine.begin() as conn:
         return {str(x) for x in conn.execute(select(_migration_table.c.revision)).scalars().all()}
 
 
-def apply_schema_migrations(engine: Engine) -> dict[str, object]:
+def _apply_schema_migrations_unlocked(engine: Engine) -> dict[str, object]:
     applied = _applied(engine)
     newly_applied: list[str] = []
     for revision, description, upgrade in MIGRATIONS:
@@ -78,6 +114,11 @@ def apply_schema_migrations(engine: Engine) -> dict[str, object]:
         applied.add(revision)
         newly_applied.append(revision)
     return schema_migration_status(engine, newly_applied=newly_applied)
+
+
+def apply_schema_migrations(engine: Engine) -> dict[str, object]:
+    with schema_migration_lock(engine):
+        return _apply_schema_migrations_unlocked(engine)
 
 
 def schema_migration_status(engine: Engine, *, newly_applied: list[str] | None = None) -> dict[str, object]:
@@ -100,4 +141,5 @@ def schema_migration_status(engine: Engine, *, newly_applied: list[str] | None =
         "up_to_date": not pending and current == LATEST_SCHEMA_REVISION,
         "newly_applied": newly_applied or [],
         "dialect": engine.dialect.name,
+        "serialized_writes": engine.dialect.name == "postgresql",
     }
