@@ -79,7 +79,12 @@ def _engine_for(organization_id: int) -> Engine:
             return existing
         url = tenant_database_url(organization_id)
         connect_args = {"check_same_thread": False} if url.startswith("sqlite") else {}
-        engine = create_engine(url, connect_args=connect_args)
+        engine = create_engine(
+            url,
+            connect_args=connect_args,
+            pool_pre_ping=not url.startswith("sqlite"),
+            pool_recycle=1800 if not url.startswith("sqlite") else -1,
+        )
         _tenant_engines[organization_id] = engine
         _tenant_sessions[organization_id] = sessionmaker(bind=engine, autoflush=False, autocommit=False)
         return engine
@@ -87,11 +92,22 @@ def _engine_for(organization_id: int) -> Engine:
 
 def ensure_tenant_schema(organization_id: int) -> Engine:
     engine = _engine_for(organization_id)
-    # Base.metadata grows while Daily Workbench modules are imported. Running
-    # create_all on session acquisition is idempotent and ensures a new company
-    # receives every currently registered business table before the first query.
+    # create_all remains the V0.1 compatibility floor so existing SQLite users
+    # do not need a destructive conversion. The migration ledger below is the
+    # forward schema owner for production evolution and records each revision
+    # independently in every company database.
     Base.metadata.create_all(engine)
+    from .schema_migrations import apply_schema_migrations
+
+    apply_schema_migrations(engine)
     return engine
+
+
+def tenant_schema_status(organization_id: int) -> dict[str, object]:
+    engine = ensure_tenant_schema(organization_id)
+    from .schema_migrations import schema_migration_status
+
+    return schema_migration_status(engine)
 
 
 def dispose_tenant_engine(organization_id: int) -> None:
