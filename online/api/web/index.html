@@ -13,14 +13,18 @@
   <aside class="side">
     <div class="brand">HUIDI <span>Online</span></div>
     <div class="nav-title">今天</div>
-    <nav class="nav"><a class="active">工作台</a><a>待跟进</a><a>客户回复</a><a>提醒</a></nav>
-    <div class="nav-title">客户开发</div>
-    <nav class="nav"><a>找客户</a><a>线索池</a><a>客户背调</a><a>联系人</a></nav>
-    <div class="nav-title">业务推进</div>
-    <nav class="nav"><a>邮件</a><a>客户 / 询盘</a><a>商品 / Product Brain</a><a>产品目录</a><a>报价与单据</a></nav>
-    <div class="nav-title">贸易工具</div>
-    <nav class="nav"><a>地图找客户 <span class="soon">施工中</span></a><a>外贸情报 <span class="soon">施工中</span></a><a>HS / 关税 / 汇率 <span class="soon">施工中</span></a><a>物流 / 船期 <span class="soon">施工中</span></a></nav>
-    <div class="side-note">Daily Workbench · Real SMTP · Business Bridge<br>Online 是日常主工作台，Community Local 作为本地模式补充。</div>
+    <nav class="nav"><a class="active">工作台</a><a>待跟进</a><a data-huidi-service="mail">客户回复</a><a>提醒</a></nav>
+    <div class="nav-title">开发客户</div>
+    <nav class="nav"><a>找客户</a><a data-huidi-service="map">地图找客户</a><a>线索池</a><a data-huidi-service="company">客户背调</a><a>联系人</a></nav>
+    <div class="nav-title">邮件与跟进</div>
+    <nav class="nav"><a data-huidi-service="mail">收件箱</a><a data-huidi-service="mail">已发送</a><a data-huidi-service="mail">邮箱账户</a><a data-huidi-service="queue">待发送</a></nav>
+    <div class="nav-title">客户与业务</div>
+    <nav class="nav"><a>客户 / 询盘</a><a>报价</a><a>PI</a><a>合同</a><a>CI / 装箱单</a></nav>
+    <div class="nav-title">商品与内容</div>
+    <nav class="nav"><a>商品</a><a>产品资料</a><a>产品目录</a></nav>
+    <div class="nav-title">外贸工具</div>
+    <nav class="nav"><a data-huidi-service="intel">市场情报</a><a data-huidi-service="trade">贸易记录</a><a data-huidi-service="tariff">HS / 关税</a><a data-huidi-service="fx">汇率</a><a data-huidi-service="shipping">船期 / 物流</a></nav>
+    <div class="side-note">每天工作 · 邮件收发 · 业务互通<br>联网功能尽量在当前业务里直接完成。</div>
   </aside>
   <main class="main">
     <div class="top"><div><h1>外贸工作台</h1><p>先处理今天的跟进和回复，再找客户、发邮件、推进询盘、做报价与单据。</p></div><div id="health" class="health">正在检查服务…</div></div>
@@ -34,19 +38,21 @@
     <button id="closeDrawer" class="close">×</button>
     <h2 id="dCompany">线索详情</h2><div id="dWebsite" class="muted"></div>
     <div class="section"><div class="drawer-grid"><div class="field"><label>联系人</label><input id="dContact"></div><div class="field"><label>职位</label><input id="dRole"></div><div class="field"><label>邮箱</label><input id="dEmail"></div><div class="field"><label>状态</label><select id="dStatus"><option value="new">新线索</option><option value="qualified">已筛选</option><option value="contacted">已联系</option><option value="replied">已回复</option><option value="converted">已转询盘</option><option value="archived">归档</option></select></div></div><div class="row" style="margin-top:9px"><button class="secondary" id="saveLead">保存资料</button><button class="secondary" id="findContact">查找公开联系人</button></div></div>
-    <div class="section"><div class="assessment-head"><div><h3>客户背调初筛</h3><div class="muted">基于当前公开证据判断；后续继续接工商、海关和贸易数据 Provider。</div></div><button class="secondary" id="assessLead">重新评估</button></div><div id="assessmentBox" class="muted" style="margin-top:9px">尚未进行背调初筛。</div></div>
-    <div class="section"><h3>开发信草稿</h3><div class="drawer-grid"><div class="field"><label>输出语言</label><select id="draftLang"><option>English</option><option>中文</option><option>Español</option><option>Deutsch</option><option>Français</option><option>日本語</option></select></div><div class="field"><label>你的产品 / 卖点</label><input id="productSummary"></div></div><div class="row" style="margin-top:9px"><button class="primary" id="makeDraft">生成草稿</button><button class="secondary" id="approveDraft">确认草稿</button><button class="secondary" id="rejectDraft">需要修改</button></div><div id="draftBox" class="draft" style="margin-top:9px">还没有生成开发信。</div><div class="warning">配置 SMTP 并通过连接测试后，可在下方直接真实发送。发送前仍会检查人工确认、额度、间隔、退订/黑名单和客户回复状态。</div></div>
+    <div class="section"><div class="assessment-head"><div><h3>客户背调初筛</h3><div class="muted">先看当前公开资料；如果已经连接企业核验和贸易数据，也可以继续补充正式资料。</div></div><button class="secondary" id="assessLead">重新评估</button></div><div id="assessmentBox" class="muted" style="margin-top:9px">尚未进行背调初筛。</div></div>
+    <div class="section"><h3>开发信草稿</h3><div class="drawer-grid"><div class="field"><label>输出语言</label><select id="draftLang"><option>English</option><option>中文</option><option>Español</option><option>Deutsch</option><option>Français</option><option>日本語</option></select></div><div class="field"><label>你的产品 / 卖点</label><input id="productSummary"></div></div><div class="row" style="margin-top:9px"><button class="primary" id="makeDraft">生成草稿</button><button class="secondary" id="approveDraft">确认草稿</button><button class="secondary" id="rejectDraft">需要修改</button></div><div id="draftBox" class="draft" style="margin-top:9px">还没有生成开发信。</div><div class="warning">连接发送邮箱后，可以直接发送或加入待发送。发送前会检查是否已经确认、今日发送量、发送间隔、退订名单以及客户是否已经回复。</div></div>
     <div class="section"><h3>安排下一次跟进</h3><div class="follow"><div class="field"><label>跟进时间</label><input id="followAt" type="datetime-local"></div><div class="field"><label>备注</label><input id="followNote" placeholder="例如：如未回复，补充产品目录"></div><button class="secondary" id="saveFollow">安排</button></div></div>
     <div class="section"><h3>开发记录</h3><div id="timeline" class="timeline"><div class="muted">暂无记录。</div></div></div>
-    <div class="section"><div class="bridge-card"><h3>↔ Community Local</h3><div class="muted">需要离线处理或继续本地单据时，可把这条真实机会同步到现有客户 + 询盘 + 商品 + Catalog / Quotation / PI / Contract / CI / PL 链。</div><div class="bridge-flow"><span>Online 线索</span><i>→</i><span>客户</span><i>→</i><span>询盘</span><i>→</i><span>Catalog / 报价</span><i>→</i><span>PI / 合同</span><i>→</i><span>CI / PL</span></div><div class="bridge-grid"><div class="field"><label>本地工作台地址</label><input id="localBase" value="http://127.0.0.1:8765"></div><div class="row"><button class="secondary" id="saveLocalBase">记住地址</button><button class="primary" id="syncLocal">同步到本地并转询盘</button></div></div><div id="bridgeStatus" class="bridge-status">选择线索后可同步。</div></div></div>
+    <div class="section"><div class="bridge-card"><h3>↔ 本地工作台</h3><div class="muted">需要离线处理或继续本地单据时，可把这条真实机会交给现有客户、询盘、商品、产品目录和单据继续处理。</div><div class="bridge-flow"><span>当前线索</span><i>→</i><span>客户</span><i>→</i><span>询盘</span><i>→</i><span>产品目录 / 报价</span><i>→</i><span>PI / 合同</span><i>→</i><span>CI / 装箱单</span></div><div class="bridge-grid"><div class="field"><label>本地工作台地址</label><input id="localBase" value="http://127.0.0.1:8765"></div><div class="row"><button class="secondary" id="saveLocalBase">记住地址</button><button class="primary" id="syncLocal">同步到本地并转询盘</button></div></div><div id="bridgeStatus" class="bridge-status">选择线索后可同步。</div></div></div>
   </aside>
 </div>
 <script src="/assets/product-brain-core.js"></script>
 <script src="/assets/app.js"></script>
 <script src="/assets/daily-workbench.js"></script>
 <script src="/assets/product-brain.js"></script>
+<script src="/assets/product-brain-server.js"></script>
 <script src="/assets/growth-workflow.js"></script>
 <script src="/assets/mail-governance.js"></script>
 <script src="/assets/local-status-sync.js"></script>
+<script src="/assets/daily-services.js"></script>
 </body>
 </html>
