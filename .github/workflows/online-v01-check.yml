@@ -12,6 +12,8 @@ on:
       - 'public/huidi-workspace-closure-v1.js'
       - 'public/huidi-workspace-closure-v1.css'
       - 'public/huidi-notification-center-v1.js'
+      - 'public/huidi-editor-return-v1.js'
+      - 'public/huidi-action-owner-rc1621.js'
       - '.github/workflows/online-v01-check.yml'
   push:
     branches:
@@ -26,6 +28,8 @@ on:
       - 'public/huidi-workspace-closure-v1.js'
       - 'public/huidi-workspace-closure-v1.css'
       - 'public/huidi-notification-center-v1.js'
+      - 'public/huidi-editor-return-v1.js'
+      - 'public/huidi-action-owner-rc1621.js'
       - '.github/workflows/online-v01-check.yml'
 
 jobs:
@@ -58,12 +62,14 @@ jobs:
           node --check web/growth-workflow.js
       - name: Product Brain core regression
         run: node tests/product_brain.test.cjs
-      - name: Check Local bridge notification and closure JavaScript
+      - name: Check Local bridge notification closure and editor-return JavaScript
         run: |
           node --check ../../public/huidi-online-local-bridge-v1.js
           node --check ../../public/huidi-workspace-r6-rc1628.js
           node --check ../../public/huidi-notification-center-v1.js
           node --check ../../public/huidi-workspace-closure-v1.js
+          node --check ../../public/huidi-editor-return-v1.js
+          node --check ../../public/huidi-action-owner-rc1621.js
       - name: Check secondary-page inline JavaScript
         run: |
           python - <<'PY'
@@ -100,6 +106,9 @@ jobs:
           grep -q 'Writer' web/growth-workflow.js
           grep -q 'Outreach' web/growth-workflow.js
           grep -q 'Closer' web/growth-workflow.js
+          grep -q 'paged=1' web/app.js
+          grep -q 'page_size' app/main.py
+          grep -q 'lead_pagination' app/main.py
           grep -q 'huidi.product.brain/v1' ../../public/product-online-handoff.html
           grep -q 'HUIDILocalCore' ../../public/product-online-handoff.html
           grep -q 'repositories' ../../public/product-online-handoff.html
@@ -118,7 +127,12 @@ jobs:
           grep -q 'customerSearch' ../../public/document-start.html
           grep -q 'productSearch' ../../public/document-start.html
           grep -q 'productScope' ../../public/document-start.html
+          grep -q 'huidi_document_return_v1' ../../public/document-start.html
           grep -q 'workspace.html#documents' ../../public/document-start.html
+          grep -q 'huidi_document_return_v1' ../../public/huidi-editor-return-v1.js
+          grep -q 'huidi_workspace_focus_v1' ../../public/huidi-editor-return-v1.js
+          grep -q '返回询盘' ../../public/huidi-editor-return-v1.js
+          grep -q 'huidi-editor-return-v1.js' ../../public/huidi-action-owner-rc1621.js
           ! grep -q 'workspace.html?view=' ../../public/huidi-online-local-bridge-v1.js
           grep -q 'workspace.html#' ../../public/huidi-online-local-bridge-v1.js
           grep -q 'huidi_local_notifications_v1' ../../public/huidi-notification-center-v1.js
