@@ -17,6 +17,7 @@ class ProductionClosureContractTests(unittest.TestCase):
         guard = self.text("app/provider_guard.py")
         fusion = self.text("app/acquisition_provider_fusion.py")
         self.assertIn("from . import acquisition_provider_fusion", daily)
+        self.assertIn("from . import acquisition_status_bridge", daily)
         self.assertIn("TAVILY_API_KEY", guard)
         self.assertIn("HUNTER_API_KEY", guard)
         self.assertIn("_company_search_with_failover", fusion)
@@ -33,6 +34,7 @@ class ProductionClosureContractTests(unittest.TestCase):
         self.assertIn("/api/mail/messages", paths)
         self.assertIn("/api/mail/queue", paths)
         self.assertIn("/api/mail/threads", paths)
+        self.assertIn("/api/mail/sequence-enrollments", paths)
 
     def test_funnel_uses_real_delivery_reply_and_business_tables(self):
         source = self.text("app/growth_funnel.py")
@@ -46,7 +48,9 @@ class ProductionClosureContractTests(unittest.TestCase):
         self.assertIn('path == "/api/mail/messages"', source)
         self.assertIn('path == "/api/mail/queue"', source)
         self.assertIn('path == "/api/mail/threads"', source)
+        self.assertIn('path == "/api/mail/sequence-enrollments"', source)
         self.assertIn("row_number().over", source)
+        self.assertIn("MailSequenceEnrollment", source)
 
     def test_new_browser_owners_are_loaded_and_parse(self):
         index = self.text("web/index.html")
@@ -55,6 +59,7 @@ class ProductionClosureContractTests(unittest.TestCase):
             "web/growth-funnel-ui.js",
             "web/mail-list-pagination-ui.js",
             "web/mail-thread-ui.js",
+            "web/sequence-pagination-ui.js",
         ]
         for file in files:
             name = Path(file).name
