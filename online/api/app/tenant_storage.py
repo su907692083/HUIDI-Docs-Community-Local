@@ -92,14 +92,13 @@ def _engine_for(organization_id: int) -> Engine:
 
 def ensure_tenant_schema(organization_id: int) -> Engine:
     engine = _engine_for(organization_id)
-    # create_all remains the V0.1 compatibility floor so existing SQLite users
-    # do not need a destructive conversion. The migration ledger below is the
-    # forward schema owner for production evolution and records each revision
-    # independently in every company database.
-    Base.metadata.create_all(engine)
-    from .schema_migrations import apply_schema_migrations
+    # V0.1 keeps create_all as a compatibility floor for historical SQLite
+    # installs, but the entire compatibility-create + forward revision section
+    # is now serialized by the schema migration owner. PostgreSQL therefore
+    # cannot have two HUIDI workers writing the same tenant revision at once.
+    from .schema_migrations import upgrade_schema
 
-    apply_schema_migrations(engine)
+    upgrade_schema(engine, Base.metadata)
     return engine
 
 
