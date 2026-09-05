@@ -74,12 +74,12 @@ class MailGovernanceTests(unittest.TestCase):
         self.db.commit()
         self.db.close()
 
-    def test_review_ready_does_not_enable_real_delivery(self):
+    def test_review_ready_waits_for_mailbox_connection(self):
         readiness = mail_readiness_payload(self.db, self.lead, self.mailbox_id)
         self.assertTrue(readiness["review_ready"])
         self.assertFalse(readiness["delivery_ready"])
-        self.assertFalse(readiness["send_enabled"])
-        self.assertEqual(readiness["delivery_mode"], "review_only")
+        self.assertTrue(readiness["send_enabled"])
+        self.assertEqual(readiness["delivery_mode"], "connected_mailbox")
 
     def test_suppression_blocks_plan(self):
         upsert_suppression(
@@ -91,7 +91,7 @@ class MailGovernanceTests(unittest.TestCase):
         suppression_check = next(x for x in readiness["checks"] if x["key"] == "suppression")
         self.assertFalse(suppression_check["ok"])
 
-    def test_dispatch_plan_is_review_only_and_idempotent_for_same_draft(self):
+    def test_dispatch_plan_is_idempotent_for_same_draft(self):
         req = DispatchPlanRequest(mailbox_id=self.mailbox_id, review_note="human reviewed")
         first = create_dispatch_plan(self.lead_id, req, self.db)
         second = create_dispatch_plan(self.lead_id, req, self.db)
