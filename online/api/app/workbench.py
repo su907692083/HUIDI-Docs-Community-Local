@@ -142,6 +142,16 @@ def _needs_reply(db: Session, rows: list[MailboxMessage]) -> list[dict[str, Any]
             )
         if later_outgoing:
             continue
+        if row.lead_id:
+            later_delivery = db.scalar(
+                select(MailDeliveryLog.id)
+                .where(MailDeliveryLog.lead_id == row.lead_id)
+                .where(MailDeliveryLog.state == "sent")
+                .where(MailDeliveryLog.created_at > row.received_at)
+                .limit(1)
+            )
+            if later_delivery:
+                continue
         lead = db.get(Lead, row.lead_id) if row.lead_id else None
         items.append(
             {
