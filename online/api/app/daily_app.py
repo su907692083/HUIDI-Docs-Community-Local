@@ -34,6 +34,10 @@ from . import customer_intelligence  # noqa: F401,E402
 from . import intelligence_source_bridge  # noqa: F401,E402
 from . import today_intelligence  # noqa: F401,E402
 from . import provider_guard  # noqa: F401,E402
+# Imported after the guard so the acquisition middleware is the outer owner:
+# Serper remains primary, Tavily is real-company failover, Hunter is contact
+# priority with Serper fallback. All paths still write the same Lead objects.
+from . import acquisition_provider_fusion  # noqa: F401,E402
 from . import workbench  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
 from . import team_access  # noqa: F401,E402
