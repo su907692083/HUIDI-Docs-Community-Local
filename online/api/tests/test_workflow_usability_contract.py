@@ -27,6 +27,7 @@ class WorkflowUsabilityContractTests(unittest.TestCase):
         self.assertIn("trapTab", source)
         self.assertIn("focusables", source)
         self.assertIn("openerByOverlay", source)
+        self.assertIn("scheduleRefresh", source)
         self.assertIn("#huidiNavBack", source)
 
     def test_customer_drawer_has_fast_section_navigation(self):
@@ -54,6 +55,20 @@ class WorkflowUsabilityContractTests(unittest.TestCase):
             "Ctrl / ⌘ + K",
             "#keyword,#country,#buyerType",
             "huidi-busy-once",
+            "scheduleRefresh",
+        ]:
+            self.assertIn(marker, source)
+
+    def test_mail_sidebar_lands_on_the_requested_work_area(self):
+        source = self.text("web/workflow-usability-closure.js")
+        for marker in [
+            "interceptMailNavigation",
+            "openMailDestination",
+            "客户回复",
+            "收件箱",
+            "已发送",
+            "邮箱设置",
+            "mailCard",
         ]:
             self.assertIn(marker, source)
 
