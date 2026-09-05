@@ -50,6 +50,7 @@ jobs:
           paths={r.path for r in app.routes}
           required={
             '/api/workbench/today',
+            '/api/company-settings',
             '/api/mail/delivery-health',
             '/api/mail/accounts/{mailbox_id}/smtp',
             '/api/mail/accounts/{mailbox_id}/test',
@@ -83,6 +84,9 @@ jobs:
             '/api/service-connections',
             '/api/service-connections/{service_key}',
             '/api/service-connections/{service_key}/test',
+            '/api/service-adapters',
+            '/api/service-adapters/{service_key}',
+            '/api/service-adapters/{service_key}/test',
             '/api/notification-routes',
             '/api/notification-routes/{route_id}',
             '/api/notification-routes/{route_id}/test',
@@ -115,7 +119,9 @@ jobs:
           node --check web/product-brain-server.js
           node --check web/growth-workflow.js
           node --check web/mail-governance.js
+          node --check web/mail-owner-v3.js
           node --check web/local-status-sync.js
+          node --check web/business-context.js
           node --check web/daily-services.js
           node --check web/mail-thread-ui.js
           node --check web/map-view.js
@@ -125,8 +131,10 @@ jobs:
           node --check web/sequence-ui.js
           node --check web/intelligence-history.js
           node --check web/team-access.js
+          node --check web/company-settings.js
           node --check web/audit-ui.js
           node --check web/service-settings.js
+          node --check web/service-adapter-ui.js
           node --check web/notification-settings.js
           node --check web/admin-safety.js
           node --check web/plain-language.js
@@ -176,10 +184,21 @@ jobs:
           checks={
             'Daily Workbench UI': ('web/index.html','daily-workbench.js'),
             'Daily summary API': ('app/workbench.py','replies_today'),
+            'Company work timezone owner': ('app/company_settings.py','CompanySetting'),
+            'Company work timezone isolation': ('tests/test_company_settings.py','physically_isolated'),
+            'Today uses company timezone': ('app/workbench.py','company_timezone(db)'),
+            'Today actionable reply owner': ('app/workbench.py','_needs_reply'),
+            'Today replied-thread regression': ('tests/test_workbench_actions.py','disappears_after_later_reply'),
+            'Today deal next actions': ('app/workbench.py','_today_deal_tasks'),
+            'Today deal task regression': ('tests/test_workbench_actions.py','enters_today_tasks'),
+            'Today real queue only': ('app/workbench.py','MailQueueItem.state.in_'),
+            'Today no legacy plan owner': ('app/workbench.py','MailDispatchPlan'),
             'Real mail delivery': ('app/mail_delivery.py','/api/leads/{lead_id}/send'),
             'Connected Gmail Outlook': ('app/mail_provider.py','send_connected_message'),
             'Inbox and reply sync': ('app/mail_sync.py','mail_reply_received'),
             'Mail queue retry': ('app/mail_sync.py','retrying'),
+            'Real queue UI owner': ('web/mail-owner-v3.js','/queue'),
+            'Real queue beginner copy': ('web/mail-owner-v3.js','稍后发送'),
             'Reply stop': ('app/mail_sync.py','reply_stop'),
             'Mail audit log': ('app/mail_delivery.py','MailDeliveryLog'),
             'Automatic follow-up': ('app/mail_sequences.py','MailSequenceEnrollment'),
@@ -206,6 +225,7 @@ jobs:
             'Team write permission': ('app/team_access.py','你的账号是只读权限'),
             'Team admin permission': ('app/team_access.py','这项设置只允许老板或管理员修改'),
             'Team login UI': ('web/team-access.js','登录 HUIDI'),
+            'Company work time UI': ('web/company-settings.js','公司工作时间'),
             'Physical tenant database router': ('app/tenant_storage.py','physically separate business database'),
             'Organization-bound request context': ('app/team_access.py','set_current_organization'),
             'Tenant background jobs': ('app/tenant_jobs.py','run_tenant_jobs_once'),
@@ -218,6 +238,9 @@ jobs:
             'Audit privacy regression': ('tests/test_audit_log.py','does_not_store_sensitive_request_content'),
             'Audit tenant isolation': ('tests/test_audit_log.py','physically_isolated_by_company'),
             'Operation history UI': ('web/audit-ui.js','操作记录'),
+            'Audit company work time': ('app/audit_log.py','修改公司工作时间'),
+            'Audit real mail queue': ('app/audit_log.py','加入待发送'),
+            'Audit data adapter changes': ('app/audit_log.py','修改数据服务接入方式'),
             'Audit data service changes': ('app/audit_log.py','修改数据服务'),
             'Audit data service check': ('app/audit_log.py','检查数据服务'),
             'Audit reminder settings': ('app/audit_log.py','修改提醒方式'),
@@ -231,8 +254,14 @@ jobs:
             'Data service connection check': ('app/service_connections.py','test_resolved_service'),
             'Data service check privacy': ('tests/test_service_connections.py','without_exposing_it'),
             'Data service UI': ('web/service-settings.js','数据服务'),
-            'Data service check UI': ('web/service-settings.js','检查连接'),
-            'Data tools use company connection': ('app/service_hub.py','resolve_service_connection'),
+            'Data service adapter owner': ('app/service_adapters.py','ServiceAdapterSetting'),
+            'Data service adapter modes': ('app/service_adapters.py','post_key_header_json'),
+            'Data service adapter tenant isolation': ('tests/test_service_adapters.py','company_isolated'),
+            'Data service adapter bearer regression': ('tests/test_service_adapters.py','bearer_header_adapter'),
+            'Data service adapter query regression': ('tests/test_service_adapters.py','query_key_get_adapter'),
+            'Data service adapter network guard': ('app/service_adapters.py','_validate_endpoint'),
+            'Data service adapter UI': ('web/service-adapter-ui.js','接入方式'),
+            'Data service business route adapter': ('app/service_hub_adapter_patch.py','execute_service_request'),
             'External reminder route storage': ('app/notification_delivery.py','NotificationRoute'),
             'External reminder durable delivery': ('app/notification_delivery.py','NotificationDelivery'),
             'External reminder dedupe': ('tests/test_notification_delivery.py','delivered_only_once'),
@@ -277,6 +306,10 @@ jobs:
             'Notification store': ('../../public/huidi-notification-center-v1.js','huidi_local_notifications_v1'),
             'Business bridge': ('../../public/huidi-online-local-bridge-v1.js','huidi.business.bundle/v1'),
           }
+          # One negative contract: workbench must not use legacy MailDispatchPlan.
+          text=Path('app/workbench.py').read_text(encoding='utf-8')
+          if 'MailDispatchPlan' in text:
+            raise SystemExit('Contract failure: legacy MailDispatchPlan still owns Today pending mail')
           failed=[]
           for name,(path,marker) in checks.items():
             text=Path(path).read_text(encoding='utf-8')
