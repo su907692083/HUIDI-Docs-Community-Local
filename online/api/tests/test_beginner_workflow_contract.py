@@ -38,6 +38,15 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         self.assertIn("先处理", flow)
         self.assertIn("做报价", flow)
 
+    def test_customer_detail_workflow_is_plain_business_progress(self):
+        growth = self.text("web/growth-workflow.js")
+        for label in ["产品准备", "客户发现", "客户背调", "邮件准备", "联系客户", "业务推进"]:
+            self.assertIn(label, growth)
+        self.assertIn("近期采购迹象 · 公开资料", growth)
+        self.assertIn("尚未处理", growth)
+        for jargon in ["Buying Signals", "Strategy", "Hunter", "Profiler", "Writer", "Outreach", "Closer", "Product Brain", "Community Local"]:
+            self.assertNotIn(jargon, growth)
+
     def test_common_technical_errors_are_rewritten_for_normal_users(self):
         plain = self.text("web/plain-language.js")
         self.assertIn("friendlyMessage", plain)
