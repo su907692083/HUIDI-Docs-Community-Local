@@ -59,10 +59,16 @@ jobs:
             '/api/mail/sync-all',
             '/api/mail/queue',
             '/api/mail/queue/run',
+            '/api/mail/sequences',
+            '/api/mail/sequences/run',
+            '/api/mail/sequence-enrollments',
             '/api/leads/{lead_id}/send',
             '/api/leads/{lead_id}/queue',
+            '/api/leads/{lead_id}/sequence',
             '/api/leads/{lead_id}/local-event',
             '/api/product-brains',
+            '/api/intelligence',
+            '/api/intelligence/summary/{lead_id}',
             '/api/services/status',
             '/api/tools/map-leads',
             '/api/tools/trade-news',
@@ -88,6 +94,12 @@ jobs:
           node --check web/mail-governance.js
           node --check web/local-status-sync.js
           node --check web/daily-services.js
+          node --check web/mail-thread-ui.js
+          node --check web/map-view.js
+          node --check web/business-center-ui.js
+          node --check web/daily-navigation.js
+          node --check web/sequence-ui.js
+          node --check web/intelligence-history.js
           node --check web/plain-language.js
 
       - name: Product Brain regression
@@ -141,11 +153,18 @@ jobs:
             'Mail queue retry': ('app/mail_sync.py','retrying'),
             'Reply stop': ('app/mail_sync.py','reply_stop'),
             'Mail audit log': ('app/mail_delivery.py','MailDeliveryLog'),
+            'Automatic follow-up': ('app/mail_sequences.py','MailSequenceEnrollment'),
+            'Automatic follow-up reply stop': ('app/mail_sequences.py','sequence_stopped'),
+            'Automatic follow-up approval': ('app/mail_sequences.py','请先确认这套跟进内容'),
+            'Automatic follow-up UI': ('web/sequence-ui.js','自动跟进'),
             'Simple service center': ('web/daily-services.js','地图找客户'),
             'Plain language layer': ('web/plain-language.js','产品资料'),
             'No demo lead guard': ('app/provider_guard.py','不会用演示联系人代替真实结果'),
             'Server product persistence': ('app/product_memory.py','ProductBrainRecord'),
             'Product server sync': ('web/product-brain-server.js','/api/product-brains/import'),
+            'Durable online data': ('app/intelligence_records.py','OnlineIntelligenceRecord'),
+            'Connected data writeback': ('app/service_hub.py','record_intelligence'),
+            'Connected data customer UI': ('web/intelligence-history.js','联网资料'),
             'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
             'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
             'FX': ('app/service_hub.py','/api/tools/fx'),
