@@ -10,7 +10,7 @@ from sqlalchemy.engine import Connection, Engine
 
 
 SCHEMA_SERIES = "huidi.online.schema/v1"
-LATEST_SCHEMA_REVISION = "20260906_002_intelligence_feed_sources"
+LATEST_SCHEMA_REVISION = "20260906_003_industry_playbook_context"
 # Stable signed bigint used only to serialize HUIDI schema revisions inside one
 # PostgreSQL database. It contains no customer or deployment-specific data.
 POSTGRES_MIGRATION_LOCK_ID = 6843443791448361
@@ -58,6 +58,17 @@ _intel_source_table = Table(
     Column("updated_at", DateTime, nullable=False),
 )
 
+_industry_meta = MetaData()
+_industry_pref_table = Table(
+    "lead_industry_preferences",
+    _industry_meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("lead_id", Integer, nullable=False, unique=True, index=True),
+    Column("industry_id", String(120), nullable=False, index=True),
+    Column("source", String(24), nullable=False, default="auto"),
+    Column("updated_at", DateTime, nullable=False),
+)
+
 
 def _baseline(_engine: Engine) -> None:
     # Existing installations are treated as the Online V0.1 baseline. Business
@@ -73,6 +84,13 @@ def _intelligence_feed_sources(engine: Engine) -> None:
     _intel_source_table.create(engine, checkfirst=True)
 
 
+def _industry_playbook_context(engine: Engine) -> None:
+    # Industry taxonomy itself is a versioned code asset; only the user's
+    # per-customer choice is persisted. This avoids duplicating 143 industry
+    # definitions or thousands of generated templates in every company DB.
+    _industry_pref_table.create(engine, checkfirst=True)
+
+
 MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
     ("20260905_000_online_v01_baseline", "Online V0.1 existing business schema baseline", _baseline),
     (
@@ -84,6 +102,11 @@ MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
         "20260906_002_intelligence_feed_sources",
         "Company-managed foreign-trade intelligence feed sources",
         _intelligence_feed_sources,
+    ),
+    (
+        "20260906_003_industry_playbook_context",
+        "Per-customer selection for the unified legacy-derived industry playbook",
+        _industry_playbook_context,
     ),
 ]
 
