@@ -106,7 +106,7 @@ jobs:
           grep -q 'Writer' web/growth-workflow.js
           grep -q 'Outreach' web/growth-workflow.js
           grep -q 'Closer' web/growth-workflow.js
-          grep -q 'paged=1' web/app.js
+          grep -q "paged:'1'" web/app.js
           grep -q 'page_size' app/main.py
           grep -q 'lead_pagination' app/main.py
           grep -q 'huidi.product.brain/v1' ../../public/product-online-handoff.html
