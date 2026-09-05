@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -13,6 +14,7 @@ from app.notification_delivery import (  # noqa: E402
     NotificationDelivery,
     NotificationRoute,
     _encrypt,
+    _in_quiet_hours,
     route_dict,
     run_notification_delivery_once,
 )
@@ -49,6 +51,28 @@ class NotificationDeliveryTests(unittest.TestCase):
         self.assertTrue(public["destination_saved"])
         self.assertNotIn("destination", public)
         self.assertNotIn("encrypted_destination", public)
+
+    def test_quiet_hours_block_night_and_allow_daytime(self):
+        row = NotificationRoute(
+            name="团队提醒",
+            channel="feishu",
+            encrypted_destination=_encrypt("https://notify.example/quiet"),
+            categories_json='["reply"]',
+            timezone_name="Asia/Shanghai",
+            quiet_start="22:00",
+            quiet_end="08:00",
+            enabled=1,
+        )
+        with patch(
+            "app.notification_delivery._local_now",
+            return_value=datetime(2026, 9, 5, 23, 30, tzinfo=timezone.utc),
+        ):
+            self.assertTrue(_in_quiet_hours(row))
+        with patch(
+            "app.notification_delivery._local_now",
+            return_value=datetime(2026, 9, 5, 12, 0, tzinfo=timezone.utc),
+        ):
+            self.assertFalse(_in_quiet_hours(row))
 
     def test_same_business_event_is_delivered_only_once(self):
         event = {
