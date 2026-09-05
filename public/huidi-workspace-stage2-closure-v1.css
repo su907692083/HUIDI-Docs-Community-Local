@@ -1,0 +1,22 @@
+/* HUIDI Workspace Stage 2 Closure V1 — quick context + linked mail workbench. */
+.huidi-quick-drawer[data-stage2-kind]{width:min(540px,calc(100vw - 24px))}
+.huidi-stage2-context{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;margin:0 0 12px;padding:11px 12px;border:1px solid #dce7f3;border-radius:12px;background:linear-gradient(135deg,#f8fbff,#f2f7ff)}
+.huidi-stage2-context small{display:block;color:#718198;font-size:10px;font-weight:750;margin-bottom:3px}
+.huidi-stage2-context b{display:block;color:#223e6f;font-size:13px;line-height:1.4}
+.huidi-stage2-context .huidi-stage2-badges{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+.huidi-stage2-badge{display:inline-flex;align-items:center;min-height:24px;padding:0 7px;border:1px solid #dce5ef;border-radius:999px;background:#fff;color:#607089;font-size:9px;font-weight:850;white-space:nowrap}
+.huidi-stage2-badge.online{border-color:#cddfff;background:#eef5ff;color:#225ca9}
+.huidi-stage2-badge.warn{border-color:#f0dfb6;background:#fff8e9;color:#916115}
+#mailRows tr[data-stage2-mail-id]{cursor:pointer}
+#mailRows tr[data-stage2-mail-id]:hover td{background:#f9fbfe}
+.huidi-mail-row-link{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px}
+.huidi-mail-row-link span{font-size:9px;color:#6f7f94}
+.huidi-mail-row-link .online{color:#2a64b0;font-weight:800}
+.huidi-mail-context-strip{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:9px 10px;border:1px solid #dce7f2;border-radius:10px;background:#f8fbff}
+.huidi-mail-context-strip div{min-width:0}
+.huidi-mail-context-strip b{display:block;color:#28466f;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:440px}
+.huidi-mail-context-strip small{display:block;color:#74839a;font-size:9px;margin-top:2px}
+.huidi-mail-context-strip .row{display:flex;gap:6px}
+.huidi-mail-context-strip button{min-height:30px;padding:0 8px;border:1px solid #d6e2ef;border-radius:7px;background:#fff;color:#35557c;font-size:9px;font-weight:850;cursor:pointer}
+.huidi-mail-body-preview{white-space:pre-wrap;word-break:break-word;max-height:260px;overflow:auto;padding:10px;border:1px solid #e2e8f0;border-radius:9px;background:#fbfcfe;color:#46566c;font-size:11px;line-height:1.6}
+@media(max-width:720px){.huidi-stage2-context{grid-template-columns:1fr}.huidi-stage2-context .huidi-stage2-badges{justify-content:flex-start}}
