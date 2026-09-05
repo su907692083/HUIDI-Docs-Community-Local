@@ -50,6 +50,8 @@ jobs:
           paths={r.path for r in app.routes}
           required={
             '/api/workbench/today',
+            '/api/growth/funnel',
+            '/api/acquisition/status',
             '/api/company-settings',
             '/api/mail/delivery-health',
             '/api/mail/accounts/{mailbox_id}/smtp',
@@ -57,6 +59,7 @@ jobs:
             '/api/mail/connect/{provider}/start',
             '/api/mail/connect/{provider}/callback',
             '/api/mail/messages',
+            '/api/mail/threads',
             '/api/mail/sync-all',
             '/api/mail/queue',
             '/api/mail/queue/run',
@@ -132,12 +135,13 @@ jobs:
       - name: Check Online browser JavaScript
         run: |
           for file in \
-            web/app.js web/daily-workbench.js web/beginner-flow.js web/product-brain-core.js web/product-brain.js \
+            web/app.js web/daily-workbench.js web/acquisition-status-ui.js web/growth-funnel-ui.js \
+            web/beginner-flow.js web/product-brain-core.js web/product-brain.js \
             web/product-brain-server.js web/growth-workflow.js web/mail-governance.js \
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
-            web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
+            web/daily-services.js web/mail-thread-ui.js web/mail-list-pagination-ui.js web/map-view.js web/business-center-ui.js \
             web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
-            web/industry-playbook-ui.js web/intelligence-history.js web/customer-intelligence.js web/today-intelligence.js \
+            web/sequence-pagination-ui.js web/industry-playbook-ui.js web/intelligence-history.js web/customer-intelligence.js web/today-intelligence.js \
             web/team-access.js web/company-settings.js web/audit-ui.js web/service-settings.js \
             web/intelligence-source-settings.js web/service-adapter-ui.js web/notification-settings.js \
             web/admin-safety.js web/plain-language.js; do
@@ -189,7 +193,7 @@ jobs:
         run: |
           test ! -f .env
           test ! -f ../.env
-          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+|GNEWS_API_KEY=.+' . ../ || false
+          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+|TAVILY_API_KEY=.+|HUNTER_API_KEY=.+|GNEWS_API_KEY=.+' . ../ || false
 
   postgres_schema:
     runs-on: ubuntu-latest
