@@ -82,6 +82,10 @@ jobs:
             '/api/service-connections',
             '/api/service-connections/{service_key}',
             '/api/service-connections/{service_key}/test',
+            '/api/notification-routes',
+            '/api/notification-routes/{route_id}',
+            '/api/notification-routes/{route_id}/test',
+            '/api/notification-routes/run',
             '/api/services/status',
             '/api/tools/map-leads',
             '/api/tools/trade-news',
@@ -116,6 +120,7 @@ jobs:
           node --check web/team-access.js
           node --check web/audit-ui.js
           node --check web/service-settings.js
+          node --check web/notification-settings.js
           node --check web/plain-language.js
 
       - name: Product Brain regression
@@ -193,6 +198,7 @@ jobs:
             'Physical tenant database router': ('app/tenant_storage.py','physically separate business database'),
             'Organization-bound request context': ('app/team_access.py','set_current_organization'),
             'Tenant background jobs': ('app/tenant_jobs.py','run_tenant_jobs_once'),
+            'Tenant reminder jobs': ('app/tenant_jobs.py','notification_runs'),
             'Physical tenant isolation regression': ('tests/test_tenant_storage.py','physically_separate_business_databases'),
             'Organization management UI': ('web/team-access.js','新建公司工作区'),
             'Tenant audit middleware': ('app/audit_log.py','audit_middleware'),
@@ -201,6 +207,7 @@ jobs:
             'Operation history UI': ('web/audit-ui.js','操作记录'),
             'Audit data service changes': ('app/audit_log.py','修改数据服务'),
             'Audit data service check': ('app/audit_log.py','检查数据服务'),
+            'Audit reminder settings': ('app/audit_log.py','修改提醒方式'),
             'Company data service storage': ('app/service_connections.py','ServiceConnection'),
             'Encrypted data service authorization': ('app/service_connections.py','_encrypt'),
             'Data service tenant isolation': ('tests/test_service_connections.py','physically_isolated'),
@@ -210,6 +217,16 @@ jobs:
             'Data service UI': ('web/service-settings.js','数据服务'),
             'Data service check UI': ('web/service-settings.js','检查连接'),
             'Data tools use company connection': ('app/service_hub.py','resolve_service_connection'),
+            'External reminder route storage': ('app/notification_delivery.py','NotificationRoute'),
+            'External reminder durable delivery': ('app/notification_delivery.py','NotificationDelivery'),
+            'External reminder dedupe': ('tests/test_notification_delivery.py','delivered_only_once'),
+            'External reminder retry': ('tests/test_notification_delivery.py','retries_without_creating_duplicates'),
+            'External reminder state stop': ('tests/test_notification_delivery.py','done_event_is_not_sent'),
+            'External reminder tenant isolation': ('tests/test_notification_delivery.py','physically_isolated_by_company'),
+            'External reminder secret privacy': ('tests/test_notification_delivery.py','never_returned_to_ui'),
+            'External reminder quiet hours': ('app/notification_delivery.py','_in_quiet_hours'),
+            'External reminder settings UI': ('web/notification-settings.js','提醒方式'),
+            'External reminder beginner timezone': ('web/notification-settings.js','中国大陆'),
             'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
             'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
             'FX': ('app/service_hub.py','/api/tools/fx'),
