@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import DateTime, Integer, String, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
+from .backup_automation import BackupAutomationState
 from .business_center import OnlineDeal
 from .mail_delivery import MailDeliveryLog
 from .mail_sequences import MailSequenceEnrollment
@@ -211,6 +212,21 @@ def build_notifications(db: Session) -> list[dict[str, Any]]:
                 due.isoformat(),
                 "deal",
                 deal.id,
+            )
+        )
+
+    backup_state = db.get(BackupAutomationState, 1)
+    if backup_state and backup_state.status == "failed" and backup_state.last_attempt_at:
+        events.append(
+            _event(
+                f"backup.failed:{backup_state.last_attempt_at.isoformat()}",
+                "system",
+                "自动备份需要处理",
+                backup_state.last_error or "最近一次自动备份没有完成，请打开“上线检查”查看并先手动备份。",
+                "high",
+                backup_state.last_attempt_at.isoformat(),
+                "settings",
+                "backup",
             )
         )
 
