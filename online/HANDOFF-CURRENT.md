@@ -230,9 +230,9 @@ Quotation / PI / Contract / CI / Packing List 沿同一笔业务进入成熟单�
 
 `.env.example` 只承诺 PostgreSQL，不再泛写 MySQL / 任意数据库。
 
-多公司生产示例：
-- `DATABASE_URL=postgresql+psycopg://.../huidi_org_1`
-- `HUIDI_TENANT_DATABASE_URL_TEMPLATE=postgresql+psycopg://.../huidi_org_{organization_id}`
+多公司生产配置原则：
+- 公司 #1 的 `DATABASE_URL` 指向独立 PostgreSQL 数据库，例如 `huidi_org_1`。
+- 多公司模板变量 `HUIDI_TENANT_DATABASE_URL_TEMPLATE` 指向同一数据库服务，并在数据库名位置保留 `{organization_id}` 占位符，例如 `huidi_org_{organization_id}`。
 
 每家公司继续使用物理独立数据库。
 
