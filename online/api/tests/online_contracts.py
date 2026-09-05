@@ -105,7 +105,7 @@ CHECKS = {
     "Automatic backup readiness": ("app/production_readiness.py", "自动备份"),
     "Production readiness API": ("app/production_readiness.py", "build_production_readiness"),
     "Production readiness regression": ("tests/test_production_readiness.py", "reports_real_backup_and_mail_state"),
-    "Admin readiness UI": ("web/admin-safety.js", "上线检查"),
+    "Admin readiness UI": ("web/admin-safety.js", "使用检查与数据备份"),
     "Backup restore beginner UI": ("web/admin-safety.js", "请输入“恢复”"),
     "Backup directory source guard": ("../../.gitignore", "online/api/backups/"),
     "Map discovery": ("app/service_hub.py", "/api/tools/map-leads"),
