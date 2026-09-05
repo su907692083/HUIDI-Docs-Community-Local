@@ -9,6 +9,7 @@ install_session_router()
 from . import mail_provider  # noqa: F401,E402
 from . import mail_delivery  # noqa: F401,E402
 from . import mail_sync  # noqa: F401,E402
+from . import mail_plan_compat_owner  # noqa: F401,E402
 from . import mail_threads  # noqa: F401,E402
 from . import mail_sequences  # noqa: F401,E402
 from . import product_memory  # noqa: F401,E402
