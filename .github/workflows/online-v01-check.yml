@@ -112,32 +112,17 @@ jobs:
 
       - name: Check Online browser JavaScript
         run: |
-          node --check web/app.js
-          node --check web/daily-workbench.js
-          node --check web/product-brain-core.js
-          node --check web/product-brain.js
-          node --check web/product-brain-server.js
-          node --check web/growth-workflow.js
-          node --check web/mail-governance.js
-          node --check web/mail-owner-v3.js
-          node --check web/local-status-sync.js
-          node --check web/business-context.js
-          node --check web/daily-services.js
-          node --check web/mail-thread-ui.js
-          node --check web/map-view.js
-          node --check web/business-center-ui.js
-          node --check web/reference-handoff-guard.js
-          node --check web/daily-navigation.js
-          node --check web/sequence-ui.js
-          node --check web/intelligence-history.js
-          node --check web/team-access.js
-          node --check web/company-settings.js
-          node --check web/audit-ui.js
-          node --check web/service-settings.js
-          node --check web/service-adapter-ui.js
-          node --check web/notification-settings.js
-          node --check web/admin-safety.js
-          node --check web/plain-language.js
+          for file in \
+            web/app.js web/daily-workbench.js web/product-brain-core.js web/product-brain.js \
+            web/product-brain-server.js web/growth-workflow.js web/mail-governance.js \
+            web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
+            web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
+            web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
+            web/intelligence-history.js web/team-access.js web/company-settings.js web/audit-ui.js \
+            web/service-settings.js web/service-adapter-ui.js web/notification-settings.js \
+            web/admin-safety.js web/plain-language.js; do
+              node --check "$file"
+          done
 
       - name: Product Brain regression
         run: node tests/product_brain.test.cjs
@@ -178,145 +163,7 @@ jobs:
         run: node tests/bridge_contract.test.cjs
 
       - name: Verify named Online workbench contracts
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          checks={
-            'Daily Workbench UI': ('web/index.html','daily-workbench.js'),
-            'Daily summary API': ('app/workbench.py','replies_today'),
-            'Company work timezone owner': ('app/company_settings.py','CompanySetting'),
-            'Company work timezone isolation': ('tests/test_company_settings.py','physically_isolated'),
-            'Today uses company timezone': ('app/workbench.py','company_timezone(db)'),
-            'Today actionable reply owner': ('app/workbench.py','_needs_reply'),
-            'Today replied-thread regression': ('tests/test_workbench_actions.py','disappears_after_later_reply'),
-            'Today deal next actions': ('app/workbench.py','_today_deal_tasks'),
-            'Today deal task regression': ('tests/test_workbench_actions.py','enters_today_tasks'),
-            'Today real queue only': ('app/workbench.py','MailQueueItem.state.in_'),
-            'Today no legacy plan owner': ('app/workbench.py','MailDispatchPlan'),
-            'Real mail delivery': ('app/mail_delivery.py','/api/leads/{lead_id}/send'),
-            'Connected Gmail Outlook': ('app/mail_provider.py','send_connected_message'),
-            'Inbox and reply sync': ('app/mail_sync.py','mail_reply_received'),
-            'Mail queue retry': ('app/mail_sync.py','retrying'),
-            'Real queue UI owner': ('web/mail-owner-v3.js','/queue'),
-            'Real queue beginner copy': ('web/mail-owner-v3.js','稍后发送'),
-            'Reply stop': ('app/mail_sync.py','reply_stop'),
-            'Mail audit log': ('app/mail_delivery.py','MailDeliveryLog'),
-            'Automatic follow-up': ('app/mail_sequences.py','MailSequenceEnrollment'),
-            'Automatic follow-up reply stop': ('app/mail_sequences.py','sequence_stopped'),
-            'Automatic follow-up approval': ('app/mail_sequences.py','请先确认这套跟进内容'),
-            'Automatic follow-up UI': ('web/sequence-ui.js','自动跟进'),
-            'Simple service center': ('web/daily-services.js','地图找客户'),
-            'Plain language layer': ('web/plain-language.js','产品资料'),
-            'No demo lead guard': ('app/provider_guard.py','不会用演示联系人代替真实结果'),
-            'Server product persistence': ('app/product_memory.py','ProductBrainRecord'),
-            'Product server sync': ('web/product-brain-server.js','/api/product-brains/import'),
-            'Durable online data': ('app/intelligence_records.py','OnlineIntelligenceRecord'),
-            'Connected data writeback': ('app/service_hub.py','record_intelligence'),
-            'Connected data customer UI': ('web/intelligence-history.js','联网资料'),
-            'Deal business reference': ('app/deal_reference.py','build_deal_reference'),
-            'Deal document needs': ('app/deal_reference.py','DOC_NEEDS'),
-            'Deal reference does not rewrite facts': ('tests/test_deal_reference.py','without_rewriting_business_facts'),
-            'Deal reference requires confirmation': ('tests/test_deal_reference.py','never_enters_document_bundle_without_human_confirmation'),
-            'Confirmed reference approval record': ('app/deal_reference.py','DealReferenceApproval'),
-            'Confirmed reference handoff endpoint': ('app/deal_reference.py','build_document_handoff'),
-            'Reference handoff user guard': ('web/reference-handoff-guard.js','confirm_reference'),
-            'Reference handoff guard loaded': ('web/index.html','reference-handoff-guard.js'),
-            'Team password hashing': ('app/team_access.py','pbkdf2_sha256'),
-            'Team write permission': ('app/team_access.py','你的账号是只读权限'),
-            'Team admin permission': ('app/team_access.py','这项设置只允许老板或管理员修改'),
-            'Team login UI': ('web/team-access.js','登录 HUIDI'),
-            'Company work time UI': ('web/company-settings.js','公司工作时间'),
-            'Physical tenant database router': ('app/tenant_storage.py','physically separate business database'),
-            'Organization-bound request context': ('app/team_access.py','set_current_organization'),
-            'Tenant background jobs': ('app/tenant_jobs.py','run_tenant_jobs_once'),
-            'Tenant reminder jobs': ('app/tenant_jobs.py','notification_runs'),
-            'Default company reminder runtime': ('app/tenant_jobs.py','run_default_company_reminders_once'),
-            'Automatic backup tenant coordinator': ('app/tenant_jobs.py','run_all_automatic_backups_once'),
-            'Physical tenant isolation regression': ('tests/test_tenant_storage.py','physically_separate_business_databases'),
-            'Organization management UI': ('web/team-access.js','新建公司工作区'),
-            'Tenant audit middleware': ('app/audit_log.py','audit_middleware'),
-            'Audit privacy regression': ('tests/test_audit_log.py','does_not_store_sensitive_request_content'),
-            'Audit tenant isolation': ('tests/test_audit_log.py','physically_isolated_by_company'),
-            'Operation history UI': ('web/audit-ui.js','操作记录'),
-            'Audit company work time': ('app/audit_log.py','修改公司工作时间'),
-            'Audit real mail queue': ('app/audit_log.py','加入待发送'),
-            'Audit data adapter changes': ('app/audit_log.py','修改数据服务接入方式'),
-            'Audit data service changes': ('app/audit_log.py','修改数据服务'),
-            'Audit data service check': ('app/audit_log.py','检查数据服务'),
-            'Audit reminder settings': ('app/audit_log.py','修改提醒方式'),
-            'Audit backup create': ('app/audit_log.py','创建公司业务备份'),
-            'Audit backup restore': ('app/audit_log.py','恢复公司业务备份'),
-            'Audit reference confirmation': ('app/audit_log.py','确认单据业务参考'),
-            'Company data service storage': ('app/service_connections.py','ServiceConnection'),
-            'Encrypted data service authorization': ('app/service_connections.py','_encrypt'),
-            'Data service tenant isolation': ('tests/test_service_connections.py','physically_isolated'),
-            'Data service platform fallback': ('tests/test_service_connections.py','fallback_when_company_has_no_override'),
-            'Data service connection check': ('app/service_connections.py','test_resolved_service'),
-            'Data service check privacy': ('tests/test_service_connections.py','without_exposing_it'),
-            'Data service UI': ('web/service-settings.js','数据服务'),
-            'Data service adapter owner': ('app/service_adapters.py','ServiceAdapterSetting'),
-            'Data service adapter modes': ('app/service_adapters.py','post_key_header_json'),
-            'Data service adapter tenant isolation': ('tests/test_service_adapters.py','company_isolated'),
-            'Data service adapter bearer regression': ('tests/test_service_adapters.py','bearer_header_adapter'),
-            'Data service adapter query regression': ('tests/test_service_adapters.py','query_key_get_adapter'),
-            'Data service adapter network guard': ('app/service_adapters.py','_validate_endpoint'),
-            'Data service adapter UI': ('web/service-adapter-ui.js','接入方式'),
-            'Data service business route adapter': ('app/service_hub_adapter_patch.py','execute_service_request'),
-            'External reminder route storage': ('app/notification_delivery.py','NotificationRoute'),
-            'External reminder durable delivery': ('app/notification_delivery.py','NotificationDelivery'),
-            'External reminder dedupe': ('tests/test_notification_delivery.py','delivered_only_once'),
-            'External reminder retry': ('tests/test_notification_delivery.py','retries_without_creating_duplicates'),
-            'External reminder state stop': ('tests/test_notification_delivery.py','done_event_is_not_sent'),
-            'External reminder tenant isolation': ('tests/test_notification_delivery.py','physically_isolated_by_company'),
-            'External reminder secret privacy': ('tests/test_notification_delivery.py','never_returned_to_ui'),
-            'External reminder quiet hours': ('app/notification_delivery.py','_in_quiet_hours'),
-            'External reminder settings UI': ('web/notification-settings.js','提醒方式'),
-            'External reminder beginner timezone': ('web/notification-settings.js','中国大陆'),
-            'System reminder category compatibility': ('app/notification_categories.py','LEGACY_ALL'),
-            'Business backup schema': ('app/backup_restore.py','huidi.online.business-backup/v1'),
-            'Business backup excludes control plane': ('tests/test_backup_restore.py','never_contains_control_plane_tables'),
-            'Business backup tenant isolation': ('tests/test_backup_restore.py','bound_to_the_current_company'),
-            'Business restore safety backup': ('tests/test_backup_restore.py','keeps_a_safety_backup'),
-            'Business restore safety key guard': ('tests/test_backup_restore.py','server_safety_key_changed'),
-            'Business restore engine refresh': ('app/tenant_storage.py','dispose_tenant_engine'),
-            'Automatic backup state': ('app/backup_automation.py','BackupAutomationState'),
-            'Automatic backup cadence': ('tests/test_backup_automation.py','same_cycle_does_not_duplicate'),
-            'Automatic backup failure action': ('tests/test_backup_automation.py','high_priority_action'),
-            'Automatic backup tenant regression': ('tests/test_backup_automation.py','backup_coordinator_enters_each_company_context'),
-            'Default company reminder regression': ('tests/test_backup_automation.py','default_company_external_reminders_run_without_team_mode'),
-            'System reminder compatibility regression': ('tests/test_backup_automation.py','legacy_all_reminder_scope_includes_system'),
-            'Automatic backup readiness': ('app/production_readiness.py','自动备份'),
-            'Production readiness API': ('app/production_readiness.py','build_production_readiness'),
-            'Production readiness regression': ('tests/test_production_readiness.py','reports_real_backup_and_mail_state'),
-            'Admin readiness UI': ('web/admin-safety.js','上线检查'),
-            'Backup restore beginner UI': ('web/admin-safety.js','请输入“恢复”'),
-            'Backup directory source guard': ('../../.gitignore','online/api/backups/'),
-            'Map discovery': ('app/service_hub.py','/api/tools/map-leads'),
-            'Trade intelligence': ('app/service_hub.py','/api/tools/trade-news'),
-            'FX': ('app/service_hub.py','/api/tools/fx'),
-            'Company data slot': ('app/service_connections.py','HUIDI_COMPANY_LOOKUP_URL'),
-            'Trade data slot': ('app/service_connections.py','HUIDI_TRADE_DATA_URL'),
-            'Tariff data slot': ('app/service_connections.py','HUIDI_TARIFF_LOOKUP_URL'),
-            'Shipping data slot': ('app/service_connections.py','HUIDI_SHIPPING_API_URL'),
-            'Local status schema': ('app/online_app.py','huidi.local.business.status/v1'),
-            'Product Brain schema': ('web/product-brain-core.js','huidi.product.brain/v1'),
-            'Online pagination': ('app/main.py','lead_pagination'),
-            'Catalog common/advanced': ('../../public/huidi-catalog-ux-closure-v1.js','data-huidi-catalog-mode-btn'),
-            'Workspace quick detail': ('../../public/huidi-workspace-closure-v1.js','huidiQuickBackdrop'),
-            'Notification store': ('../../public/huidi-notification-center-v1.js','huidi_local_notifications_v1'),
-            'Business bridge': ('../../public/huidi-online-local-bridge-v1.js','huidi.business.bundle/v1'),
-          }
-          # One negative contract: workbench must not use legacy MailDispatchPlan.
-          text=Path('app/workbench.py').read_text(encoding='utf-8')
-          if 'MailDispatchPlan' in text:
-            raise SystemExit('Contract failure: legacy MailDispatchPlan still owns Today pending mail')
-          failed=[]
-          for name,(path,marker) in checks.items():
-            text=Path(path).read_text(encoding='utf-8')
-            if marker in text: print('PASS:',name)
-            else: print('FAIL:',name); failed.append(name)
-          if failed: raise SystemExit('Contract failures: '+', '.join(failed))
-          PY
+        run: python tests/online_contracts.py
 
       - name: Assert no local secrets are tracked
         run: |
