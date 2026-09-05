@@ -66,12 +66,23 @@ HUIDI has not copied UZonMail into V0.1.1. The project is being used as a refere
 
 HUIDI does not import the upstream README or create a derivative copy of the GPL resource list. A future HUIDI toolbox may provide independently curated outbound links and original descriptions.
 
+## 8. caijiwaimao
+
+- Project: `SuperGokou/caijiwaimao`
+- Repository: https://github.com/SuperGokou/caijiwaimao
+- The reviewed repository is primarily a static internal product blueprint / animated demo (`index.html`, `demo.html`, CSS and browser JS), not a production lead-generation backend.
+- Its README labels the material `Internal · Confidential · 仅供核心团队使用` rather than granting an open-source software license.
+- Studied areas: Product Brain as a durable fact source, campaign/ICP setup, Hunter / Profiler / Writer / Outreach / Closer role separation, customer and decision-maker memory structure, buying signals, open threads, append-only timeline, and the discipline separating persistent Brain facts from temporary Agent memory.
+
+**Research reference only. HUIDI does not copy the upstream HTML, CSS, demo screens, internal text, prompts or other source.** HUIDI V0.1.3 independently implements its own `Product Brain` fact-source layer, campaign brief and Local → Online product handoff around HUIDI's existing product/customer/inquiry/document data contracts.
+
 ---
 
 ## HUIDI integration policy
 
 1. **Apache-2.0 / MIT:** compatible components may be adapted when useful, with required notices retained.
 2. **GPL-3.0:** do not casually mix source into HUIDI's Online codebase; evaluate derivative-work obligations before any direct reuse.
-3. **No clear license / README-only license statement:** treat as research reference and independently reimplement.
+3. **No clear license / README-only / confidential notice:** treat as research reference and independently reimplement.
 4. Preserve source URLs and evidence for externally sourced business data.
-5. Never present upstream work as HUIDI original work.
+5. Keep durable product/customer facts separate from temporary search or model context.
+6. Never present upstream work as HUIDI original work.
