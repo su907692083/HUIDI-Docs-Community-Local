@@ -72,6 +72,11 @@ jobs:
             '/api/intelligence/{record_id}/normalized',
             '/api/intelligence/normalize/backfill',
             '/api/intelligence/summary/{lead_id}',
+            '/api/intel/status',
+            '/api/intel/daily',
+            '/api/intel/customer/{lead_id}',
+            '/api/intel/deal/{deal_id}',
+            '/api/intel/customer/{lead_id}/use',
             '/api/business/deals/{deal_id}/reference',
             '/api/business/deals/{deal_id}/facts',
             '/api/business/deals/{deal_id}/handoff',
@@ -121,7 +126,7 @@ jobs:
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
             web/daily-services.js web/mail-thread-ui.js web/map-view.js web/business-center-ui.js \
             web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
-            web/intelligence-history.js web/team-access.js web/company-settings.js web/audit-ui.js \
+            web/intelligence-history.js web/customer-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js \
             web/service-settings.js web/service-adapter-ui.js web/notification-settings.js \
             web/admin-safety.js web/plain-language.js; do
               node --check "$file"
@@ -172,7 +177,7 @@ jobs:
         run: |
           test ! -f .env
           test ! -f ../.env
-          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+' . ../ || false
+          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+|GNEWS_API_KEY=.+' . ../ || false
 
   postgres_schema:
     runs-on: ubuntu-latest
