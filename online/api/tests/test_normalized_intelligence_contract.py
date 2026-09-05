@@ -35,15 +35,20 @@ class NormalizedIntelligenceContractTests(unittest.TestCase):
         self.assertIn("/facts", ui)
         self.assertIn("deal-facts-ui.js", index)
 
-    def test_each_tenant_database_has_an_idempotent_schema_revision_ledger(self):
+    def test_each_tenant_database_has_an_idempotent_serialized_schema_revision_owner(self):
         migrations = self.text("app/schema_migrations.py")
         storage = self.text("app/tenant_storage.py")
+        cli = self.text("app/schema_cli.py")
         regression = self.text("tests/test_schema_migrations.py")
+        workflow = self.text("../../.github/workflows/online-v01-check.yml")
         self.assertIn("huidi_schema_migrations", migrations)
         self.assertIn("LATEST_SCHEMA_REVISION", migrations)
-        self.assertIn("apply_schema_migrations(engine)", storage)
+        self.assertIn("pg_advisory_lock", migrations)
+        self.assertIn("upgrade_schema(engine, Base.metadata)", storage)
+        self.assertIn("upgrade_schema(engine, Base.metadata)", cli)
         self.assertIn("migration_application_is_idempotent", regression)
         self.assertIn("each_company_database_records_the_current_revision", regression)
+        self.assertIn("Stress concurrent PostgreSQL schema upgrade lock", workflow)
 
     def test_postgresql_runtime_driver_is_part_of_the_online_install(self):
         requirements = self.text("requirements.txt")
