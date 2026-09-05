@@ -10,6 +10,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from .business_center import OnlineDeal
 from .mail_delivery import MailDeliveryLog
+from .mail_sequences import MailSequenceEnrollment
 from .mail_sync import MailQueueItem, MailboxMessage
 from .main import Base, Lead, LeadActivity, engine, get_db, safe_json
 from .online_app import app
@@ -167,6 +168,27 @@ def build_notifications(db: Session) -> list[dict[str, Any]]:
                 "mail",
                 f"待发送需要处理 · {lead.company_name if lead else '客户邮件'}",
                 row.last_error or "多次尝试后仍未发出",
+                "high",
+                row.updated_at.isoformat() if row.updated_at else "",
+                "lead",
+                row.lead_id,
+            )
+        )
+
+    sequence_paused = db.scalars(
+        select(MailSequenceEnrollment)
+        .where(MailSequenceEnrollment.state == "paused")
+        .order_by(MailSequenceEnrollment.updated_at.desc())
+        .limit(80)
+    ).all()
+    for row in sequence_paused:
+        lead = db.get(Lead, row.lead_id)
+        events.append(
+            _event(
+                f"sequence.paused:{row.id}",
+                "followup",
+                f"自动跟进已暂停 · {lead.company_name if lead else '客户'}",
+                row.stop_reason or row.last_error or "请检查发送邮箱或客户状态后再继续",
                 "high",
                 row.updated_at.isoformat() if row.updated_at else "",
                 "lead",
