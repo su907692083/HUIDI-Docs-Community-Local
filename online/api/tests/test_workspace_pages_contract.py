@@ -16,6 +16,7 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertLess(router, index.index('/assets/product-brain.js'))
         self.assertLess(router, index.index('/assets/daily-services.js'))
         self.assertLess(router, index.index('/assets/business-center-ui.js'))
+        self.assertLess(router, index.index('/assets/standalone-business-ui.js'))
         self.assertLess(router, index.index('/assets/daily-navigation.js'))
         self.assertLess(router, index.index('/assets/sequence-ui.js'))
         self.assertLess(router, index.index('/assets/customer-intelligence.js'))
