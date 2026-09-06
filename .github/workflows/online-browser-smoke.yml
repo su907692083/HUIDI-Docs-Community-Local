@@ -120,6 +120,52 @@ jobs:
           finally:
               driver.quit()
           PY
+      - name: Verify standalone customer inquiry and native quotation in Chrome
+        run: |
+          python - <<'PY'
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+          driver = webdriver.Chrome(options=options)
+          wait = WebDriverWait(driver, 12)
+          try:
+              driver.get('http://127.0.0.1:18080/')
+              wait.until(EC.element_to_be_clickable((By.ID, 'hsbManualLead'))).click()
+              wait.until(EC.visibility_of_element_located((By.ID, 'hsbCompany'))).send_keys('Standalone Browser Buyer')
+              driver.find_element(By.ID, 'hsbProduct').send_keys('stainless steel hinge')
+              driver.find_element(By.ID, 'hsbCountry').send_keys('DE')
+              driver.find_element(By.ID, 'hsbRequirements').send_keys('Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch')
+              driver.find_element(By.CSS_SELECTOR, '[data-hsb-inquiry]').click()
+              wait.until(EC.alert_is_present()).accept()
+
+              wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open')))
+              rows = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr[data-deal]')))
+              target = next((row for row in rows if 'Standalone Browser Buyer' in row.text), rows[0])
+              target.click()
+              quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-make-doc="quotation"]')))
+              quote.click()
+              wait.until(EC.alert_is_present()).accept()
+              wait.until(lambda d: len(d.window_handles) >= 2)
+              driver.switch_to.window(driver.window_handles[-1])
+              wait.until(lambda d: '报价单' in d.title)
+              source = driver.page_source
+              assert 'Standalone Browser Buyer' in source
+              assert 'stainless steel hinge' in source
+              assert '打印 / 另存 PDF' in source
+              assert 'online-bridge.html' not in source
+              print('HUIDI standalone business + native quotation browser PASS')
+          finally:
+              driver.quit()
+          PY
       - name: Stop Online workbench
         if: always()
         run: |
@@ -127,5 +173,5 @@ jobs:
             kill "$(cat /tmp/huidi-browser-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-browser-server.log ]; then
-            tail -140 /tmp/huidi-browser-server.log
+            tail -180 /tmp/huidi-browser-server.log
           fi
