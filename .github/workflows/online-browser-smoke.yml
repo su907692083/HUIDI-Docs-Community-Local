@@ -1,0 +1,76 @@
+name: HUIDI Online Browser Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-browser-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-browser-smoke.yml'
+
+jobs:
+  first_render:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-browser-smoke-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '0'
+      DATABASE_URL: sqlite:////tmp/huidi-browser-smoke.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Start Online workbench
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18080 > /tmp/huidi-browser-server.log 2>&1 &
+          echo $! > /tmp/huidi-browser-server.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/ > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-browser-server.log
+          exit 1
+      - name: Verify first page becomes responsive in Chrome
+        run: |
+          set -euo pipefail
+          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
+          if [ -z "$BROWSER" ]; then
+            echo 'No Chrome/Chromium executable found on runner'
+            exit 1
+          fi
+          rm -rf /tmp/huidi-browser-profile
+          timeout 20s "$BROWSER" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --user-data-dir=/tmp/huidi-browser-profile \
+            --dump-dom http://127.0.0.1:18080/ \
+            > /tmp/huidi-first-render.html 2> /tmp/huidi-browser.log
+          grep -q 'HUIDI Online' /tmp/huidi-first-render.html
+          grep -q '外贸工作台' /tmp/huidi-first-render.html
+          test "$(wc -c < /tmp/huidi-first-render.html)" -gt 5000
+      - name: Stop Online workbench
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-browser-server.pid ]; then
+            kill "$(cat /tmp/huidi-browser-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-browser-server.log ]; then
+            tail -80 /tmp/huidi-browser-server.log
+          fi
+          if [ -s /tmp/huidi-browser.log ]; then
+            tail -80 /tmp/huidi-browser.log
+          fi
