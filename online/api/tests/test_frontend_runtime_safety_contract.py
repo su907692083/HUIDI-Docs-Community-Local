@@ -25,6 +25,13 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         source = (WEB / "plain-language.js").read_text(encoding="utf-8")
         self.assertIn("characterData:false", source)
 
+    def test_mail_owner_mutation_observer_is_idempotent_and_batched(self):
+        source = (WEB / "mail-owner-v3.js").read_text(encoding="utf-8")
+        self.assertIn("function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}", source)
+        self.assertIn("requestAnimationFrame(()=>{polishQueued=false;polish()})", source)
+        self.assertNotIn("n.textContent=n.textContent.replace", source)
+        self.assertIn("if(n.textContent!==next)n.textContent=next", source)
+
 
 if __name__ == "__main__":
     unittest.main()
