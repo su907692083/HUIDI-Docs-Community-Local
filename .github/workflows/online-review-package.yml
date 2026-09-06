@@ -16,9 +16,15 @@ jobs:
       - name: Verify standalone Online entrypoint
         run: |
           test -f 'online/启动-HUIDI-Online.cmd'
+          test -f 'online/START-HUIDI-ONLINE.cmd'
           test -f 'online/START-HUIDI-ONLINE.ps1'
           test -f 'online/api/app/daily_app.py'
           test -f 'online/api/web/index.html'
+          grep -F 'START-HUIDI-ONLINE.cmd' 'online/启动-HUIDI-Online.cmd'
+          ! grep -qi 'powershell' 'online/启动-HUIDI-Online.cmd'
+          grep -F 'uvicorn app.daily_app:app' 'online/START-HUIDI-ONLINE.cmd'
+          grep -F 'HUIDI_SECRET_KEY' 'online/START-HUIDI-ONLINE.cmd'
+          grep -F 'http://127.0.0.1:8080/' 'online/START-HUIDI-ONLINE.cmd'
 
       - name: Build standalone Online ZIP
         run: |
@@ -47,6 +53,7 @@ jobs:
               'HUIDI Online · Standalone Review Package\n'
               f'Git commit: {sha}\n'
               '启动入口: 启动-HUIDI-Online.cmd\n'
+              '备用入口: START-HUIDI-ONLINE.cmd\n'
               '浏览器地址: http://127.0.0.1:8080/\n',
               encoding='utf-8'
           )
