@@ -1,7 +1,6 @@
 (()=>{'use strict';
 const $=s=>document.querySelector(s);
-let services=null,observerQueued=false,mailTouched=false,growthTouched=false;
-const pendingNodes=new Set();
+let services=null,sweepQueued=false;
 const replacements=[
  ['DAILY WORKBENCH','今天的工作'],['Daily Workbench','每日工作台'],['Real SMTP','真实邮件'],['SMTP','邮箱连接'],['OAuth2','账号连接'],['OAuth','账号连接'],['Provider','数据来源'],['API','在线服务'],['Product Brain','产品资料'],['Community Local','本地工作台'],['Business Bridge','业务互通'],['Buying Signals','近期采购信号'],['Open Threads','还需要处理'],['Strategy','产品准备'],['Hunter','发现客户'],['Profiler','客户核对'],['Writer','邮件准备'],['Outreach','联系客户'],['Closer','业务推进'],
  ['Lead','潜在客户'],['Deal','询盘'],['Queue','待发送'],['Retry','自动再试'],['Thread','邮件往来'],['Webhook','消息回传'],['Tenant','公司空间'],['Schema','数据结构'],['Migration','数据升级'],['Database','业务数据'],['Endpoint','服务地址'],['Token','授权信息'],['Raw','原始记录'],['Projection','标准资料'],['Backfill','重新整理'],['JSON','原始数据']
@@ -18,12 +17,11 @@ async function loadStatus(){try{const r=await fetch('/api/services/status');serv
 function guardSearch(e){const btn=e.target.closest?.('#searchBtn');if(!btn||!services||services.lead_search)return;e.preventDefault();e.stopImmediatePropagation();alert('还没有连接在线找客户服务。完成连接后，HUIDI 才会查询真实客户，不会用演示数据代替。');window.HUIDIDailyServices?.open?.('services')}
 function polishMail(){const root=$('#mailGovernance');if(!root)return;setText(root.querySelector('.mg-head small'),'连接发送邮箱后，邮件内容、确认状态、今日发送量、发送间隔和客户回复情况会在发送前自动检查。');setText(root.querySelector('.mg-note'),'发送前需要确认邮件内容。客户一旦回复或进入正式业务，系统会自动停止继续冷开发，并保留发送记录。');setText($('#mgManage'),'邮箱与发送设置');const plan=$('#mgPlan');if(plan&&/加入待发送|待发送计划/.test(plan.textContent||''))setText(plan,'稍后发送')}
 function polishGrowth(){const root=$('#growthWorkflow');if(root)cleanNode(root)}
-function touches(node,selector){if(!node||node.nodeType!==1)return false;return node.matches?.(selector)||node.closest?.(selector)||Boolean(node.querySelector?.(selector))}
-function flushObserved(){observerQueued=false;const nodes=[...pendingNodes];pendingNodes.clear();for(const n of nodes){if(!n.isConnected)continue;cleanNode(n);friendlyResults(n)}if(mailTouched)polishMail();if(growthTouched)polishGrowth();mailTouched=false;growthTouched=false}
-function queueObserved(){if(observerQueued)return;observerQueued=true;requestAnimationFrame(flushObserved)}
-function observe(){const ob=new MutationObserver(ms=>{for(const m of ms){const target=m.target?.nodeType===1?m.target:m.target?.parentElement;if(touches(target,'#mailGovernance'))mailTouched=true;if(touches(target,'#growthWorkflow'))growthTouched=true;for(const n of m.addedNodes){if(n.nodeType!==1)continue;pendingNodes.add(n);if(touches(n,'#mailGovernance'))mailTouched=true;if(touches(n,'#growthWorkflow'))growthTouched=true}}if(pendingNodes.size||mailTouched||growthTouched)queueObserved()});ob.observe(document.body,{childList:true,subtree:true,characterData:false})}
+function sweep(){sweepQueued=false;cleanNode();friendlyResults(document);polishMail();polishGrowth()}
+function scheduleSweep(){if(sweepQueued)return;sweepQueued=true;requestAnimationFrame(sweep)}
+function scheduleSweepBurst(){scheduleSweep();setTimeout(scheduleSweep,100);setTimeout(scheduleSweep,420)}
 function wrapAlerts(){if(window.__huidiFriendlyAlert)return;window.__huidiFriendlyAlert=true;const nativeAlert=window.alert.bind(window);window.alert=message=>nativeAlert(friendlyMessage(message))}
-function boot(){wrapAlerts();cleanNode();polishMail();polishGrowth();friendlyResults(document);observe();loadStatus();document.addEventListener('click',guardSearch,true);setInterval(loadStatus,120000)}
+function boot(){wrapAlerts();sweep();loadStatus();document.addEventListener('click',e=>{guardSearch(e);scheduleSweepBurst()},true);setInterval(()=>{loadStatus();scheduleSweep()},120000)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDIPlainLanguage=Object.freeze({refresh:()=>{cleanNode();friendlyResults(document);polishMail();polishGrowth();loadStatus()},plain,message:friendlyMessage});
+window.HUIDIPlainLanguage=Object.freeze({refresh:()=>{scheduleSweepBurst();loadStatus()},plain,message:friendlyMessage});
 })();
