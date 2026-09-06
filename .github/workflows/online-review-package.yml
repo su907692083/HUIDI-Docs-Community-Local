@@ -17,14 +17,22 @@ jobs:
         run: |
           test -f 'online/启动-HUIDI-Online.cmd'
           test -f 'online/START-HUIDI-ONLINE.cmd'
+          test -f 'online/OPEN-HUIDI-ONLINE.cmd'
           test -f 'online/START-HUIDI-ONLINE.ps1'
           test -f 'online/api/app/daily_app.py'
+          test -f 'online/api/app/frontend_runtime_guard.py'
           test -f 'online/api/web/index.html'
           grep -F 'START-HUIDI-ONLINE.cmd' 'online/启动-HUIDI-Online.cmd'
           ! grep -qi 'powershell' 'online/启动-HUIDI-Online.cmd'
           grep -F 'uvicorn app.daily_app:app' 'online/START-HUIDI-ONLINE.cmd'
           grep -F 'HUIDI_SECRET_KEY' 'online/START-HUIDI-ONLINE.cmd'
+          grep -F 'OPEN-HUIDI-ONLINE.cmd' 'online/START-HUIDI-ONLINE.cmd'
+          ! grep -Eqi 'timeout[[:space:]]+/t' 'online/START-HUIDI-ONLINE.cmd'
           grep -F 'http://127.0.0.1:8080/' 'online/START-HUIDI-ONLINE.cmd'
+          grep -F 'ping 127.0.0.1 -n 4' 'online/OPEN-HUIDI-ONLINE.cmd'
+          grep -F 'frontend_runtime_guard' 'online/api/app/daily_app.py'
+          grep -F 'X-HUIDI-Asset-Version' 'online/api/app/frontend_runtime_guard.py'
+          grep -F 'Clear-Site-Data' 'online/api/app/frontend_runtime_guard.py'
 
       - name: Build standalone Online ZIP
         run: |
@@ -54,7 +62,8 @@ jobs:
               f'Git commit: {sha}\n'
               '启动入口: 启动-HUIDI-Online.cmd\n'
               '备用入口: START-HUIDI-ONLINE.cmd\n'
-              '浏览器地址: http://127.0.0.1:8080/\n',
+              '浏览器地址: http://127.0.0.1:8080/\n'
+              '前端缓存: 内容哈希版本隔离；本地首页会清理旧脚本缓存\n',
               encoding='utf-8'
           )
           shutil.make_archive('/tmp/HUIDI-ONLINE-WINDOWS-REVIEW', 'zip', stage_root, 'HUIDI-ONLINE')
