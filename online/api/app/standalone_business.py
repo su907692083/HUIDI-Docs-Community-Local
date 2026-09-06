@@ -210,7 +210,7 @@ def _document_html(ref: OnlineDocumentRef, deal: OnlineDeal, customer: OnlineCus
     moq = _first(payload, "moq", "minimum_order_quantity")
     lead_time = _first(payload, "lead_time", "delivery_time", "delivery")
     packing = _first(payload, "packing", "packaging", "package")
-    ref_price = _first(payload, "reference_price", "price", "unit_price")
+    reference_price = _first(payload, "reference_price", "price", "unit_price")
     qty = _quantity(deal.requirements)
     incoterm = _incoterm(deal.requirements)
     total = f"{deal.amount:g}" if deal.amount else ""
@@ -230,21 +230,26 @@ def _document_html(ref: OnlineDocumentRef, deal: OnlineDeal, customer: OnlineCus
           <label>唛头<input data-k='marks' placeholder='Shipping marks'></label>
         </div>"""
 
+    reference_price_note = (
+        f"<div class='refprice'>产品资料参考价：{e(reference_price)} · 仅供核对，不会自动写入正式单价。</div>"
+        if reference_price
+        else ""
+    )
     commercial_rows = ""
     if ref.document_type != "packing_list":
         commercial_rows = f"""
         <div class='grid three'>
           <label>数量<input data-k='quantity' value='{e(qty)}' placeholder='例如 5000 pcs'></label>
-          <label>单价<input data-k='unit_price' value='{e(ref_price)}' placeholder='请人工确认'></label>
+          <label>单价<input data-k='unit_price' value='' placeholder='请人工确认'></label>
           <label>总金额<input data-k='total' value='{e(total)}' placeholder='请人工确认'></label>
           <label>贸易条款<input data-k='incoterm' value='{e(incoterm)}' placeholder='例如 FOB Ningbo'></label>
           <label>交期<input data-k='lead_time' value='{e(lead_time)}' placeholder='例如 20 days'></label>
           <label>付款条件<input data-k='payment' placeholder='例如 T/T 30% deposit'></label>
-        </div>"""
+        </div>{reference_price_note}"""
 
     return f"""<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>{e(doc_name)} · HUIDI Online</title><style>
-*{{box-sizing:border-box}}body{{margin:0;background:#eef2f7;color:#172033;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}}.top{{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;padding:10px 18px;background:#101828;color:#fff}}.top b{{margin-right:auto}}button{{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}}.primary{{background:#2563eb;color:#fff}}.paper{{width:min(1000px,calc(100% - 32px));margin:22px auto;background:#fff;min-height:1240px;padding:46px 52px;box-shadow:0 12px 40px rgba(15,23,42,.13)}}h1{{text-align:center;margin:0;font-size:28px;letter-spacing:2px}}.docno{{text-align:center;color:#667085;margin:5px 0 28px}}.grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}}.grid.three{{grid-template-columns:repeat(3,minmax(0,1fr))}}label{{font-size:11px;color:#667085;font-weight:700}}input,textarea{{display:block;width:100%;margin-top:4px;border:1px solid #d0d5dd;border-radius:7px;padding:8px 9px;font:inherit;color:#101828;background:#fff}}textarea{{min-height:90px;resize:vertical}}table{{width:100%;border-collapse:collapse;margin:18px 0}}th,td{{border:1px solid #98a2b3;padding:9px;text-align:left}}th{{background:#f8fafc}}.note{{font-size:11px;color:#667085}}.foot{{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:46px}}.sign{{border-top:1px solid #98a2b3;padding-top:10px}}@media(max-width:760px){{.paper{{padding:24px 18px}}.grid,.grid.three,.foot{{grid-template-columns:1fr}}}}@media print{{body{{background:#fff}}.top{{display:none}}.paper{{width:100%;margin:0;box-shadow:none;min-height:auto;padding:18mm 16mm}}input,textarea{{border:0;padding:0}}}}
+*{{box-sizing:border-box}}body{{margin:0;background:#eef2f7;color:#172033;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}}.top{{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;padding:10px 18px;background:#101828;color:#fff}}.top b{{margin-right:auto}}button{{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}}.primary{{background:#2563eb;color:#fff}}.paper{{width:min(1000px,calc(100% - 32px));margin:22px auto;background:#fff;min-height:1240px;padding:46px 52px;box-shadow:0 12px 40px rgba(15,23,42,.13)}}h1{{text-align:center;margin:0;font-size:28px;letter-spacing:2px}}.docno{{text-align:center;color:#667085;margin:5px 0 28px}}.grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}}.grid.three{{grid-template-columns:repeat(3,minmax(0,1fr))}}label{{font-size:11px;color:#667085;font-weight:700}}input,textarea{{display:block;width:100%;margin-top:4px;border:1px solid #d0d5dd;border-radius:7px;padding:8px 9px;font:inherit;color:#101828;background:#fff}}textarea{{min-height:90px;resize:vertical}}table{{width:100%;border-collapse:collapse;margin:18px 0}}th,td{{border:1px solid #98a2b3;padding:9px;text-align:left}}th{{background:#f8fafc}}.note{{font-size:11px;color:#667085}}.refprice{{margin:-4px 0 12px;padding:8px 10px;border-radius:8px;background:#fff8e8;border:1px solid #f1dba8;color:#755b20;font-size:11px}}.foot{{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:46px}}.sign{{border-top:1px solid #98a2b3;padding-top:10px}}@media(max-width:760px){{.paper{{padding:24px 18px}}.grid,.grid.three,.foot{{grid-template-columns:1fr}}}}@media print{{body{{background:#fff}}.top{{display:none}}.paper{{width:100%;margin:0;box-shadow:none;min-height:auto;padding:18mm 16mm}}input,textarea{{border:0;padding:0}}}}
 </style></head><body>
 <div class='top'><b>HUIDI Online · {e(doc_name)}</b><button id='back'>返回工作台</button><button id='save'>保存本机草稿</button><button id='download'>下载 HTML</button><button class='primary' onclick='window.print()'>打印 / 另存 PDF</button></div>
 <main class='paper'><h1>{e(doc_name)}</h1><div class='docno'>{e(ref.document_id)}</div>
