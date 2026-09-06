@@ -40,13 +40,16 @@ class FrontendCacheRuntimeTests(unittest.TestCase):
         self.assertIn("immutable", asset.headers.get("cache-control", ""))
         self.assertEqual(asset.headers.get("x-huidi-asset-version"), ASSET_VERSION)
 
-    def test_windows_launcher_has_no_locale_sensitive_timeout_chain(self):
+    def test_windows_launcher_uses_path_safe_python_browser_opener(self):
         launcher = (ONLINE / "START-HUIDI-ONLINE.cmd").read_text(encoding="utf-8")
-        opener = (ONLINE / "OPEN-HUIDI-ONLINE.cmd").read_text(encoding="utf-8")
-        self.assertNotIn("timeout /t", launcher.lower())
-        self.assertIn("OPEN-HUIDI-ONLINE.cmd", launcher)
-        self.assertIn("ping 127.0.0.1 -n 4", opener)
-        self.assertIn('start "" "%URL%"', opener)
+        lower = launcher.lower()
+        self.assertNotIn("timeout /t", lower)
+        self.assertNotIn("powershell", lower)
+        self.assertNotIn("open-huidi-online.cmd", lower)
+        self.assertIn('start "" /b "%VENV_PY%"', launcher)
+        self.assertIn("webbrowser.open", launcher)
+        self.assertIn("time.sleep(2)", launcher)
+        self.assertIn("http://127.0.0.1:8080/", launcher)
 
 
 if __name__ == "__main__":
