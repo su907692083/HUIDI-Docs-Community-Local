@@ -42,7 +42,8 @@ class LowInputWorkflowContractTests(unittest.TestCase):
             self.assertIn(marker, source)
         self.assertNotIn("__tablename__", source)
         self.assertNotIn("deal.amount =", source)
-        self.assertIn("不会自动写入正式价格或金额", source)
+        self.assertIn("未自动写入正式价格或金额", source)
+        self.assertIn("不会自动改正式价格、合同或装箱事实", source)
 
     def test_browser_owner_is_loaded_and_parses(self):
         index = self.text("web/index.html")
@@ -72,7 +73,12 @@ class LowInputWorkflowContractTests(unittest.TestCase):
         source = self.text("web/low-input-flow.js")
         self.assertIn("!summaryEdited", source)
         self.assertIn("e.isTrusted", source)
-        self.assertIn("data.autoProduct", source)
+        self.assertIn("dataset.autoProduct", source)
+
+    def test_low_input_observer_is_scoped_to_customer_drawer(self):
+        source = self.text("web/low-input-flow.js")
+        self.assertIn("mo.observe(back,{attributes:true,attributeFilter:['class']})", source)
+        self.assertNotIn("mo.observe(document.body", source)
 
 
 if __name__ == "__main__":
