@@ -72,6 +72,11 @@ class StandaloneBusinessContractTests(unittest.TestCase):
             self.assertIn("stainless steel hinge", page.text.lower())
             self.assertIn("打印 / 另存 PDF", page.text)
             self.assertNotIn("online-bridge.html", page.text)
+            if document_type != "packing_list":
+                self.assertIn("data-k='unit_price' value=''", page.text)
+                self.assertNotIn("data-k='unit_price' value='1.25'", page.text)
+                if "产品资料参考价" in page.text:
+                    self.assertIn("仅供核对，不会自动写入正式单价", page.text)
 
     def test_standalone_ui_intercepts_old_local_document_button(self):
         source = (WEB / "standalone-business-ui.js").read_text(encoding="utf-8")
