@@ -70,6 +70,8 @@ jobs:
             '/api/leads/{lead_id}/queue',
             '/api/leads/{lead_id}/sequence',
             '/api/leads/{lead_id}/local-event',
+            '/api/leads/{lead_id}/low-input',
+            '/api/leads/{lead_id}/low-input/prepare-inquiry',
             '/api/industries',
             '/api/industries/{industry_id}',
             '/api/industries/{industry_id}/templates',
@@ -143,10 +145,10 @@ jobs:
             web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
             web/daily-services.js web/mail-thread-ui.js web/mail-list-pagination-ui.js web/map-view.js web/business-center-ui.js \
             web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
-            web/sequence-pagination-ui.js web/industry-playbook-ui.js web/intelligence-history.js web/customer-intelligence.js \
-            web/world-intelligence-map.js web/today-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js web/service-settings.js \
+            web/sequence-pagination-ui.js web/industry-playbook-ui.js web/low-input-flow.js web/intelligence-history.js web/customer-intelligence.js \
+            web/world-intelligence-map.js web/world-country-interaction.js web/today-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js web/service-settings.js \
             web/intelligence-source-settings.js web/service-adapter-ui.js web/notification-settings.js \
-            web/admin-safety.js web/secondary-page-closure.js web/plain-language.js; do
+            web/admin-safety.js web/secondary-page-closure.js web/workflow-usability-closure.js web/plain-language.js; do
               node --check "$file"
           done
 
