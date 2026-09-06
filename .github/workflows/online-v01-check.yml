@@ -1,0 +1,331 @@
+name: Online V0.1 Check
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - 'public/**'
+      - '.github/workflows/online-v01-check.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - 'public/**'
+      - '.github/workflows/online-v01-check.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Compile Python
+        run: python -m compileall app tests
+
+      - name: Python business regressions
+        env:
+          HUIDI_SECRET_KEY: ci-only-huidi-secret-key
+          HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+        run: python -m unittest discover -s tests -p 'test_*.py'
+
+      - name: Import Daily Workbench application
+        env:
+          HUIDI_SECRET_KEY: ci-only-huidi-secret-key
+          HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+        run: |
+          python - <<'PY'
+          from app.daily_app import app
+          paths={r.path for r in app.routes}
+          required={
+            '/api/workbench/today',
+            '/api/growth/funnel',
+            '/api/acquisition/status',
+            '/api/company-settings',
+            '/api/mail/delivery-health',
+            '/api/mail/accounts/{mailbox_id}/smtp',
+            '/api/mail/accounts/{mailbox_id}/test',
+            '/api/mail/connect/{provider}/start',
+            '/api/mail/connect/{provider}/callback',
+            '/api/mail/messages',
+            '/api/mail/threads',
+            '/api/mail/sync-all',
+            '/api/mail/queue',
+            '/api/mail/queue/run',
+            '/api/mail/sequences',
+            '/api/mail/sequences/run',
+            '/api/mail/sequence-enrollments',
+            '/api/leads/{lead_id}/send',
+            '/api/leads/{lead_id}/queue',
+            '/api/leads/{lead_id}/sequence',
+            '/api/leads/{lead_id}/local-event',
+            '/api/leads/{lead_id}/low-input',
+            '/api/leads/{lead_id}/low-input/prepare-inquiry',
+            '/api/industries',
+            '/api/industries/{industry_id}',
+            '/api/industries/{industry_id}/templates',
+            '/api/leads/{lead_id}/industry',
+            '/api/leads/{lead_id}/industry-sequence',
+            '/api/leads/{lead_id}/industry-draft',
+            '/api/product-brains',
+            '/api/intelligence',
+            '/api/intelligence/{record_id}/normalized',
+            '/api/intelligence/normalize/backfill',
+            '/api/intelligence/summary/{lead_id}',
+            '/api/intel/status',
+            '/api/intel/daily',
+            '/api/intel/world',
+            '/api/intel/world/country',
+            '/api/intel/customer/{lead_id}',
+            '/api/intel/deal/{deal_id}',
+            '/api/intel/customer/{lead_id}/use',
+            '/api/intel/customer/{lead_id}/apply-to-draft',
+            '/api/intel/today-actions',
+            '/api/intel/sources',
+            '/api/intel/sources/{source_id}',
+            '/api/intel/sources/{source_id}/test',
+            '/api/business/deals/{deal_id}/reference',
+            '/api/business/deals/{deal_id}/facts',
+            '/api/business/deals/{deal_id}/handoff',
+            '/api/team/status',
+            '/api/team/login',
+            '/api/team/me',
+            '/api/team/members',
+            '/api/organizations',
+            '/api/organizations/current',
+            '/api/organizations/{organization_id}',
+            '/api/audit/records',
+            '/api/audit/summary',
+            '/api/service-connections',
+            '/api/service-connections/{service_key}',
+            '/api/service-connections/{service_key}/test',
+            '/api/service-adapters',
+            '/api/service-adapters/{service_key}',
+            '/api/service-adapters/{service_key}/test',
+            '/api/notification-routes',
+            '/api/notification-routes/{route_id}',
+            '/api/notification-routes/{route_id}/test',
+            '/api/notification-routes/run',
+            '/api/backups',
+            '/api/backups/{backup_id}/verify',
+            '/api/backups/{backup_id}/download',
+            '/api/backups/{backup_id}/restore',
+            '/api/production/readiness',
+            '/api/services/status',
+            '/api/tools/map-leads',
+            '/api/tools/trade-news',
+            '/api/tools/company-check',
+            '/api/tools/trade-data',
+            '/api/tools/tariff',
+            '/api/tools/fx',
+            '/api/tools/shipping',
+          }
+          missing=required-paths
+          if missing: raise SystemExit('Missing routes: '+', '.join(sorted(missing)))
+          print(app.title, app.version, 'Daily Workbench routes PASS')
+          PY
+
+      - name: Check Online browser JavaScript
+        run: |
+          for file in \
+            web/app.js web/daily-workbench.js web/acquisition-status-ui.js web/growth-funnel-ui.js \
+            web/beginner-flow.js web/product-brain-core.js web/product-brain.js \
+            web/product-brain-server.js web/growth-workflow.js web/mail-governance.js \
+            web/mail-owner-v3.js web/local-status-sync.js web/business-context.js \
+            web/daily-services.js web/mail-thread-ui.js web/mail-list-pagination-ui.js web/map-view.js web/business-center-ui.js \
+            web/deal-facts-ui.js web/reference-handoff-guard.js web/daily-navigation.js web/sequence-ui.js \
+            web/sequence-pagination-ui.js web/industry-playbook-ui.js web/low-input-flow.js web/intelligence-history.js web/customer-intelligence.js \
+            web/world-intelligence-map.js web/world-country-interaction.js web/today-intelligence.js web/team-access.js web/company-settings.js web/audit-ui.js web/service-settings.js \
+            web/intelligence-source-settings.js web/service-adapter-ui.js web/notification-settings.js \
+            web/admin-safety.js web/secondary-page-closure.js web/workflow-usability-closure.js web/plain-language.js; do
+              node --check "$file"
+          done
+
+      - name: Product Brain regression
+        run: node tests/product_brain.test.cjs
+
+      - name: Check Local bridge and UX owners
+        run: |
+          node --check ../../public/huidi-online-local-bridge-v1.js
+          node --check ../../public/huidi-workspace-r6-rc1628.js
+          node --check ../../public/huidi-notification-center-v1.js
+          node --check ../../public/huidi-workspace-closure-v1.js
+          node --check ../../public/huidi-workspace-stage2-closure-v1.js
+          node --check ../../public/huidi-catalog-ux-closure-v1.js
+          node --check ../../public/flypigbox-r1-3a-18-30-catalog-closure.js
+          node --check ../../public/huidi-editor-return-v1.js
+          node --check ../../public/huidi-action-owner-rc1621.js
+
+      - name: Check secondary-page inline JavaScript
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          for source,target in [
+            ('../../public/document-start.html','/tmp/document-start.js'),
+            ('../../public/product-online-handoff.html','/tmp/product-handoff.js'),
+          ]:
+            text=Path(source).read_text(encoding='utf-8')
+            blocks=[m.group(1) for m in re.finditer(r'<script(?![^>]*\bsrc=)[^>]*>(.*?)</script>',text,re.S|re.I)]
+            if not blocks: raise SystemExit('No inline script: '+source)
+            Path(target).write_text('\n'.join(blocks),encoding='utf-8')
+          PY
+          node --check /tmp/document-start.js
+          node --check /tmp/product-handoff.js
+
+      - name: Notification Center regression
+        run: node tests/notification_center.test.cjs
+
+      - name: Online to Local bridge regression
+        run: node tests/bridge_contract.test.cjs
+
+      - name: Verify named Online workbench contracts
+        run: python tests/online_contracts.py
+
+      - name: Assert no local secrets are tracked
+        run: |
+          test ! -f .env
+          test ! -f ../.env
+          ! grep -R --exclude='.env.example' -E 'HUIDI_SECRET_KEY=.+|HUIDI_OWNER_PASSWORD=.+|HUIDI_TENANT_DATABASE_URL_TEMPLATE=.+|GMAIL_CLIENT_SECRET=.+|OUTLOOK_CLIENT_SECRET=.+|HUIDI_MAIL_EVENT_KEY=.+|HUIDI_[A-Z_]+_TOKEN=.+|LLM_API_KEY=.+|SERPER_API_KEY=.+|TAVILY_API_KEY=.+|HUNTER_API_KEY=.+|GNEWS_API_KEY=.+' . ../ || false
+
+  postgres_schema:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: huidi_org_1
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d huidi_org_1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/huidi_org_1
+      HUIDI_TENANT_DATABASE_URL_TEMPLATE: postgresql+psycopg://postgres:postgres@127.0.0.1:5432/huidi_org_{organization_id}
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_SECRET_KEY: ci-only-postgres-huidi-secret-key
+      HUIDI_TEAM_ACCESS: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Create additional company databases
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h 127.0.0.1 -U postgres -d huidi_org_1 -v ON_ERROR_STOP=1 -c 'CREATE DATABASE huidi_org_2;'
+          psql -h 127.0.0.1 -U postgres -d huidi_org_1 -v ON_ERROR_STOP=1 -c 'CREATE DATABASE huidi_org_3;'
+
+      - name: Upgrade PostgreSQL company schemas
+        run: |
+          python -m app.schema_cli upgrade --organization 1
+          python -m app.schema_cli upgrade --organization 2
+          python -m app.schema_cli check --organization 1
+          python -m app.schema_cli check --organization 2
+
+      - name: Stress concurrent PostgreSQL schema upgrade lock
+        run: |
+          set -euo pipefail
+          python -m app.schema_cli upgrade --organization 3 > /tmp/huidi-schema-a.json &
+          PID_A=$!
+          python -m app.schema_cli upgrade --organization 3 > /tmp/huidi-schema-b.json &
+          PID_B=$!
+          wait "$PID_A"
+          wait "$PID_B"
+          cat /tmp/huidi-schema-a.json
+          cat /tmp/huidi-schema-b.json
+          python -m app.schema_cli check --organization 3
+
+      - name: Verify PostgreSQL physical tenant isolation
+        run: |
+          python - <<'PY'
+          from sqlalchemy import func, select
+          from app.daily_app import app
+          from app.industry_playbooks import LeadIndustryPreference
+          from app.intelligence_sources import IntelligenceFeedSource
+          from app.main import Lead, SessionLocal
+          from app.schema_migrations import LATEST_SCHEMA_REVISION
+          from app.tenant_storage import reset_current_organization, set_current_organization, tenant_schema_status
+
+          token=set_current_organization(1)
+          try:
+              db=SessionLocal()
+              try:
+                  row=Lead(
+                      company_name='Postgres Tenant One Buyer',
+                      domain='tenant-one.example',
+                      website='https://tenant-one.example',
+                      country='DE',
+                      market_keyword='hinge',
+                      buyer_type='importer',
+                      score=70,
+                      reason='postgres tenant isolation gate',
+                      evidence_json='[]',
+                      status='qualified',
+                  )
+                  db.add(row)
+                  db.flush()
+                  db.add(LeadIndustryPreference(
+                      lead_id=row.id,
+                      industry_id='fasteners-fixings',
+                      source='user',
+                  ))
+                  db.add(IntelligenceFeedSource(
+                      name='Tenant One Trade Office',
+                      feed_url='https://tenant-one.example/news.xml',
+                      category='policy',
+                      source_type='official',
+                      enabled=1,
+                  ))
+                  db.commit()
+                  assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==1
+                  assert int(db.scalar(select(func.count(LeadIndustryPreference.id)).where(LeadIndustryPreference.industry_id=='fasteners-fixings')) or 0)==1
+                  assert int(db.scalar(select(func.count(IntelligenceFeedSource.id)).where(IntelligenceFeedSource.name=='Tenant One Trade Office')) or 0)==1
+                  status=tenant_schema_status(1)
+                  assert status['current_revision']==LATEST_SCHEMA_REVISION
+                  assert status['serialized_writes'] is True
+              finally:
+                  db.close()
+          finally:
+              reset_current_organization(token)
+
+          token=set_current_organization(2)
+          try:
+              db=SessionLocal()
+              try:
+                  assert int(db.scalar(select(func.count(Lead.id)).where(Lead.domain=='tenant-one.example')) or 0)==0
+                  assert int(db.scalar(select(func.count(LeadIndustryPreference.id)).where(LeadIndustryPreference.industry_id=='fasteners-fixings')) or 0)==0
+                  assert int(db.scalar(select(func.count(IntelligenceFeedSource.id)).where(IntelligenceFeedSource.name=='Tenant One Trade Office')) or 0)==0
+                  status=tenant_schema_status(2)
+                  assert status['current_revision']==LATEST_SCHEMA_REVISION
+                  assert status['serialized_writes'] is True
+              finally:
+                  db.close()
+          finally:
+              reset_current_organization(token)
+          print('PostgreSQL tenant isolation PASS')
+          PY

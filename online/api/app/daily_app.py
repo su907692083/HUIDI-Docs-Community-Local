@@ -1,0 +1,61 @@
+from .online_app import app  # noqa: F401
+from .tenant_storage import install_session_router
+
+# Install the company-aware business-session router before importing modules
+# that capture SessionLocal. Organization #1 keeps the historical database;
+# organization #2+ receive physically separate business databases.
+install_session_router()
+
+from . import mail_provider  # noqa: F401,E402
+from . import mail_delivery  # noqa: F401,E402
+from . import mail_sync  # noqa: F401,E402
+from . import mail_plan_compat_owner  # noqa: F401,E402
+from . import mail_threads  # noqa: F401,E402
+from . import mail_sequences  # noqa: F401,E402
+from . import industry_playbooks  # noqa: F401,E402
+from . import industry_scenario_actions  # noqa: F401,E402
+from . import product_memory  # noqa: F401,E402
+from . import business_center  # noqa: F401,E402
+# Standalone closure keeps the same Lead / Customer / Deal / DocumentRef owners,
+# but makes the Windows review package usable without Community Local running:
+# manual real-data entry + native Online quotation / PI / contract / CI / packing.
+from . import standalone_business  # noqa: F401,E402
+# Reuses Product Brain + mailbox replies + the existing business-center owner to
+# reduce re-entry. It has no second customer/deal/document tables.
+from . import low_input_workflow  # noqa: F401,E402
+from . import contact_center  # noqa: F401,E402
+from . import company_settings  # noqa: F401,E402
+from . import backup_restore  # noqa: F401,E402
+from . import backup_automation  # noqa: F401,E402
+from . import online_notifications  # noqa: F401,E402
+from . import notification_delivery  # noqa: F401,E402
+from . import notification_categories  # noqa: F401,E402
+from . import intelligence_records  # noqa: F401,E402
+from . import deal_reference  # noqa: F401,E402
+from . import service_connections  # noqa: F401,E402
+from . import service_adapters  # noqa: F401,E402
+from . import service_hub  # noqa: F401,E402
+from . import service_hub_adapter_patch  # noqa: F401,E402
+from . import intelligence_sources  # noqa: F401,E402
+from . import customer_intelligence  # noqa: F401,E402
+from . import world_intelligence  # noqa: F401,E402
+from . import intelligence_source_bridge  # noqa: F401,E402
+from . import today_intelligence  # noqa: F401,E402
+from . import provider_guard  # noqa: F401,E402
+# Imported after the guard so the acquisition middleware is the outer owner:
+# Serper remains primary, Tavily is real-company failover, Hunter is contact
+# priority with Serper fallback. All paths still write the same Lead objects.
+from . import acquisition_provider_fusion  # noqa: F401,E402
+from . import history_pagination  # noqa: F401,E402
+from . import workbench  # noqa: F401,E402
+from . import growth_funnel  # noqa: F401,E402
+from . import audit_log  # noqa: F401,E402
+from . import team_access  # noqa: F401,E402
+from . import production_readiness  # noqa: F401,E402
+from . import acquisition_status_bridge  # noqa: F401,E402
+from . import tenant_jobs  # noqa: F401,E402
+from . import tenant_webhooks  # noqa: F401,E402
+from . import frontend_runtime_guard  # noqa: F401,E402
+
+# Daily Workbench is the Online product entrypoint. The imported modules register
+# the daily business routes on one FastAPI application.

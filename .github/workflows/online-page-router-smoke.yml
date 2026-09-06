@@ -1,0 +1,110 @@
+name: HUIDI Online Page Router Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-page-router-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-page-router-smoke.yml'
+
+jobs:
+  page_routes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-page-router-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '0'
+      DATABASE_URL: sqlite:////tmp/huidi-page-router.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Start Online workbench
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18082 > /tmp/huidi-page-router.log 2>&1 &
+          echo $! > /tmp/huidi-page-router.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18082/ > /dev/null; then exit 0; fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-page-router.log
+          exit 1
+      - name: Seed one real catalog product
+        run: |
+          curl -fsS -X PUT http://127.0.0.1:18082/api/product-brains/router-hinge \
+            -H 'Content-Type: application/json' \
+            --data '{"brain_id":"router-hinge","name":"Router Hinge","sku":"RH-304","payload":{"brain_id":"router-hinge","name":"Router Hinge","sku":"RH-304","spec":"SUS304 4 inch","moq":"500 pcs","lead_time":"15 days","price_range":"USD 1.00-1.20 / PCS","certifications":["RoHS"]}}' > /tmp/product.json
+          grep -F 'Router Hinge' /tmp/product.json
+      - name: Verify sidebar pages and native catalog in Chrome
+        run: |
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+          from selenium.webdriver.chrome.options import Options
+
+          options=Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1600,1100')
+          driver=webdriver.Chrome(options=options)
+          wait=WebDriverWait(driver,10)
+          try:
+              driver.get('http://127.0.0.1:18082/')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-catalog]')))
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-catalog]').click()
+              wait.until(lambda d: d.find_element(By.ID,'huidiPageHost').is_displayed())
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'产品目录'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiPageMount'),'Router Hinge'))
+              assert 'page=catalog' in driver.current_url, driver.current_url
+              assert driver.find_element(By.ID,'hwpCatalogPaper').is_displayed()
+              assert '打印 / 另存 PDF' in driver.find_element(By.ID,'huidiPageMount').text
+              assert '下载 HTML' in driver.find_element(By.ID,'huidiPageMount').text
+              assert '127.0.0.1:8765' not in driver.current_url
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-contacts]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'联系人'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
+              pos=driver.execute_script("return getComputedStyle(document.querySelector('#huidiNavBack')).position")
+              assert pos=='static', pos
+              assert driver.find_element(By.CSS_SELECTOR,'.side').is_displayed()
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-business="deals"]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'客户 / 询盘'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiBusinessBack')?.parentElement?.id")=='huidiPageMount')
+              pos=driver.execute_script("return getComputedStyle(document.querySelector('#huidiBusinessBack')).position")
+              assert pos=='static', pos
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'产品资料'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#pbBackdrop')?.parentElement?.id")=='huidiPageMount')
+              pos=driver.execute_script("return getComputedStyle(document.querySelector('#pbBackdrop')).position")
+              assert pos=='static', pos
+
+              print('HUIDI sidebar page routing + native product catalog PASS')
+          finally:
+              driver.quit()
+          PY
+      - name: Stop Online workbench
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-page-router.pid ]; then kill "$(cat /tmp/huidi-page-router.pid)" 2>/dev/null || true; fi
+          if [ -s /tmp/huidi-page-router.log ]; then tail -160 /tmp/huidi-page-router.log; fi

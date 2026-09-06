@@ -1,0 +1,23 @@
+/* HUIDI Catalog UX Closure V1 — common-first, advanced-on-demand. */
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-modebar{position:sticky;top:0;z-index:45;margin:-4px -4px 10px;padding:8px;border:1px solid #dce6f1;border-radius:12px;background:rgba(255,255,255,.97);box-shadow:0 8px 22px rgba(28,55,96,.08);backdrop-filter:blur(10px)}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-modebar-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-modebar b{font-size:12px;color:#233d6b}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-modebar small{display:block;margin-top:3px;color:#77859a;font-size:10px;line-height:1.35}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-mode-switch{display:inline-flex;gap:3px;padding:3px;border-radius:9px;background:#eef3f9}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-mode-switch button{min-height:29px;padding:0 9px;border:0;border-radius:7px;background:transparent;color:#61728a;font-size:11px;font-weight:850;cursor:pointer}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-mode-switch button.active{background:#fff;color:#173b83;box-shadow:0 2px 8px rgba(28,55,96,.12)}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-live-summary{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-live-summary span{padding:4px 6px;border:1px solid #e0e8f2;border-radius:999px;background:#f8fbff;color:#63738b;font-size:9px;white-space:nowrap}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-live-summary b{font-size:9px;color:#244c91}
+body[data-huidi-catalog-ux="v1"][data-huidi-catalog-mode="common"] .huidi-catalog-advanced{display:none!important}
+body[data-huidi-catalog-ux="v1"][data-huidi-catalog-mode="advanced"] .huidi-catalog-advanced{display:revert}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-advanced-mark{display:inline-flex;margin-left:5px;padding:2px 5px;border-radius:999px;background:#f1f3f6;color:#78869a;font-size:8px;font-weight:850;vertical-align:middle}
+body[data-huidi-catalog-ux="v1"] .catalog-company-card .section{transition:background .15s ease}
+body[data-huidi-catalog-ux="v1"] .catalog-company-card .section:not(.fp30-collapsed):hover{background:#fcfdff}
+body[data-huidi-catalog-ux="v1"] .catalog-buying-card{border-color:#d9e6f6;background:#f8fbff}
+body[data-huidi-catalog-ux="v1"] .catalog-preset-card{border-color:#dce6f3;background:#fbfdff}
+body[data-huidi-catalog-ux="v1"] .huidi-catalog-helper-only{opacity:.92}
+body[data-huidi-catalog-ux="v1"] .catalog-local-flow{gap:4px}
+body[data-huidi-catalog-ux="v1"] .catalog-local-flow span{min-width:0}
+body[data-huidi-catalog-ux="v1"] .workspace-return[href*="#catalog"]{font-weight:850}
+@media(max-width:1080px){body[data-huidi-catalog-ux="v1"] .huidi-catalog-modebar{position:relative;top:auto}}

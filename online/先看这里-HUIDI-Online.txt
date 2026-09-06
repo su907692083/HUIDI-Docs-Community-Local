@@ -1,0 +1,18 @@
+HUIDI Online · 独立联网版查看说明
+
+1. 这是 HUIDI Online，不是 Community Local。
+2. Windows 下直接双击：启动-HUIDI-Online.cmd
+3. 第一次运行会自动：
+   - 创建独立 Python 环境
+   - 安装 Online 所需依赖
+   - 生成本机安全密钥
+   - 启动 HUIDI Online
+   - 自动打开浏览器
+4. 正确地址：http://127.0.0.1:8080/
+5. 正确页面标题：HUIDI Online · 外贸工作台
+6. 停止服务：回到 HUIDI Online 启动窗口按 Ctrl+C。
+
+注意：
+- 首次安装依赖需要电脑已经安装 Python 3，并可以联网下载 Python 依赖。
+- 找客户、联系人、真实邮件、商业数据等联网能力仍需要在 HUIDI Online 内配置对应真实服务。
+- 不要运行仓库根目录的旧 Local 启动器；它启动的是 Community Local。

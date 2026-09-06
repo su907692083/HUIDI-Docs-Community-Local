@@ -1,0 +1,177 @@
+name: HUIDI Online Browser Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-browser-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-browser-smoke.yml'
+
+jobs:
+  first_render:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-browser-smoke-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '0'
+      DATABASE_URL: sqlite:////tmp/huidi-browser-smoke.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Start Online workbench
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18080 > /tmp/huidi-browser-server.log 2>&1 &
+          echo $! > /tmp/huidi-browser-server.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18080/ > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-browser-server.log
+          exit 1
+      - name: Verify runtime cache isolation headers and versioned assets
+        run: |
+          set -euo pipefail
+          curl -fsS -D /tmp/huidi-root.headers http://127.0.0.1:18080/ -o /tmp/huidi-runtime-index.html
+          grep -Eqi '^cache-control: .*no-store' /tmp/huidi-root.headers
+          grep -Eqi '^clear-site-data: "cache"' /tmp/huidi-root.headers
+          ROOT_VERSION="$(awk 'BEGIN{IGNORECASE=1} /^x-huidi-asset-version:/ {gsub("\r",""); print $2}' /tmp/huidi-root.headers | tail -1)"
+          test "${#ROOT_VERSION}" -eq 16
+          grep -Eq '/assets/plain-language\.js\?v=[a-f0-9]{16}' /tmp/huidi-runtime-index.html
+          ASSET_PATH="$(grep -Eo '/assets/plain-language\.js\?v=[a-f0-9]{16}' /tmp/huidi-runtime-index.html | head -1)"
+          curl -fsS -D /tmp/huidi-asset.headers "http://127.0.0.1:18080${ASSET_PATH}" -o /dev/null
+          grep -Eqi '^cache-control: .*immutable' /tmp/huidi-asset.headers
+          ASSET_VERSION="$(awk 'BEGIN{IGNORECASE=1} /^x-huidi-asset-version:/ {gsub("\r",""); print $2}' /tmp/huidi-asset.headers | tail -1)"
+          test "$ROOT_VERSION" = "$ASSET_VERSION"
+      - name: Verify interactive page stays responsive for 30 seconds
+        run: |
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+
+          driver = webdriver.Chrome(options=options)
+          driver.set_page_load_timeout(20)
+          driver.set_script_timeout(5)
+          try:
+              driver.get('http://127.0.0.1:18080/')
+              assert 'HUIDI Online' in driver.title, driver.title
+              assert '外贸工作台' in driver.page_source
+
+              keyword = driver.find_element(By.ID, 'keyword')
+              keyword.clear()
+              keyword.send_keys('stainless hinge')
+              assert keyword.get_attribute('value') == 'stainless hinge'
+
+              driver.find_element(By.CSS_SELECTOR, '[data-huidi-nav="find"]').click()
+
+              elapsed = 0
+              last_now = 0.0
+              for delay in (5, 10, 15):
+                  time.sleep(delay)
+                  elapsed += delay
+                  probe = driver.execute_async_script('''
+                    const done = arguments[arguments.length - 1];
+                    requestAnimationFrame(() => done({
+                      ready: document.readyState,
+                      now: performance.now(),
+                      keyword: document.querySelector('#keyword')?.value || '',
+                      bodyClass: document.body?.className || ''
+                    }));
+                  ''')
+                  assert probe['ready'] in ('interactive', 'complete'), probe
+                  assert probe['keyword'] == 'stainless hinge', probe
+                  assert float(probe['now']) > last_now, probe
+                  last_now = float(probe['now'])
+                  print(f'HUIDI browser responsive after {elapsed}s: {probe}')
+
+              final = driver.execute_script('''
+                document.body.dataset.huidiRuntimeProbe = 'ok';
+                return {
+                  probe: document.body.dataset.huidiRuntimeProbe,
+                  health: document.querySelector('#health')?.textContent || ''
+                };
+              ''')
+              assert final['probe'] == 'ok', final
+              print('HUIDI interactive 30-second browser smoke PASS')
+          finally:
+              driver.quit()
+          PY
+      - name: Verify standalone customer inquiry and native quotation in Chrome
+        run: |
+          python - <<'PY'
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+          driver = webdriver.Chrome(options=options)
+          wait = WebDriverWait(driver, 12)
+          try:
+              driver.get('http://127.0.0.1:18080/')
+              wait.until(EC.element_to_be_clickable((By.ID, 'hsbManualLead'))).click()
+              wait.until(EC.visibility_of_element_located((By.ID, 'hsbCompany'))).send_keys('Standalone Browser Buyer')
+              driver.find_element(By.ID, 'hsbProduct').send_keys('stainless steel hinge')
+              driver.find_element(By.ID, 'hsbCountry').send_keys('DE')
+              driver.find_element(By.ID, 'hsbRequirements').send_keys('Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch')
+              driver.find_element(By.CSS_SELECTOR, '[data-hsb-inquiry]').click()
+              wait.until(EC.alert_is_present()).accept()
+
+              wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open')))
+              rows = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr[data-deal]')))
+              target = next((row for row in rows if 'Standalone Browser Buyer' in row.text), rows[0])
+              target.click()
+              quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-make-doc="quotation"]')))
+              quote.click()
+              wait.until(EC.alert_is_present()).accept()
+              wait.until(lambda d: len(d.window_handles) >= 2)
+              driver.switch_to.window(driver.window_handles[-1])
+              wait.until(lambda d: '报价单' in d.title)
+              source = driver.page_source
+              assert 'Standalone Browser Buyer' in source
+              assert 'stainless steel hinge' in source
+              assert '打印 / 另存 PDF' in source
+              assert 'online-bridge.html' not in source
+              print('HUIDI standalone business + native quotation browser PASS')
+          finally:
+              driver.quit()
+          PY
+      - name: Stop Online workbench
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-browser-server.pid ]; then
+            kill "$(cat /tmp/huidi-browser-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-browser-server.log ]; then
+            tail -180 /tmp/huidi-browser-server.log
+          fi
