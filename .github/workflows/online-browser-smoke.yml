@@ -28,7 +28,9 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
       - name: Start Online workbench
         run: |
           set -euo pipefail
@@ -56,27 +58,68 @@ jobs:
           grep -Eqi '^cache-control: .*immutable' /tmp/huidi-asset.headers
           ASSET_VERSION="$(awk 'BEGIN{IGNORECASE=1} /^x-huidi-asset-version:/ {gsub("\r",""); print $2}' /tmp/huidi-asset.headers | tail -1)"
           test "$ROOT_VERSION" = "$ASSET_VERSION"
-      - name: Verify first page becomes responsive in Chrome
+      - name: Verify interactive page stays responsive for 30 seconds
         run: |
-          set -euo pipefail
-          BROWSER="$(command -v google-chrome || command -v chromium || command -v chromium-browser || true)"
-          if [ -z "$BROWSER" ]; then
-            echo 'No Chrome/Chromium executable found on runner'
-            exit 1
-          fi
-          rm -rf /tmp/huidi-browser-profile
-          timeout 20s "$BROWSER" \
-            --headless=new \
-            --no-sandbox \
-            --disable-gpu \
-            --disable-dev-shm-usage \
-            --user-data-dir=/tmp/huidi-browser-profile \
-            --dump-dom http://127.0.0.1:18080/ \
-            > /tmp/huidi-first-render.html 2> /tmp/huidi-browser.log
-          grep -q 'HUIDI Online' /tmp/huidi-first-render.html
-          grep -q '外贸工作台' /tmp/huidi-first-render.html
-          test "$(wc -c < /tmp/huidi-first-render.html)" -gt 5000
-          grep -Eq '/assets/plain-language\.js\?v=[a-f0-9]{16}' /tmp/huidi-first-render.html
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+
+          driver = webdriver.Chrome(options=options)
+          driver.set_page_load_timeout(20)
+          driver.set_script_timeout(5)
+          try:
+              driver.get('http://127.0.0.1:18080/')
+              assert 'HUIDI Online' in driver.title, driver.title
+              assert '外贸工作台' in driver.page_source
+
+              keyword = driver.find_element(By.ID, 'keyword')
+              keyword.clear()
+              keyword.send_keys('stainless hinge')
+              assert keyword.get_attribute('value') == 'stainless hinge'
+
+              driver.find_element(By.CSS_SELECTOR, '[data-huidi-nav="find"]').click()
+
+              elapsed = 0
+              last_now = 0.0
+              for delay in (5, 10, 15):
+                  time.sleep(delay)
+                  elapsed += delay
+                  probe = driver.execute_async_script('''
+                    const done = arguments[arguments.length - 1];
+                    requestAnimationFrame(() => done({
+                      ready: document.readyState,
+                      now: performance.now(),
+                      keyword: document.querySelector('#keyword')?.value || '',
+                      bodyClass: document.body?.className || ''
+                    }));
+                  ''')
+                  assert probe['ready'] in ('interactive', 'complete'), probe
+                  assert probe['keyword'] == 'stainless hinge', probe
+                  assert float(probe['now']) > last_now, probe
+                  last_now = float(probe['now'])
+                  print(f'HUIDI browser responsive after {elapsed}s: {probe}')
+
+              final = driver.execute_script('''
+                document.body.dataset.huidiRuntimeProbe = 'ok';
+                return {
+                  probe: document.body.dataset.huidiRuntimeProbe,
+                  health: document.querySelector('#health')?.textContent || ''
+                };
+              ''')
+              assert final['probe'] == 'ok', final
+              print('HUIDI interactive 30-second browser smoke PASS')
+          finally:
+              driver.quit()
+          PY
       - name: Stop Online workbench
         if: always()
         run: |
@@ -84,8 +127,5 @@ jobs:
             kill "$(cat /tmp/huidi-browser-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-browser-server.log ]; then
-            tail -100 /tmp/huidi-browser-server.log
-          fi
-          if [ -s /tmp/huidi-browser.log ]; then
-            tail -80 /tmp/huidi-browser.log
+            tail -140 /tmp/huidi-browser-server.log
           fi
