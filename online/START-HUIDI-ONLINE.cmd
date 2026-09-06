@@ -55,7 +55,7 @@ if not %ERRORLEVEL% EQU 0 goto :app_failed
 echo [5/5] Starting HUIDI Online...
 echo Browser will open automatically. Press Ctrl+C here to stop.
 echo.
-start "" /b "%ROOT%\OPEN-HUIDI-ONLINE.cmd" "%URL%"
+start "" /b "%VENV_PY%" -c "import time,webbrowser; time.sleep(2); webbrowser.open(r'%URL%')"
 "%VENV_PY%" -m uvicorn app.daily_app:app --host 127.0.0.1 --port 8080
 set "RC=%ERRORLEVEL%"
 if not "%RC%"=="0" goto :server_failed
