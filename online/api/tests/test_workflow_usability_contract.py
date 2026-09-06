@@ -27,8 +27,9 @@ class WorkflowUsabilityContractTests(unittest.TestCase):
         self.assertIn("trapTab", source)
         self.assertIn("focusables", source)
         self.assertIn("openerByOverlay", source)
-        self.assertIn("scheduleRefresh", source)
+        self.assertIn("scheduleRefreshBurst", source)
         self.assertIn("#huidiNavBack", source)
+        self.assertNotIn("MutationObserver", source)
 
     def test_customer_drawer_has_fast_section_navigation(self):
         source = self.text("web/workflow-usability-closure.js")
@@ -44,6 +45,8 @@ class WorkflowUsabilityContractTests(unittest.TestCase):
             "scrollIntoView",
         ]:
             self.assertIn(marker, source)
+        self.assertIn("scheduleRefreshBurst", source)
+        self.assertNotIn("MutationObserver", source)
 
     def test_high_frequency_navigation_keeps_context(self):
         source = self.text("web/workflow-usability-closure.js")
