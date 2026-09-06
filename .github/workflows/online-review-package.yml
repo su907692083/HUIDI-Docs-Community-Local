@@ -1,0 +1,63 @@
+name: HUIDI Online Standalone Package
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-review-package.yml'
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify standalone Online entrypoint
+        run: |
+          test -f 'online/启动-HUIDI-Online.cmd'
+          test -f 'online/START-HUIDI-ONLINE.ps1'
+          test -f 'online/api/app/daily_app.py'
+          test -f 'online/api/web/index.html'
+
+      - name: Build standalone Online ZIP
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import shutil
+          import os
+
+          source = Path('online').resolve()
+          stage_root = Path('/tmp/huidi-online-package')
+          package = stage_root / 'HUIDI-ONLINE'
+          if stage_root.exists():
+              shutil.rmtree(stage_root)
+          stage_root.mkdir(parents=True)
+
+          def ignore(path, names):
+              blocked = {'.venv', '__pycache__', '.pytest_cache', '.mypy_cache'}
+              out = [name for name in names if name in blocked or name.endswith('.pyc') or name.endswith('.db')]
+              if Path(path).name == 'api' and 'tests' in names:
+                  out.append('tests')
+              return out
+
+          shutil.copytree(source, package, ignore=ignore)
+          sha = os.environ.get('GITHUB_SHA', '')
+          (package / '版本信息.txt').write_text(
+              'HUIDI Online · Standalone Review Package\n'
+              f'Git commit: {sha}\n'
+              '启动入口: 启动-HUIDI-Online.cmd\n'
+              '浏览器地址: http://127.0.0.1:8080/\n',
+              encoding='utf-8'
+          )
+          shutil.make_archive('/tmp/HUIDI-ONLINE-WINDOWS-REVIEW', 'zip', stage_root, 'HUIDI-ONLINE')
+          PY
+
+      - name: Upload standalone Online package
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUIDI-ONLINE-WINDOWS-REVIEW
+          path: /tmp/HUIDI-ONLINE-WINDOWS-REVIEW.zip
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
