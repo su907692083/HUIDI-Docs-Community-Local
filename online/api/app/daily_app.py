@@ -16,6 +16,10 @@ from . import industry_playbooks  # noqa: F401,E402
 from . import industry_scenario_actions  # noqa: F401,E402
 from . import product_memory  # noqa: F401,E402
 from . import business_center  # noqa: F401,E402
+# Standalone closure keeps the same Lead / Customer / Deal / DocumentRef owners,
+# but makes the Windows review package usable without Community Local running:
+# manual real-data entry + native Online quotation / PI / contract / CI / packing.
+from . import standalone_business  # noqa: F401,E402
 # Reuses Product Brain + mailbox replies + the existing business-center owner to
 # reduce re-entry. It has no second customer/deal/document tables.
 from . import low_input_workflow  # noqa: F401,E402
