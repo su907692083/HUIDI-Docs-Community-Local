@@ -7,6 +7,7 @@ set "API=%ROOT%\api"
 set "VENV=%API%\.venv"
 set "VENV_PY=%VENV%\Scripts\python.exe"
 set "URL=http://127.0.0.1:8080/"
+set "HUIDI_KEY_NAME=HUIDI_SECRET_KEY"
 
 if not exist "%API%\requirements.txt" goto :missing_package
 cd /d "%API%"
@@ -43,8 +44,7 @@ if not exist ".huidi-secret" (
     "%VENV_PY%" -c "import secrets,pathlib; pathlib.Path('.huidi-secret').write_text(secrets.token_urlsafe(48), encoding='ascii')"
     if not %ERRORLEVEL% EQU 0 goto :secret_failed
 )
-set "HUIDI_SECRET_KEY="
-set /p HUIDI_SECRET_KEY=<".huidi-secret"
+for /f "usebackq delims=" %%S in (".huidi-secret") do set "%HUIDI_KEY_NAME%=%%S"
 if not defined HUIDI_SECRET_KEY goto :secret_failed
 if not defined DATABASE_URL set "DATABASE_URL=sqlite:///./huidi-online.db"
 
