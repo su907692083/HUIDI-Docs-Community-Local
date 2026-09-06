@@ -19,7 +19,8 @@ function trapTab(e){if(e.key!=='Tab')return;const back=topVisible(),panel=back&&
 function syncFocusMemory(){for(const sel of overlays){const el=$(sel),now=visible(el),was=visibleState.get(sel)||false;if(now&&!was){const active=document.activeElement;if(active&&active!==document.body&&!el?.contains(active))openerByOverlay.set(sel,active);setTimeout(()=>{const panel=el&&panelFor(el),target=panel&&focusables(panel)[0];(target||panel)?.focus?.({preventScroll:true})},0)}else if(!now&&was){const opener=openerByOverlay.get(sel);setTimeout(()=>opener?.isConnected&&opener.focus?.({preventScroll:true}),0)}visibleState.set(sel,now)}}
 function refresh(){labelDialogs();businessBack();mailBack();syncBody();syncFocusMemory()}
 function scheduleRefresh(){if(refreshQueued)return;refreshQueued=true;requestAnimationFrame(()=>{refreshQueued=false;refresh()})}
-function boot(){css();refresh();const mo=new MutationObserver(scheduleRefresh);mo.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style']});document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeTop();syncBody();return}trapTab(e)})}
+function scheduleRefreshBurst(){scheduleRefresh();setTimeout(scheduleRefresh,80);setTimeout(scheduleRefresh,320);setTimeout(scheduleRefresh,900)}
+function boot(){css();refresh();document.addEventListener('click',scheduleRefreshBurst,true);document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeTop();syncBody();scheduleRefreshBurst();return}trapTab(e);scheduleRefreshBurst()})}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDISecondaryPageClosure=Object.freeze({refresh:scheduleRefresh});
+window.HUIDISecondaryPageClosure=Object.freeze({refresh:scheduleRefreshBurst});
 })();
