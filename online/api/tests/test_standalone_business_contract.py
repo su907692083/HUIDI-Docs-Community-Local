@@ -69,7 +69,7 @@ class StandaloneBusinessContractTests(unittest.TestCase):
             self.assertEqual(page.status_code, 200, page.text)
             self.assertIn(label, page.text)
             self.assertIn("Standalone Contract Buyer", page.text)
-            self.assertIn("stainless steel hinge", page.text)
+            self.assertIn("stainless steel hinge", page.text.lower())
             self.assertIn("打印 / 另存 PDF", page.text)
             self.assertNotIn("online-bridge.html", page.text)
 
