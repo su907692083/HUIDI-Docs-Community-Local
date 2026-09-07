@@ -33,6 +33,23 @@ DOC_PREFIX = {
     "commercial_invoice": "CI",
     "packing_list": "PL",
 }
+ITEM_KEYS = {
+    "product_id",
+    "brain_id",
+    "product",
+    "sku",
+    "spec",
+    "quantity",
+    "unit_price",
+    "total",
+    "lead_time",
+    "packages",
+    "net_weight",
+    "gross_weight",
+    "carton_size",
+    "volume",
+    "marks",
+}
 
 
 class ManualLeadRequest(BaseModel):
@@ -110,6 +127,53 @@ def _incoterm(requirements: str) -> str:
     if not hit:
         return ""
     return " ".join(x for x in hit.groups() if x).strip()
+
+
+def _item_rows(raw: Any) -> list[dict[str, str]]:
+    if isinstance(raw, list):
+        decoded = raw
+    else:
+        try:
+            decoded = json.loads(str(raw or "[]"))
+        except Exception:
+            decoded = []
+    if not isinstance(decoded, list):
+        return []
+    rows: list[dict[str, str]] = []
+    for item in decoded[:100]:
+        if not isinstance(item, dict):
+            continue
+        clean = {key: str(item.get(key) or "") for key in ITEM_KEYS if key in item}
+        if any(clean.get(key, "").strip() for key in ("product_id", "brain_id", "product", "sku")):
+            rows.append(clean)
+    return rows
+
+
+def _seed_item_rows(products: list[dict[str, Any]]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for item in products[:100]:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            {
+                "product_id": str(item.get("id") or ""),
+                "brain_id": str(item.get("brain_id") or ""),
+                "product": str(item.get("name") or ""),
+                "sku": str(item.get("sku") or ""),
+                "spec": str(item.get("specification") or ""),
+                "quantity": "",
+                "unit_price": "",
+                "total": "",
+                "lead_time": "",
+                "packages": "",
+                "net_weight": "",
+                "gross_weight": "",
+                "carton_size": "",
+                "volume": "",
+                "marks": "",
+            }
+        )
+    return rows
 
 
 @app.post("/api/leads/manual")
@@ -217,6 +281,7 @@ def _document_html(
     inherited = context.get("inherited_fields") if isinstance(context.get("inherited_fields"), dict) else {}
     master = context.get("master_fields") if isinstance(context.get("master_fields"), dict) else {}
     master_data = context.get("master_data") if isinstance(context.get("master_data"), dict) else {}
+    context_products = context.get("products") if isinstance(context.get("products"), list) else []
 
     def pick(key: str, default: Any = "", *, inherit: bool = True, use_master: bool = True) -> str:
         if key in saved_fields:
@@ -227,17 +292,48 @@ def _document_html(
             return str(master.get(key) or "")
         return str(default or "")
 
-    product_name = pick("product", (product.name if product else "") or deal.product_keyword)
-    sku = pick("sku", (product.sku if product else "") or _first(payload, "sku", "model", "item_no"))
-    spec = pick("spec", _first(payload, "specification", "spec", "specs", "material", "description") or deal.requirements)
-    moq = pick("moq", _first(payload, "moq", "minimum_order_quantity"))
-    lead_time = pick("lead_time", _first(payload, "lead_time", "delivery_time", "delivery"))
+    saved_items = _item_rows(saved_fields.get("items_json"))
+    inherited_items = _item_rows(inherited.get("items_json"))
+    item_rows = saved_items or inherited_items
+    if not item_rows and len(context_products) > 1:
+        item_rows = _seed_item_rows(context_products)
+    multi_product = len(item_rows) > 1 or len(context_products) > 1
+
+    product_refs: dict[str, dict[str, Any]] = {}
+    for item in context_products:
+        if not isinstance(item, dict):
+            continue
+        for key in (item.get("id"), item.get("brain_id"), item.get("name"), item.get("sku")):
+            text_key = str(key or "").strip().lower()
+            if text_key:
+                product_refs[text_key] = item
+
+    def item_reference(item: dict[str, str]) -> dict[str, Any]:
+        for key in (item.get("product_id"), item.get("brain_id"), item.get("product"), item.get("sku")):
+            row = product_refs.get(str(key or "").strip().lower())
+            if row:
+                return row
+        return {}
+
+    if multi_product and item_rows:
+        first_item = item_rows[0]
+        product_name = pick("product", first_item.get("product") or deal.product_keyword)
+        sku = pick("sku", first_item.get("sku"))
+        spec = pick("spec", first_item.get("spec"))
+        moq = ""
+    else:
+        product_name = pick("product", (product.name if product else "") or deal.product_keyword)
+        sku = pick("sku", (product.sku if product else "") or _first(payload, "sku", "model", "item_no"))
+        spec = pick("spec", _first(payload, "specification", "spec", "specs", "material", "description") or deal.requirements)
+        moq = pick("moq", _first(payload, "moq", "minimum_order_quantity"))
+
+    lead_time = pick("lead_time", "" if multi_product else _first(payload, "lead_time", "delivery_time", "delivery"))
     packing = _first(payload, "packing", "packaging", "package")
     reference_price = _first(payload, "reference_price", "price", "unit_price")
-    qty = pick("quantity", _quantity(deal.requirements))
+    qty = pick("quantity", "" if multi_product else _quantity(deal.requirements))
     incoterm = pick("incoterm", _incoterm(deal.requirements))
     unit_price = pick("unit_price", "", inherit=False, use_master=False)
-    total = pick("total", f"{deal.amount:g}" if deal.amount else "", inherit=False, use_master=False)
+    total = pick("total", "" if multi_product else (f"{deal.amount:g}" if deal.amount else ""), inherit=False, use_master=False)
     payment = pick("payment")
     seller = pick("seller")
     seller_address = pick("seller_address")
@@ -278,7 +374,7 @@ def _document_html(
         source_id = str(inherited_from.get("document_id") or "")
         inherited_note = (
             f"<div class='ctx ok'><b>已联动：</b>从 {e(source_name)} {e(source_id)} 带入已保存的非价格字段。"
-            "正式单价和金额未自动继承，请人工核对。</div>"
+            "正式单价和金额未自动继承；多产品逐行价格同样保持为空，请人工核对。</div>"
         )
 
     price_lines: list[str] = []
@@ -294,6 +390,8 @@ def _document_html(
                 values.append(f"单价 {item.get('unit_price')}")
             if item.get("total"):
                 values.append(f"金额 {item.get('total')}")
+            if item.get("item_price_count"):
+                values.append(f"{item.get('item_price_count')} 行逐项价格")
             label = f"上游 {item.get('document_id') or ''} " + " / ".join(values)
         elif source == "customer_history" and item.get("amount"):
             label = f"历史业务 #{item.get('deal_id')} {item.get('currency') or ''} {item.get('amount')}"
@@ -308,10 +406,12 @@ def _document_html(
             + "<br><small>仅供返单/议价核对，不自动写入当前正式单价或 deal.amount。</small></div>"
         )
 
+    product_count = max(len(context_products), len(item_rows))
+    product_summary = f" · 关联产品 {product_count} 个" if product_count > 1 else ""
     context_summary = (
-        f"<div class='ctx'><b>同一业务链：</b>Deal #{deal.id} · 已有 {len(context.get('current_documents') or [])} 份单据 · "
+        f"<div class='ctx'><b>同一业务链：</b>Deal #{deal.id}{product_summary} · 已有 {len(context.get('current_documents') or [])} 份单据 · "
         f"同客户历史业务 {len(history)} 笔 · 客户地址 {len(addresses)} 条 · 收款账户 {len(banks)} 个。"
-        "主数据直接来自正式客户和公司设置；当前单据保存后形成自己的快照。</div>"
+        "主数据直接来自正式客户、正式产品和公司设置；当前单据保存后形成自己的快照。</div>"
     )
 
     address_options = ["<option value=''>手工填写 / 未选择</option>"]
@@ -366,56 +466,147 @@ def _document_html(
           <label class='wide'>银行地址<textarea data-k='bank_address'>{e(bank_address)}</textarea></label>
         </div><p class='note'>收款账户来自公司设置；保存后写入当前单据快照，后续改公司设置不会篡改这份已保存单据。</p></section>"""
 
-    packing_rows = ""
-    if ref.document_type == "packing_list":
-        packing_rows = f"""
-        <div class='grid three'>
-          <label>包装件数<input data-k='packages' value='{e(pick("packages"))}' placeholder='例如 20 cartons'></label>
-          <label>净重<input data-k='net_weight' value='{e(pick("net_weight"))}' placeholder='例如 480 kg'></label>
-          <label>毛重<input data-k='gross_weight' value='{e(pick("gross_weight"))}' placeholder='例如 520 kg'></label>
-          <label>外箱尺寸<input data-k='carton_size' value='{e(pick("carton_size", packing))}' placeholder='L × W × H'></label>
-          <label>总体积<input data-k='volume' value='{e(pick("volume"))}' placeholder='例如 1.8 CBM'></label>
-          <label>唛头<input data-k='marks' value='{e(pick("marks"))}' placeholder='Shipping marks'></label>
-        </div>"""
-
-    reference_price_note = (
-        f"<div class='refprice'>产品资料参考价：{e(reference_price)} · 仅供核对，不会自动写入正式单价。</div>"
-        if reference_price
-        else ""
-    )
+    product_table = ""
     commercial_rows = ""
-    if ref.document_type != "packing_list":
-        commercial_rows = f"""
-        <div class='grid three'>
-          <label>数量<input data-k='quantity' value='{e(qty)}' placeholder='例如 5000 pcs'></label>
-          <label>单价<input data-k='unit_price' value='{e(unit_price)}' placeholder='请人工确认'></label>
-          <label>总金额<input data-k='total' value='{e(total)}' placeholder='请人工确认'></label>
-          <label>贸易条款<input data-k='incoterm' value='{e(incoterm)}' placeholder='例如 FOB Ningbo'></label>
-          <label>交期<input data-k='lead_time' value='{e(lead_time)}' placeholder='例如 20 days'></label>
-          <label>付款条件<input data-k='payment' value='{e(payment)}' placeholder='例如 T/T 30% deposit'></label>
-        </div>{reference_price_note}"""
+    packing_rows = ""
+
+    if multi_product:
+        rendered_rows: list[str] = []
+        if ref.document_type == "packing_list":
+            for index, item in enumerate(item_rows, start=1):
+                ref_product = item_reference(item)
+                packing_ref = str(ref_product.get("packing") or "")
+                carton_ref = str(ref_product.get("carton_size") or "")
+                marks_ref = str(ref_product.get("marks") or "")
+                ref_note = f"<small class='item-ref'>包装参考：{e(packing_ref)}</small>" if packing_ref else ""
+                rendered_rows.append(
+                    f"<tr data-item-row data-product-id='{e(item.get('product_id'))}' data-brain-id='{e(item.get('brain_id'))}'>"
+                    f"<td>{index}</td>"
+                    f"<td><input data-item-k='product' value='{e(item.get('product'))}'>{ref_note}</td>"
+                    f"<td><input data-item-k='sku' value='{e(item.get('sku'))}'></td>"
+                    f"<td><input data-item-k='quantity' value='{e(item.get('quantity'))}' placeholder='逐行确认'></td>"
+                    f"<td><input data-item-k='packages' value='{e(item.get('packages'))}' placeholder='例如 8 cartons'></td>"
+                    f"<td><input data-item-k='net_weight' value='{e(item.get('net_weight'))}' placeholder='kg'></td>"
+                    f"<td><input data-item-k='gross_weight' value='{e(item.get('gross_weight'))}' placeholder='kg'></td>"
+                    f"<td><input data-item-k='carton_size' value='{e(item.get('carton_size'))}' placeholder='{e(carton_ref or 'L × W × H')}'></td>"
+                    f"<td><input data-item-k='volume' value='{e(item.get('volume'))}' placeholder='CBM'></td>"
+                    f"<td><input data-item-k='marks' value='{e(item.get('marks'))}' placeholder='{e(marks_ref or 'Shipping marks')}'></td>"
+                    f"<td class='spec-cell'><textarea data-item-k='spec'>{e(item.get('spec'))}</textarea></td></tr>"
+                )
+            product_table = (
+                "<div class='table-wrap'><table class='item-table packing'><thead><tr>"
+                "<th>#</th><th>产品</th><th>SKU</th><th>数量</th><th>包装件数</th><th>净重</th><th>毛重</th><th>外箱尺寸</th><th>体积</th><th>唛头</th><th>规格</th>"
+                "</tr></thead><tbody>" + "".join(rendered_rows) + "</tbody></table></div>"
+            )
+            packing_rows = f"""
+            <div class='grid three'>
+              <label>总包装件数<input data-k='packages' value='{e(pick("packages"))}' placeholder='整票合计，例如 20 cartons'></label>
+              <label>总净重<input data-k='net_weight' value='{e(pick("net_weight"))}' placeholder='整票合计，例如 480 kg'></label>
+              <label>总毛重<input data-k='gross_weight' value='{e(pick("gross_weight"))}' placeholder='整票合计，例如 520 kg'></label>
+              <label>总体积<input data-k='volume' value='{e(pick("volume"))}' placeholder='整票合计，例如 1.8 CBM'></label>
+              <label>整票唛头 / 备注<input data-k='marks' value='{e(pick("marks"))}' placeholder='如有整票统一唛头'></label>
+              <input type='hidden' data-k='carton_size' value=''>
+            </div>
+            <p class='note'>多产品装箱数据按产品逐行确认；总包装件数、总重量和总体积只填写本批次实际合计，系统不会从产品资料猜算。</p>"""
+        else:
+            for index, item in enumerate(item_rows, start=1):
+                ref_product = item_reference(item)
+                ref_price = str(ref_product.get("reference_price") or "")
+                ref_moq = str(ref_product.get("moq") or "")
+                ref_lead = str(ref_product.get("lead_time") or "")
+                refs = []
+                if ref_price:
+                    refs.append(f"参考价 {ref_price}")
+                if ref_moq:
+                    refs.append(f"MOQ {ref_moq}")
+                ref_note = f"<small class='item-ref'>{e(' · '.join(refs))} · 仅供核对</small>" if refs else ""
+                rendered_rows.append(
+                    f"<tr data-item-row data-product-id='{e(item.get('product_id'))}' data-brain-id='{e(item.get('brain_id'))}'>"
+                    f"<td>{index}</td>"
+                    f"<td><input data-item-k='product' value='{e(item.get('product'))}'>{ref_note}</td>"
+                    f"<td><input data-item-k='sku' value='{e(item.get('sku'))}'></td>"
+                    f"<td class='spec-cell'><textarea data-item-k='spec'>{e(item.get('spec'))}</textarea></td>"
+                    f"<td><input data-item-k='quantity' value='{e(item.get('quantity'))}' placeholder='逐行确认'></td>"
+                    f"<td><input data-item-k='unit_price' value='{e(item.get('unit_price'))}' placeholder='{e(('参考 '+ref_price+'，请确认') if ref_price else '请人工确认')}'></td>"
+                    f"<td><input data-item-k='total' value='{e(item.get('total'))}' placeholder='请人工确认'></td>"
+                    f"<td><input data-item-k='lead_time' value='{e(item.get('lead_time'))}' placeholder='{e(ref_lead or '逐行确认')}'></td></tr>"
+                )
+            product_table = (
+                "<div class='table-wrap'><table class='item-table commercial'><thead><tr>"
+                "<th>#</th><th>产品</th><th>SKU</th><th>规格 / 描述</th><th>数量</th><th>单价</th><th>金额</th><th>交期</th>"
+                "</tr></thead><tbody>" + "".join(rendered_rows) + "</tbody></table></div>"
+            )
+            commercial_rows = f"""
+            <div class='grid three'>
+              <label>贸易条款<input data-k='incoterm' value='{e(incoterm)}' placeholder='例如 FOB Ningbo'></label>
+              <label>付款条件<input data-k='payment' value='{e(payment)}' placeholder='例如 T/T 30% deposit'></label>
+              <label>币种<input data-k='currency' value='{e(currency)}'></label>
+            </div>
+            <input type='hidden' data-k='quantity' value=''><input type='hidden' data-k='unit_price' value=''><input type='hidden' data-k='total' value=''><input type='hidden' data-k='lead_time' value=''>
+            <p class='note'>当前询盘含多个产品：数量、单价、金额和交期逐产品确认。产品参考价只显示在对应行作为提示，不会进入正式单价。</p>"""
+        first_row = item_rows[0] if item_rows else {}
+        product_table += (
+            f"<input type='hidden' data-k='product' value='{e(first_row.get('product') or product_name)}'>"
+            f"<input type='hidden' data-k='sku' value='{e(first_row.get('sku') or sku)}'>"
+            f"<input type='hidden' data-k='spec' value='{e(first_row.get('spec') or spec)}'>"
+            "<input type='hidden' data-k='moq' value=''>"
+        )
+    else:
+        product_table = f"""
+        <table><thead><tr><th style='width:22%'>产品</th><th style='width:16%'>型号 / SKU</th><th>规格 / 描述</th></tr></thead><tbody><tr><td><input data-k='product' value='{e(product_name)}'></td><td><input data-k='sku' value='{e(sku)}'></td><td><textarea data-k='spec'>{e(spec)}</textarea></td></tr></tbody></table>"""
+        reference_price_note = (
+            f"<div class='refprice'>产品资料参考价：{e(reference_price)} · 仅供核对，不会自动写入正式单价。</div>"
+            if reference_price
+            else ""
+        )
+        if ref.document_type != "packing_list":
+            commercial_rows = f"""
+            <div class='grid three'>
+              <label>数量<input data-k='quantity' value='{e(qty)}' placeholder='例如 5000 pcs'></label>
+              <label>单价<input data-k='unit_price' value='{e(unit_price)}' placeholder='请人工确认'></label>
+              <label>总金额<input data-k='total' value='{e(total)}' placeholder='请人工确认'></label>
+              <label>贸易条款<input data-k='incoterm' value='{e(incoterm)}' placeholder='例如 FOB Ningbo'></label>
+              <label>交期<input data-k='lead_time' value='{e(lead_time)}' placeholder='例如 20 days'></label>
+              <label>付款条件<input data-k='payment' value='{e(payment)}' placeholder='例如 T/T 30% deposit'></label>
+            </div>{reference_price_note}"""
+        else:
+            packing_rows = f"""
+            <div class='grid three'>
+              <label>包装件数<input data-k='packages' value='{e(pick("packages"))}' placeholder='例如 20 cartons'></label>
+              <label>净重<input data-k='net_weight' value='{e(pick("net_weight"))}' placeholder='例如 480 kg'></label>
+              <label>毛重<input data-k='gross_weight' value='{e(pick("gross_weight"))}' placeholder='例如 520 kg'></label>
+              <label>外箱尺寸<input data-k='carton_size' value='{e(pick("carton_size", packing))}' placeholder='L × W × H'></label>
+              <label>总体积<input data-k='volume' value='{e(pick("volume"))}' placeholder='例如 1.8 CBM'></label>
+              <label>唛头<input data-k='marks' value='{e(pick("marks"))}' placeholder='Shipping marks'></label>
+            </div>"""
+
+    if multi_product and ref.document_type == "packing_list":
+        currency_row = f"<input type='hidden' data-k='currency' value='{e(currency)}'>"
+    elif multi_product:
+        currency_row = ""
+    else:
+        currency_row = f"<div class='grid'><label>MOQ<input data-k='moq' value='{e(moq)}'></label><label>币种<input data-k='currency' value='{e(currency)}'></label></div>"
 
     server_saved = "true" if saved_fields else "false"
     address_json = json.dumps(addresses, ensure_ascii=False).replace("</", "<\\/")
     bank_json = json.dumps(banks, ensure_ascii=False).replace("</", "<\\/")
     return f"""<!doctype html><html lang='zh-CN'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>{e(doc_name)} · HUIDI Online</title><style>
-*{{box-sizing:border-box}}body{{margin:0;background:#eef2f7;color:#172033;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}}.top{{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;padding:10px 18px;background:#101828;color:#fff}}.top b{{margin-right:auto}}button{{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}}.primary{{background:#2563eb;color:#fff}}#saveState{{font-size:11px;color:#cbd5e1;min-width:70px}}.paper{{width:min(1000px,calc(100% - 32px));margin:22px auto;background:#fff;min-height:1240px;padding:46px 52px;box-shadow:0 12px 40px rgba(15,23,42,.13)}}h1{{text-align:center;margin:0;font-size:28px;letter-spacing:2px}}h3{{margin:0 0 10px;font-size:14px}}.docno{{text-align:center;color:#667085;margin:5px 0 18px}}.ctx{{margin:8px 0;padding:9px 11px;border-radius:8px;background:#f8fafc;border:1px solid #e4e7ec;color:#475467;font-size:11px}}.ctx.ok{{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}.ctx.warn{{background:#fff8e8;border-color:#f1dba8;color:#755b20}}.ctx span{{display:inline-block;margin-right:6px}}.section{{margin:18px 0;padding:14px;border:1px solid #e4e7ec;border-radius:10px;background:#fcfdff}}.grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}}.grid.three{{grid-template-columns:repeat(3,minmax(0,1fr))}}.wide{{grid-column:1/-1}}label{{font-size:11px;color:#667085;font-weight:700}}input,textarea,select{{display:block;width:100%;margin-top:4px;border:1px solid #d0d5dd;border-radius:7px;padding:8px 9px;font:inherit;color:#101828;background:#fff}}textarea{{min-height:72px;resize:vertical}}table{{width:100%;border-collapse:collapse;margin:18px 0}}th,td{{border:1px solid #98a2b3;padding:9px;text-align:left}}th{{background:#f8fafc}}.note{{font-size:11px;color:#667085}}.refprice{{margin:-4px 0 12px;padding:8px 10px;border-radius:8px;background:#fff8e8;border:1px solid #f1dba8;color:#755b20;font-size:11px}}.foot{{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:46px}}.sign{{border-top:1px solid #98a2b3;padding-top:10px}}@media(max-width:760px){{.paper{{padding:24px 18px}}.grid,.grid.three,.foot{{grid-template-columns:1fr}}.wide{{grid-column:auto}}}}@media print{{body{{background:#fff}}.top,.ctx,select{{display:none}}.paper{{width:100%;margin:0;box-shadow:none;min-height:auto;padding:18mm 16mm}}input,textarea{{border:0;padding:0}}}}
+*{{box-sizing:border-box}}body{{margin:0;background:#eef2f7;color:#172033;font:14px/1.5 -apple-system,BlinkMacSystemFont,'Segoe UI','Microsoft YaHei',sans-serif}}.top{{position:sticky;top:0;z-index:5;display:flex;gap:8px;align-items:center;padding:10px 18px;background:#101828;color:#fff}}.top b{{margin-right:auto}}button{{border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:700}}.primary{{background:#2563eb;color:#fff}}#saveState{{font-size:11px;color:#cbd5e1;min-width:70px}}.paper{{width:min(1180px,calc(100% - 32px));margin:22px auto;background:#fff;min-height:1240px;padding:46px 52px;box-shadow:0 12px 40px rgba(15,23,42,.13)}}h1{{text-align:center;margin:0;font-size:28px;letter-spacing:2px}}h3{{margin:0 0 10px;font-size:14px}}.docno{{text-align:center;color:#667085;margin:5px 0 18px}}.ctx{{margin:8px 0;padding:9px 11px;border-radius:8px;background:#f8fafc;border:1px solid #e4e7ec;color:#475467;font-size:11px}}.ctx.ok{{background:#f0fdf4;border-color:#bbf7d0;color:#166534}}.ctx.warn{{background:#fff8e8;border-color:#f1dba8;color:#755b20}}.ctx span{{display:inline-block;margin-right:6px}}.section{{margin:18px 0;padding:14px;border:1px solid #e4e7ec;border-radius:10px;background:#fcfdff}}.grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:14px 0}}.grid.three{{grid-template-columns:repeat(3,minmax(0,1fr))}}.wide{{grid-column:1/-1}}label{{font-size:11px;color:#667085;font-weight:700}}input,textarea,select{{display:block;width:100%;margin-top:4px;border:1px solid #d0d5dd;border-radius:7px;padding:8px 9px;font:inherit;color:#101828;background:#fff}}textarea{{min-height:72px;resize:vertical}}table{{width:100%;border-collapse:collapse;margin:18px 0}}th,td{{border:1px solid #98a2b3;padding:9px;text-align:left;vertical-align:top}}th{{background:#f8fafc}}.table-wrap{{width:100%;overflow:auto;margin:18px 0}}.table-wrap table{{margin:0;min-width:1120px}}.item-table.packing{{min-width:1420px}}.item-table th,.item-table td{{padding:6px}}.item-table input,.item-table textarea{{margin:0;padding:7px;font-size:12px}}.item-table textarea{{min-height:54px}}.item-table td:nth-child(1){{width:40px;text-align:center}}.item-table .spec-cell{{min-width:220px}}.item-ref{{display:block;margin-top:4px;color:#8a6a1f;font-size:10px;line-height:1.35}}.note{{font-size:11px;color:#667085}}.refprice{{margin:-4px 0 12px;padding:8px 10px;border-radius:8px;background:#fff8e8;border:1px solid #f1dba8;color:#755b20;font-size:11px}}.foot{{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:46px}}.sign{{border-top:1px solid #98a2b3;padding-top:10px}}@media(max-width:760px){{.paper{{padding:24px 18px}}.grid,.grid.three,.foot{{grid-template-columns:1fr}}.wide{{grid-column:auto}}}}@media print{{body{{background:#fff}}.top,.ctx,select{{display:none}}.paper{{width:100%;margin:0;box-shadow:none;min-height:auto;padding:18mm 16mm}}.table-wrap{{overflow:visible}}.table-wrap table{{min-width:0;font-size:9px}}input,textarea{{border:0;padding:0}}.item-ref{{font-size:8px}}}}
 </style></head><body>
 <div class='top'><b>HUIDI Online · {e(doc_name)}</b><span id='saveState'></span><button id='back'>返回工作台</button><button id='save'>保存草稿</button><button id='download'>下载 HTML</button><button class='primary' onclick='window.print()'>打印 / 另存 PDF</button></div>
 <main class='paper'><h1>{e(doc_name)}</h1><div class='docno'>{e(ref.document_id)}</div>
 {context_summary}{inherited_note}{price_reference_panel}
 <section class='section'><h3>交易双方</h3>{seller_rows}<div class='grid'><label>买方 / Buyer<input data-k='buyer' value='{e(buyer)}'></label><label>联系人<input data-k='contact' value='{e(contact)}'></label><label>邮箱<input data-k='email' value='{e(email)}'></label><label>国家 / 地区<input data-k='country' value='{e(country)}'></label><label>日期<input data-k='date' type='date' value='{e(date_value)}'></label></div>{address_rows}</section>
-<table><thead><tr><th style='width:22%'>产品</th><th style='width:16%'>型号 / SKU</th><th>规格 / 描述</th></tr></thead><tbody><tr><td><input data-k='product' value='{e(product_name)}'></td><td><input data-k='sku' value='{e(sku)}'></td><td><textarea data-k='spec'>{e(spec)}</textarea></td></tr></tbody></table>
-{commercial_rows}{packing_rows}
-<div class='grid'><label>MOQ<input data-k='moq' value='{e(moq)}'></label><label>币种<input data-k='currency' value='{e(currency)}'></label></div>
+{product_table}
+{commercial_rows}{packing_rows}{currency_row}
 {bank_rows}
 <label>客户需求 / 备注<textarea data-k='requirements'>{e(requirements)}</textarea></label>
 <label>补充条款<textarea data-k='terms' placeholder='只填写双方已经确认的正式条款；未确认内容请留空。'>{e(terms)}</textarea></label>
-<p class='note'>HUIDI 自动带入当前 Deal 已有客户、产品、询盘事实、正式客户地址、公司资料和上游已保存的非价格字段。产品参考价、历史业务金额、上游价格与联网资料只作为参考；正式单价仍由你人工确认，保存草稿也不会改写 deal.amount。</p>
+<p class='note'>HUIDI 自动带入当前 Deal 已有客户、全部关联产品、询盘事实、正式客户地址、公司资料和上游已保存的非价格字段。多产品数量、正式单价、金额和包装执行数据按行人工确认；产品参考价、历史业务金额、上游价格与联网资料只作为参考，保存草稿也不会改写 deal.amount。</p>
 <div class='foot'><div class='sign'>Seller Signature / Stamp</div><div class='sign'>Buyer Confirmation</div></div></main>
 <script>
-(()=>{{const key='huidi-native-doc-{ref.id}';const fields=[...document.querySelectorAll('[data-k]')];const state=document.querySelector('#saveState');const serverSaved={server_saved};const addresses={address_json};const banks={bank_json};const today=new Date().toISOString().slice(0,10);const date=document.querySelector('[data-k="date"]');if(date&&!date.value)date.value=today;if(!serverSaved){{try{{const local=JSON.parse(localStorage.getItem(key)||'{{}}');fields.forEach(el=>{{if(Object.prototype.hasOwnProperty.call(local,el.dataset.k))el.value=local[el.dataset.k]}})}}catch(_){{}}}}function field(k){{return document.querySelector(`[data-k="${{k}}"]`)}}function set(k,v){{const el=field(k);if(el)el.value=v??''}}function data(){{return Object.fromEntries(fields.map(el=>[el.dataset.k,el.value]))}}const addressSelect=document.querySelector('#buyerAddressSelect');if(addressSelect){{const current=field('buyer_address_id')?.value||'';if(current)addressSelect.value=current;addressSelect.onchange=()=>{{const row=addresses.find(x=>String(x.id)===addressSelect.value);set('buyer_address_id',row?.id||'');if(row){{set('buyer_address',row.formatted||'');if(row.phone)set('buyer_phone',row.phone);if(row.country)set('country',row.country)}}}}}}const bankSelect=document.querySelector('#bankAccountSelect');if(bankSelect){{const current=field('bank_account_id')?.value||'';if(current)bankSelect.value=current;bankSelect.onchange=()=>{{const row=banks.find(x=>String(x.id)===bankSelect.value);set('bank_account_id',row?.id||'');if(row){{set('bank_label',row.label||'');set('bank_name',row.bank_name||'');set('bank_account_name',row.account_name||'');set('bank_account_number',row.account_number||'');set('bank_swift',row.swift_code||'');set('bank_address',row.bank_address||'');set('bank_currency',row.currency||'')}}}}}}async function persist(){{const payload=data();try{{localStorage.setItem(key,JSON.stringify(payload))}}catch(_){{}}state.textContent='保存中…';try{{const response=await fetch('/api/business/documents/{ref.id}/draft',{{method:'PUT',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{fields:payload}})}});if(!response.ok)throw new Error('HTTP '+response.status);state.textContent='已保存';return true}}catch(err){{state.textContent='仅本机备份';return false}}}}document.querySelector('#save').onclick=async()=>{{const ok=await persist();alert(ok?'草稿已保存到联网版':'服务器保存失败，已保留这台电脑的本地备份')}};document.querySelector('#download').onclick=async()=>{{await persist();const blob=new Blob([document.documentElement.outerHTML],{{type:'text/html;charset=utf-8'}});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='{e(ref.document_id)}.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}};document.querySelector('#back').onclick=()=>{{if(history.length>1)history.back();else location.href='/'}}}})();
+(()=>{{const key='huidi-native-doc-{ref.id}';const fields=[...document.querySelectorAll('[data-k]')];const itemRows=[...document.querySelectorAll('[data-item-row]')];const state=document.querySelector('#saveState');const serverSaved={server_saved};const addresses={address_json};const banks={bank_json};const today=new Date().toISOString().slice(0,10);const date=document.querySelector('[data-k="date"]');if(date&&!date.value)date.value=today;function itemData(){{return itemRows.map(row=>{{const out={{product_id:row.dataset.productId||'',brain_id:row.dataset.brainId||''}};row.querySelectorAll('[data-item-k]').forEach(el=>out[el.dataset.itemK]=el.value);return out}})}}function restoreItems(raw){{let rows=[];try{{rows=Array.isArray(raw)?raw:JSON.parse(String(raw||'[]'))}}catch(_){{rows=[]}};if(!Array.isArray(rows))return;itemRows.forEach((row,index)=>{{const current=rows.find(x=>String(x?.product_id||'')&&String(x.product_id)===String(row.dataset.productId||''))||rows[index];if(!current)return;row.querySelectorAll('[data-item-k]').forEach(el=>{{if(Object.prototype.hasOwnProperty.call(current,el.dataset.itemK))el.value=current[el.dataset.itemK]??''}})}})}}if(!serverSaved){{try{{const local=JSON.parse(localStorage.getItem(key)||'{{}}');fields.forEach(el=>{{if(Object.prototype.hasOwnProperty.call(local,el.dataset.k))el.value=local[el.dataset.k]}});if(local.items_json)restoreItems(local.items_json)}}catch(_){{}}}}function field(k){{return document.querySelector(`[data-k="${{k}}"]`)}}function set(k,v){{const el=field(k);if(el)el.value=v??''}}function data(){{const out=Object.fromEntries(fields.map(el=>[el.dataset.k,el.value]));if(itemRows.length){{const rows=itemData();out.items_json=JSON.stringify(rows);if(rows[0]){{out.product=rows[0].product||out.product||'';out.sku=rows[0].sku||out.sku||'';out.spec=rows[0].spec||out.spec||''}}}}return out}}const addressSelect=document.querySelector('#buyerAddressSelect');if(addressSelect){{const current=field('buyer_address_id')?.value||'';if(current)addressSelect.value=current;addressSelect.onchange=()=>{{const row=addresses.find(x=>String(x.id)===addressSelect.value);set('buyer_address_id',row?.id||'');if(row){{set('buyer_address',row.formatted||'');if(row.phone)set('buyer_phone',row.phone);if(row.country)set('country',row.country)}}}}}}const bankSelect=document.querySelector('#bankAccountSelect');if(bankSelect){{const current=field('bank_account_id')?.value||'';if(current)bankSelect.value=current;bankSelect.onchange=()=>{{const row=banks.find(x=>String(x.id)===bankSelect.value);set('bank_account_id',row?.id||'');if(row){{set('bank_label',row.label||'');set('bank_name',row.bank_name||'');set('bank_account_name',row.account_name||'');set('bank_account_number',row.account_number||'');set('bank_swift',row.swift_code||'');set('bank_address',row.bank_address||'');set('bank_currency',row.currency||'')}}}}}}async function persist(){{const payload=data();try{{localStorage.setItem(key,JSON.stringify(payload))}}catch(_){{}}state.textContent='保存中…';try{{const response=await fetch('/api/business/documents/{ref.id}/draft',{{method:'PUT',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{fields:payload}})}});if(!response.ok)throw new Error('HTTP '+response.status);state.textContent='已保存';return true}}catch(err){{state.textContent='仅本机备份';return false}}}}document.querySelector('#save').onclick=async()=>{{const ok=await persist();alert(ok?'草稿已保存到联网版':'服务器保存失败，已保留这台电脑的本地备份')}};document.querySelector('#download').onclick=async()=>{{await persist();const blob=new Blob([document.documentElement.outerHTML],{{type:'text/html;charset=utf-8'}});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='{e(ref.document_id)}.html';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}};document.querySelector('#back').onclick=()=>{{if(history.length>1)history.back();else location.href='/'}}}})();
 </script></body></html>"""
 
 
