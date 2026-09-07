@@ -32,6 +32,7 @@ from . import low_input_workflow  # noqa: F401,E402
 # OnlineCustomer / ProductBrainRecord / OnlineDeal / OnlineDocumentRef owners;
 # it does not create a second business data plane.
 from . import community_sync  # noqa: F401,E402
+from . import community_sync_bulk  # noqa: F401,E402
 from . import contact_center  # noqa: F401,E402
 from . import company_settings  # noqa: F401,E402
 from . import backup_restore  # noqa: F401,E402
@@ -64,6 +65,9 @@ from . import team_access  # noqa: F401,E402
 # owner. Registration creates organization #2+ only; business data remains routed
 # through tenant_storage and never creates a second customer/deal data plane.
 from . import auth_portal  # noqa: F401,E402
+# Expose only a non-sensitive organization cache namespace. Authentication and
+# authorization stay owned by the HttpOnly team session and tenant router.
+from . import workspace_scope  # noqa: F401,E402
 # The published Community Local workspace/editor is the target Online mother
 # surface. Import it only after auth so the existing auth/team middleware remains
 # the single access gate. Activation is deployment-controlled while the cloud
