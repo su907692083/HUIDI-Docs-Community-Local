@@ -13,7 +13,8 @@ COPY public ./community-public
 
 ENV APP_HOST=0.0.0.0 \
     APP_PORT=8080 \
-    HUIDI_COMMUNITY_PUBLIC_DIR=/app/community-public
+    HUIDI_COMMUNITY_PUBLIC_DIR=/app/community-public \
+    HUIDI_COMMUNITY_SURFACE=1
 
 EXPOSE 8080
 CMD ["uvicorn","app.daily_app:app","--host","0.0.0.0","--port","8080"]
