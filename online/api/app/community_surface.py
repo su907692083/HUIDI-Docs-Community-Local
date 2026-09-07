@@ -13,10 +13,27 @@ from .online_app import app
 # HUIDI Online must reuse the published Community Local workspace/editor as its
 # primary business UI instead of growing a second customer/deal/document shell.
 # The Online backend remains the network/auth/tenant/provider capability layer.
-REPO_PUBLIC_DIR = Path(__file__).resolve().parents[3] / "public"
-COMMUNITY_PUBLIC_DIR = Path(
-    os.getenv("HUIDI_COMMUNITY_PUBLIC_DIR", str(REPO_PUBLIC_DIR))
-).resolve()
+def _community_public_dir() -> Path:
+    """Resolve the published Local surface without assuming repository depth.
+
+    Docker/packaged Online explicitly sets HUIDI_COMMUNITY_PUBLIC_DIR to
+    /app/community-public. Source/dev runs fall back to the nearest ancestor
+    containing public/. Never index a fixed parents[n] depth: the packaged
+    module lives at /app/app/community_surface.py and has a shallower tree.
+    """
+
+    configured = os.getenv("HUIDI_COMMUNITY_PUBLIC_DIR", "").strip()
+    if configured:
+        return Path(configured).expanduser().resolve()
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        candidate = parent / "public"
+        if candidate.is_dir():
+            return candidate.resolve()
+    return (current.parent / "public").resolve()
+
+
+COMMUNITY_PUBLIC_DIR = _community_public_dir()
 COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lower() in {
     "1",
     "true",
