@@ -44,7 +44,6 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("#huidiIntelBack", source)
         self.assertIn("#sqBack", source)
         self.assertIn("#auBack", source)
-        self.assertIn("HUIDIAuditUI?.open", source)
         subprocess.run(["node", "--check", str(WEB / "page-router.js")], check=True)
         subprocess.run(["node", "--check", str(WEB / "catalog-studio-online.js")], check=True)
 
@@ -82,6 +81,39 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("needs_source_check", intelligence)
         self.assertIn("不会自动改正式询盘事实", intelligence)
         subprocess.run(["node", "--check", str(WEB / "customer-intelligence.js")], check=True)
+
+    def test_mail_and_service_tools_are_native_page_surfaces_not_docked_modals(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        services = (WEB / "daily-services.js").read_text(encoding="utf-8")
+        self.assertIn("openServicePage", router)
+        self.assertIn("HUIDIDailyServices.mount", router)
+        self.assertIn("HUIDIDailyServices?.unmount", router)
+        self.assertIn("return openServicePage(target)", router)
+        self.assertIn("hs-page-surface", services)
+        self.assertIn("async function mount(", services)
+        self.assertIn("function unmount()", services)
+        self.assertIn("surface='page'", services)
+        self.assertIn("position:static", services)
+        self.assertIn("leavePageToReplies", services)
+        self.assertIn("HUIDIWorkspacePages?.home", services)
+        self.assertIn("window.open(out.authorize_url,'huidi-mail-connect'", services)
+        self.assertIn("Object.freeze({open,mount,unmount,close", services)
+        subprocess.run(["node", "--check", str(WEB / "daily-services.js")], check=True)
+
+    def test_audit_is_a_native_page_surface_not_a_docked_drawer(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        audit = (WEB / "audit-ui.js").read_text(encoding="utf-8")
+        self.assertIn("openAuditPage", router)
+        self.assertIn("HUIDIAuditUI.mount", router)
+        self.assertIn("HUIDIAuditUI?.unmount", router)
+        self.assertIn("return openAuditPage()", router)
+        self.assertIn("au-page-surface", audit)
+        self.assertIn("async function mount(", audit)
+        self.assertIn("function unmount()", audit)
+        self.assertIn("surface='page'", audit)
+        self.assertIn("position:static", audit)
+        self.assertIn("Object.freeze({open,mount,unmount", audit)
+        subprocess.run(["node", "--check", str(WEB / "audit-ui.js")], check=True)
 
     def test_business_center_is_a_native_page_surface_not_a_docked_modal(self):
         router = (WEB / "page-router.js").read_text(encoding="utf-8")
