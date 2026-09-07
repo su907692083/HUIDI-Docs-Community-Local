@@ -35,6 +35,7 @@ def browser_snapshot(driver) -> dict:
           nextId:tr.querySelector('[data-action="deal-next"]')?.dataset.id||'',
           focused:tr.dataset.huidiFocusedInquiry||''
         }));
+        const core=window.HUIDILocalCore;
         return {
           view:document.body.dataset.huidiView||'',
           activeViews:[...document.querySelectorAll('.view.active')].map(v=>v.id),
@@ -48,7 +49,14 @@ def browser_snapshot(driver) -> dict:
           cloudState:document.documentElement.dataset.huidiCloudState||'',
           onlineFindActive:Boolean(document.querySelector('#view-online-find')?.classList.contains('active')),
           dealsActive:Boolean(document.querySelector('#view-deals')?.classList.contains('active')),
-          iframeCount:document.querySelectorAll('iframe').length
+          iframeCount:document.querySelectorAll('iframe').length,
+          selectedProduct:document.querySelector('#hdwProduct')?.value||'',
+          localProducts:(core?.repositories?.products?.list?.()||[]).map(x=>({
+            id:String(x.id||''),brain_id:String(x.brain_id||''),local_product_id:String(x.local_product_id||''),name:x.name||''
+          })),
+          localDeals:(core?.repositories?.deals?.list?.()||[]).map(x=>({
+            id:String(x.id||''),title:x.title||'',product_ids:Array.isArray(x.product_ids)?x.product_ids.map(String):[]
+          }))
         };
         """
     )
@@ -165,6 +173,7 @@ def main() -> None:
     assert "FOB" in facts.get("incoterm", ""), facts
     assert "SUS304 4 inch" in facts.get("specification", ""), facts
     assert "20 days" in facts.get("delivery", ""), facts
+    assert ctx_body["low_input"]["product"]["brain_id"] == product_id, ctx_body["low_input"]
 
     readiness = client.get(f"/api/leads/{lead_id}/mail-readiness?mailbox_id={mailbox_id}")
     assert readiness.status_code == 200, readiness.text
@@ -182,6 +191,7 @@ def main() -> None:
     driver = webdriver.Chrome(options=options)
     wait = WebDriverWait(driver, 35)
     landing: dict = {}
+    before_convert: dict = {}
 
     try:
         driver.get(BASE + "/login")
@@ -245,16 +255,25 @@ def main() -> None:
         ui = driver.execute_script(
             """
             const card=document.querySelector('[data-hdw-reply-bridge]');
+            const product=document.querySelector('#hdwProduct');
+            const core=window.HUIDILocalCore;
             return {
               text:card?.innerText||'',
               generateDisabled:Boolean(document.querySelector('[data-hdw-generate]')?.disabled),
               approveDisabled:Boolean(document.querySelector('[data-hdw-approve]')?.disabled),
               armDisabled:Boolean(document.querySelector('[data-hdw-arm]')?.disabled),
               prepare:Boolean(document.querySelector('[data-hdw-prepare-inquiry]')),
-              iframeCount:document.querySelectorAll('iframe').length
+              iframeCount:document.querySelectorAll('iframe').length,
+              selectedProduct:product?.value||'',
+              productOptions:[...(product?.options||[])].map(x=>({value:x.value,text:x.textContent||'',selected:x.selected})),
+              localProducts:(core?.repositories?.products?.list?.()||[]).map(x=>({
+                id:String(x.id||''),brain_id:String(x.brain_id||''),local_product_id:String(x.local_product_id||''),name:x.name||''
+              }))
             };
             """
         )
+        print("INQUIRY_PRODUCT_BEFORE_CONVERT=" + json.dumps(ui, ensure_ascii=False))
+        before_convert = ui
         assert "客户已回复" in ui["text"], ui
         assert "5000 pcs" in ui["text"], ui
         assert "FOB" in ui["text"], ui
@@ -262,6 +281,11 @@ def main() -> None:
         assert ui["generateDisabled"] and ui["approveDisabled"] and ui["armDisabled"], ui
         assert ui["prepare"], ui
         assert ui["iframeCount"] == 0, ui
+        assert ui["selectedProduct"] == product_id, ui
+        assert any(
+            x.get("id") == product_id or x.get("brain_id") == product_id
+            for x in ui["localProducts"]
+        ), ui
         assert len(driver.window_handles) == 1, driver.window_handles
 
         clicked = driver.execute_script(
@@ -289,7 +313,19 @@ def main() -> None:
         deadline = time.time() + 18
         while time.time() < deadline:
             landing = browser_snapshot(driver)
-            if landing.get("view") == "deals" and landing.get("focused") == 1:
+            focused_rows = [x for x in landing.get("rows", []) if x.get("focused") == "1"]
+            local_deal = next(
+                (x for x in landing.get("localDeals", []) if BUYER in x.get("title", "")),
+                None,
+            )
+            if (
+                landing.get("view") == "deals"
+                and landing.get("focused") == 1
+                and local_deal
+                and product_id in local_deal.get("product_ids", [])
+                and focused_rows
+                and "Stainless Steel Hinge" in focused_rows[0].get("text", "")
+            ):
                 break
             time.sleep(0.25)
 
@@ -300,6 +336,14 @@ def main() -> None:
         focused_rows = [x for x in landing.get("rows", []) if x.get("focused") == "1"]
         assert len(focused_rows) == 1, landing
         assert BUYER in focused_rows[0].get("text", ""), landing
+        assert "Stainless Steel Hinge" in focused_rows[0].get("text", ""), landing
+        assert "未关联商品" not in focused_rows[0].get("text", ""), landing
+        local_deal = next(
+            (x for x in landing.get("localDeals", []) if BUYER in x.get("title", "")),
+            None,
+        )
+        assert local_deal, landing
+        assert product_id in local_deal.get("product_ids", []), landing
         assert landing.get("iframeCount") == 0, landing
         assert len(driver.window_handles) == 1, driver.window_handles
     finally:
@@ -329,6 +373,14 @@ def main() -> None:
     assert "核对价格" in deal["next_action"], deal
     assert deal["product_keyword"] == "Stainless Steel Hinge", deal
 
+    bootstrap = client.get("/api/community-sync/bootstrap")
+    assert bootstrap.status_code == 200, bootstrap.text
+    server_deal = next(
+        x for x in bootstrap.json().get("deals", []) if str(x.get("id")) == str(deal["id"])
+    )
+    print("INQUIRY_SERVER_DEAL=" + json.dumps(server_deal, ensure_ascii=False))
+    assert product_id in [str(x) for x in server_deal.get("product_ids", [])], server_deal
+
     customers = client.get(
         "/api/business/customers",
         params={"q": BUYER, "page": 1, "page_size": 20},
@@ -341,7 +393,7 @@ def main() -> None:
 
     print(
         "Customer reply -> cold-development stop -> confirmed facts -> formal inquiry "
-        "-> Community inquiry landing with zero auto amount PASS"
+        "-> selected product relation -> Community inquiry landing with zero auto amount PASS"
     )
     client.close()
 
