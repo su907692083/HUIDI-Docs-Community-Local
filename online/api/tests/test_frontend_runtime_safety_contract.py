@@ -65,6 +65,15 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         self.assertIn("scheduleRefreshBurst", source)
         self.assertIn("refreshSettings", source)
 
+    def test_service_adapter_settings_are_action_driven_not_document_watched(self):
+        source = (WEB / "service-adapter-ui.js").read_text(encoding="utf-8")
+        self.assertNotIn("MutationObserver", source)
+        self.assertNotIn("observe(document.body", source)
+        self.assertIn("window.addEventListener('click'", source)
+        self.assertIn("[data-huidi-service-settings],[data-ss-edit]", source)
+        self.assertIn("scheduleRefreshBurst", source)
+        self.assertIn("Object.freeze({load,refresh", source)
+
     def test_legacy_mail_usability_layer_yields_navigation_to_workspace_router(self):
         source = (WEB / "workflow-usability-closure.js").read_text(encoding="utf-8")
         self.assertIn("if(window.HUIDIWorkspacePages?.open)return", source)
