@@ -52,6 +52,17 @@ class PageSurfaceClosureContractTests(unittest.TestCase):
         self.assertNotIn("class HUIDI", closure)
         self.assertNotIn("localStorage", closure)
 
+    def test_user_visible_surfaces_close_duplicate_nav_and_legacy_popup_shells(self):
+        closure = (WEB / "page-surface-closure.js").read_text(encoding="utf-8")
+        self.assertIn("new Set(['客户回复','提醒方式','邮箱设置'])", closure)
+        self.assertIn("data-huidi-notification-routes-inline", closure)
+        self.assertIn(".hn-back.hn-page-surface>.hn-modal{min-height:0!important", closure)
+        self.assertIn(".hn-back.hn-page-surface .hn-head{display:none!important}", closure)
+        self.assertIn("normalizeSurface(node)", closure)
+        self.assertIn("requestAnimationFrame(()=>normalizeSurface(node))", closure)
+        self.assertIn("window.alert=msg=>toast(msg)", closure)
+        self.assertIn("window.__huidiFriendlyAlert=true", closure)
+
     def test_management_and_lead_pages_are_not_reclassified_as_modals(self):
         secondary = (WEB / "secondary-page-closure.js").read_text(encoding="utf-8")
         self.assertIn("'hpsc-surface'", secondary)
