@@ -21,6 +21,7 @@ from app.business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef  #
 from app.community_sync import CommunityDealProductLink  # noqa: E402
 from app.document_context import build_document_context, load_document_fields  # noqa: E402
 from app.main import SessionLocal  # noqa: E402
+from app.native_document_batch import BATCH_MARKER, decorate_native_document_html  # noqa: E402
 from app.product_memory import ProductBrainRecord  # noqa: E402
 
 
@@ -128,12 +129,38 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200, response.text)
         return response.json()
 
+    def _rows(self, *, with_prices: bool = True) -> tuple[list[dict[str, str]], list[str], list[str], list[str]]:
+        quantities = ["1200 pcs", "1800 pcs", "2000 pcs"]
+        prices = ["1.05", "1.25", "0.95"]
+        totals = ["1260.00", "2250.00", "1900.00"]
+        rows: list[dict[str, str]] = []
+        for index, row in enumerate(self.products):
+            item = {
+                "product_id": row.local_product_id,
+                "brain_id": row.brain_id,
+                "product": row.name,
+                "sku": row.sku,
+                "spec": json.loads(row.payload_json)["specification"],
+                "quantity": quantities[index],
+                "lead_time": f"{25 + index} days",
+            }
+            if with_prices:
+                item["unit_price"] = prices[index]
+                item["total"] = totals[index]
+            rows.append(item)
+        return rows, quantities, prices, totals
+
     def test_quote_to_pi_keeps_three_rows_but_strips_every_row_price(self) -> None:
         quote = self._create_document("quotation")
         quote_page = self.client.get(quote["url"])
         self.assertEqual(quote_page.status_code, 200, quote_page.text)
         page = quote_page.text
         self.assertEqual(page.count("<tr data-item-row"), 3)
+        self.assertIn(BATCH_MARKER, page)
+        self.assertIn("data-hnd-select-all", page)
+        self.assertIn("data-hnd-fill-empty", page)
+        self.assertIn("data-hnd-overwrite", page)
+        self.assertIn("价格只会在你主动点击批量按钮时复制", page)
         for row in self.products:
             self.assertIn(row.name, page)
             self.assertIn(row.sku, page)
@@ -144,31 +171,14 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         self.assertNotIn("data-item-k='unit_price' value='1.10'", page)
         self.assertIn("data-k='unit_price' value=''", page)
 
-        script = re.findall(r"<script>(.*?)</script>", page, re.S)
+        script = re.findall(r"<script[^>]*>(.*?)</script>", page, re.S)
         self.assertTrue(script)
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "native-multi.js"
             target.write_text("\n".join(script), encoding="utf-8")
             subprocess.run(["node", "--check", str(target)], check=True)
 
-        quote_rows = []
-        quantities = ["1200 pcs", "1800 pcs", "2000 pcs"]
-        prices = ["1.05", "1.25", "0.95"]
-        totals = ["1260.00", "2250.00", "1900.00"]
-        for index, row in enumerate(self.products):
-            quote_rows.append(
-                {
-                    "product_id": row.local_product_id,
-                    "brain_id": row.brain_id,
-                    "product": row.name,
-                    "sku": row.sku,
-                    "spec": json.loads(row.payload_json)["specification"],
-                    "quantity": quantities[index],
-                    "unit_price": prices[index],
-                    "total": totals[index],
-                    "lead_time": f"{25 + index} days",
-                }
-            )
+        quote_rows, quantities, prices, _ = self._rows(with_prices=True)
         saved = self.client.put(
             f"/api/business/documents/{quote['id']}/draft",
             json={
@@ -205,6 +215,7 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         pi_page = self.client.get(pi["url"])
         self.assertEqual(pi_page.status_code, 200, pi_page.text)
         self.assertEqual(pi_page.text.count("<tr data-item-row"), 3)
+        self.assertIn(BATCH_MARKER, pi_page.text)
         for quantity in quantities:
             self.assertIn(f"data-item-k='quantity' value='{quantity}'", pi_page.text)
         self.assertEqual(pi_page.text.count("data-item-k='unit_price' value=''"), 3)
@@ -213,15 +224,40 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         self.assertIn("3 行逐项价格", pi_page.text)
         self.assertEqual(self.client.get(f"/api/business/deals/{self.deal.id}").json()["amount"], 9876.0)
 
-    def test_packing_list_uses_product_rows_without_guessing_execution_totals(self) -> None:
+    def test_packing_list_keeps_upstream_row_identity_without_guessing_execution_totals(self) -> None:
+        quote = self._create_document("quotation")
+        quote_rows, quantities, prices, _ = self._rows(with_prices=True)
+        saved = self.client.put(
+            f"/api/business/documents/{quote['id']}/draft",
+            json={"fields": {"currency": "USD", "items_json": json.dumps(quote_rows, ensure_ascii=False)}},
+        )
+        self.assertEqual(saved.status_code, 200, saved.text)
+
         packing = self._create_document("packing_list")
+        context = self.client.get(
+            f"/api/business/deals/{self.deal.id}/document-context",
+            params={"document": "packing_list", "current_ref_id": packing["id"]},
+        )
+        self.assertEqual(context.status_code, 200, context.text)
+        inherited = json.loads(context.json()["inherited_fields"]["items_json"])
+        self.assertEqual([row["product_id"] for row in inherited], [row.local_product_id for row in self.products])
+        self.assertEqual([row["quantity"] for row in inherited], quantities)
+        for row in inherited:
+            self.assertNotIn("unit_price", row)
+            self.assertNotIn("total", row)
+
         page = self.client.get(packing["url"])
         self.assertEqual(page.status_code, 200, page.text)
         self.assertEqual(page.text.count("<tr data-item-row"), 3)
+        self.assertIn(BATCH_MARKER, page.text)
         for index, row in enumerate(self.products, start=1):
             self.assertIn(row.name, page.text)
+            self.assertIn(f"data-product-id='{row.local_product_id}'", page.text)
+            self.assertIn(f"data-item-k='quantity' value='{quantities[index - 1]}'", page.text)
             self.assertIn(f"placeholder='{40 + index} x 30 x 20 cm'", page.text)
             self.assertIn(f"placeholder='MARK-{index}'", page.text)
+        for price in prices:
+            self.assertNotIn(price, page.text)
         self.assertEqual(page.text.count("data-item-k='packages' value=''"), 3)
         self.assertEqual(page.text.count("data-item-k='net_weight' value=''"), 3)
         self.assertEqual(page.text.count("data-item-k='gross_weight' value=''"), 3)
@@ -229,6 +265,22 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         self.assertIn("总包装件数", page.text)
         self.assertIn("总体积", page.text)
         self.assertIn("系统不会从产品资料猜算", page.text)
+
+    def test_batch_decorator_is_bounded_to_multi_product_dom_and_has_no_second_owner(self) -> None:
+        single = "<html><head><style></style></head><body><input data-k='unit_price'></body></html>"
+        self.assertEqual(decorate_native_document_html(single), single)
+
+        multi = "<html><head><style></style></head><body><div class='table-wrap'><table><tr data-item-row><td>1</td><td><input data-item-k='unit_price' value=''></td></tr></table></div></body></html>"
+        decorated = decorate_native_document_html(multi)
+        self.assertIn(BATCH_MARKER, decorated)
+        self.assertEqual(decorated.count(BATCH_MARKER), 1)
+        self.assertIn("填到已选空白", decorated)
+        self.assertIn("覆盖已选", decorated)
+        self.assertNotIn("fetch(", decorated)
+        self.assertNotIn("/api/", decorated)
+        self.assertNotIn("localStorage", decorated)
+        self.assertNotIn("MutationObserver", decorated)
+        self.assertNotIn("location.href", decorated)
 
     def test_reuse_patch_cannot_modify_multi_product_detail_blob(self) -> None:
         quote = self._create_document("quotation")
