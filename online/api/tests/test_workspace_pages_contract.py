@@ -48,6 +48,24 @@ class WorkspacePagesContractTests(unittest.TestCase):
         subprocess.run(["node", "--check", str(WEB / "page-router.js")], check=True)
         subprocess.run(["node", "--check", str(WEB / "catalog-studio-online.js")], check=True)
 
+    def test_contacts_and_notifications_are_native_page_surfaces_not_docked_modals(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        navigation = (WEB / "daily-navigation.js").read_text(encoding="utf-8")
+        self.assertIn("openNavigationPage", router)
+        self.assertIn("HUIDIDailyNavigation.mount", router)
+        self.assertIn("HUIDIDailyNavigation?.unmount", router)
+        self.assertIn("return openNavigationPage('notifications')", router)
+        self.assertIn("return openNavigationPage('contacts')", router)
+        self.assertIn("hn-page-surface", navigation)
+        self.assertIn("async function mount(", navigation)
+        self.assertIn("function unmount()", navigation)
+        self.assertIn("surface='page'", navigation)
+        self.assertIn("position:static", navigation)
+        self.assertIn("leaveToLead", navigation)
+        self.assertIn("HUIDIWorkspacePages?.home", navigation)
+        self.assertIn("Object.freeze({notifications,contacts:openContacts,mount,unmount", navigation)
+        subprocess.run(["node", "--check", str(WEB / "daily-navigation.js")], check=True)
+
     def test_business_center_is_a_native_page_surface_not_a_docked_modal(self):
         router = (WEB / "page-router.js").read_text(encoding="utf-8")
         business = (WEB / "business-center-ui.js").read_text(encoding="utf-8")
