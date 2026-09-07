@@ -120,7 +120,7 @@ jobs:
           finally:
               driver.quit()
           PY
-      - name: Verify standalone customer inquiry and native quotation in Chrome
+      - name: Verify standalone customer inquiry and native quotation without blocking alerts
         run: |
           python - <<'PY'
           from selenium import webdriver
@@ -139,13 +139,14 @@ jobs:
           wait = WebDriverWait(driver, 12)
           try:
               driver.get('http://127.0.0.1:18080/')
+              assert driver.execute_script('return window.__huidiFriendlyAlert === true') is True
               wait.until(EC.element_to_be_clickable((By.ID, 'hsbManualLead'))).click()
               wait.until(EC.visibility_of_element_located((By.ID, 'hsbCompany'))).send_keys('Standalone Browser Buyer')
               driver.find_element(By.ID, 'hsbProduct').send_keys('stainless steel hinge')
               driver.find_element(By.ID, 'hsbCountry').send_keys('DE')
               driver.find_element(By.ID, 'hsbRequirements').send_keys('Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch')
               driver.find_element(By.CSS_SELECTOR, '[data-hsb-inquiry]').click()
-              wait.until(EC.alert_is_present()).accept()
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#huidiToastStack .huidi-toast')))
 
               wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open.hb-page-surface')))
               surface = driver.execute_script("""
@@ -164,7 +165,6 @@ jobs:
               quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-make-doc="quotation"]')))
               handles_before = list(driver.window_handles)
               quote.click()
-              wait.until(EC.alert_is_present()).accept()
               frame = wait.until(EC.presence_of_element_located((By.ID, 'hwpDocumentFrame')))
               wait.until(EC.text_to_be_present_in_element((By.ID, 'hprTitle'), '报价单'))
               assert driver.window_handles == handles_before, (handles_before, driver.window_handles)
@@ -179,7 +179,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME, 'body').text
               assert 'online-bridge.html' not in driver.page_source
               driver.switch_to.default_content()
-              print('HUIDI standalone -> native business page -> quotation PASS')
+              print('HUIDI standalone -> native business page -> quotation PASS without blocking alerts')
           finally:
               driver.quit()
           PY
