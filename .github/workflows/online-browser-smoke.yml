@@ -165,6 +165,9 @@ jobs:
               quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-make-doc="quotation"]')))
               handles_before = list(driver.window_handles)
               quote.click()
+              confirmation = wait.until(EC.alert_is_present())
+              assert '确认从当前询盘继续制作报价单' in confirmation.text, confirmation.text
+              confirmation.accept()
               frame = wait.until(EC.presence_of_element_located((By.ID, 'hwpDocumentFrame')))
               wait.until(EC.text_to_be_present_in_element((By.ID, 'hprTitle'), '报价单'))
               assert driver.window_handles == handles_before, (handles_before, driver.window_handles)
@@ -179,7 +182,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME, 'body').text
               assert 'online-bridge.html' not in driver.page_source
               driver.switch_to.default_content()
-              print('HUIDI standalone -> native business page -> quotation PASS without blocking alerts')
+              print('HUIDI standalone -> native business page -> quotation PASS; routine feedback is non-blocking, formal document confirmation is preserved')
           finally:
               driver.quit()
           PY
