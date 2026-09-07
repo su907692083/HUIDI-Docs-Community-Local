@@ -1,4 +1,14 @@
-# HUIDI Docs Community Local
+本版本是专门离线可用的，不想上传云端不想透漏资料的可以直接使用，电脑配置要求不高，
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/ca9b1336-8f63-4dd0-aa25-ab864c390d82" />
+
+可上传品牌就可应用到各类PDF中<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/683b2f86-7f78-41e3-8a72-2a594dcf1cb3" /># HUIDI Docs Community Local
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/5049c034-cc38-4088-a7c8-666eee84ce64" />
+商品页面<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/0bc428ff-f565-4903-a67e-c28244c7286a" />
+
+打开就可以开到登记的信息管理跟进<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/da0922ae-0624-426b-9f48-f2d0b60b02a2" />
+无网络可运行版（飞书和文档通知等接口无网络不行！）<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/f8eaee86-a16f-4990-92e3-e434339ea034" />
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/89343a93-8924-4dc6-a802-10e4e3ecb364" />
+
 
 **给外贸业务人员的本地业务与单据工作台**  
 Source Available · Local-first · Windows / Browser
