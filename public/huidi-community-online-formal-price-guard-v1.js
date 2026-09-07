@@ -30,6 +30,18 @@ function sanitizeContext(){
  document.documentElement.dataset.huidiFormalPriceContext='reference-sanitized';
  return true;
 }
+function clearInheritedFormalPrice(input){
+ input.value='';
+ input.dispatchEvent(new Event('input',{bubbles:true}));
+ input.dispatchEvent(new Event('change',{bubbles:true}));
+ // Some mature Editor handlers normalize an untouched blank numeric field to
+ // the display string "0" during their own synchronous bookkeeping. The
+ // Online guard runs only once for a fresh formal document, so clear that
+ // inherited default after handlers finish without blocking a later manual 0.
+ input.value='';
+ queueMicrotask(()=>{if(document.activeElement!==input&&clean(input.value)==='0')input.value=''});
+ setTimeout(()=>{if(document.activeElement!==input&&clean(input.value)==='0')input.value=''},0);
+}
 function protect(){
  if(state.done)return true;
  const ctx=context();if(!isFreshFormalContext(ctx))return false;
@@ -41,13 +53,11 @@ function protect(){
   if(!input||!ref)return;
   const currency=clean(product?.currency||ctx.deal?.currency||ctx.customer?.currency||'USD')||'USD';
   input.dataset.huidiReferencePrice=ref;
+  input.dataset.huidiFormalPricePolicy='manual-required';
   input.placeholder=`参考 ${currency} ${ref} · 请确认正式单价`;
   input.title=`产品资料参考价 ${currency} ${ref}；仅供核对，不会自动写入正式单价。`;
-  if(state.contextSanitized&&samePrice(input.value,ref)){
-   input.value='';
-   input.dispatchEvent(new Event('input',{bubbles:true}));
-   input.dispatchEvent(new Event('change',{bubbles:true}));
-  }
+  const inheritedDefaultZero=state.contextSanitized&&clean(input.value)==='0';
+  if(state.contextSanitized&&(samePrice(input.value,ref)||inheritedDefaultZero))clearInheritedFormalPrice(input);
   guarded+=1;
  });
  if(!guarded)return false;
@@ -60,5 +70,5 @@ function schedule(){if(state.done)return;state.tries=0;const run=()=>{if(protect
 sanitizeContext();
 window.addEventListener('HUIDI:document.context.applied',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.HUIDICommunityFormalPriceGuard=Object.freeze({version:'1.1.0',sanitizeContext,protect,referencePrice,samePrice});
+window.HUIDICommunityFormalPriceGuard=Object.freeze({version:'1.1.1',sanitizeContext,protect,referencePrice,samePrice});
 })();
