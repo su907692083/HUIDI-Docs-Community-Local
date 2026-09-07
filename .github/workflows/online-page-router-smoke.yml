@@ -98,7 +98,16 @@ jobs:
                   .filter(s => document.querySelector(s)?.classList.contains('open'));
               """)
               assert active == [], active
-              assert driver.execute_script("return document.querySelector('#huidiBusinessBack')?.classList.contains('open')") is True
+              surface = driver.execute_script("""
+                const node=document.querySelector('#huidiBusinessBack');
+                return {
+                  open: node?.classList.contains('open'),
+                  nativePage: node?.classList.contains('hb-page-surface'),
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
+              """)
+              assert surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, surface
 
               row = wait.until(EC.element_to_be_clickable((By.XPATH,"//tr[@data-deal][contains(.,'Router Smoke Buyer')]")))
               row.click()
@@ -124,7 +133,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI single-workspace routing + native catalog + native document PASS')
+              print('HUIDI native business page + catalog + native document PASS')
           finally:
               driver.quit()
           PY
