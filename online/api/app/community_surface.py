@@ -35,7 +35,7 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "yes",
     "on",
 }
-FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-10"
+FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-11"
 
 
 def community_surface_status() -> dict[str, object]:
@@ -115,8 +115,10 @@ def _editor_html() -> str:
     """Fuse only Online governance into the existing Community formal editor.
 
     Community still owns every formal document field, save/export flow and
-    document record. The injected guard only prevents product/reference prices
-    from silently becoming a formal unit price on a fresh document.
+    document record. On a fresh document, the injected guard runs immediately
+    after tenant-scoped browser storage is installed and before the Community
+    editor reads product context, so reference prices never hydrate a formal
+    unit-price field. Saved and chained formal documents keep their own prices.
     """
 
     path = COMMUNITY_PUBLIC_DIR / "editor.html"
@@ -127,10 +129,14 @@ def _editor_html() -> str:
         return html
     asset = "huidi-community-online-formal-price-guard-v1.js"
     if asset not in html:
-        if "</body>" not in html:
-            raise HTTPException(status_code=500, detail="Community editor body is invalid")
         script = f'<script src="/community/{asset}?v={FUSION_ASSET_VERSION}"></script>'
-        html = html.replace("</body>", script + "</body>", 1)
+        local_mode = '<script src="./community-local-mode.js"></script>'
+        if local_mode in html:
+            html = html.replace(local_mode, local_mode + script, 1)
+        elif "</head>" in html:
+            html = html.replace("</head>", script + "</head>", 1)
+        else:
+            raise HTTPException(status_code=500, detail="Community editor head is invalid")
     return html
 
 
