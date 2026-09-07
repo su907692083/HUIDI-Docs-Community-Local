@@ -34,6 +34,12 @@ from . import standalone_business  # noqa: F401,E402
 from .native_document_batch import install_native_document_batch  # noqa: E402
 
 install_native_document_batch(standalone_business)
+# Row locator/grid density is a second presentation-only wrapper around the
+# already-batched renderer. It adds search/filter/sticky columns only; the same
+# native draft owner still owns all business data and save behavior.
+from .native_document_grid import install_native_document_grid  # noqa: E402
+
+install_native_document_grid(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
