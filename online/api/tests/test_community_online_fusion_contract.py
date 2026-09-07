@@ -17,6 +17,7 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
         self.surface = (APP / "community_surface.py").read_text(encoding="utf-8")
         self.fusion = (PUBLIC / "huidi-community-online-fusion.js").read_text(encoding="utf-8")
         self.full_v2 = (PUBLIC / "huidi-community-online-full-v2.js").read_text(encoding="utf-8")
+        self.intel_v2 = (PUBLIC / "huidi-community-online-intelligence-v2.js").read_text(encoding="utf-8")
         self.full_v2_css = (PUBLIC / "huidi-community-online-full-v2.css").read_text(encoding="utf-8")
         self.nav = (PUBLIC / "huidi-community-online-nav-v1.js").read_text(encoding="utf-8")
         self.fusion_css = (PUBLIC / "huidi-community-online-fusion.css").read_text(encoding="utf-8")
@@ -31,6 +32,7 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             "huidi-community-online-full-v2.css",
             "huidi-community-online-nav-v1.js",
             "huidi-community-online-full-v2.js",
+            "huidi-community-online-intelligence-v2.js",
         ):
             self.assertIn(asset, self.surface)
         self.assertIn('"mode": "community-online-fused-workspace"', self.surface)
@@ -39,11 +41,16 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             self.surface.index("huidi-community-online-nav-v1.js"),
             self.surface.index("huidi-community-online-full-v2.js"),
         )
+        self.assertLess(
+            self.surface.index("huidi-community-online-full-v2.js"),
+            self.surface.index("huidi-community-online-intelligence-v2.js"),
+        )
+        self.assertIn("https://cdn.jsdelivr.net", self.surface)
         self.assertIn('request.url.path == "/"', self.surface)
         self.assertIn('RedirectResponse("/community/workspace.html"', self.surface)
 
     def test_fusion_is_capability_layer_not_second_business_shell(self):
-        combined = (self.fusion + "\n" + self.full_v2 + "\n" + self.nav).lower()
+        combined = (self.fusion + "\n" + self.full_v2 + "\n" + self.intel_v2 + "\n" + self.nav).lower()
         self.assertIn("window.HUIDI_COMMUNITY_ONLINE", self.fusion)
         self.assertIn("window.HUIDILocalCore", self.fusion)
         self.assertIn("repositories.customers", self.fusion)
@@ -90,6 +97,8 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             "检查与备份",
         ):
             self.assertIn(label, self.full_v2)
+        self.assertIn("互动地图", self.intel_v2)
+        self.assertIn("客户情报", self.intel_v2)
         self.assertIn("客户开发", self.nav)
         self.assertIn("市场情报", self.nav)
         self.assertIn("团队与设置", self.nav)
@@ -109,7 +118,17 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             "audit.mount(pane)",
         ):
             self.assertIn(expression, self.full_v2)
+        for module in (
+            "customer-intelligence.js",
+            "world-intelligence-map.js",
+            "world-country-interaction.js",
+        ):
+            self.assertIn(module, self.intel_v2)
+        self.assertIn("intel.mount(pane)", self.intel_v2)
+        self.assertIn("map.open()", self.intel_v2)
+        self.assertIn("country.enhance", self.intel_v2)
         self.assertNotIn("MutationObserver", self.full_v2)
+        self.assertNotIn("MutationObserver", self.intel_v2)
 
     def test_network_capabilities_and_fused_projects_use_real_apis(self):
         for path in (
@@ -161,14 +180,17 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
         workspace = (PUBLIC / "workspace.html").read_text(encoding="utf-8")
         self.assertIn("if(!online?.enabled", self.fusion)
         self.assertIn("if(!online?.enabled", self.full_v2)
+        self.assertIn("if(!online?.enabled", self.intel_v2)
         self.assertNotIn("huidi-community-online-fusion", workspace)
         self.assertNotIn("huidi-community-online-full-v2", workspace)
+        self.assertNotIn("huidi-community-online-intelligence-v2", workspace)
         self.assertNotIn("huidi-community-online-nav-v1", workspace)
 
     def test_fusion_assets_parse_and_exist(self):
         self.assertGreater(len(self.fusion_css), 1000)
         self.assertGreater(len(self.full_v2_css), 3000)
         self.assertGreater(len(self.full_v2), 10000)
+        self.assertGreater(len(self.intel_v2), 2500)
         node = shutil.which("node")
         if not node:
             self.skipTest("node is not installed")
@@ -176,6 +198,7 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             PUBLIC / "huidi-community-online-fusion.js",
             PUBLIC / "huidi-community-online-nav-v1.js",
             PUBLIC / "huidi-community-online-full-v2.js",
+            PUBLIC / "huidi-community-online-intelligence-v2.js",
         ):
             result = subprocess.run(
                 [node, "--check", str(path)],
