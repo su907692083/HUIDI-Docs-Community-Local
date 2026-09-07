@@ -140,7 +140,14 @@ def main() -> None:
                 """
                 const row=[...document.querySelectorAll('.item-row')].find(r=>r.dataset.huidiProductId===arguments[0]);
                 const input=row?.querySelector('.i-price');
-                return Boolean(input && input.dataset.huidiFormalPricePolicy==='manual-required' && input.value==='');
+                const state=window.FlypigBOXApp?.formState?.(false)||{};
+                return Boolean(
+                  input &&
+                  input.dataset.huidiFormalPricePolicy==='manual-required' &&
+                  input.dataset.huidiFormalPriceConfirmed==='0' &&
+                  input.value==='' &&
+                  String(state?.items?.[0]?.price??'')===''
+                );
                 """,
                 PRODUCT_ID,
             )
@@ -159,12 +166,14 @@ def main() -> None:
               scope:window.HUIDI_WORKSPACE_STORAGE?.scope||'',
               policy:document.documentElement.dataset.huidiFormalPriceGuard||'',
               contextPolicy:document.documentElement.dataset.huidiFormalPriceContext||'',
+              statePolicy:document.documentElement.dataset.huidiFormalPriceState||'',
               guardVersion:window.HUIDICommunityFormalPriceGuard?.version||'',
               productName:row?.querySelector('.i-name')?.value||'',
               productId:row?.dataset.huidiProductId||'',
               formalPrice:price?.value||'',
               formalStatePrice:String(state?.items?.[0]?.price??''),
               formalPricePolicy:price?.dataset.huidiFormalPricePolicy||'',
+              formalPriceConfirmed:price?.dataset.huidiFormalPriceConfirmed||'',
               referencePrice:price?.dataset.huidiReferencePrice||'',
               placeholder:price?.placeholder||'',
               title:price?.title||'',
@@ -182,7 +191,8 @@ def main() -> None:
         assert snapshot["scope"] == f"org-{org_id}", snapshot
         assert snapshot["policy"] == "reference-only", snapshot
         assert snapshot["contextPolicy"] == "reference-sanitized", snapshot
-        assert snapshot["guardVersion"] == "1.1.1", snapshot
+        assert snapshot["statePolicy"] == "reference-sanitized", snapshot
+        assert snapshot["guardVersion"] == "1.2.0", snapshot
         assert snapshot["productName"] == "Reference Price Hinge", snapshot
         assert snapshot["productId"] == PRODUCT_ID, snapshot
         assert snapshot["contextDealId"] == DEAL_ID, snapshot
@@ -192,6 +202,7 @@ def main() -> None:
         assert snapshot["formalPrice"] == "", snapshot
         assert snapshot["formalStatePrice"] == "", snapshot
         assert snapshot["formalPricePolicy"] == "manual-required", snapshot
+        assert snapshot["formalPriceConfirmed"] == "0", snapshot
         assert snapshot["referencePrice"] == REFERENCE_PRICE, snapshot
         assert "USD 1.25" in snapshot["placeholder"], snapshot
         assert "不会自动写入正式单价" in snapshot["title"], snapshot
@@ -206,12 +217,17 @@ def main() -> None:
             input.value='0';
             input.dispatchEvent(new Event('input',{bubbles:true}));
             input.dispatchEvent(new Event('change',{bubbles:true}));
-            return {value:input.value,state:String(window.FlypigBOXApp?.formState?.(false)?.items?.[0]?.price??'')};
+            return {
+              value:input.value,
+              confirmed:input.dataset.huidiFormalPriceConfirmed||'',
+              state:String(window.FlypigBOXApp?.formState?.(false)?.items?.[0]?.price??'')
+            };
             """,
             PRODUCT_ID,
         )
         print("FORMAL_PRICE_MANUAL_ZERO=" + json.dumps(manual_zero, ensure_ascii=False))
         assert manual_zero and manual_zero["value"] == "0", manual_zero
+        assert manual_zero["confirmed"] == "1", manual_zero
         assert manual_zero["state"] == "0", manual_zero
     finally:
         if not snapshot:
@@ -226,10 +242,12 @@ def main() -> None:
                               scope:window.HUIDI_WORKSPACE_STORAGE?.scope||'',
                               policy:document.documentElement.dataset.huidiFormalPriceGuard||'',
                               contextPolicy:document.documentElement.dataset.huidiFormalPriceContext||'',
+                              statePolicy:document.documentElement.dataset.huidiFormalPriceState||'',
                               guard:Boolean(window.HUIDICommunityFormalPriceGuard),
                               rows:[...document.querySelectorAll('.item-row')].map(r=>({
                                 id:r.dataset.huidiProductId||'',name:r.querySelector('.i-name')?.value||'',
-                                price:r.querySelector('.i-price')?.value||'',reference:r.querySelector('.i-price')?.dataset.huidiReferencePrice||''
+                                price:r.querySelector('.i-price')?.value||'',reference:r.querySelector('.i-price')?.dataset.huidiReferencePrice||'',
+                                confirmed:r.querySelector('.i-price')?.dataset.huidiFormalPriceConfirmed||''
                               }))
                             };
                             """
@@ -244,7 +262,7 @@ def main() -> None:
 
     print(
         "Community Deal/Product context -> formal quotation editor -> reference price visible "
-        "but formal unit price remains empty until human confirmation; later manual input remains allowed PASS"
+        "but formal UI/state price remains empty until human confirmation; later manual input remains allowed PASS"
     )
 
 
