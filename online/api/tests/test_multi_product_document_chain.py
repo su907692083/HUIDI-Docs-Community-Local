@@ -133,7 +133,7 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         quote_page = self.client.get(quote["url"])
         self.assertEqual(quote_page.status_code, 200, quote_page.text)
         page = quote_page.text
-        self.assertEqual(page.count("data-item-row"), 3)
+        self.assertEqual(page.count("<tr data-item-row"), 3)
         for row in self.products:
             self.assertIn(row.name, page)
             self.assertIn(row.sku, page)
@@ -204,7 +204,7 @@ class MultiProductDocumentChainTest(unittest.TestCase):
 
         pi_page = self.client.get(pi["url"])
         self.assertEqual(pi_page.status_code, 200, pi_page.text)
-        self.assertEqual(pi_page.text.count("data-item-row"), 3)
+        self.assertEqual(pi_page.text.count("<tr data-item-row"), 3)
         for quantity in quantities:
             self.assertIn(f"data-item-k='quantity' value='{quantity}'", pi_page.text)
         self.assertEqual(pi_page.text.count("data-item-k='unit_price' value=''"), 3)
@@ -217,7 +217,7 @@ class MultiProductDocumentChainTest(unittest.TestCase):
         packing = self._create_document("packing_list")
         page = self.client.get(packing["url"])
         self.assertEqual(page.status_code, 200, page.text)
-        self.assertEqual(page.text.count("data-item-row"), 3)
+        self.assertEqual(page.text.count("<tr data-item-row"), 3)
         for index, row in enumerate(self.products, start=1):
             self.assertIn(row.name, page.text)
             self.assertIn(f"placeholder='{40 + index} x 30 x 20 cm'", page.text)
