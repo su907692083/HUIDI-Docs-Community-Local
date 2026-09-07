@@ -49,6 +49,21 @@ class WorkspacePagesContractTests(unittest.TestCase):
         subprocess.run(["node", "--check", str(WEB / "page-router.js")], check=True)
         subprocess.run(["node", "--check", str(WEB / "catalog-studio-online.js")], check=True)
 
+    def test_business_center_is_a_native_page_surface_not_a_docked_modal(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        business = (WEB / "business-center-ui.js").read_text(encoding="utf-8")
+        self.assertIn("openBusinessPage", router)
+        self.assertIn("HUIDIBusinessCenter.mount", router)
+        self.assertIn("HUIDIBusinessCenter?.unmount", router)
+        self.assertIn("surfaceCleanup", router)
+        self.assertIn("hb-page-surface", business)
+        self.assertIn("function mount(", business)
+        self.assertIn("function unmount()", business)
+        self.assertIn("surface='page'", business)
+        self.assertIn("position:static", business)
+        self.assertIn("Object.freeze({open,mount,unmount", business)
+        subprocess.run(["node", "--check", str(WEB / "business-center-ui.js")], check=True)
+
     def test_detail_enhancers_are_explicit_not_global_dom_watchers(self):
         deal_facts = (WEB / "deal-facts-ui.js").read_text(encoding="utf-8")
         intelligence = (WEB / "customer-intelligence.js").read_text(encoding="utf-8")
