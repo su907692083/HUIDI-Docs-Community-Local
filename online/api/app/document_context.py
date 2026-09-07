@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import datetime, timezone
 from typing import Any
 
@@ -32,6 +33,12 @@ DOC_ORDER = [
     "packing_list",
 ]
 ALLOWED_DOCUMENTS = set(DOC_ORDER)
+COMMERCIAL_DOCUMENTS = [
+    "quotation",
+    "proforma_invoice",
+    "sales_contract",
+    "commercial_invoice",
+]
 DOCUMENT_CONTEXT_SCHEMA = "huidi.document.context/v1"
 DRAFT_SCHEMA = "huidi.document.draft/v1"
 
@@ -158,6 +165,173 @@ def _first(payload: dict[str, Any], *keys: str) -> str:
                 return "; ".join(f"{k}: {v}" for k, v in value.items() if str(v).strip())
             return str(value)
     return ""
+
+
+def _quantity_candidate(requirements: str) -> str:
+    text_value = str(requirements or "")
+    patterns = [
+        r"(?i)(?:qty|quantity|数量)\s*[:：]?\s*([\d,.]+\s*(?:pcs|pieces|sets|set|units|unit|件|套)?)",
+        r"(?i)([\d,.]+\s*(?:pcs|pieces|sets|set|units|unit|件|套))",
+    ]
+    for pattern in patterns:
+        hit = re.search(pattern, text_value)
+        if hit:
+            return hit.group(1).strip()
+    return ""
+
+
+def _incoterm_candidate(requirements: str) -> str:
+    hit = re.search(
+        r"(?i)\b(EXW|FCA|FOB|CFR|CIF|CPT|CIP|DAP|DPU|DDP)\b(?:\s+([A-Za-z][A-Za-z .-]{1,40}))?",
+        str(requirements or ""),
+    )
+    if not hit:
+        return ""
+    return " ".join(part for part in hit.groups() if part).strip()
+
+
+def _reuse_candidates(
+    product_payload: dict[str, Any],
+    requirements: str,
+    inherited: dict[str, str],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+
+    def add(
+        candidate_id: str,
+        field: str,
+        label: str,
+        value: str,
+        source: str,
+        source_label: str,
+        applies_to: list[str],
+        *,
+        default_selected: bool = False,
+        confirmation_required: bool = False,
+        seedable: bool = True,
+        note: str = "",
+    ) -> None:
+        cleaned = str(value or "").strip()
+        if not cleaned:
+            return
+        if field and field in inherited and str(inherited.get(field) or "").strip():
+            return
+        rows.append(
+            {
+                "id": candidate_id,
+                "field": field,
+                "label": label,
+                "value": cleaned,
+                "source": source,
+                "source_label": source_label,
+                "applies_to": applies_to,
+                "default_selected": bool(default_selected and seedable),
+                "confirmation_required": bool(confirmation_required),
+                "seedable": bool(seedable and field in DRAFT_FIELDS and field not in PRICE_FIELDS),
+                "note": note,
+            }
+        )
+
+    add(
+        "product-spec",
+        "spec",
+        "规格 / 描述",
+        _first(product_payload, "specification", "spec", "specs", "material", "description"),
+        "product_brain",
+        "产品资料",
+        DOC_ORDER,
+        default_selected=True,
+        note="稳定产品资料可直接复用，进入单据后仍可修改。",
+    )
+    add(
+        "product-moq",
+        "moq",
+        "MOQ",
+        _first(product_payload, "moq", "minimum_order_quantity"),
+        "product_brain",
+        "产品资料",
+        DOC_ORDER,
+        default_selected=True,
+        note="复用产品资料中的 MOQ，不代表当前订单数量。",
+    )
+    add(
+        "product-lead-time",
+        "lead_time",
+        "交期参考",
+        _first(product_payload, "lead_time", "delivery_time", "delivery"),
+        "product_brain",
+        "产品资料",
+        COMMERCIAL_DOCUMENTS,
+        confirmation_required=True,
+        note="交期会随订单变化，勾选代表本次业务确认采用。",
+    )
+    add(
+        "inquiry-quantity",
+        "quantity",
+        "数量",
+        _quantity_candidate(requirements),
+        "inquiry",
+        "询盘内容",
+        COMMERCIAL_DOCUMENTS,
+        confirmation_required=True,
+        note="数量来自当前询盘内容，勾选后才提前写入单据草稿快照。",
+    )
+    add(
+        "inquiry-incoterm",
+        "incoterm",
+        "贸易条款",
+        _incoterm_candidate(requirements),
+        "inquiry",
+        "询盘内容",
+        COMMERCIAL_DOCUMENTS,
+        confirmation_required=True,
+        note="贸易条款需按本次成交条件确认，不能由系统替你决定。",
+    )
+    carton_size = _first(
+        product_payload,
+        "carton_size",
+        "carton_dimension",
+        "carton_dimensions",
+        "package_size",
+        "packing_size",
+    )
+    add(
+        "product-carton-size",
+        "carton_size",
+        "外箱 / 包装尺寸",
+        carton_size,
+        "product_brain",
+        "产品包装资料",
+        ["packing_list"],
+        confirmation_required=True,
+        note="仅在产品资料明确保存箱规时提供；装箱单仍需按本批次实际包装确认。",
+    )
+    add(
+        "product-marks",
+        "marks",
+        "唛头",
+        _first(product_payload, "shipping_marks", "marks", "marking", "mark"),
+        "product_brain",
+        "产品包装资料",
+        ["packing_list"],
+        confirmation_required=True,
+        note="唛头经常按订单变化，勾选代表本批次确认采用。",
+    )
+    packing_reference = _first(product_payload, "packing", "packaging", "package")
+    if packing_reference and packing_reference != carton_size:
+        add(
+            "product-packing-reference",
+            "",
+            "包装资料参考",
+            packing_reference,
+            "product_brain",
+            "产品包装资料",
+            ["packing_list"],
+            confirmation_required=True,
+            seedable=False,
+            note="通用包装描述只展示供核对，不直接写成装箱单箱规、重量或件数。",
+        )
+    return rows
 
 
 def _match_product(db: Session, keyword: str) -> tuple[ProductBrainRecord | None, dict[str, Any]]:
@@ -379,6 +553,8 @@ def build_document_context(
 
     addresses = master_data["customer_addresses"]
     banks = master_data["bank_accounts"]
+    inquiry_text = deal.requirements or (lead.reason if lead else "")
+    reuse_candidates = _reuse_candidates(product_payload, inquiry_text, inherited)
     return {
         "schema": DOCUMENT_CONTEXT_SCHEMA,
         "deal_id": deal.id,
@@ -394,6 +570,8 @@ def build_document_context(
             "requirements": deal.requirements,
             "lead_reason": lead.reason if lead else "",
             "market_keyword": lead.market_keyword if lead else deal.product_keyword,
+            "quantity_candidate": _quantity_candidate(inquiry_text),
+            "incoterm_candidate": _incoterm_candidate(inquiry_text),
         },
         "product": {
             "brain_id": product.brain_id if product else "",
@@ -405,6 +583,13 @@ def build_document_context(
             "packing": _first(product_payload, "packing", "packaging", "package"),
             "reference_price": product_reference_price,
             "reference_price_note": "仅供核对，不自动写入正式单价。" if product_reference_price else "",
+        },
+        "reuse_candidates": reuse_candidates,
+        "reuse_policy": {
+            "default_selected": [item["id"] for item in reuse_candidates if item.get("default_selected")],
+            "requires_confirmation": [item["id"] for item in reuse_candidates if item.get("confirmation_required")],
+            "never_auto_fields": sorted(PRICE_FIELDS),
+            "note": "产品稳定主数据可默认复用；数量、贸易条款、交期、箱规和唛头等订单相关事实需要本次业务确认。价格永远不在这组复用候选里。",
         },
         "current_documents": [_doc_summary(db, ref) for ref in docs],
         "inherited_fields": inherited,
@@ -475,4 +660,32 @@ def put_document_draft(ref_id: int, req: DocumentDraftRequest, db: Session = Dep
         "document_type": ref.document_type,
         "fields": fields,
         "note": "草稿已保存到当前 OnlineDocumentRef；价格不会自动写回询盘金额或产品参考价。",
+    }
+
+
+@app.patch("/api/business/documents/{ref_id}/draft")
+def patch_document_draft(ref_id: int, req: DocumentDraftRequest, db: Session = Depends(get_db)):
+    ref = db.get(OnlineDocumentRef, ref_id)
+    if not ref:
+        raise HTTPException(404, "没有找到这份单据")
+    incoming = _clean_fields(req.fields)
+    forbidden = sorted(PRICE_FIELDS.intersection(incoming))
+    if forbidden:
+        raise HTTPException(400, "复用预填不得写入正式单价或总金额")
+    deal = db.get(OnlineDeal, ref.deal_id)
+    before_amount = deal.amount if deal else None
+    existing = load_document_fields(db, ref.id)
+    merged = {**existing, **incoming}
+    fields = save_document_fields(db, ref, merged)
+    if deal is not None and deal.amount != before_amount:
+        raise RuntimeError("复用预填不得修改 deal.amount")
+    return {
+        "ok": True,
+        "schema": DRAFT_SCHEMA,
+        "ref_id": ref.id,
+        "deal_id": ref.deal_id,
+        "document_type": ref.document_type,
+        "fields": fields,
+        "patched_fields": sorted(incoming),
+        "note": "只合并本次确认的非价格复用字段；已有草稿和人工正式价格保持不变。",
     }
