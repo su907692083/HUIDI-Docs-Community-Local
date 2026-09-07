@@ -49,7 +49,16 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           text = Path('../../public/huidi-community-online-development-routing-v1.js').read_text(encoding='utf-8')
-          for marker in ('处理回复','确认回复并转询盘','/low-input/prepare-inquiry','客户已回复，冷开发发送已停止'):
+          for marker in (
+              '处理回复',
+              '确认回复并转询盘',
+              '/low-input/prepare-inquiry',
+              '客户已回复，冷开发发送已停止',
+              'landInInquiry',
+              'data-view="deals"',
+              '#dealSearch',
+              'data.huidiFocusedInquiry',
+          ):
               assert marker in text, marker
           assert 'observe(document.body' not in text
           assert 'new MutationObserver' in text
@@ -259,6 +268,28 @@ jobs:
                   .then(r=>r.json()).then(x=>done(x.lead?.status||''))
                   .catch(()=>done(''));
               """, lead_id) == 'converted')
+
+              wait.until(lambda d: d.execute_script("return document.body.dataset.huidiView === 'deals'"))
+              wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#dealRows tr[data-huidi-focused-inquiry=" + '"1"' + "]'))"))
+              landing = driver.execute_script("""
+                const row=document.querySelector('#dealRows tr[data-huidi-focused-inquiry="1"]');
+                return {
+                  view: document.body.dataset.huidiView || '',
+                  active: Boolean(document.querySelector('#view-deals')?.classList.contains('active')),
+                  search: document.querySelector('#dealSearch')?.value || '',
+                  rowText: row?.innerText || '',
+                  focusedRows: document.querySelectorAll('#dealRows tr[data-huidi-focused-inquiry="1"]').length,
+                  windows: window.length,
+                  iframeCount: document.querySelectorAll('iframe').length,
+                };
+              """)
+              assert landing['view'] == 'deals', landing
+              assert landing['active'] is True, landing
+              assert 'Reply Smoke Buyer' in landing['search'], landing
+              assert 'Reply Smoke Buyer' in landing['rowText'], landing
+              assert landing['focusedRows'] == 1, landing
+              assert landing['iframeCount'] == 0, landing
+              assert len(driver.window_handles) == 1, driver.window_handles
           finally:
               driver.quit()
 
@@ -277,7 +308,7 @@ jobs:
           assert customers.status_code == 200, customers.text
           assert any(int(x.get('source_lead_id') or 0) == lead_id for x in customers.json()['items']), customers.text
 
-          print('Customer reply -> cold-development stop -> confirmed facts -> formal inquiry with zero auto amount PASS')
+          print('Customer reply -> cold-development stop -> confirmed facts -> formal inquiry -> Community inquiry landing with zero auto amount PASS')
           client.close()
           PY
       - name: Stop HUIDI
