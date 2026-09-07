@@ -224,6 +224,8 @@ def _create_workspace_member(
     )
     db.add(organization)
     db.flush()
+    # Public registrations intentionally never join the historical/platform
+    # organization #1. Every new account receives its own tenant database.
     if int(organization.id or 0) <= 1:
         raise HTTPException(500, "新账号工作区分配失败")
     member = TeamMember(
@@ -255,12 +257,7 @@ def _set_session_cookie(response: Response, token: str) -> None:
 
 
 def _set_workspace_scope_cookie(response: Response, organization_id: int) -> None:
-    """Set the readable browser cache namespace at authentication time.
-
-    This cookie is not authorization. Binding it to the authenticated member in
-    the same response as the HttpOnly session makes cached Community HTML safe
-    across account switches before any Local storage owner initializes.
-    """
+    """Bind only the non-sensitive Community cache namespace at auth time."""
     response.set_cookie(
         WORKSPACE_SCOPE_COOKIE,
         f"org-{max(1, int(organization_id))}",
@@ -294,7 +291,10 @@ def _otp_hash(identifier: str, purpose: str, code: str) -> str:
 
 
 def _auth_mail_configured() -> bool:
-    return bool(os.getenv("HUIDI_AUTH_SMTP_HOST", "").strip() and os.getenv("HUIDI_AUTH_EMAIL_FROM", "").strip())
+    return bool(
+        os.getenv("HUIDI_AUTH_SMTP_HOST", "").strip()
+        and os.getenv("HUIDI_AUTH_EMAIL_FROM", "").strip()
+    )
 
 
 def _send_auth_email(to: str, subject: str, body: str) -> None:
@@ -331,7 +331,11 @@ def _send_auth_email(to: str, subject: str, body: str) -> None:
 def _sms_mode() -> str:
     if os.getenv("HUIDI_SMS_WEBHOOK_URL", "").strip():
         return "webhook"
-    if os.getenv("TWILIO_ACCOUNT_SID", "").strip() and os.getenv("TWILIO_AUTH_TOKEN", "").strip() and os.getenv("TWILIO_FROM_NUMBER", "").strip():
+    if (
+        os.getenv("TWILIO_ACCOUNT_SID", "").strip()
+        and os.getenv("TWILIO_AUTH_TOKEN", "").strip()
+        and os.getenv("TWILIO_FROM_NUMBER", "").strip()
+    ):
         return "twilio"
     return ""
 
@@ -344,7 +348,12 @@ def _send_sms(phone: str, code: str) -> None:
         headers = {"Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
-        response = httpx.post(url, json={"phone": phone, "code": code, "purpose": "login", "product": "HUIDI Online"}, headers=headers, timeout=20)
+        response = httpx.post(
+            url,
+            json={"phone": phone, "code": code, "purpose": "login", "product": "HUIDI Online"},
+            headers=headers,
+            timeout=20,
+        )
         response.raise_for_status()
         return
     if mode == "twilio":
@@ -379,7 +388,13 @@ def _oauth_start_url(provider: str, state: str, request: Request) -> str:
     redirect_uri = _oauth_redirect_uri(provider, request)
     if provider == "wechat":
         app_id = os.getenv("HUIDI_WECHAT_APP_ID", "").strip()
-        params = {"appid": app_id, "redirect_uri": redirect_uri, "response_type": "code", "scope": "snsapi_login", "state": state}
+        params = {
+            "appid": app_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "snsapi_login",
+            "state": state,
+        }
         return "https://open.weixin.qq.com/connect/qrconnect?" + urlencode(params) + "#wechat_redirect"
     if provider == "feishu":
         app_id = os.getenv("HUIDI_FEISHU_APP_ID", "").strip()
@@ -406,14 +421,23 @@ def _wechat_profile(code: str, request: Request) -> dict[str, str]:
         raise RuntimeError("微信没有返回有效登录身份")
     user_data: dict[str, Any] = {}
     try:
-        user_response = httpx.get("https://api.weixin.qq.com/sns/userinfo", params={"access_token": access_token, "openid": openid, "lang": "zh_CN"}, timeout=20)
+        user_response = httpx.get(
+            "https://api.weixin.qq.com/sns/userinfo",
+            params={"access_token": access_token, "openid": openid, "lang": "zh_CN"},
+            timeout=20,
+        )
         if user_response.is_success:
             user_data = user_response.json()
     except Exception:
         user_data = {}
     unionid = str(user_data.get("unionid") or token_data.get("unionid") or "")
     subject = unionid or f"{app_id}:{openid}"
-    return {"subject": subject, "display_name": str(user_data.get("nickname") or "微信用户")[:160], "label": "微信", "metadata": json.dumps({"openid": openid, "unionid": unionid}, ensure_ascii=False)}
+    return {
+        "subject": subject,
+        "display_name": str(user_data.get("nickname") or "微信用户")[:160],
+        "label": "微信",
+        "metadata": json.dumps({"openid": openid, "unionid": unionid}, ensure_ascii=False),
+    }
 
 
 def _feishu_profile(code: str, request: Request) -> dict[str, str]:
@@ -422,7 +446,13 @@ def _feishu_profile(code: str, request: Request) -> dict[str, str]:
     redirect_uri = _oauth_redirect_uri("feishu", request)
     token_response = httpx.post(
         "https://open.feishu.cn/open-apis/authen/v2/oauth/token",
-        data={"grant_type": "authorization_code", "client_id": app_id, "client_secret": secret, "code": code, "redirect_uri": redirect_uri},
+        data={
+            "grant_type": "authorization_code",
+            "client_id": app_id,
+            "client_secret": secret,
+            "code": code,
+            "redirect_uri": redirect_uri,
+        },
         headers={"Content-Type": "application/x-www-form-urlencoded"},
         timeout=20,
     )
@@ -431,7 +461,11 @@ def _feishu_profile(code: str, request: Request) -> dict[str, str]:
     access_token = str(token_data.get("access_token") or "")
     if not access_token:
         raise RuntimeError(str(token_data.get("error_description") or token_data.get("msg") or "飞书没有返回访问令牌"))
-    user_response = httpx.get("https://open.feishu.cn/open-apis/authen/v1/user_info", headers={"Authorization": f"Bearer {access_token}"}, timeout=20)
+    user_response = httpx.get(
+        "https://open.feishu.cn/open-apis/authen/v1/user_info",
+        headers={"Authorization": f"Bearer {access_token}"},
+        timeout=20,
+    )
     user_response.raise_for_status()
     user_data = user_response.json()
     if isinstance(user_data.get("data"), dict):
@@ -443,7 +477,14 @@ def _feishu_profile(code: str, request: Request) -> dict[str, str]:
         "subject": subject,
         "display_name": str(user_data.get("name") or user_data.get("en_name") or "飞书用户")[:160],
         "label": "飞书",
-        "metadata": json.dumps({"open_id": user_data.get("open_id"), "union_id": user_data.get("union_id"), "tenant_key": user_data.get("tenant_key")}, ensure_ascii=False),
+        "metadata": json.dumps(
+            {
+                "open_id": user_data.get("open_id"),
+                "union_id": user_data.get("union_id"),
+                "tenant_key": user_data.get("tenant_key"),
+            },
+            ensure_ascii=False,
+        ),
     }
 
 
@@ -459,6 +500,9 @@ def _oauth_member(db: Session, provider: str, profile: dict[str, str]) -> TeamMe
         found.updated_at = _utcnow()
         db.commit()
         return member
+
+    # Never auto-merge an OAuth account into an existing team merely because the
+    # provider returns the same email. Explicit linking must happen while logged in.
     login_email = _synthetic_email(provider, profile["subject"])
     _, member = _create_workspace_member(
         db,
@@ -466,12 +510,26 @@ def _oauth_member(db: Session, provider: str, profile: dict[str, str]) -> TeamMe
         display_name=profile.get("display_name") or profile.get("label") or "HUIDI 用户",
         organization_name=f"{profile.get('display_name') or profile.get('label') or '我的'}工作台",
     )
-    db.add(AuthIdentity(member_id=member.id, provider=provider, subject=profile["subject"], label=profile.get("label") or provider, verified_at=_utcnow(), metadata_json=profile.get("metadata") or "{}", created_at=_utcnow(), updated_at=_utcnow()))
+    db.add(
+        AuthIdentity(
+            member_id=member.id,
+            provider=provider,
+            subject=profile["subject"],
+            label=profile.get("label") or provider,
+            verified_at=_utcnow(),
+            metadata_json=profile.get("metadata") or "{}",
+            created_at=_utcnow(),
+            updated_at=_utcnow(),
+        )
+    )
     db.commit()
     db.refresh(member)
     return member
 
 
+# team_access.py existed before the public auth portal. Extend its public-path
+# policy at runtime so the existing authentication middleware remains the single
+# business API gate instead of introducing a second competing tenant owner.
 _legacy_public_path = team_access_module._is_public_path
 
 
@@ -502,7 +560,14 @@ async def auth_entry_redirect(request: Request, call_next):
         finally:
             db.close()
         if not member:
-            return JSONResponse({"enabled": True, "ready": True, "isolation": "physical_database_per_organization", "roles": {"owner": "老板", "admin": "管理员", "sales": "业务员", "viewer": "只读成员"}})
+            return JSONResponse(
+                {
+                    "enabled": True,
+                    "ready": True,
+                    "isolation": "physical_database_per_organization",
+                    "roles": {"owner": "老板", "admin": "管理员", "sales": "业务员", "viewer": "只读成员"},
+                }
+            )
     if path == "/":
         db = ControlSessionLocal()
         try:
@@ -531,7 +596,12 @@ def auth_status():
         "enabled": _access_required(),
         "signup_enabled": _signup_enabled(),
         "isolation": "physical_database_per_organization",
-        "providers": {"email": True, "phone": bool(_sms_mode()), "wechat": _provider_ready("wechat"), "feishu": _provider_ready("feishu")},
+        "providers": {
+            "email": True,
+            "phone": bool(_sms_mode()),
+            "wechat": _provider_ready("wechat"),
+            "feishu": _provider_ready("feishu"),
+        },
         "password_reset_email": _auth_mail_configured(),
     }
 
@@ -563,77 +633,144 @@ def auth_register(req: AuthRegisterRequest, response: Response, db: Session = De
         org_name = f"{display_name}的工作台"
     if req.account_type == "team" and not org_name:
         raise HTTPException(400, "团队账号请填写公司 / 团队名称")
-    organization, member = _create_workspace_member(db, login_email=email, display_name=display_name, organization_name=org_name, password_hash=_password_hash(req.password))
-    db.add(AuthIdentity(member_id=member.id, provider="email", subject=email, label=email, verified_at=_utcnow(), metadata_json="{}", created_at=_utcnow(), updated_at=_utcnow()))
+    organization, member = _create_workspace_member(
+        db,
+        login_email=email,
+        display_name=display_name,
+        organization_name=org_name,
+        password_hash=_password_hash(req.password),
+    )
+    db.add(
+        AuthIdentity(
+            member_id=member.id,
+            provider="email",
+            subject=email,
+            label=email,
+            verified_at=_utcnow(),
+            metadata_json="{}",
+            created_at=_utcnow(),
+            updated_at=_utcnow(),
+        )
+    )
     db.commit()
     db.refresh(member)
+    db.refresh(organization)
     _issue_session(db, member, response)
-    return {"ok": True, "member": _member_dict(member, db), "organization": {"id": organization.id, "name": organization.name, "slug": organization.slug}, "isolation": "physical_database_per_organization"}
+    return {
+        "ok": True,
+        "member": _member_dict(member, db),
+        "organization": {"id": organization.id, "name": organization.name, "slug": organization.slug},
+        "isolation": "physical_database_per_organization",
+    }
 
 
 @app.post("/api/auth/password/forgot")
 def password_forgot(req: PasswordForgotRequest, request: Request, db: Session = Depends(get_control_db)):
     email = _email(req.email)
-    member = db.scalar(select(TeamMember).where(TeamMember.email == email))
-    sent = False
-    if member and member.enabled and member.password_hash:
-        token = secrets.token_urlsafe(40)
-        db.add(AuthToken(member_id=member.id, purpose="password_reset", token_hash=_token_hash(token), expires_at=_utcnow() + timedelta(minutes=AUTH_TOKEN_MINUTES), created_at=_utcnow()))
+    member = db.scalar(select(TeamMember).where(TeamMember.email == email)) if EMAIL_RX.fullmatch(email) else None
+    if member and not member.email.endswith("@auth.huidi.local"):
+        raw = secrets.token_urlsafe(48)
+        db.add(
+            AuthToken(
+                member_id=member.id,
+                purpose="password_reset",
+                token_hash=_token_hash(raw),
+                expires_at=_utcnow() + timedelta(minutes=AUTH_TOKEN_MINUTES),
+                created_at=_utcnow(),
+            )
+        )
         db.commit()
         if _auth_mail_configured():
-            reset_url = f"{_public_base(request)}/reset-password?token={quote(token)}"
+            reset_url = f"{_public_base(request)}/reset-password?token={quote(raw)}"
             try:
-                _send_auth_email(email, "重置你的 HUIDI 密码", f"有人申请重置你的 HUIDI 密码。\n\n请在 {AUTH_TOKEN_MINUTES} 分钟内打开：\n{reset_url}\n\n如果不是你本人操作，请忽略这封邮件。")
-                sent = True
+                _send_auth_email(
+                    email,
+                    "重置 HUIDI Online 密码",
+                    f"你正在重置 HUIDI Online 密码。\n\n请在 {AUTH_TOKEN_MINUTES} 分钟内打开：\n{reset_url}\n\n如果不是你本人操作，请忽略本邮件。",
+                )
             except Exception:
-                sent = False
-    return {"ok": True, "message": "如果这个邮箱已注册，我们会发送重置说明。", "mail_configured": _auth_mail_configured(), "sent": sent}
+                # Do not reveal whether a particular email exists or whether its
+                # delivery failed. Operators can validate SMTP independently.
+                pass
+    return {
+        "ok": True,
+        "message": "如果该账号存在，重置说明会发送到对应邮箱。",
+        "email_service_ready": _auth_mail_configured(),
+    }
 
 
 @app.post("/api/auth/password/reset")
 def password_reset(req: PasswordResetRequest, db: Session = Depends(get_control_db)):
-    row = db.scalar(select(AuthToken).where(AuthToken.token_hash == _token_hash(req.token)).where(AuthToken.purpose == "password_reset").where(AuthToken.consumed_at.is_(None)).where(AuthToken.expires_at > _utcnow()))
+    now = _utcnow()
+    row = db.scalar(
+        select(AuthToken)
+        .where(AuthToken.purpose == "password_reset")
+        .where(AuthToken.token_hash == _token_hash(req.token))
+        .where(AuthToken.consumed_at.is_(None))
+        .where(AuthToken.expires_at > now)
+        .order_by(AuthToken.id.desc())
+    )
     if not row:
         raise HTTPException(400, "重置链接无效或已经过期")
     member = db.get(TeamMember, row.member_id)
     if not member or not member.enabled:
-        raise HTTPException(400, "账号当前不可用")
+        raise HTTPException(400, "这个账号当前不可用")
     member.password_hash = _password_hash(req.password)
-    member.updated_at = _utcnow()
-    row.consumed_at = _utcnow()
+    member.updated_at = now
+    row.consumed_at = now
     sessions = db.scalars(select(TeamSession).where(TeamSession.member_id == member.id)).all()
     for session in sessions:
         db.delete(session)
     db.commit()
-    return {"ok": True}
+    return {"ok": True, "message": "密码已重置，请重新登录。"}
 
 
-@app.post("/api/auth/phone/request")
-def phone_request(req: PhoneCodeRequest, db: Session = Depends(get_control_db)):
-    phone = _phone(req.phone)
+@app.post("/api/auth/phone/code")
+def phone_code(req: PhoneCodeRequest, db: Session = Depends(get_control_db)):
     if not _sms_mode():
         raise HTTPException(503, "手机号验证码服务尚未配置")
-    latest = db.scalar(select(AuthOneTimeCode).where(AuthOneTimeCode.identifier == phone).where(AuthOneTimeCode.purpose == "phone_login").where(AuthOneTimeCode.consumed_at.is_(None)).order_by(AuthOneTimeCode.id.desc()))
-    if latest and (latest.created_at + timedelta(seconds=OTP_RESEND_SECONDS)) > _utcnow():
+    phone = _phone(req.phone)
+    now = _utcnow()
+    recent = db.scalar(
+        select(AuthOneTimeCode)
+        .where(AuthOneTimeCode.identifier == phone)
+        .where(AuthOneTimeCode.purpose == "phone_login")
+        .order_by(AuthOneTimeCode.id.desc())
+    )
+    if recent and recent.created_at and (now - recent.created_at).total_seconds() < OTP_RESEND_SECONDS:
         raise HTTPException(429, "验证码发送太频繁，请稍后再试")
-    code = f"{secrets.randbelow(1000000):06d}"
-    row = AuthOneTimeCode(identifier=phone, purpose="phone_login", code_hash=_otp_hash(phone, "phone_login", code), attempts=0, expires_at=_utcnow() + timedelta(minutes=OTP_MINUTES), created_at=_utcnow())
+    code = f"{secrets.randbelow(1_000_000):06d}"
+    row = AuthOneTimeCode(
+        identifier=phone,
+        purpose="phone_login",
+        code_hash=_otp_hash(phone, "phone_login", code),
+        attempts=0,
+        expires_at=now + timedelta(minutes=OTP_MINUTES),
+        created_at=now,
+    )
     db.add(row)
     db.commit()
     try:
         _send_sms(phone, code)
     except Exception as exc:
-        db.delete(row)
+        row.consumed_at = _utcnow()
         db.commit()
-        raise HTTPException(502, f"验证码发送失败：{exc}") from exc
+        raise HTTPException(502, f"验证码暂时无法发送：{str(exc)[:160]}") from exc
     return {"ok": True, "expires_in": OTP_MINUTES * 60, "resend_after": OTP_RESEND_SECONDS}
 
 
 @app.post("/api/auth/phone/verify")
 def phone_verify(req: PhoneVerifyRequest, response: Response, db: Session = Depends(get_control_db)):
     phone = _phone(req.phone)
-    row = db.scalar(select(AuthOneTimeCode).where(AuthOneTimeCode.identifier == phone).where(AuthOneTimeCode.purpose == "phone_login").where(AuthOneTimeCode.consumed_at.is_(None)).where(AuthOneTimeCode.expires_at > _utcnow()).order_by(AuthOneTimeCode.id.desc()))
-    if not row:
+    now = _utcnow()
+    row = db.scalar(
+        select(AuthOneTimeCode)
+        .where(AuthOneTimeCode.identifier == phone)
+        .where(AuthOneTimeCode.purpose == "phone_login")
+        .where(AuthOneTimeCode.consumed_at.is_(None))
+        .order_by(AuthOneTimeCode.id.desc())
+    )
+    if not row or row.expires_at <= now:
         raise HTTPException(400, "验证码无效或已经过期")
     if row.attempts >= OTP_MAX_ATTEMPTS:
         raise HTTPException(429, "验证码尝试次数过多，请重新获取")
@@ -641,15 +778,32 @@ def phone_verify(req: PhoneVerifyRequest, response: Response, db: Session = Depe
         row.attempts += 1
         db.commit()
         raise HTTPException(400, "验证码不正确")
-    row.consumed_at = _utcnow()
-    identity = _identity(db, "phone", phone)
-    if identity:
-        member = db.get(TeamMember, identity.member_id)
+    row.consumed_at = now
+    found = _identity(db, "phone", phone)
+    if found:
+        member = db.get(TeamMember, found.member_id)
         if not member or not member.enabled:
-            raise HTTPException(403, "账号当前不可用")
+            raise HTTPException(403, "这个账号当前已停用")
     else:
-        _, member = _create_workspace_member(db, login_email=_synthetic_email("phone", phone), display_name=req.display_name.strip() or phone, organization_name=f"{req.display_name.strip() or phone}的工作台")
-        db.add(AuthIdentity(member_id=member.id, provider="phone", subject=phone, label=phone, verified_at=_utcnow(), metadata_json="{}", created_at=_utcnow(), updated_at=_utcnow()))
+        display_name = req.display_name.strip() or f"手机用户 {phone[-4:]}"
+        _, member = _create_workspace_member(
+            db,
+            login_email=_synthetic_email("phone", phone),
+            display_name=display_name,
+            organization_name=f"{display_name}的工作台",
+        )
+        db.add(
+            AuthIdentity(
+                member_id=member.id,
+                provider="phone",
+                subject=phone,
+                label=phone,
+                verified_at=now,
+                metadata_json="{}",
+                created_at=now,
+                updated_at=now,
+            )
+        )
     db.commit()
     db.refresh(member)
     _issue_session(db, member, response)
@@ -663,35 +817,49 @@ def oauth_start(provider: str, request: Request, next: str = "/", db: Session = 
         raise HTTPException(404, "不支持的登录方式")
     if not _provider_ready(provider):
         raise HTTPException(503, f"{provider} 登录尚未配置")
-    state = secrets.token_urlsafe(32)
-    db.add(AuthOAuthState(provider=provider, state_hash=_token_hash(state), next_path=_safe_next(next), expires_at=_utcnow() + timedelta(minutes=OAUTH_STATE_MINUTES), created_at=_utcnow()))
+    raw_state = secrets.token_urlsafe(36)
+    db.add(
+        AuthOAuthState(
+            provider=provider,
+            state_hash=_token_hash(raw_state),
+            next_path=_safe_next(next),
+            expires_at=_utcnow() + timedelta(minutes=OAUTH_STATE_MINUTES),
+            created_at=_utcnow(),
+        )
+    )
     db.commit()
-    return {"ok": True, "provider": provider, "authorize_url": _oauth_start_url(provider, state, request)}
+    return {"ok": True, "provider": provider, "authorize_url": _oauth_start_url(provider, raw_state, request)}
 
 
 @app.get("/api/auth/oauth/{provider}/callback")
-def oauth_callback(provider: str, request: Request, response: Response, code: str = "", state: str = "", db: Session = Depends(get_control_db)):
+def oauth_callback(
+    provider: str,
+    request: Request,
+    code: str = "",
+    state: str = "",
+    db: Session = Depends(get_control_db),
+):
     provider = provider.strip().lower()
     if provider not in {"wechat", "feishu"}:
-        raise HTTPException(404, "不支持的登录方式")
-    row = db.scalar(select(AuthOAuthState).where(AuthOAuthState.provider == provider).where(AuthOAuthState.state_hash == _token_hash(state)).where(AuthOAuthState.consumed_at.is_(None)).where(AuthOAuthState.expires_at > _utcnow()))
+        return RedirectResponse("/login?error=oauth_provider", status_code=303)
+    now = _utcnow()
+    row = db.scalar(
+        select(AuthOAuthState)
+        .where(AuthOAuthState.provider == provider)
+        .where(AuthOAuthState.state_hash == _token_hash(state))
+        .where(AuthOAuthState.consumed_at.is_(None))
+        .where(AuthOAuthState.expires_at > now)
+        .order_by(AuthOAuthState.id.desc())
+    )
     if not row or not code:
-        raise HTTPException(400, "第三方登录状态无效或已经过期")
-    row.consumed_at = _utcnow()
+        return RedirectResponse("/login?error=" + quote("登录授权已失效，请重新扫码"), status_code=303)
+    row.consumed_at = now
     db.commit()
     try:
         profile = _wechat_profile(code, request) if provider == "wechat" else _feishu_profile(code, request)
         member = _oauth_member(db, provider, profile)
-        token = secrets.token_urlsafe(40)
-        expires = _utcnow() + timedelta(days=SESSION_DAYS)
-        db.add(TeamSession(member_id=member.id, token_hash=_token_hash(token), expires_at=expires))
-        db.commit()
-        next_path = _safe_next(row.next_path)
-        redirect = RedirectResponse(next_path, status_code=303)
-        _set_session_cookie(redirect, token)
-        _set_workspace_scope_cookie(redirect, member.organization_id)
-        return redirect
-    except HTTPException:
-        raise
+        response = RedirectResponse(_safe_next(row.next_path), status_code=303)
+        _issue_session(db, member, response)
+        return response
     except Exception as exc:
-        raise HTTPException(502, f"{profile.get('label', provider) if 'profile' in locals() else provider} 登录失败：{exc}") from exc
+        return RedirectResponse("/login?error=" + quote(str(exc)[:180]), status_code=303)
