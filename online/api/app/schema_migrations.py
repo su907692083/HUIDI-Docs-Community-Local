@@ -10,7 +10,7 @@ from sqlalchemy.engine import Connection, Engine
 
 
 SCHEMA_SERIES = "huidi.online.schema/v1"
-LATEST_SCHEMA_REVISION = "20260906_003_industry_playbook_context"
+LATEST_SCHEMA_REVISION = "20260907_004_online_document_payload"
 # Stable signed bigint used only to serialize HUIDI schema revisions inside one
 # PostgreSQL database. It contains no customer or deployment-specific data.
 POSTGRES_MIGRATION_LOCK_ID = 6843443791448361
@@ -91,6 +91,28 @@ def _industry_playbook_context(engine: Engine) -> None:
     _industry_pref_table.create(engine, checkfirst=True)
 
 
+def _online_document_payload(engine: Engine) -> None:
+    """Add durable draft payload to the existing DocumentRef owner.
+
+    This is deliberately a column on online_document_refs, not a second
+    document/draft owner. Fresh databases may already contain the column once
+    the ORM model catches up; legacy databases are upgraded in place.
+    """
+    inspector = inspect(engine)
+    if "online_document_refs" not in inspector.get_table_names():
+        return
+    columns = {str(col.get("name") or "") for col in inspector.get_columns("online_document_refs")}
+    if "payload_json" in columns:
+        return
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "ALTER TABLE online_document_refs "
+                "ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'"
+            )
+        )
+
+
 MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
     ("20260905_000_online_v01_baseline", "Online V0.1 existing business schema baseline", _baseline),
     (
@@ -107,6 +129,11 @@ MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
         "20260906_003_industry_playbook_context",
         "Per-customer selection for the unified legacy-derived industry playbook",
         _industry_playbook_context,
+    ),
+    (
+        "20260907_004_online_document_payload",
+        "Durable draft payload on the existing OnlineDocumentRef owner",
+        _online_document_payload,
     ),
 ]
 
