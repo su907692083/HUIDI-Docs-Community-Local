@@ -166,7 +166,7 @@ class DealProductSelectionTest(unittest.TestCase):
         self.assertNotIn("location.href", js)
 
         self.assertIn(
-            "/assets/business-low-input-fusion.js?v=HUIDI-BUSINESS-LOW-INPUT-2",
+            "/assets/business-low-input-fusion.js?v=HUIDI-BUSINESS-LOW-INPUT-3",
             context,
         )
         self.assertIn("function noteBusinessDeal", context)
