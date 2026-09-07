@@ -10,7 +10,7 @@ from sqlalchemy.engine import Connection, Engine
 
 
 SCHEMA_SERIES = "huidi.online.schema/v1"
-LATEST_SCHEMA_REVISION = "20260907_005_document_master_data"
+LATEST_SCHEMA_REVISION = "20260907_006_community_owner_payloads"
 # Stable signed bigint used only to serialize HUIDI schema revisions inside one
 # PostgreSQL database. It contains no customer or deployment-specific data.
 POSTGRES_MIGRATION_LOCK_ID = 6843443791448361
@@ -175,6 +175,47 @@ def _document_master_data(engine: Engine) -> None:
             conn.execute(text(f"ALTER TABLE company_settings ADD COLUMN {name} {ddl}"))
 
 
+def _community_owner_payloads(engine: Engine) -> None:
+    """Preserve the full published Local record under canonical Online owners.
+
+    The new JSON columns are extension payloads on OnlineCustomer/OnlineDeal,
+    not parallel customer/deal tables. local_customer_id gives imported Local
+    customers a stable bridge key just as OnlineDeal already has local_deal_id.
+    """
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    with engine.begin() as conn:
+        if "online_customers" in tables:
+            customer_columns = {
+                str(col.get("name") or "") for col in inspector.get_columns("online_customers")
+            }
+            if "payload_json" not in customer_columns:
+                conn.execute(
+                    text("ALTER TABLE online_customers ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'")
+                )
+            if "local_customer_id" not in customer_columns:
+                conn.execute(
+                    text(
+                        "ALTER TABLE online_customers "
+                        "ADD COLUMN local_customer_id VARCHAR(160) NOT NULL DEFAULT ''"
+                    )
+                )
+            conn.execute(
+                text(
+                    "CREATE INDEX IF NOT EXISTS ix_online_customers_local_customer_id "
+                    "ON online_customers (local_customer_id)"
+                )
+            )
+        if "online_deals" in tables:
+            deal_columns = {
+                str(col.get("name") or "") for col in inspector.get_columns("online_deals")
+            }
+            if "payload_json" not in deal_columns:
+                conn.execute(
+                    text("ALTER TABLE online_deals ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'")
+                )
+
+
 MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
     ("20260905_000_online_v01_baseline", "Online V0.1 existing business schema baseline", _baseline),
     (
@@ -201,6 +242,11 @@ MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
         "20260907_005_document_master_data",
         "Customer address history and seller payment data under existing owners",
         _document_master_data,
+    ),
+    (
+        "20260907_006_community_owner_payloads",
+        "Full Community Local payloads on existing customer/deal owners",
+        _community_owner_payloads,
     ),
 ]
 
