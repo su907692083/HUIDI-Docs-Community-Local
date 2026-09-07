@@ -135,6 +135,16 @@ def main() -> None:
                 PRODUCT_ID,
             )
         )
+        wait.until(
+            lambda d: d.execute_script(
+                """
+                const row=[...document.querySelectorAll('.item-row')].find(r=>r.dataset.huidiProductId===arguments[0]);
+                const input=row?.querySelector('.i-price');
+                return Boolean(input && input.dataset.huidiFormalPricePolicy==='manual-required' && input.value==='');
+                """,
+                PRODUCT_ID,
+            )
+        )
 
         snapshot = driver.execute_script(
             """
@@ -143,6 +153,7 @@ def main() -> None:
             const price=row?.querySelector('.i-price');
             const ctx=JSON.parse(sessionStorage.getItem('huidi_local_document_context_v2')||'null');
             const product=ctx?.products?.[0]||{};
+            const state=window.FlypigBOXApp?.formState?.(false)||{};
             return {
               route:location.pathname,
               scope:window.HUIDI_WORKSPACE_STORAGE?.scope||'',
@@ -152,6 +163,8 @@ def main() -> None:
               productName:row?.querySelector('.i-name')?.value||'',
               productId:row?.dataset.huidiProductId||'',
               formalPrice:price?.value||'',
+              formalStatePrice:String(state?.items?.[0]?.price??''),
+              formalPricePolicy:price?.dataset.huidiFormalPricePolicy||'',
               referencePrice:price?.dataset.huidiReferencePrice||'',
               placeholder:price?.placeholder||'',
               title:price?.title||'',
@@ -169,7 +182,7 @@ def main() -> None:
         assert snapshot["scope"] == f"org-{org_id}", snapshot
         assert snapshot["policy"] == "reference-only", snapshot
         assert snapshot["contextPolicy"] == "reference-sanitized", snapshot
-        assert snapshot["guardVersion"] == "1.1.0", snapshot
+        assert snapshot["guardVersion"] == "1.1.1", snapshot
         assert snapshot["productName"] == "Reference Price Hinge", snapshot
         assert snapshot["productId"] == PRODUCT_ID, snapshot
         assert snapshot["contextDealId"] == DEAL_ID, snapshot
@@ -177,10 +190,29 @@ def main() -> None:
         assert snapshot["contextReferencePrice"] == REFERENCE_PRICE, snapshot
         assert snapshot["sourceDocumentId"] == "", snapshot
         assert snapshot["formalPrice"] == "", snapshot
+        assert snapshot["formalStatePrice"] == "", snapshot
+        assert snapshot["formalPricePolicy"] == "manual-required", snapshot
         assert snapshot["referencePrice"] == REFERENCE_PRICE, snapshot
         assert "USD 1.25" in snapshot["placeholder"], snapshot
         assert "不会自动写入正式单价" in snapshot["title"], snapshot
         assert snapshot["iframeCount"] == 0, snapshot
+
+        manual_zero = driver.execute_script(
+            """
+            const row=[...document.querySelectorAll('.item-row')].find(r=>r.dataset.huidiProductId===arguments[0]);
+            const input=row?.querySelector('.i-price');
+            if(!input)return null;
+            input.focus();
+            input.value='0';
+            input.dispatchEvent(new Event('input',{bubbles:true}));
+            input.dispatchEvent(new Event('change',{bubbles:true}));
+            return {value:input.value,state:String(window.FlypigBOXApp?.formState?.(false)?.items?.[0]?.price??'')};
+            """,
+            PRODUCT_ID,
+        )
+        print("FORMAL_PRICE_MANUAL_ZERO=" + json.dumps(manual_zero, ensure_ascii=False))
+        assert manual_zero and manual_zero["value"] == "0", manual_zero
+        assert manual_zero["state"] == "0", manual_zero
     finally:
         if not snapshot:
             try:
@@ -212,7 +244,7 @@ def main() -> None:
 
     print(
         "Community Deal/Product context -> formal quotation editor -> reference price visible "
-        "but formal unit price remains empty until human confirmation PASS"
+        "but formal unit price remains empty until human confirmation; later manual input remains allowed PASS"
     )
 
 
