@@ -42,13 +42,17 @@ jobs:
           done
           cat /tmp/huidi-page-router.log
           exit 1
-      - name: Seed one real catalog product
+      - name: Seed real product and inquiry
         run: |
           curl -fsS -X PUT http://127.0.0.1:18082/api/product-brains/router-hinge \
             -H 'Content-Type: application/json' \
             --data '{"brain_id":"router-hinge","name":"Router Hinge","sku":"RH-304","payload":{"brain_id":"router-hinge","name":"Router Hinge","sku":"RH-304","spec":"SUS304 4 inch","moq":"500 pcs","lead_time":"15 days","price_range":"USD 1.00-1.20 / PCS","certifications":["RoHS"]}}' > /tmp/product.json
           grep -F 'Router Hinge' /tmp/product.json
-      - name: Verify sidebar pages and native catalog in Chrome
+          curl -fsS -X POST http://127.0.0.1:18082/api/leads/manual \
+            -H 'Content-Type: application/json' \
+            --data '{"company_name":"Router Smoke Buyer","product_keyword":"Router Hinge","country":"DE","contact_name":"Purchasing","contact_email":"purchasing@router-smoke.example","requirements":"Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch","create_inquiry":true}' > /tmp/inquiry.json
+          grep -F 'Router Smoke Buyer' /tmp/inquiry.json
+      - name: Verify single workspace routing, native catalog and native document in Chrome
         run: |
           python - <<'PY'
           import time
@@ -72,34 +76,52 @@ jobs:
 
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-catalog]').click()
               wait.until(lambda d: d.find_element(By.ID,'huidiPageHost').is_displayed())
-              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'产品目录'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品目录'))
               wait.until(EC.text_to_be_present_in_element((By.ID,'huidiPageMount'),'Router Hinge'))
               assert 'page=catalog' in driver.current_url, driver.current_url
-              assert driver.find_element(By.ID,'hwpCatalogPaper').is_displayed()
+              assert driver.find_element(By.ID,'hocPaper').is_displayed()
               assert '打印 / 另存 PDF' in driver.find_element(By.ID,'huidiPageMount').text
               assert '下载 HTML' in driver.find_element(By.ID,'huidiPageMount').text
               assert '127.0.0.1:8765' not in driver.current_url
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-contacts]').click()
-              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'联系人'))
-              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
-              pos=driver.execute_script("return getComputedStyle(document.querySelector('#huidiNavBack')).position")
-              assert pos=='static', pos
-              assert driver.find_element(By.CSS_SELECTOR,'.side').is_displayed()
-
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-business="deals"]').click()
-              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'客户 / 询盘'))
+              driver.execute_script("""
+                document.querySelector('[data-huidi-contacts]').click();
+                document.querySelector('[data-huidi-product]').click();
+                document.querySelector('[data-huidi-business=\"deals\"]').click();
+              """)
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'客户 / 询盘'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiBusinessBack')?.parentElement?.id")=='huidiPageMount')
-              pos=driver.execute_script("return getComputedStyle(document.querySelector('#huidiBusinessBack')).position")
-              assert pos=='static', pos
+              time.sleep(.6)
+              assert driver.find_element(By.CSS_SELECTOR,'.side').is_displayed()
+              active = driver.execute_script("""
+                return ['#huidiNavBack','#huidiServiceBack','#pbBackdrop','#huidiIntelBack','#sqBack','#auBack']
+                  .filter(s => document.querySelector(s)?.classList.contains('open'));
+              """)
+              assert active == [], active
+              assert driver.execute_script("return document.querySelector('#huidiBusinessBack')?.classList.contains('open')") is True
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
-              wait.until(EC.text_to_be_present_in_element((By.ID,'hwpTitle'),'产品资料'))
-              wait.until(lambda d: d.execute_script("return document.querySelector('#pbBackdrop')?.parentElement?.id")=='huidiPageMount')
-              pos=driver.execute_script("return getComputedStyle(document.querySelector('#pbBackdrop')).position")
-              assert pos=='static', pos
+              row = wait.until(EC.element_to_be_clickable((By.XPATH,"//tr[@data-deal][contains(.,'Router Smoke Buyer')]")))
+              row.click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiBusinessMain'),'继续制作单据'))
+              handles_before = list(driver.window_handles)
+              driver.find_element(By.CSS_SELECTOR,'[data-make-doc="quotation"]').click()
+              WebDriverWait(driver,5).until(EC.alert_is_present())
+              driver.switch_to.alert.accept()
+              wait.until(EC.presence_of_element_located((By.ID,'hwpDocumentFrame')))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'报价单'))
+              assert driver.window_handles == handles_before, (handles_before, driver.window_handles)
+              assert 'page=quotation' in driver.current_url, driver.current_url
+              frame_src = driver.find_element(By.ID,'hwpDocumentFrame').get_attribute('src')
+              assert '/documents/online/' in frame_src, frame_src
+              assert '8765' not in frame_src, frame_src
+              assert driver.execute_script("return document.querySelector('#huidiBusinessBack')?.classList.contains('open')") is False
 
-              print('HUIDI sidebar page routing + native product catalog PASS')
+              driver.switch_to.frame(driver.find_element(By.ID,'hwpDocumentFrame'))
+              wait.until(EC.text_to_be_present_in_element((By.TAG_NAME,'body'),'Router Smoke Buyer'))
+              wait.until(EC.text_to_be_present_in_element((By.TAG_NAME,'body'),'打印 / 另存 PDF'))
+              driver.switch_to.default_content()
+
+              print('HUIDI single-workspace routing + native catalog + native document PASS')
           finally:
               driver.quit()
           PY

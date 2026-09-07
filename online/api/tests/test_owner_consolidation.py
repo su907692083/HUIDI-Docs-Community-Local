@@ -48,6 +48,18 @@ class OwnerConsolidationTests(unittest.TestCase):
         self.assertIn("CompanySetting", settings)
         self.assertIn("TIMEZONE_CHOICES", settings)
 
+    def test_online_native_document_click_has_one_owner_and_no_local_fallback(self):
+        business = self.text("web/business-center-ui.js")
+        standalone = self.text("web/standalone-business-ui.js")
+        router = self.text("web/page-router.js")
+        self.assertIn("/native-document", business)
+        self.assertIn("HUIDIWorkspacePages?.openDocument", business)
+        self.assertIn("openNativeDocument", router)
+        self.assertNotIn("/native-document", standalone)
+        self.assertNotIn("data-make-doc", standalone)
+        self.assertNotIn("online-bridge.html", business)
+        self.assertNotIn("127.0.0.1:8765", business)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -78,15 +78,22 @@ class StandaloneBusinessContractTests(unittest.TestCase):
                 if "产品资料参考价" in page.text:
                     self.assertIn("仅供核对，不会自动写入正式单价", page.text)
 
-    def test_standalone_ui_intercepts_old_local_document_button(self):
-        source = (WEB / "standalone-business-ui.js").read_text(encoding="utf-8")
+    def test_manual_entry_and_document_navigation_have_separate_single_owners(self):
+        standalone = (WEB / "standalone-business-ui.js").read_text(encoding="utf-8")
+        business = (WEB / "business-center-ui.js").read_text(encoding="utf-8")
         index = (WEB / "index.html").read_text(encoding="utf-8")
-        self.assertIn("/api/leads/manual", source)
-        self.assertIn("/native-document", source)
-        self.assertIn("stopImmediatePropagation", source)
-        self.assertNotIn("MutationObserver", source)
+        self.assertIn("/api/leads/manual", standalone)
+        self.assertNotIn("/native-document", standalone)
+        self.assertNotIn("data-make-doc", standalone)
+        self.assertNotIn("stopImmediatePropagation", standalone)
+        self.assertNotIn("MutationObserver", standalone)
+        self.assertIn("/native-document", business)
+        self.assertIn("HUIDIWorkspacePages?.openDocument", business)
+        self.assertNotIn("online-bridge.html", business)
+        self.assertNotIn("127.0.0.1:8765", business)
         self.assertIn("standalone-business-ui.js", index)
         subprocess.run(["node", "--check", str(WEB / "standalone-business-ui.js")], check=True)
+        subprocess.run(["node", "--check", str(WEB / "business-center-ui.js")], check=True)
 
     def test_readiness_distinguishes_core_from_connected_automation(self):
         response = self.client.get("/api/standalone/readiness")
