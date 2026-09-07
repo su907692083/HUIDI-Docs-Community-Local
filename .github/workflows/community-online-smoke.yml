@@ -133,8 +133,17 @@ jobs:
               return options
 
           def browser_login(driver, email, org):
-              driver.get(BASE + '/login')
+              # Preserve local/session/IndexedDB state because this smoke verifies
+              # namespace isolation across account switches. Remove only server
+              # session cookies before loading auth-portal.js; otherwise an old
+              # authenticated /login page can redirect to / while the test is
+              # starting the next login request and destroy its script context.
+              driver.get(BASE + '/api/health')
               driver.delete_all_cookies()
+              driver.get(BASE + '/login')
+              WebDriverWait(driver, 10).until(
+                  lambda d: d.execute_script("return Boolean(document.querySelector('#emailLoginForm'))")
+              )
               login = driver.execute_async_script("""
                 const email=arguments[0],password=arguments[1],done=arguments[arguments.length-1];
                 fetch('/api/auth/login',{
