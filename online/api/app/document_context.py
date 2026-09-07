@@ -9,7 +9,16 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
-from .business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef, customer_dict, deal_dict
+from .business_center import (
+    OnlineCustomer,
+    OnlineDeal,
+    OnlineDocumentRef,
+    address_dict,
+    customer_addresses,
+    customer_dict,
+    default_customer_address,
+)
+from .company_settings import setting_payload
 from .main import Lead, get_db
 from .online_app import app
 from .product_memory import ProductBrainRecord
@@ -31,7 +40,14 @@ DRAFT_SCHEMA = "huidi.document.draft/v1"
 # but they are never included in automatic downstream inheritance.
 DRAFT_FIELDS = {
     "seller",
+    "seller_address",
+    "seller_phone",
+    "seller_email",
+    "seller_tax_id",
     "buyer",
+    "buyer_address_id",
+    "buyer_address",
+    "buyer_phone",
     "contact",
     "email",
     "country",
@@ -49,6 +65,14 @@ DRAFT_FIELDS = {
     "currency",
     "requirements",
     "terms",
+    "bank_account_id",
+    "bank_label",
+    "bank_name",
+    "bank_account_name",
+    "bank_account_number",
+    "bank_swift",
+    "bank_address",
+    "bank_currency",
     "packages",
     "net_weight",
     "gross_weight",
@@ -58,7 +82,7 @@ DRAFT_FIELDS = {
 }
 PRICE_FIELDS = {"unit_price", "total"}
 INHERITABLE_FIELDS = DRAFT_FIELDS - PRICE_FIELDS - {"date"}
-LONG_FIELDS = {"spec", "requirements", "terms"}
+LONG_FIELDS = {"spec", "requirements", "terms", "seller_address", "buyer_address", "bank_address"}
 
 
 class DocumentDraftRequest(BaseModel):
@@ -85,8 +109,6 @@ def load_document_fields(db: Session, ref_id: int) -> dict[str, str]:
             {"ref_id": int(ref_id)},
         ).scalar_one_or_none()
     except Exception:
-        # The forward migration owns this column. Returning no draft here keeps
-        # old/partially upgraded installations read-safe until migration runs.
         return {}
     if not payload:
         return {}
@@ -247,6 +269,58 @@ def _customer_history(db: Session, deal: OnlineDeal) -> list[dict[str, Any]]:
     return out
 
 
+def _master_fields(db: Session, customer: OnlineCustomer) -> tuple[dict[str, str], dict[str, Any]]:
+    addresses = customer_addresses(db, customer.id)
+    default_address = default_customer_address(db, customer.id)
+    settings = setting_payload(db)
+    default_bank = settings.get("default_bank_account") if isinstance(settings.get("default_bank_account"), dict) else None
+    fields: dict[str, str] = {}
+    seller_name = str(settings.get("legal_name") or settings.get("company_name") or "").strip()
+    if seller_name:
+        fields["seller"] = seller_name
+    for source_key, field_key in [
+        ("address", "seller_address"),
+        ("phone", "seller_phone"),
+        ("email", "seller_email"),
+        ("tax_id", "seller_tax_id"),
+    ]:
+        value = str(settings.get(source_key) or "").strip()
+        if value:
+            fields[field_key] = value
+    if default_address:
+        fields["buyer_address_id"] = str(default_address.id)
+        fields["buyer_address"] = str(address_dict(default_address).get("formatted") or "")
+        if default_address.phone:
+            fields["buyer_phone"] = default_address.phone
+    elif customer.phone:
+        fields["buyer_phone"] = customer.phone
+    if default_bank:
+        bank_map = {
+            "id": "bank_account_id",
+            "label": "bank_label",
+            "bank_name": "bank_name",
+            "account_name": "bank_account_name",
+            "account_number": "bank_account_number",
+            "swift_code": "bank_swift",
+            "bank_address": "bank_address",
+            "currency": "bank_currency",
+        }
+        for source_key, field_key in bank_map.items():
+            value = str(default_bank.get(source_key) or "").strip()
+            if value:
+                fields[field_key] = value
+    return fields, {
+        "customer_addresses": [address_dict(x) for x in addresses],
+        "default_customer_address": address_dict(default_address) if default_address else None,
+        "seller_profile": {
+            key: settings.get(key) or ""
+            for key in ("company_name", "legal_name", "country", "address", "website", "phone", "email", "tax_id")
+        },
+        "bank_accounts": settings.get("bank_accounts") or [],
+        "default_bank_account": default_bank,
+    }
+
+
 def build_document_context(
     db: Session,
     deal: OnlineDeal,
@@ -264,6 +338,7 @@ def build_document_context(
     inherited, inherited_from, price_references = _upstream_context(
         db, deal, document, current_ref_id=current_ref_id
     )
+    master_fields, master_data = _master_fields(db, customer)
     product_reference_price = _first(product_payload, "reference_price", "price", "unit_price")
     if product_reference_price:
         price_references.insert(
@@ -302,6 +377,8 @@ def build_document_context(
             "note": "联网参考暂不可用，不影响当前单据。",
         }
 
+    addresses = master_data["customer_addresses"]
+    banks = master_data["bank_accounts"]
     return {
         "schema": DOCUMENT_CONTEXT_SCHEMA,
         "deal_id": deal.id,
@@ -332,20 +409,24 @@ def build_document_context(
         "current_documents": [_doc_summary(db, ref) for ref in docs],
         "inherited_fields": inherited,
         "inherited_from": inherited_from,
+        "master_fields": master_fields,
+        "master_data": master_data,
         "price_references": price_references,
         "customer_history": history,
         "connected_reference": connected_reference,
         "availability": {
             "customer_address_history": {
-                "available": False,
-                "reason": "当前 OnlineCustomer 尚未持久化客户地址历史，因此不会猜测或自动生成地址。",
+                "available": bool(addresses),
+                "count": len(addresses),
+                "reason": "读取正式客户地址历史。" if addresses else "客户还没有保存地址，可在正式客户详情中补充。",
             },
             "seller_bank_accounts": {
-                "available": False,
-                "reason": "当前公司设置尚未持久化银行账户，因此不会猜测或自动生成收款账户。",
+                "available": bool(banks),
+                "count": len(banks),
+                "reason": "读取公司设置中的收款账户。" if banks else "公司还没有保存收款账户，可在公司设置中补充。",
             },
         },
-        "note": "同一 Deal 的客户、询盘、产品和已保存单据可联动复用；价格、历史金额和联网资料都只作参考，不会自动改写正式单价或 deal.amount。",
+        "note": "同一 Deal 的客户、询盘、产品、客户地址、公司资料和已保存单据可联动复用；价格、历史金额和联网资料都只作参考，不会自动改写正式单价或 deal.amount。",
     }
 
 
@@ -384,8 +465,6 @@ def put_document_draft(ref_id: int, req: DocumentDraftRequest, db: Session = Dep
     deal = db.get(OnlineDeal, ref.deal_id)
     before_amount = deal.amount if deal else None
     fields = save_document_fields(db, ref, req.fields)
-    # The document payload is subordinate to the existing DocumentRef owner.
-    # Saving a draft must never promote a displayed/formal total into Deal.amount.
     if deal is not None and deal.amount != before_amount:
         raise RuntimeError("保存单据草稿不得修改 deal.amount")
     return {
