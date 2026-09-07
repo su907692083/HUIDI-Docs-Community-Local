@@ -114,11 +114,27 @@ jobs:
               """)
               assert notifications_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, notifications_surface
 
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-intelligence]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'市场动态'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiIntelBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.ID,'ciKeyword')))
+              intelligence_surface = driver.execute_script("""
+                const node=document.querySelector('#huidiIntelBack');
+                return {
+                  open: node?.classList.contains('open'),
+                  nativePage: node?.classList.contains('ci-page-surface'),
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
+              """)
+              assert intelligence_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, intelligence_surface
+
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品资料'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#pbBackdrop')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#pbBackdrop [data-pbf="name"]')))
               assert driver.execute_script("return document.querySelector('#huidiNavBack')?.classList.contains('open')") is False
+              assert driver.execute_script("return document.querySelector('#huidiIntelBack')?.classList.contains('open')") is False
               product_surface = driver.execute_script("""
                 const node=document.querySelector('#pbBackdrop');
                 return {
@@ -190,7 +206,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI native contacts + notifications + product + follow-up + business + document PASS')
+              print('HUIDI native contacts + notifications + intelligence + product + follow-up + business + document PASS')
           finally:
               driver.quit()
           PY
