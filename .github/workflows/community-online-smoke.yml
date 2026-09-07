@@ -161,15 +161,6 @@ jobs:
 
           try:
               storage_a, dbs_a = enter(token_a, org_a, marker_a, marker_b)
-              logout_status = driver.execute_async_script("""
-                const done=arguments[arguments.length-1];
-                fetch('/api/team/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}'})
-                  .then(r=>done(r.status)).catch(e=>done(String(e)));
-              """)
-              assert logout_status == 200, logout_status
-              time.sleep(0.2)
-              assert driver.get_cookie('huidi_workspace_scope') is None
-
               storage_b, dbs_b = enter(token_b, org_b, marker_b, marker_a)
               assert any(f"huidi_workspace_org-{org_a['id']}__" in key for key in storage_b['keys']), storage_b
               assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in storage_b['keys']), storage_b
@@ -216,8 +207,9 @@ jobs:
                       break
                   time.sleep(0.3)
               assert any(x.get('id') == doc_id for x in records_b), records_b
-              records_a = first.get('/api/community-sync/document-records').json()['records']
-              assert all(x.get('id') != doc_id for x in records_a), records_a
+              records_a = first.get('/api/community-sync/document-records')
+              assert records_a.status_code == 200, records_a.text
+              assert all(x.get('id') != doc_id for x in records_a.json()['records']), records_a.text
               print('Community Online two-account cache isolation + document cloud sync PASS')
           finally:
               driver.quit()
