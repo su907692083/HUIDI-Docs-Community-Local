@@ -186,9 +186,19 @@ async def _handle_company_search(request: Request) -> JSONResponse:
         req = LeadSearchRequest.model_validate(await request.json())
     except (ValidationError, ValueError, TypeError):
         return JSONResponse({"detail": "请填写产品关键词、目标市场和客户类型"}, status_code=422)
+    if not (SERPER_CONFIGURED or TAVILY_API_KEY):
+        return JSONResponse(
+            {
+                "detail": "尚未配置真实客户搜索来源。为避免把演示数据混入客户库，本次不会生成或保存模拟客户。请管理员先连接 Serper 或 Tavily。",
+                "code": "live_acquisition_provider_required",
+                "mode": "unavailable",
+                "items": [],
+            },
+            status_code=503,
+        )
     provider, raw, errors = await _company_search_with_failover(req)
     if not provider:
-        return JSONResponse({"detail": "；".join(errors) or "在线找客户服务暂时没有可用结果"}, status_code=503)
+        return JSONResponse({"detail": "；".join(errors) or "在线找客户服务暂时没有可用结果", "mode": "unavailable", "items": []}, status_code=503)
     return _persist_company_results(req, raw, provider)
 
 
@@ -296,10 +306,10 @@ async def _handle_hunter_contact(lead_id: int) -> JSONResponse | None:
 
 @app.middleware("http")
 async def legacy_acquisition_provider_fusion(request: Request, call_next):
-    """Fuse V3 acquisition providers into the current lead/contact owners only."""
+    """Fuse live acquisition providers into the current lead/contact owners only."""
     path = request.url.path
     method = request.method.upper()
-    if method == "POST" and path == "/api/leads/search" and (SERPER_CONFIGURED or TAVILY_API_KEY):
+    if method == "POST" and path == "/api/leads/search":
         return await _handle_company_search(request)
     match = re.fullmatch(r"/api/leads/(\d+)/find-contact", path)
     if method == "POST" and match and HUNTER_API_KEY:
