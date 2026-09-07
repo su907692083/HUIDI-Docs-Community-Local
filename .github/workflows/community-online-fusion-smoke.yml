@@ -4,6 +4,8 @@ on:
   pull_request:
     paths:
       - 'public/huidi-community-online-fusion.*'
+      - 'public/huidi-community-online-nav-v1.js'
+      - 'public/huidi-community-online-full-v2.*'
       - 'public/community-local-mode.js'
       - 'public/huidi-community-cloud-adapter-v1.js'
       - 'public/workspace.html'
@@ -14,6 +16,8 @@ on:
     branches: ['online/v0.1-lead-workbench']
     paths:
       - 'public/huidi-community-online-fusion.*'
+      - 'public/huidi-community-online-nav-v1.js'
+      - 'public/huidi-community-online-full-v2.*'
       - 'public/community-local-mode.js'
       - 'public/huidi-community-cloud-adapter-v1.js'
       - 'public/workspace.html'
@@ -47,6 +51,8 @@ jobs:
         run: |
           python -m unittest tests.test_community_online_fusion_contract -v
           node --check ../../public/huidi-community-online-fusion.js
+          node --check ../../public/huidi-community-online-nav-v1.js
+          node --check ../../public/huidi-community-online-full-v2.js
       - name: Start fused HUIDI workspace
         run: |
           set -euo pipefail
@@ -60,7 +66,7 @@ jobs:
           done
           cat /tmp/huidi-fusion-server.log
           exit 1
-      - name: Verify one fused workspace in Chrome
+      - name: Verify full fused workspace in Chrome
         run: |
           python - <<'PY'
           import uuid
@@ -91,7 +97,36 @@ jobs:
           options.add_argument('--disable-dev-shm-usage')
           options.add_argument('--window-size=1440,1000')
           driver = webdriver.Chrome(options=options)
-          wait = WebDriverWait(driver, 30)
+          wait = WebDriverWait(driver, 35)
+
+          def click_nav(view):
+              ok = driver.execute_script("""
+                const view=arguments[0];
+                const b=document.querySelector(`.nav-btn[data-view="${view}"]`);
+                if(!b)return false;b.click();return true;
+              """, view)
+              assert ok, f'missing nav {view}'
+              wait.until(lambda d: d.execute_script(
+                  "return document.querySelector('.view.active')?.id || ''"
+              ) == f'view-{view}')
+
+          def click_tab(view, tab, selector=None):
+              ok = driver.execute_script("""
+                const view=arguments[0],tab=arguments[1];
+                const b=document.querySelector(`#view-${view} [data-fv2-tab="${tab}"]`);
+                if(!b)return false;b.click();return true;
+              """, view, tab)
+              assert ok, f'missing tab {view}:{tab}'
+              wait.until(lambda d: d.execute_script("""
+                const view=arguments[0],tab=arguments[1];
+                return Boolean(document.querySelector(`#view-${view} [data-fv2-pane="${tab}"].active`));
+              """, view, tab))
+              if selector:
+                  wait.until(lambda d: d.execute_script(
+                      "return Boolean(document.querySelector(arguments[0]))", selector
+                  ))
+              assert len(driver.window_handles) == 1, (view, tab, driver.window_handles)
+
           try:
               driver.get(BASE + '/login')
               login = driver.execute_async_script("""
@@ -110,7 +145,9 @@ jobs:
               driver.get(BASE + '/')
               wait.until(lambda d: '/community/workspace.html' in d.current_url)
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFusion)"))
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFullV2)"))
               wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
+              wait.until(lambda d: d.execute_script("return document.body.dataset.huidiFullFusion || ''") == 'v2')
 
               snapshot = driver.execute_script("""
                 return {
@@ -122,6 +159,7 @@ jobs:
                   admin: Boolean(document.querySelector('.nav-btn[data-view="online-admin"]')),
                   today: Boolean(document.querySelector('#huidiFusionToday')),
                   mail: Boolean(document.querySelector('#huidiFusionMail')),
+                  fullTabs: document.querySelectorAll('[data-fv2-tab]').length,
                   mode: document.documentElement.dataset.huidiEdition || '',
                   scope: document.documentElement.dataset.huidiWorkspaceScope || ''
                 };
@@ -130,38 +168,59 @@ jobs:
               assert snapshot['iframeCount'] == 0, snapshot
               assert snapshot['find'] and snapshot['intel'] and snapshot['admin'], snapshot
               assert snapshot['today'] and snapshot['mail'], snapshot
+              assert snapshot['fullTabs'] >= 27, snapshot
               assert snapshot['mode'] == 'community-online', snapshot
               assert snapshot['scope'] == f"org-{org['id']}", snapshot
 
+              # Customer development: all Online customer acquisition surfaces.
+              click_nav('online-find')
+              click_tab('online-find', 'pool', '#fv2PoolTable')
+              click_tab('online-find', 'followups', '#view-online-find [data-fv2-pane="followups"] .fv2-grid')
+              click_tab('online-find', 'notifications', '#view-online-find [data-fv2-pane="notifications"] #huidiNavBack')
+              click_tab('online-find', 'map', '#view-online-find [data-fv2-pane="map"] #huidiServiceBack')
+              click_tab('online-find', 'contacts', '#view-online-find [data-fv2-pane="contacts"] #huidiNavBack')
+              click_tab('online-find', 'company', '#view-online-find [data-fv2-pane="company"] #huidiServiceBack')
+              click_tab('online-find', 'smart', '#fv2ProductBrains')
+
+              # Mail + automation: Local draft owner plus real Online mail owners.
+              click_nav('mail')
+              click_tab('mail', 'inbox', '#view-mail [data-fv2-pane="inbox"] #huidiServiceBack')
+              click_tab('mail', 'sent', '#view-mail [data-fv2-pane="sent"] #huidiServiceBack')
+              click_tab('mail', 'mailbox', '#view-mail [data-fv2-pane="mailbox"] #huidiServiceBack')
+              click_tab('mail', 'queue', '#view-mail [data-fv2-pane="queue"] #huidiServiceBack')
+              click_tab('mail', 'sequences', '#view-mail [data-fv2-pane="sequences"] #sqBack')
+
+              # Market intelligence tools.
+              click_nav('online-intel')
+              for tab in ('live','trade','tariff','fx','shipping'):
+                  click_tab('online-intel', tab, f'#view-online-intel [data-fv2-pane="{tab}"] #huidiServiceBack')
+
+              # Team + settings: native page surfaces, not legacy centered modals.
+              click_nav('online-admin')
+              click_tab('online-admin', 'team', '#view-online-admin [data-fv2-pane="team"] .fv2-panel')
+              click_tab('online-admin', 'company', '#view-online-admin [data-fv2-pane="company"] .fv2-panel')
+              click_tab('online-admin', 'sources', '#view-online-admin [data-fv2-pane="sources"] .fv2-panel')
+              click_tab('online-admin', 'notifications', '#view-online-admin [data-fv2-pane="notifications"] .fv2-panel')
+              click_tab('online-admin', 'audit', '#view-online-admin [data-fv2-pane="audit"] #auBack')
+              click_tab('online-admin', 'safety', '#view-online-admin [data-fv2-pane="safety"] .fv2-grid')
+
+              # Mature Community formal business owners still work after full fusion.
               for view, selector in (
-                  ('online-find', '#hfSearchBtn'),
-                  ('online-intel', '#hfMarkets'),
-                  ('mail', '#huidiFusionMail'),
-                  ('online-admin', '#hfAdminGrid'),
                   ('customers', '#customerRows'),
                   ('deals', '#dealRows'),
                   ('documents', '#docRows'),
               ):
-                  clicked = driver.execute_script("""
-                    const view=arguments[0];
-                    const button=document.querySelector(`.nav-btn[data-view="${view}"]`);
-                    if(!button)return false;
-                    button.click();
-                    return true;
-                  """, view)
-                  assert clicked, view
+                  click_nav(view)
                   wait.until(lambda d, s=selector: d.execute_script(
                       "return Boolean(document.querySelector(arguments[0]))", s
                   ))
-                  active = driver.execute_script(
-                      "return document.querySelector('.view.active')?.id || ''"
-                  )
-                  assert active == f'view-{view}', (view, active)
-                  assert len(driver.window_handles) == 1, (view, driver.window_handles)
+                  assert len(driver.window_handles) == 1
 
               source = driver.page_source.lower()
-              assert '127.0.0.1:8765' not in source, 'legacy local bridge leaked into fused workspace'
-              print('HUIDI Community × Online one-workspace fusion Chrome smoke PASS')
+              assert '<iframe' not in source, 'iframe leaked into fused workspace'
+              assert 'online-bridge.html' not in source, 'legacy Online bridge leaked into fused workspace'
+              assert '127.0.0.1:8765' not in source, 'legacy Local bridge leaked into fused workspace'
+              print('HUIDI Community × Online FULL capability fusion Chrome smoke PASS')
           finally:
               driver.quit()
               client.close()
@@ -173,5 +232,5 @@ jobs:
             kill "$(cat /tmp/huidi-fusion-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-fusion-server.log ]; then
-            tail -220 /tmp/huidi-fusion-server.log
+            tail -260 /tmp/huidi-fusion-server.log
           fi
