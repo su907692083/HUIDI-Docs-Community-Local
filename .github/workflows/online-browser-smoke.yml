@@ -136,10 +136,17 @@ jobs:
           options.add_argument('--disable-dev-shm-usage')
           options.add_argument('--window-size=1440,1000')
           driver = webdriver.Chrome(options=options)
-          wait = WebDriverWait(driver, 12)
+          wait = WebDriverWait(driver, 20)
           try:
               driver.get('http://127.0.0.1:18080/')
               assert driver.execute_script('return window.__huidiFriendlyAlert === true') is True
+              readiness = driver.execute_async_script('''
+                const done = arguments[arguments.length - 1];
+                fetch('/api/standalone/readiness', {credentials:'same-origin'})
+                  .then(async response => done({status: response.status, body: await response.text()}))
+                  .catch(error => done({status: 0, body: String(error)}));
+              ''')
+              assert readiness['status'] == 200, readiness
               wait.until(EC.element_to_be_clickable((By.ID, 'hsbManualLead'))).click()
               wait.until(EC.visibility_of_element_located((By.ID, 'hsbCompany'))).send_keys('Standalone Browser Buyer')
               driver.find_element(By.ID, 'hsbProduct').send_keys('stainless steel hinge')
