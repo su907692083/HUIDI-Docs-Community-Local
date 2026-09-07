@@ -142,10 +142,12 @@ def main() -> None:
             const row=[...document.querySelectorAll('.item-row')].find(r=>r.dataset.huidiProductId===id);
             const price=row?.querySelector('.i-price');
             const ctx=JSON.parse(sessionStorage.getItem('huidi_local_document_context_v2')||'null');
+            const product=ctx?.products?.[0]||{};
             return {
               route:location.pathname,
               scope:window.HUIDI_WORKSPACE_STORAGE?.scope||'',
               policy:document.documentElement.dataset.huidiFormalPriceGuard||'',
+              contextPolicy:document.documentElement.dataset.huidiFormalPriceContext||'',
               guardVersion:window.HUIDICommunityFormalPriceGuard?.version||'',
               productName:row?.querySelector('.i-name')?.value||'',
               productId:row?.dataset.huidiProductId||'',
@@ -154,7 +156,8 @@ def main() -> None:
               placeholder:price?.placeholder||'',
               title:price?.title||'',
               contextDealId:String(ctx?.dealId||''),
-              contextReferencePrice:String(ctx?.products?.[0]?.price??''),
+              contextFormalCandidate:String(product.price??''),
+              contextReferencePrice:String(product.reference_price??product.price??product.suggested_price??''),
               sourceDocumentId:String(ctx?.sourceDocumentId||''),
               iframeCount:document.querySelectorAll('iframe').length
             };
@@ -165,10 +168,12 @@ def main() -> None:
         assert snapshot["route"] == "/community/editor.html", snapshot
         assert snapshot["scope"] == f"org-{org_id}", snapshot
         assert snapshot["policy"] == "reference-only", snapshot
-        assert snapshot["guardVersion"] == "1.0.1", snapshot
+        assert snapshot["contextPolicy"] == "reference-sanitized", snapshot
+        assert snapshot["guardVersion"] == "1.1.0", snapshot
         assert snapshot["productName"] == "Reference Price Hinge", snapshot
         assert snapshot["productId"] == PRODUCT_ID, snapshot
         assert snapshot["contextDealId"] == DEAL_ID, snapshot
+        assert snapshot["contextFormalCandidate"] == "", snapshot
         assert snapshot["contextReferencePrice"] == REFERENCE_PRICE, snapshot
         assert snapshot["sourceDocumentId"] == "", snapshot
         assert snapshot["formalPrice"] == "", snapshot
@@ -188,6 +193,7 @@ def main() -> None:
                               url:location.href,
                               scope:window.HUIDI_WORKSPACE_STORAGE?.scope||'',
                               policy:document.documentElement.dataset.huidiFormalPriceGuard||'',
+                              contextPolicy:document.documentElement.dataset.huidiFormalPriceContext||'',
                               guard:Boolean(window.HUIDICommunityFormalPriceGuard),
                               rows:[...document.querySelectorAll('.item-row')].map(r=>({
                                 id:r.dataset.huidiProductId||'',name:r.querySelector('.i-name')?.value||'',
