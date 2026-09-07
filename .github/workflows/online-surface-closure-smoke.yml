@@ -1,0 +1,174 @@
+name: HUIDI Online Surface Closure Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-surface-closure-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-surface-closure-smoke.yml'
+
+jobs:
+  surface_closure:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-surface-closure-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '0'
+      DATABASE_URL: sqlite:////tmp/huidi-surface-closure.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Start Online workbench
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18081 > /tmp/huidi-surface-server.log 2>&1 &
+          echo $! > /tmp/huidi-surface-server.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18081/ > /dev/null; then exit 0; fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-surface-server.log
+          exit 1
+      - name: Verify screenshot regressions in real Chrome
+        run: |
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.common.exceptions import NoAlertPresentException
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1640,920')
+          driver = webdriver.Chrome(options=options)
+          wait = WebDriverWait(driver, 12)
+
+          def labels():
+              return [x.text.strip() for x in driver.find_elements(By.CSS_SELECTOR, '#dailyContextNav a') if x.text.strip()]
+
+          def nav(text):
+              for x in driver.find_elements(By.CSS_SELECTOR, '#dailyContextNav a'):
+                  if x.text.strip() == text:
+                      return x
+              return None
+
+          def surface_snapshot(root_sel, panel_sel, head_sel):
+              return driver.execute_script('''
+                const root=document.querySelector(arguments[0]);
+                const panel=document.querySelector(arguments[1]);
+                const head=document.querySelector(arguments[2]);
+                const close=root?.querySelector('[class$="-close"],.ss-close,.nr-close');
+                const rr=root?.getBoundingClientRect();
+                const pr=panel?.getBoundingClientRect();
+                return {
+                  parent: root?.parentElement?.id || '',
+                  position: root ? getComputedStyle(root).position : '',
+                  rootDisplay: root ? getComputedStyle(root).display : '',
+                  panelShadow: panel ? getComputedStyle(panel).boxShadow : '',
+                  ratio: rr && pr && rr.width ? pr.width / rr.width : 0,
+                  headDisplay: head ? getComputedStyle(head).display : '',
+                  closeDisplay: close ? getComputedStyle(close).display : ''
+                };
+              ''', root_sel, panel_sel, head_sel)
+
+          try:
+              driver.get('http://127.0.0.1:18081/')
+              wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '#dailyContextNav a')) >= 10)
+              time.sleep(1.2)
+
+              current = labels()
+              for duplicate in ('客户回复', '提醒方式', '邮箱设置'):
+                  assert duplicate not in current, (duplicate, current)
+              for expected in ('提醒', '收件箱', '已发送', '待发送', '自动跟进', '数据来源'):
+                  assert expected in current, (expected, current)
+
+              reminder = nav('提醒')
+              assert reminder is not None
+              reminder.click()
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#huidiNavBack.hn-page-surface')))
+              inline = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#hnTools [data-huidi-notification-routes-inline]')))
+              reminder_state = driver.execute_script('''
+                const root=document.querySelector('#huidiNavBack');
+                const modal=root?.querySelector('.hn-modal');
+                const head=root?.querySelector('.hn-head');
+                const main=root?.querySelector('.hn-main');
+                return {
+                  parent: root?.parentElement?.id || '',
+                  position: root ? getComputedStyle(root).position : '',
+                  headDisplay: head ? getComputedStyle(head).display : '',
+                  minHeight: modal ? getComputedStyle(modal).minHeight : '',
+                  mainMinHeight: main ? getComputedStyle(main).minHeight : ''
+                };
+              ''')
+              assert reminder_state['parent'] == 'huidiPageMount', reminder_state
+              assert reminder_state['position'] == 'static', reminder_state
+              assert reminder_state['headDisplay'] == 'none', reminder_state
+              assert reminder_state['minHeight'] in ('0px', '0'), reminder_state
+
+              inline.click()
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#nrBack.hpsc-surface')))
+              time.sleep(0.15)
+              nr = surface_snapshot('#nrBack', '#nrBack>.nr-modal', '#nrBack .nr-head')
+              assert nr['parent'] == 'huidiPageMount', nr
+              assert nr['position'] == 'static', nr
+              assert nr['ratio'] > 0.94, nr
+              assert nr['panelShadow'] == 'none', nr
+              assert nr['headDisplay'] == 'none', nr
+              assert nr['closeDisplay'] == 'none', nr
+
+              data_source = wait.until(lambda d: nav('数据来源'))
+              data_source.click()
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#ssBack.hpsc-surface')))
+              time.sleep(0.15)
+              ss = surface_snapshot('#ssBack', '#ssBack>.ss-modal', '#ssBack .ss-head')
+              assert ss['parent'] == 'huidiPageMount', ss
+              assert ss['position'] == 'static', ss
+              assert ss['ratio'] > 0.94, ss
+              assert ss['panelShadow'] == 'none', ss
+              assert ss['headDisplay'] == 'none', ss
+              assert ss['closeDisplay'] == 'none', ss
+
+              inbox = wait.until(lambda d: nav('收件箱'))
+              inbox.click()
+              gmail = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-connect="gmail"]')))
+              before = len(driver.find_elements(By.CSS_SELECTOR, '#huidiToastStack .huidi-toast'))
+              gmail.click()
+              wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '#huidiToastStack .huidi-toast')) > before)
+              try:
+                  alert = driver.switch_to.alert
+                  raise AssertionError(f'unexpected blocking alert: {alert.text}')
+              except NoAlertPresentException:
+                  pass
+
+              print('HUIDI surface closure Chrome smoke PASS: no duplicate nav; reminder/data-source are page surfaces; Gmail status is non-blocking')
+          finally:
+              driver.quit()
+          PY
+      - name: Stop Online workbench
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-surface-server.pid ]; then
+            kill "$(cat /tmp/huidi-surface-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-surface-server.log ]; then
+            tail -160 /tmp/huidi-surface-server.log
+          fi
