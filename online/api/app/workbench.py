@@ -5,8 +5,8 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends
-from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, exists, func, or_, select
+from sqlalchemy.orm import Session, aliased
 
 from .business_center import OnlineDeal
 from .company_settings import company_timezone, company_timezone_name
@@ -115,58 +115,82 @@ def _incoming_today(db: Session, start_utc: datetime, end_utc: datetime) -> list
     ).all()
 
 
-def _needs_reply(db: Session, rows: list[MailboxMessage]) -> list[dict[str, Any]]:
-    items: list[dict[str, Any]] = []
-    seen: set[str] = set()
-    for row in rows:
-        key = row.thread_id or f"lead:{row.lead_id}:{row.id}"
-        if key in seen:
-            continue
-        seen.add(key)
-        later_outgoing = None
-        if row.thread_id:
-            later_outgoing = db.scalar(
-                select(MailboxMessage.id)
-                .where(MailboxMessage.thread_id == row.thread_id)
-                .where(MailboxMessage.direction == "outgoing")
-                .where(MailboxMessage.received_at > row.received_at)
-                .limit(1)
-            )
-        elif row.lead_id:
-            later_outgoing = db.scalar(
-                select(MailboxMessage.id)
-                .where(MailboxMessage.lead_id == row.lead_id)
-                .where(MailboxMessage.direction == "outgoing")
-                .where(MailboxMessage.received_at > row.received_at)
-                .limit(1)
-            )
-        if later_outgoing:
-            continue
-        if row.lead_id:
-            later_delivery = db.scalar(
-                select(MailDeliveryLog.id)
-                .where(MailDeliveryLog.lead_id == row.lead_id)
-                .where(MailDeliveryLog.state == "sent")
-                .where(MailDeliveryLog.created_at > row.received_at)
-                .limit(1)
-            )
-            if later_delivery:
-                continue
-        lead = db.get(Lead, row.lead_id) if row.lead_id else None
-        items.append(
-            {
-                "id": row.id,
-                "lead_id": row.lead_id,
-                "company_name": lead.company_name if lead else "",
-                "sender": row.sender,
-                "subject": row.subject,
-                "snippet": row.snippet,
-                "thread_id": row.thread_id,
-                "received_at": row.received_at.isoformat() if row.received_at else None,
-                "needs_reply": True,
-            }
+def _unanswered_replies(db: Session, limit: int = 30) -> list[dict[str, Any]]:
+    """Return latest customer replies that still have no later response.
+
+    This queue deliberately crosses calendar-day boundaries: "received today"
+    remains a daily metric, while an unanswered customer message stays visible
+    until a later sent/synced message exists. The filtering is expressed as
+    correlated EXISTS clauses so mailbox volume does not create per-row N+1
+    lookups in the workbench.
+    """
+
+    incoming = aliased(MailboxMessage)
+    newer_incoming = aliased(MailboxMessage)
+    outgoing = aliased(MailboxMessage)
+
+    newer_customer_reply = exists(
+        select(newer_incoming.id).where(
+            newer_incoming.direction == "incoming",
+            newer_incoming.lead_id == incoming.lead_id,
+            or_(
+                newer_incoming.received_at > incoming.received_at,
+                and_(
+                    newer_incoming.received_at == incoming.received_at,
+                    newer_incoming.id > incoming.id,
+                ),
+            ),
         )
-    return items[:30]
+    ).correlate(incoming)
+
+    later_outgoing = exists(
+        select(outgoing.id).where(
+            outgoing.direction == "outgoing",
+            outgoing.received_at > incoming.received_at,
+            or_(
+                outgoing.lead_id == incoming.lead_id,
+                and_(
+                    incoming.thread_id != "",
+                    outgoing.thread_id == incoming.thread_id,
+                ),
+            ),
+        )
+    ).correlate(incoming)
+
+    later_delivery = exists(
+        select(MailDeliveryLog.id).where(
+            MailDeliveryLog.lead_id == incoming.lead_id,
+            MailDeliveryLog.state == "sent",
+            MailDeliveryLog.created_at > incoming.received_at,
+        )
+    ).correlate(incoming)
+
+    rows = db.execute(
+        select(incoming, Lead)
+        .join(Lead, Lead.id == incoming.lead_id)
+        .where(incoming.direction == "incoming")
+        .where(incoming.lead_id.is_not(None))
+        .where(~newer_customer_reply)
+        .where(~later_outgoing)
+        .where(~later_delivery)
+        .order_by(incoming.received_at.desc(), incoming.id.desc())
+        .limit(max(1, min(100, int(limit or 30))))
+    ).all()
+
+    return [
+        {
+            "id": row.id,
+            "lead_id": row.lead_id,
+            "company_name": lead.company_name,
+            "sender": row.sender,
+            "subject": row.subject,
+            "snippet": row.snippet,
+            "thread_id": row.thread_id,
+            "received_at": row.received_at.isoformat() if row.received_at else None,
+            "needs_reply": True,
+        }
+        for row, lead in rows
+    ]
 
 
 @app.get("/api/workbench/today")
@@ -179,8 +203,14 @@ def workbench_today(db: Session = Depends(get_db)):
 
     followups = _today_followups(db, end_utc, zone)
     deal_tasks = _today_deal_tasks(db, end_utc, zone)
-    incoming = _incoming_today(db, start_utc, end_utc)
-    replies = _needs_reply(db, incoming)
+    incoming_today = _incoming_today(db, start_utc, end_utc)
+    replies = _unanswered_replies(db)
+    replies_today = sum(
+        1
+        for row in replies
+        if row.get("received_at")
+        and start_utc <= datetime.fromisoformat(str(row["received_at"])) <= end_utc
+    )
 
     sent_today = int(
         db.scalar(
@@ -231,8 +261,8 @@ def workbench_today(db: Session = Depends(get_db)):
             "pending": queued,
             "mailboxes": mailbox_count,
             "connected_mailboxes": connected_mailboxes,
-            "replies_received_today": len(incoming),
-            "replies_today": len(replies),
+            "replies_received_today": len(incoming_today),
+            "replies_today": replies_today,
             "needs_reply": len(replies),
         },
         "followups": followups,
