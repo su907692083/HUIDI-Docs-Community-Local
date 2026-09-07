@@ -63,10 +63,10 @@ jobs:
           wait = WebDriverWait(driver, 12)
 
           def labels():
-              return [x.text.strip() for x in driver.find_elements(By.CSS_SELECTOR, '#dailyContextNav a') if x.text.strip()]
+              return [x.text.strip() for x in driver.find_elements(By.CSS_SELECTOR, '.side .nav a') if x.text.strip()]
 
           def nav(text):
-              for x in driver.find_elements(By.CSS_SELECTOR, '#dailyContextNav a'):
+              for x in driver.find_elements(By.CSS_SELECTOR, '.side .nav a'):
                   if x.text.strip() == text:
                       return x
               return None
@@ -92,7 +92,7 @@ jobs:
 
           try:
               driver.get('http://127.0.0.1:18081/')
-              wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '#dailyContextNav a')) >= 10)
+              wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.side .nav a')) >= 10)
               time.sleep(1.2)
 
               current = labels()
