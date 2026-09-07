@@ -44,6 +44,18 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         self.assertIn("scheduleRefreshBurst", source)
         self.assertIn("[data-huidi-sequences]", source)
 
+    def test_world_map_enhancers_are_action_driven_not_global_dom_watchers(self):
+        world = (WEB / "world-intelligence-map.js").read_text(encoding="utf-8")
+        country = (WEB / "world-country-interaction.js").read_text(encoding="utf-8")
+        for source in (world, country):
+            self.assertNotIn("MutationObserver", source)
+            self.assertNotIn("observe(document.body", source)
+            self.assertIn("window.addEventListener('click'", source)
+        self.assertIn("scheduleInstallButtons", world)
+        self.assertIn("HUIDIWorldCountryInteraction?.enhance", world)
+        self.assertIn("leaveIntelligencePage", world)
+        self.assertIn("scheduleBurst", country)
+
     def test_legacy_mail_usability_layer_yields_navigation_to_workspace_router(self):
         source = (WEB / "workflow-usability-closure.js").read_text(encoding="utf-8")
         self.assertIn("if(window.HUIDIWorkspacePages?.open)return", source)
