@@ -11,23 +11,24 @@ function installScopedBrowserStorage(){
   const prefix=`huidi_workspace_${ONLINE.scope}__`;
   const shouldScope=key=>/^(?:huidi_|flypigbox_)/i.test(String(key||''));
   const scopedKey=key=>{const value=String(key||'');if(value.startsWith(prefix))return value;return shouldScope(value)?prefix+value:value};
-  window.HUIDI_WORKSPACE_STORAGE=Object.freeze({scope:ONLINE.scope,prefix,scopedKey});
+  const isWorkspaceStorage=storage=>storage===window.localStorage||storage===window.sessionStorage;
+  window.HUIDI_WORKSPACE_STORAGE=Object.freeze({scope:ONLINE.scope,prefix,scopedKey,storages:['localStorage','sessionStorage']});
   try{
     const proto=window.Storage?.prototype;
     if(proto&&!proto.__huidiWorkspaceScoped){
       const getItem=proto.getItem,setItem=proto.setItem,removeItem=proto.removeItem,clear=proto.clear,keyAt=proto.key;
       Object.defineProperty(proto,'__huidiWorkspaceScoped',{value:true,configurable:false});
-      proto.getItem=function(key){return this===window.localStorage?getItem.call(this,scopedKey(key)):getItem.call(this,key)};
-      proto.setItem=function(key,value){return this===window.localStorage?setItem.call(this,scopedKey(key),value):setItem.call(this,key,value)};
-      proto.removeItem=function(key){return this===window.localStorage?removeItem.call(this,scopedKey(key)):removeItem.call(this,key)};
+      proto.getItem=function(key){return isWorkspaceStorage(this)?getItem.call(this,scopedKey(key)):getItem.call(this,key)};
+      proto.setItem=function(key,value){return isWorkspaceStorage(this)?setItem.call(this,scopedKey(key),value):setItem.call(this,key,value)};
+      proto.removeItem=function(key){return isWorkspaceStorage(this)?removeItem.call(this,scopedKey(key)):removeItem.call(this,key)};
       proto.clear=function(){
-        if(this!==window.localStorage)return clear.call(this);
+        if(!isWorkspaceStorage(this))return clear.call(this);
         const owned=[];
         for(let i=0;i<this.length;i++){const key=keyAt.call(this,i);if(key&&key.startsWith(prefix))owned.push(key)}
         owned.forEach(key=>removeItem.call(this,key));
       };
     }
-  }catch(error){console.error('HUIDI workspace localStorage scope failed',error)}
+  }catch(error){console.error('HUIDI workspace browser-storage scope failed',error)}
   try{
     const proto=window.IDBFactory?.prototype;
     if(proto&&!proto.__huidiWorkspaceScoped){
@@ -41,6 +42,38 @@ function installScopedBrowserStorage(){
   }catch(error){console.error('HUIDI workspace IndexedDB scope failed',error)}
 }
 installScopedBrowserStorage();
+
+/* Online direct-document gate. The published Local editor already owns
+   localDoc -> HUIDILocalDB.getDocument -> applyState. We only delay that one
+   read until the current tenant's cloud records have been hydrated into the
+   scoped IndexedDB, so the mature editor restore path stays authoritative. */
+function installCloudDocumentReadGate(){
+  if(!ONLINE)return;
+  const started=Date.now();
+  const install=()=>{
+    const db=window.HUIDILocalDB;
+    if(!db?.getDocument){if(Date.now()-started<10000)setTimeout(install,8);return}
+    if(db.__huidiCommunityCloudReadGate)return;
+    const nativeGet=db.getDocument.bind(db);
+    let settled=false;
+    let resolveReady=()=>{};
+    const ready=new Promise(resolve=>{resolveReady=resolve});
+    const finish=()=>{if(settled)return;settled=true;resolveReady()};
+    const probe=()=>{
+      const status=document.documentElement.dataset.huidiCloud||'';
+      if(status==='ready'||status==='error')return finish();
+      if(Date.now()-started>12000)return finish();
+      setTimeout(probe,20);
+    };
+    window.addEventListener('HUIDI:community-cloud-ready',finish,{once:true});
+    setTimeout(probe,0);
+    Object.defineProperty(db,'__huidiCommunityCloudReadGate',{value:true,configurable:false});
+    db.getDocument=async function(...args){await ready;return nativeGet(...args)};
+    window.HUIDI_COMMUNITY_DOCUMENT_READ_READY=ready;
+  };
+  install();
+}
+installCloudDocumentReadGate();
 
 const LOCAL=Object.freeze({edition:'community-local',version:'1.2.0-rc16.29',localOnly:true,strictNetwork:true});
 window.HUIDI_COMMUNITY=LOCAL; window.HUIDI_LOCAL_ONLY=LOCAL;
@@ -123,6 +156,9 @@ const loadCloudAdapter=()=>{
   script.dataset.huidiCommunityCloud='1';
   document.head.appendChild(script);
 };
+// Start tenant hydration as early as possible. The adapter itself waits for
+// HUIDILocalCore/HUIDILocalDB, so there is no need to defer it to DOMContentLoaded.
+if(ONLINE)loadCloudAdapter();
 const boot=()=>{
   document.documentElement.dataset.huidiEdition=ONLINE?'community-online':'community-local';
   if(ONLINE)document.documentElement.dataset.huidiWorkspaceScope=ONLINE.scope;
