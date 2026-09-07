@@ -26,6 +26,16 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         self.assertNotIn("n.textContent=n.textContent.replace", source)
         self.assertIn("if(n.textContent!==next)n.textContent=next", source)
 
+    def test_mail_enhancers_are_action_driven_not_global_dom_watchers(self):
+        pagination = (WEB / "mail-list-pagination-ui.js").read_text(encoding="utf-8")
+        threads = (WEB / "mail-thread-ui.js").read_text(encoding="utf-8")
+        for source in (pagination, threads):
+            self.assertNotIn("MutationObserver", source)
+            self.assertNotIn("observe(document.body", source)
+            self.assertIn("window.addEventListener('click'", source)
+        self.assertIn("scheduleRefreshBurst", pagination)
+        self.assertIn("scheduleEnsureBurst", threads)
+
     def test_layout_enhancement_owners_do_not_watch_the_whole_document(self):
         for name in ["workflow-usability-closure.js", "secondary-page-closure.js"]:
             source = (WEB / name).read_text(encoding="utf-8")
