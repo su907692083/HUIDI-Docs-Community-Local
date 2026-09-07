@@ -3,7 +3,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sqlalchemy import inspect
+from sqlalchemy import create_engine, inspect, text
 
 os.environ.setdefault("HUIDI_DISABLE_BACKGROUND_JOBS", "1")
 
@@ -39,11 +39,14 @@ class SchemaMigrationTests(unittest.TestCase):
                     status = tenant_schema_status(organization_id)
                     self.assertTrue(status["up_to_date"])
                     self.assertEqual(status["current_revision"], LATEST_SCHEMA_REVISION)
-                    tables = set(inspect(engine).get_table_names())
+                    inspector = inspect(engine)
+                    tables = set(inspector.get_table_names())
                     self.assertIn("huidi_schema_migrations", tables)
                     self.assertIn("online_intelligence_projections", tables)
                     self.assertIn("intelligence_feed_sources", tables)
                     self.assertIn("lead_industry_preferences", tables)
+                    document_columns = {x["name"] for x in inspector.get_columns("online_document_refs")}
+                    self.assertIn("payload_json", document_columns)
                 finally:
                     reset_current_organization(token)
 
@@ -63,6 +66,28 @@ class SchemaMigrationTests(unittest.TestCase):
                 self.assertEqual(second["pending"], [])
             finally:
                 reset_current_organization(token)
+
+    def test_legacy_document_ref_table_is_upgraded_in_place(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            engine = create_engine(f"sqlite:///{Path(tmp) / 'legacy-document.db'}")
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "CREATE TABLE online_document_refs ("
+                        "id INTEGER PRIMARY KEY, deal_id INTEGER NOT NULL, "
+                        "document_type VARCHAR(80) NOT NULL, document_id VARCHAR(160) NOT NULL DEFAULT '', "
+                        "state VARCHAR(40) NOT NULL DEFAULT 'draft', title VARCHAR(255) NOT NULL DEFAULT '', "
+                        "created_at DATETIME, updated_at DATETIME)"
+                    )
+                )
+            before = {x["name"] for x in inspect(engine).get_columns("online_document_refs")}
+            self.assertNotIn("payload_json", before)
+            first = apply_schema_migrations(engine)
+            after = {x["name"] for x in inspect(engine).get_columns("online_document_refs")}
+            self.assertIn("payload_json", after)
+            self.assertTrue(first["up_to_date"])
+            second = apply_schema_migrations(engine)
+            self.assertEqual(second["newly_applied"], [])
 
 
 if __name__ == "__main__":
