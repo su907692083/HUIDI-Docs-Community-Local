@@ -5,9 +5,9 @@ if(!online?.enabled||window.HUIDICommunityOnlineNav)return;
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const VIEWS={
-  'online-find':{label:'找客户',sub:'真实搜索、联系人、转询盘',icon:'i-users'},
-  'online-intel':{label:'市场情报',sub:'全球市场、新闻、已有客户',icon:'i-catalog'},
-  'online-admin':{label:'团队与服务',sub:'工作区、数据源、连接状态',icon:'i-help'}
+  'online-find':{label:'客户开发',sub:'找客户、地图、背调、联系人',icon:'i-users'},
+  'online-intel':{label:'市场情报',sub:'全球市场、贸易、关税、汇率、物流',icon:'i-catalog'},
+  'online-admin':{label:'团队与设置',sub:'团队、公司、来源、提醒、备份',icon:'i-help'}
 };
 function icon(id){return `<svg class="ui-icon"><use href="./assets/brand/huidi-local-icons.svg#${id}"></use></svg>`}
 function makeButton(view){
@@ -46,7 +46,7 @@ function ensureNav(){
   if(!intel){intel=makeButton('online-intel');insertAfter(find,intel)}
   let admin=$('.nav-btn[data-view="online-admin"]');
   if(!admin){admin=makeButton('online-admin');toolsNav.insertBefore(admin,help)}
-  [find,intel,admin].forEach(bindButton);
+  for(const b of [find,intel,admin]){const cfg=VIEWS[b.dataset.view],label=b.querySelector('.nav-copy b'),sub=b.querySelector('.nav-copy small');if(label)label.textContent=cfg.label;if(sub)sub.textContent=cfg.sub;bindButton(b)}
   document.body.dataset.huidiOnlineNav='ready';
   return true;
 }
@@ -57,5 +57,5 @@ function boot(){
   window.addEventListener('HUIDI:closure-rendered',ensureNav);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDICommunityOnlineNav=Object.freeze({version:'1.0.0',ensureNav,activate});
+window.HUIDICommunityOnlineNav=Object.freeze({version:'1.1.0',ensureNav,activate});
 })();
