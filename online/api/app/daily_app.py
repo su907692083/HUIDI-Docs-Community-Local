@@ -55,6 +55,10 @@ from . import workbench  # noqa: F401,E402
 from . import growth_funnel  # noqa: F401,E402
 from . import audit_log  # noqa: F401,E402
 from . import team_access  # noqa: F401,E402
+# Public authentication extends the existing TeamMember / Organization session
+# owner. Registration creates organization #2+ only; business data remains routed
+# through tenant_storage and never creates a second customer/deal data plane.
+from . import auth_portal  # noqa: F401,E402
 from . import production_readiness  # noqa: F401,E402
 from . import acquisition_status_bridge  # noqa: F401,E402
 from . import tenant_jobs  # noqa: F401,E402
