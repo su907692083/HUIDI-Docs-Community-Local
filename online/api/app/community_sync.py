@@ -527,9 +527,8 @@ def _save_deal(
     _unarchive(db, "deal", client_id, stable_local_id, row.id)
 
     selected = [_clean(x, 160) for x in (raw.get("product_ids") or []) if _clean(x, 160)]
-    for link in db.scalars(select(CommunityDealProductLink).where(CommunityDealProductLink.deal_id == row.id)).all():
-        db.delete(link)
     selected_rows: list[ProductBrainRecord] = []
+    desired_by_brain: dict[str, ProductBrainRecord] = {}
     for product_id in dict.fromkeys(selected):
         product = product_lookup.get(product_id)
         if not product:
@@ -539,7 +538,19 @@ def _save_deal(
         if not product:
             continue
         selected_rows.append(product)
-        db.add(CommunityDealProductLink(deal_id=row.id, brain_id=product.brain_id, created_at=_now()))
+        desired_by_brain[product.brain_id] = product
+
+    existing_links = db.scalars(
+        select(CommunityDealProductLink).where(CommunityDealProductLink.deal_id == row.id)
+    ).all()
+    existing_by_brain = {link.brain_id: link for link in existing_links}
+    for brain_id, link in existing_by_brain.items():
+        if brain_id not in desired_by_brain:
+            db.delete(link)
+    for brain_id in desired_by_brain:
+        if brain_id not in existing_by_brain:
+            db.add(CommunityDealProductLink(deal_id=row.id, brain_id=brain_id, created_at=_now()))
+
     explicit_keyword = _clean(raw.get("product_keyword"), 255)
     if explicit_keyword:
         row.product_keyword = explicit_keyword
