@@ -1,0 +1,177 @@
+name: HUIDI Community Online Fusion Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'public/huidi-community-online-fusion.*'
+      - 'public/community-local-mode.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/workspace.html'
+      - 'online/api/app/community_surface.py'
+      - 'online/api/tests/test_community_online_fusion_contract.py'
+      - '.github/workflows/community-online-fusion-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/huidi-community-online-fusion.*'
+      - 'public/community-local-mode.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/workspace.html'
+      - 'online/api/app/community_surface.py'
+      - 'online/api/tests/test_community_online_fusion_contract.py'
+      - '.github/workflows/community-online-fusion-smoke.yml'
+
+jobs:
+  fused_workspace:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-community-fusion-browser-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '1'
+      HUIDI_SIGNUP_ENABLED: '1'
+      HUIDI_COMMUNITY_SURFACE: '1'
+      DATABASE_URL: sqlite:////tmp/huidi-community-fusion-smoke.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Verify fusion contracts and JavaScript
+        run: |
+          python -m unittest tests.test_community_online_fusion_contract -v
+          node --check ../../public/huidi-community-online-fusion.js
+      - name: Start fused HUIDI workspace
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18083 > /tmp/huidi-fusion-server.log 2>&1 &
+          echo $! > /tmp/huidi-fusion-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:18083/login > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-fusion-server.log
+          exit 1
+      - name: Verify one fused workspace in Chrome
+        run: |
+          python - <<'PY'
+          import uuid
+          import httpx
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.support.ui import WebDriverWait
+
+          BASE = 'http://127.0.0.1:18083'
+          PASSWORD = 'fusion-browser-password-2026'
+          email = f'fusion-{uuid.uuid4().hex[:12]}@example.test'
+
+          client = httpx.Client(base_url=BASE, follow_redirects=False, timeout=20)
+          registered = client.post('/api/auth/register', json={
+              'account_type': 'individual',
+              'display_name': 'Fusion Browser',
+              'organization_name': '',
+              'email': email,
+              'password': PASSWORD,
+          })
+          assert registered.status_code == 200, registered.text
+          org = registered.json()['organization']
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+          driver = webdriver.Chrome(options=options)
+          wait = WebDriverWait(driver, 30)
+          try:
+              driver.get(BASE + '/login')
+              login = driver.execute_async_script("""
+                const email=arguments[0],password=arguments[1],done=arguments[arguments.length-1];
+                fetch('/api/auth/login',{
+                  method:'POST',credentials:'same-origin',
+                  headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({email,password})
+                }).then(async r=>done({status:r.status,body:await r.text()}))
+                  .catch(e=>done({status:0,body:String(e)}));
+              """, email, PASSWORD)
+              assert login['status'] == 200, login
+              scope = driver.get_cookie('huidi_workspace_scope')
+              assert scope and scope['value'] == f"org-{org['id']}", (scope, driver.get_cookies())
+
+              driver.get(BASE + '/')
+              wait.until(lambda d: '/community/workspace.html' in d.current_url)
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFusion)"))
+              wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
+
+              snapshot = driver.execute_script("""
+                return {
+                  title: document.title,
+                  mainCount: document.querySelectorAll('.main').length,
+                  iframeCount: document.querySelectorAll('iframe').length,
+                  find: Boolean(document.querySelector('.nav-btn[data-view="online-find"]')),
+                  intel: Boolean(document.querySelector('.nav-btn[data-view="online-intel"]')),
+                  admin: Boolean(document.querySelector('.nav-btn[data-view="online-admin"]')),
+                  today: Boolean(document.querySelector('#huidiFusionToday')),
+                  mail: Boolean(document.querySelector('#huidiFusionMail')),
+                  mode: document.documentElement.dataset.huidiEdition || '',
+                  scope: document.documentElement.dataset.huidiWorkspaceScope || ''
+                };
+              """)
+              assert snapshot['mainCount'] == 1, snapshot
+              assert snapshot['iframeCount'] == 0, snapshot
+              assert snapshot['find'] and snapshot['intel'] and snapshot['admin'], snapshot
+              assert snapshot['today'] and snapshot['mail'], snapshot
+              assert snapshot['mode'] == 'community-online', snapshot
+              assert snapshot['scope'] == f"org-{org['id']}", snapshot
+
+              for view, selector in (
+                  ('online-find', '#hfSearchBtn'),
+                  ('online-intel', '#hfMarkets'),
+                  ('mail', '#huidiFusionMail'),
+                  ('online-admin', '#hfAdminGrid'),
+                  ('customers', '#customerRows'),
+                  ('deals', '#dealRows'),
+                  ('documents', '#documentRows'),
+              ):
+                  clicked = driver.execute_script("""
+                    const view=arguments[0];
+                    const button=document.querySelector(`.nav-btn[data-view="${view}"]`);
+                    if(!button)return false;
+                    button.click();
+                    return true;
+                  """, view)
+                  assert clicked, view
+                  wait.until(lambda d, s=selector: d.execute_script(
+                      "return Boolean(document.querySelector(arguments[0]))", s
+                  ))
+                  active = driver.execute_script(
+                      "return document.querySelector('.view.active')?.id || ''"
+                  )
+                  assert active == f'view-{view}', (view, active)
+                  assert len(driver.window_handles) == 1, (view, driver.window_handles)
+
+              source = driver.page_source.lower()
+              assert '127.0.0.1:8765' not in source, 'legacy local bridge leaked into fused workspace'
+              print('HUIDI Community × Online one-workspace fusion Chrome smoke PASS')
+          finally:
+              driver.quit()
+              client.close()
+          PY
+      - name: Stop HUIDI
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-fusion-server.pid ]; then
+            kill "$(cat /tmp/huidi-fusion-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-fusion-server.log ]; then
+            tail -220 /tmp/huidi-fusion-server.log
+          fi
