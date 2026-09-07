@@ -84,11 +84,23 @@ jobs:
               assert '下载 HTML' in driver.find_element(By.ID,'huidiPageMount').text
               assert '127.0.0.1:8765' not in driver.current_url
 
-              driver.execute_script("""
-                document.querySelector('[data-huidi-contacts]').click();
-                document.querySelector('[data-huidi-product]').click();
-                document.querySelector('[data-huidi-sequences]').click();
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-contacts]').click()
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品资料'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#pbBackdrop')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#pbBackdrop [data-pbf="name"]')))
+              product_surface = driver.execute_script("""
+                const node=document.querySelector('#pbBackdrop');
+                return {
+                  open: node?.classList.contains('open'),
+                  nativePage: node?.classList.contains('pb-page-surface'),
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
               """)
+              assert product_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, product_surface
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-sequences]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'自动跟进'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#sqBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.text_to_be_present_in_element((By.ID,'sqMain'),'跟进内容'))
@@ -148,7 +160,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI native follow-up page + native business page + catalog + document PASS')
+              print('HUIDI native product page + follow-up page + business page + document PASS')
           finally:
               driver.quit()
           PY
