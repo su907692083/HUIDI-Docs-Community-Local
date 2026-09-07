@@ -102,23 +102,26 @@ jobs:
 
               row = wait.until(EC.element_to_be_clickable((By.XPATH,"//tr[@data-deal][contains(.,'Router Smoke Buyer')]")))
               row.click()
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#huidiBusinessMain .hb-detail')))
               quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR,'[data-make-doc="quotation"]')))
               handles_before = list(driver.window_handles)
               quote.click()
               WebDriverWait(driver,5).until(EC.alert_is_present())
               driver.switch_to.alert.accept()
-              wait.until(EC.presence_of_element_located((By.ID,'hwpDocumentFrame')))
+              frame = wait.until(EC.presence_of_element_located((By.ID,'hwpDocumentFrame')))
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'报价单'))
               assert driver.window_handles == handles_before, (handles_before, driver.window_handles)
               assert 'page=quotation' in driver.current_url, driver.current_url
-              frame_src = driver.find_element(By.ID,'hwpDocumentFrame').get_attribute('src')
+              frame_src = frame.get_attribute('src')
               assert '/documents/online/' in frame_src, frame_src
               assert '8765' not in frame_src, frame_src
               assert driver.execute_script("return document.querySelector('#huidiBusinessBack')?.classList.contains('open')") is False
 
-              driver.switch_to.frame(driver.find_element(By.ID,'hwpDocumentFrame'))
-              wait.until(EC.text_to_be_present_in_element((By.TAG_NAME,'body'),'Router Smoke Buyer'))
-              wait.until(EC.text_to_be_present_in_element((By.TAG_NAME,'body'),'打印 / 另存 PDF'))
+              driver.switch_to.frame(frame)
+              wait.until(lambda d: d.find_element(By.CSS_SELECTOR,'[data-k="buyer"]').get_attribute('value') == 'Router Smoke Buyer')
+              assert driver.find_element(By.CSS_SELECTOR,'[data-k="product"]').get_attribute('value') == 'Router Hinge'
+              assert driver.find_element(By.CSS_SELECTOR,'[data-k="unit_price"]').get_attribute('value') == ''
+              assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
               print('HUIDI single-workspace routing + native catalog + native document PASS')
