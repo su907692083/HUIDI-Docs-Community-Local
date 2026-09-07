@@ -147,7 +147,16 @@ jobs:
               driver.find_element(By.CSS_SELECTOR, '[data-hsb-inquiry]').click()
               wait.until(EC.alert_is_present()).accept()
 
-              wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open')))
+              wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open.hb-page-surface')))
+              surface = driver.execute_script("""
+                const node=document.querySelector('#huidiBusinessBack');
+                return {
+                  parent: node?.parentElement?.id || '',
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
+              """)
+              assert surface == {'parent': 'huidiPageMount', 'legacyDock': False, 'position': 'static'}, surface
               rows = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr[data-deal]')))
               target = next((row for row in rows if 'Standalone Browser Buyer' in row.text), rows[0])
               target.click()
@@ -170,7 +179,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME, 'body').text
               assert 'online-bridge.html' not in driver.page_source
               driver.switch_to.default_content()
-              print('HUIDI standalone business + stable same-workspace native quotation browser PASS')
+              print('HUIDI standalone -> native business page -> quotation PASS')
           finally:
               driver.quit()
           PY
