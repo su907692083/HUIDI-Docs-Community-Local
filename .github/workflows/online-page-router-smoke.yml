@@ -102,9 +102,9 @@ jobs:
 
               row = wait.until(EC.element_to_be_clickable((By.XPATH,"//tr[@data-deal][contains(.,'Router Smoke Buyer')]")))
               row.click()
-              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiBusinessMain'),'继续制作单据'))
+              quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR,'[data-make-doc="quotation"]')))
               handles_before = list(driver.window_handles)
-              driver.find_element(By.CSS_SELECTOR,'[data-make-doc="quotation"]').click()
+              quote.click()
               WebDriverWait(driver,5).until(EC.alert_is_present())
               driver.switch_to.alert.accept()
               wait.until(EC.presence_of_element_located((By.ID,'hwpDocumentFrame')))
