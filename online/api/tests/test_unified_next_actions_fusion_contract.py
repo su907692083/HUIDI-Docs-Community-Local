@@ -42,43 +42,39 @@ class UnifiedNextActionsFusionContractTest(unittest.TestCase):
         self.assertNotIn("window.open", self.fusion)
         self.assertNotIn("location.href", self.fusion)
 
-    def test_duplicate_inbox_is_collapsed_to_customer_reply_entry(self) -> None:
+    def test_duplicate_inbox_is_collapsed_to_existing_runtime_owner(self) -> None:
         self.assertIn("hideDuplicateInbox", self.fusion)
         self.assertIn("客户回复", self.fusion)
         self.assertIn("收件箱", self.fusion)
         self.assertIn("link.hidden=true", self.fusion)
 
-    def test_low_frequency_navigation_uses_native_dropdowns(self) -> None:
+    def test_low_frequency_navigation_has_compact_shortcuts(self) -> None:
         self.assertIn("navGroups", self.fusion)
         self.assertIn("document.createElement('details')", self.fusion)
-        self.assertIn("<summary>", self.fusion)
-        self.assertIn("compactNavigation", self.fusion)
-        self.assertIn("revealActiveGroup", self.fusion)
-        for label in ["背调 / 联系人", "发送与设置", "贸易 / 关税 / 汇率 / 物流", "设置与记录"]:
+        self.assertIn("document.createElement('button')", self.fusion)
+        self.assertIn("huf-nav-proxy", self.fusion)
+        self.assertIn("huf-compact", self.fusion)
+        self.assertIn("grid-template-columns:repeat(2", self.fusion)
+        for label in ["背调 / 联系人快捷选择", "邮件工具快捷选择", "贸易工具快捷选择", "管理快捷选择"]:
             self.assertIn(label, self.fusion)
-        for selector in [
-            "[data-huidi-service=\"company\"]",
-            "[data-huidi-contacts]",
-            "[data-huidi-service=\"queue\"]",
-            "[data-huidi-sequences]",
-            "[data-huidi-service=\"trade\"]",
-            "[data-huidi-service=\"tariff\"]",
-            "[data-huidi-service=\"fx\"]",
-            "[data-huidi-service=\"shipping\"]",
-            "[data-huidi-audit]",
-        ]:
-            self.assertIn(selector, self.fusion)
 
-    def test_dropdowns_move_existing_links_instead_of_cloning_routes(self) -> None:
-        self.assertIn("list.appendChild(link)", self.fusion)
+    def test_canonical_navigation_is_not_moved_into_closed_dropdowns(self) -> None:
+        self.assertIn("button._hufTarget=link", self.fusion)
+        self.assertIn("link.click()", self.fusion)
+        self.assertNotIn("list.appendChild(link)", self.fusion)
         self.assertNotIn("cloneNode", self.fusion)
-        self.assertNotIn("innerHTML+=", self.fusion)
         self.assertNotIn("history.pushState", self.fusion)
         self.assertNotIn("history.replaceState", self.fusion)
+        self.assertNotIn("data-huidi-route=", self.fusion)
 
-    def test_business_context_loads_fusion_once_with_new_cache_key(self) -> None:
+    def test_runtime_repair_restores_links_from_failed_legacy_dropdown_shape(self) -> None:
+        self.assertIn("repairMovedAnchors", self.fusion)
+        self.assertIn("details.insertAdjacentElement('beforebegin',link)", self.fusion)
+        self.assertIn("details.remove()", self.fusion)
+
+    def test_business_context_loads_safe_fusion_once_with_new_cache_key(self) -> None:
         self.assertIn("data-huidi-unified-next", self.context)
-        self.assertIn("/assets/unified-next-actions-fusion.js?v=HUIDI-UNIFIED-NEXT-2", self.context)
+        self.assertIn("/assets/unified-next-actions-fusion.js?v=HUIDI-UNIFIED-NEXT-3", self.context)
         self.assertIn("window.HUIDIUnifiedNextActionsFusion", self.context)
 
 
