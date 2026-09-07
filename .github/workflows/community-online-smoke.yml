@@ -6,6 +6,7 @@ on:
       - 'public/**'
       - 'online/api/app/community_*'
       - 'online/api/app/workspace_scope.py'
+      - 'online/api/app/auth_portal.py'
       - 'online/api/app/daily_app.py'
       - 'online/api/tests/test_community_*'
       - '.github/workflows/community-online-smoke.yml'
@@ -15,6 +16,7 @@ on:
       - 'public/**'
       - 'online/api/app/community_*'
       - 'online/api/app/workspace_scope.py'
+      - 'online/api/app/auth_portal.py'
       - 'online/api/app/daily_app.py'
       - 'online/api/tests/test_community_*'
       - '.github/workflows/community-online-smoke.yml'
@@ -70,6 +72,7 @@ jobs:
           from selenium.webdriver.support.ui import WebDriverWait
 
           BASE = 'http://127.0.0.1:18082'
+          PASSWORD = 'community-browser-password-2026'
 
           def register(label):
               client = httpx.Client(base_url=BASE, follow_redirects=False, timeout=20)
@@ -79,13 +82,13 @@ jobs:
                   'display_name': label,
                   'organization_name': '',
                   'email': email,
-                  'password': 'community-browser-password-2026',
+                  'password': PASSWORD,
               })
               assert response.status_code == 200, response.text
               payload = response.json()
-              token = client.cookies.get('huidi_team_session')
-              assert token, client.cookies
-              return client, token, payload['organization']
+              assert client.cookies.get('huidi_team_session'), client.cookies
+              assert client.cookies.get('huidi_workspace_scope') == f"org-{payload['organization']['id']}", client.cookies
+              return client, email, payload['organization']
 
           def seed(client, marker):
               response = client.put('/api/community-sync/state', json={
@@ -112,8 +115,8 @@ jobs:
               deal = next(x for x in body['deals'] if marker in x.get('title', ''))
               return body, customer, deal
 
-          first, token_a, org_a = register('A')
-          second, token_b, org_b = register('B')
+          first, email_a, org_a = register('A')
+          second, email_b, org_b = register('B')
           assert org_a['id'] != org_b['id'], (org_a, org_b)
           marker_a = 'A' + uuid.uuid4().hex[:8]
           marker_b = 'B' + uuid.uuid4().hex[:8]
@@ -127,12 +130,26 @@ jobs:
           options.add_argument('--disable-dev-shm-usage')
           options.add_argument('--window-size=1440,1000')
           driver = webdriver.Chrome(options=options)
-          wait = WebDriverWait(driver, 20)
+          wait = WebDriverWait(driver, 25)
 
-          def enter(token, org, marker, forbidden):
+          def enter(email, org, marker, forbidden):
               driver.get(BASE + '/login')
               driver.delete_all_cookies()
-              driver.add_cookie({'name': 'huidi_team_session', 'value': token, 'path': '/'})
+              login = driver.execute_async_script("""
+                const email=arguments[0],password=arguments[1],done=arguments[arguments.length-1];
+                fetch('/api/auth/login',{
+                  method:'POST',
+                  credentials:'same-origin',
+                  headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({email,password})
+                }).then(async r=>done({status:r.status,body:await r.text()})).catch(e=>done({status:0,body:String(e)}));
+              """, email, PASSWORD)
+              assert login['status'] == 200, login
+              session = driver.get_cookie('huidi_team_session')
+              scope = driver.get_cookie('huidi_workspace_scope')
+              assert session, driver.get_cookies()
+              assert scope and scope['value'] == f"org-{org['id']}", (scope, driver.get_cookies())
+
               driver.get(BASE + '/')
               wait.until(lambda d: '/community/workspace.html' in d.current_url)
               wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
@@ -160,8 +177,8 @@ jobs:
               return storage, dbs
 
           try:
-              storage_a, dbs_a = enter(token_a, org_a, marker_a, marker_b)
-              storage_b, dbs_b = enter(token_b, org_b, marker_b, marker_a)
+              storage_a, dbs_a = enter(email_a, org_a, marker_a, marker_b)
+              storage_b, dbs_b = enter(email_b, org_b, marker_b, marker_a)
               assert any(f"huidi_workspace_org-{org_a['id']}__" in key for key in storage_b['keys']), storage_b
               assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in storage_b['keys']), storage_b
               assert any(f'org-{org_a["id"]}' in name for name in dbs_b), (dbs_a, dbs_b)
@@ -210,7 +227,7 @@ jobs:
               records_a = first.get('/api/community-sync/document-records')
               assert records_a.status_code == 200, records_a.text
               assert all(x.get('id') != doc_id for x in records_a.json()['records']), records_a.text
-              print('Community Online two-account cache isolation + document cloud sync PASS')
+              print('Community Online real-login two-account cache isolation + document cloud sync PASS')
           finally:
               driver.quit()
               first.close()
