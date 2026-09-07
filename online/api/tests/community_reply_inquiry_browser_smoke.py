@@ -288,10 +288,18 @@ def main() -> None:
         ), ui
         assert len(driver.window_handles) == 1, driver.window_handles
 
+        wait.until(
+            lambda d: d.execute_script(
+                """
+                const b=document.querySelector('[data-hdw-prepare-inquiry]');
+                return Boolean(b && !b.disabled);
+                """
+            )
+        )
         clicked = driver.execute_script(
             """
             const b=document.querySelector('[data-hdw-prepare-inquiry]');
-            if(!b)return false;
+            if(!b||b.disabled)return false;
             b.click();
             return true;
             """
@@ -344,6 +352,7 @@ def main() -> None:
         )
         assert local_deal, landing
         assert product_id in local_deal.get("product_ids", []), landing
+        assert landing.get("cloudState") == "saved", landing
         assert landing.get("iframeCount") == 0, landing
         assert len(driver.window_handles) == 1, driver.window_handles
     finally:
@@ -375,11 +384,32 @@ def main() -> None:
 
     bootstrap = client.get("/api/community-sync/bootstrap")
     assert bootstrap.status_code == 200, bootstrap.text
+    bootstrap_body = bootstrap.json()
     server_deal = next(
-        x for x in bootstrap.json().get("deals", []) if str(x.get("id")) == str(deal["id"])
+        x for x in bootstrap_body.get("deals", []) if str(x.get("id")) == str(deal["id"])
     )
     print("INQUIRY_SERVER_DEAL=" + json.dumps(server_deal, ensure_ascii=False))
     assert product_id in [str(x) for x in server_deal.get("product_ids", [])], server_deal
+
+    repeated_state = {
+        "customers": bootstrap_body.get("customers", []),
+        "products": bootstrap_body.get("products", []),
+        "deals": bootstrap_body.get("deals", []),
+        "archived": {},
+    }
+    for repeat_index in range(2):
+        repeat = client.put("/api/community-sync/state", json=repeated_state)
+        assert repeat.status_code == 200, repeat.text
+        repeated_deal = next(
+            x for x in repeat.json().get("deals", []) if str(x.get("id")) == str(deal["id"])
+        )
+        repeated_ids = [str(x) for x in repeated_deal.get("product_ids", [])]
+        print(
+            f"INQUIRY_REPEAT_SYNC_{repeat_index + 1}="
+            + json.dumps(repeated_deal, ensure_ascii=False)
+        )
+        assert repeated_ids.count(product_id) == 1, repeated_deal
+        assert float(repeated_deal.get("amount") or 0) == 0.0, repeated_deal
 
     customers = client.get(
         "/api/business/customers",
@@ -393,7 +423,8 @@ def main() -> None:
 
     print(
         "Customer reply -> cold-development stop -> confirmed facts -> formal inquiry "
-        "-> selected product relation -> Community inquiry landing with zero auto amount PASS"
+        "-> selected product relation -> Community inquiry landing -> repeated idempotent cloud sync "
+        "with zero auto amount PASS"
     )
     client.close()
 
