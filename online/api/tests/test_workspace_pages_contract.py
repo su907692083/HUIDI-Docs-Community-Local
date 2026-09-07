@@ -49,6 +49,18 @@ class WorkspacePagesContractTests(unittest.TestCase):
         subprocess.run(["node", "--check", str(WEB / "page-router.js")], check=True)
         subprocess.run(["node", "--check", str(WEB / "catalog-studio-online.js")], check=True)
 
+    def test_detail_enhancers_are_explicit_not_global_dom_watchers(self):
+        deal_facts = (WEB / "deal-facts-ui.js").read_text(encoding="utf-8")
+        intelligence = (WEB / "customer-intelligence.js").read_text(encoding="utf-8")
+        for source in (deal_facts, intelligence):
+            self.assertNotIn("MutationObserver", source)
+            self.assertNotIn("observe(document.body", source)
+        self.assertIn("loadEpoch", deal_facts)
+        self.assertIn("scheduleDealCard", intelligence)
+        self.assertIn("dealLoadEpoch", intelligence)
+        subprocess.run(["node", "--check", str(WEB / "deal-facts-ui.js")], check=True)
+        subprocess.run(["node", "--check", str(WEB / "customer-intelligence.js")], check=True)
+
     def test_native_document_stays_inside_workspace(self):
         source = (WEB / "page-router.js").read_text(encoding="utf-8")
         self.assertIn("openNativeDocument", source)
