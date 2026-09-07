@@ -6,9 +6,12 @@ on:
       - 'public/huidi-community-online-development-routing-v1.js'
       - 'public/huidi-community-online-development-workbench-v1.js'
       - 'public/huidi-community-online-formal-price-guard-v1.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/community-local-mode.js'
       - 'online/api/app/low_input_workflow.py'
       - 'online/api/app/mail_sync.py'
       - 'online/api/app/business_center.py'
+      - 'online/api/app/community_sync.py'
       - 'online/api/app/community_surface.py'
       - 'online/api/tests/community_reply_inquiry_browser_smoke.py'
       - 'online/api/tests/community_formal_price_guard_browser_smoke.py'
@@ -19,9 +22,12 @@ on:
       - 'public/huidi-community-online-development-routing-v1.js'
       - 'public/huidi-community-online-development-workbench-v1.js'
       - 'public/huidi-community-online-formal-price-guard-v1.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/community-local-mode.js'
       - 'online/api/app/low_input_workflow.py'
       - 'online/api/app/mail_sync.py'
       - 'online/api/app/business_center.py'
+      - 'online/api/app/community_sync.py'
       - 'online/api/app/community_surface.py'
       - 'online/api/tests/community_reply_inquiry_browser_smoke.py'
       - 'online/api/tests/community_formal_price_guard_browser_smoke.py'
@@ -49,10 +55,12 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install 'selenium>=4.20,<5'
-      - name: Check reply routing and formal price guard JavaScript
+      - name: Check reply routing, cloud barrier and formal price guard JavaScript
         run: |
           node --check ../../public/huidi-community-online-development-routing-v1.js
           node --check ../../public/huidi-community-online-formal-price-guard-v1.js
+          node --check ../../public/huidi-community-cloud-adapter-v1.js
+          node --check ../../public/community-local-mode.js
           python - <<'PY'
           from pathlib import Path
           routing = Path('../../public/huidi-community-online-development-routing-v1.js').read_text(encoding='utf-8')
@@ -73,6 +81,8 @@ jobs:
           guard = Path('../../public/huidi-community-online-formal-price-guard-v1.js').read_text(encoding='utf-8')
           for marker in (
               'huidiReferencePrice',
+              'huidiFormalPricePolicy',
+              'manual-required',
               '不会自动写入正式单价',
               'sourceDocumentId',
               'huidi_local_doc_id_v1',
@@ -80,6 +90,19 @@ jobs:
           ):
               assert marker in guard, marker
           assert 'MutationObserver' not in guard
+
+          cloud = Path('../../public/huidi-community-cloud-adapter-v1.js').read_text(encoding='utf-8')
+          for marker in (
+              'stateRunPromise',
+              'stateFollowupPromise',
+              'queueStateBarrier',
+              "version:'1.1'",
+          ):
+              assert marker in cloud, marker
+
+          local_mode = Path('../../public/community-local-mode.js').read_text(encoding='utf-8')
+          assert 'HUIDI-COMMUNITY-ONLINE-2' in local_mode
+          assert 'observe(document.body' not in local_mode
           PY
       - name: Start fused HUIDI workspace
         run: |
