@@ -30,15 +30,27 @@ class CommunityCloudAdapterContractTests(unittest.TestCase):
         self.assertIn("huidi_workspace_${ONLINE.scope}__", self.mode)
         self.assertIn("/community/huidi-community-cloud-adapter-v1.js", self.mode)
 
-    def test_localstorage_and_indexeddb_are_scoped_before_local_owners_load(self):
+    def test_local_session_and_indexeddb_are_scoped_before_local_owners_load(self):
         self.assertIn("Storage?.prototype", self.mode)
-        self.assertIn("this===window.localStorage", self.mode)
+        self.assertIn("storage===window.localStorage", self.mode)
+        self.assertIn("storage===window.sessionStorage", self.mode)
+        self.assertIn("storages:['localStorage','sessionStorage']", self.mode)
         self.assertIn("IDBFactory?.prototype", self.mode)
         self.assertIn("HUIDI_DOCS_ONLINE_DB_", self.mode)
         # Standalone Local still uses the published Local contract when no
         # authenticated Community Online scope exists.
         self.assertIn("if(!ONLINE)return", self.mode)
         self.assertIn("localOnly:true", self.mode)
+
+    def test_direct_document_reads_wait_for_current_tenant_cloud_hydration(self):
+        self.assertIn("installCloudDocumentReadGate", self.mode)
+        self.assertIn("HUIDI:community-cloud-ready", self.mode)
+        self.assertIn("db.getDocument=async function", self.mode)
+        self.assertIn("HUIDI_COMMUNITY_DOCUMENT_READ_READY", self.mode)
+        self.assertIn("if(ONLINE)loadCloudAdapter();", self.mode)
+        # The Local editor remains the restore owner; this layer only delays its
+        # canonical LocalDB read until the tenant cloud projection is hydrated.
+        self.assertNotIn("FlypigBOXApp?.applyState", self.mode)
 
     def test_scope_cookie_is_cache_namespace_not_auth_owner(self):
         self.assertIn('WORKSPACE_SCOPE_COOKIE = "huidi_workspace_scope"', self.scope)
