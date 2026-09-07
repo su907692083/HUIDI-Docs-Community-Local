@@ -60,7 +60,7 @@ jobs:
           done
           cat /tmp/huidi-community-server.log
           exit 1
-      - name: Verify two-account Community browser cache and document cloud sync
+      - name: Verify two-account Community cache isolation and fresh-browser editor restore
         run: |
           python - <<'PY'
           import time
@@ -97,6 +97,8 @@ jobs:
                       'company': f'Customer {marker}',
                       'contact': marker,
                       'email': f'{marker.lower()}@example.test',
+                      'vat': f'VAT-{marker}',
+                      'consignee_name': f'Consignee {marker}',
                   }],
                   'products': [],
                   'deals': [{
@@ -105,6 +107,8 @@ jobs:
                       'title': f'Deal {marker}',
                       'currency': 'USD',
                       'estimated_amount': 0,
+                      'incoterm': 'FOB',
+                      'events': [{'type':'note','text':f'Event {marker}'}],
                       'product_ids': [],
                   }],
                   'archived': {},
@@ -113,26 +117,22 @@ jobs:
               body = response.json()
               customer = next(x for x in body['customers'] if marker in x.get('company', ''))
               deal = next(x for x in body['deals'] if marker in x.get('title', ''))
+              assert customer['vat'] == f'VAT-{marker}', customer
+              assert customer['consignee_name'] == f'Consignee {marker}', customer
+              assert deal['incoterm'] == 'FOB', deal
+              assert deal['events'][0]['text'] == f'Event {marker}', deal
               return body, customer, deal
 
-          first, email_a, org_a = register('A')
-          second, email_b, org_b = register('B')
-          assert org_a['id'] != org_b['id'], (org_a, org_b)
-          marker_a = 'A' + uuid.uuid4().hex[:8]
-          marker_b = 'B' + uuid.uuid4().hex[:8]
-          _, customer_a, deal_a = seed(first, marker_a)
-          _, customer_b, deal_b = seed(second, marker_b)
+          def browser_options():
+              options = Options()
+              options.add_argument('--headless=new')
+              options.add_argument('--no-sandbox')
+              options.add_argument('--disable-gpu')
+              options.add_argument('--disable-dev-shm-usage')
+              options.add_argument('--window-size=1440,1000')
+              return options
 
-          options = Options()
-          options.add_argument('--headless=new')
-          options.add_argument('--no-sandbox')
-          options.add_argument('--disable-gpu')
-          options.add_argument('--disable-dev-shm-usage')
-          options.add_argument('--window-size=1440,1000')
-          driver = webdriver.Chrome(options=options)
-          wait = WebDriverWait(driver, 25)
-
-          def enter(email, org, marker, forbidden):
+          def browser_login(driver, email, org):
               driver.get(BASE + '/login')
               driver.delete_all_cookies()
               login = driver.execute_async_script("""
@@ -150,6 +150,19 @@ jobs:
               assert session, driver.get_cookies()
               assert scope and scope['value'] == f"org-{org['id']}", (scope, driver.get_cookies())
 
+          first, email_a, org_a = register('A')
+          second, email_b, org_b = register('B')
+          assert org_a['id'] != org_b['id'], (org_a, org_b)
+          marker_a = 'A' + uuid.uuid4().hex[:8]
+          marker_b = 'B' + uuid.uuid4().hex[:8]
+          _, customer_a, deal_a = seed(first, marker_a)
+          _, customer_b, deal_b = seed(second, marker_b)
+
+          driver = webdriver.Chrome(options=browser_options())
+          wait = WebDriverWait(driver, 25)
+
+          def enter(email, org, marker, forbidden):
+              browser_login(driver, email, org)
               driver.get(BASE + '/')
               wait.until(lambda d: '/community/workspace.html' in d.current_url)
               wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
@@ -160,14 +173,24 @@ jobs:
               assert marker in rows, rows
               assert forbidden not in rows, rows
               storage = driver.execute_script("""
+                const marker=arguments[0],forbidden=arguments[1];
+                const sessionBefore=sessionStorage.getItem('huidi_cloud_session_probe_v1')||'';
+                sessionStorage.setItem('huidi_cloud_session_probe_v1',marker);
                 return {
                   visible: localStorage.getItem('huidi_local_customers_v1') || '',
-                  keys: Object.keys(localStorage)
+                  keys: Object.keys(localStorage),
+                  sessionBefore,
+                  sessionVisible: sessionStorage.getItem('huidi_cloud_session_probe_v1')||'',
+                  sessionKeys: Object.keys(sessionStorage),
+                  forbidden
                 };
-              """)
+              """, marker, forbidden)
               assert marker in storage['visible'], storage
               assert forbidden not in storage['visible'], storage
+              assert forbidden not in storage['sessionBefore'], storage
+              assert storage['sessionVisible'] == marker, storage
               assert any(f"huidi_workspace_org-{org['id']}__" in key for key in storage['keys']), storage
+              assert any(f"huidi_workspace_org-{org['id']}__" in key for key in storage['sessionKeys']), storage
               dbs = driver.execute_async_script("""
                 const done=arguments[arguments.length-1];
                 if(!indexedDB.databases){done([]);return;}
@@ -176,15 +199,19 @@ jobs:
               assert any(f'org-{org["id"]}' in name for name in dbs), dbs
               return storage, dbs
 
+          doc_id = 'community-doc-' + uuid.uuid4().hex[:10]
+          direct_buyer = f'Cloud Direct Buyer {marker_b}'
+          direct_item = f'Cloud Direct Item {marker_b}'
           try:
               storage_a, dbs_a = enter(email_a, org_a, marker_a, marker_b)
               storage_b, dbs_b = enter(email_b, org_b, marker_b, marker_a)
               assert any(f"huidi_workspace_org-{org_a['id']}__" in key for key in storage_b['keys']), storage_b
               assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in storage_b['keys']), storage_b
+              assert any(f"huidi_workspace_org-{org_a['id']}__" in key for key in storage_b['sessionKeys']), storage_b
+              assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in storage_b['sessionKeys']), storage_b
               assert any(f'org-{org_a["id"]}' in name for name in dbs_b), (dbs_a, dbs_b)
               assert any(f'org-{org_b["id"]}' in name for name in dbs_b), dbs_b
 
-              doc_id = 'community-doc-' + uuid.uuid4().hex[:10]
               record = {
                   'id': doc_id,
                   'title': f'Quotation {marker_b}',
@@ -197,15 +224,34 @@ jobs:
                       'document_status': 'draft',
                       'deal_id': str(deal_b['id']),
                       'customer_id': str(customer_b['id']),
-                      'customer_name': f'Customer {marker_b}',
+                      'customer_name': direct_buyer,
                       'currency': 'USD',
                       'product_ids': [],
                   },
                   'payload': {
                       'type': 'quotation',
+                      'documentType': 'quotation',
                       'dealId': str(deal_b['id']),
                       'customerId': str(customer_b['id']),
-                      'state': {},
+                      'state': {
+                          'documentType': 'quotation',
+                          'fields': {
+                              'documentType': 'quotation',
+                              'buyerName': direct_buyer,
+                              'buyerContact': marker_b,
+                              'buyerEmail': f'{marker_b.lower()}@example.test',
+                              'currency': 'USD',
+                              'invoiceNo': 'Q-' + marker_b,
+                          },
+                          'items': [{
+                              'sku': 'SKU-' + marker_b,
+                              'name': direct_item,
+                              'spec': 'SUS304 4 inch',
+                              'qty': '5000',
+                              'unit': 'PCS',
+                              'price': '',
+                          }],
+                      },
                   },
               }
               saved = driver.execute_async_script("""
@@ -227,9 +273,36 @@ jobs:
               records_a = first.get('/api/community-sync/document-records')
               assert records_a.status_code == 200, records_a.text
               assert all(x.get('id') != doc_id for x in records_a.json()['records']), records_a.text
-              print('Community Online real-login two-account cache isolation + document cloud sync PASS')
           finally:
               driver.quit()
+
+          # Fresh profile: no IndexedDB document and no staged session state.
+          # Directly opening the mature Local editor must wait for tenant cloud
+          # hydration, then reuse the Local restore owner to apply the document.
+          fresh = webdriver.Chrome(options=browser_options())
+          fresh_wait = WebDriverWait(fresh, 30)
+          try:
+              browser_login(fresh, email_b, org_b)
+              fresh.get(
+                  BASE + '/community/editor.html?type=quotation&doc=quotation&local=1&localDoc=' + doc_id
+              )
+              fresh_wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
+              fresh_wait.until(lambda d: d.execute_script("return document.getElementById('buyerName')?.value || ''") == direct_buyer)
+              buyer = fresh.find_element('id', 'buyerName').get_attribute('value')
+              assert buyer == direct_buyer, buyer
+              item = fresh_wait.until(lambda d: d.execute_script("return document.querySelector('.item-row .i-name')?.value || ''"))
+              assert item == direct_item, item
+              current_doc = fresh.execute_script("return sessionStorage.getItem('huidi_local_doc_id_v1') || ''")
+              assert current_doc == doc_id, current_doc
+              session_keys = fresh.execute_script("return Object.keys(sessionStorage)")
+              assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in session_keys), session_keys
+              assert all(f"huidi_workspace_org-{org_a['id']}__" not in key for key in session_keys), session_keys
+              server_doc = second.get('/api/community-sync/documents/' + doc_id)
+              assert server_doc.status_code == 200, server_doc.text
+              assert server_doc.json()['record']['payload']['state']['fields']['buyerName'] == direct_buyer
+              print('Community Online two-account storage isolation + fresh-browser mature Local editor cloud restore PASS')
+          finally:
+              fresh.quit()
               first.close()
               second.close()
           PY
@@ -240,5 +313,5 @@ jobs:
             kill "$(cat /tmp/huidi-community-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-community-server.log ]; then
-            tail -220 /tmp/huidi-community-server.log
+            tail -260 /tmp/huidi-community-server.log
           fi
