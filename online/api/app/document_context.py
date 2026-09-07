@@ -41,6 +41,25 @@ COMMERCIAL_DOCUMENTS = [
 ]
 DOCUMENT_CONTEXT_SCHEMA = "huidi.document.context/v1"
 DRAFT_SCHEMA = "huidi.document.draft/v1"
+ITEMS_FIELD = "items_json"
+ITEM_PRICE_FIELDS = {"unit_price", "total"}
+ITEM_FIELDS = {
+    "product_id",
+    "brain_id",
+    "product",
+    "sku",
+    "spec",
+    "quantity",
+    "unit_price",
+    "total",
+    "lead_time",
+    "packages",
+    "net_weight",
+    "gross_weight",
+    "carton_size",
+    "volume",
+    "marks",
+}
 
 # Fields saved on the existing OnlineDocumentRef row. Price fields are allowed
 # because a user may explicitly enter and save them on the current document,
@@ -86,10 +105,19 @@ DRAFT_FIELDS = {
     "carton_size",
     "volume",
     "marks",
+    ITEMS_FIELD,
 }
 PRICE_FIELDS = {"unit_price", "total"}
-INHERITABLE_FIELDS = DRAFT_FIELDS - PRICE_FIELDS - {"date"}
-LONG_FIELDS = {"spec", "requirements", "terms", "seller_address", "buyer_address", "bank_address"}
+INHERITABLE_FIELDS = DRAFT_FIELDS - PRICE_FIELDS - {"date", ITEMS_FIELD}
+LONG_FIELDS = {
+    "spec",
+    "requirements",
+    "terms",
+    "seller_address",
+    "buyer_address",
+    "bank_address",
+    ITEMS_FIELD,
+}
 
 
 class DocumentDraftRequest(BaseModel):
@@ -104,9 +132,47 @@ def _clean_fields(raw: dict[str, Any] | None) -> dict[str, str]:
         name = str(key or "").strip()
         if name not in DRAFT_FIELDS:
             continue
-        limit = 10000 if name in LONG_FIELDS else 2000
+        if name == ITEMS_FIELD:
+            limit = 100000
+        else:
+            limit = 10000 if name in LONG_FIELDS else 2000
         out[name] = str(value or "")[:limit]
     return out
+
+
+def _decode_item_rows(raw: Any) -> list[dict[str, str]]:
+    if isinstance(raw, list):
+        decoded = raw
+    else:
+        try:
+            decoded = json.loads(str(raw or "[]"))
+        except Exception:
+            decoded = []
+    if not isinstance(decoded, list):
+        return []
+    rows: list[dict[str, str]] = []
+    for item in decoded[:100]:
+        if not isinstance(item, dict):
+            continue
+        clean: dict[str, str] = {}
+        for key in ITEM_FIELDS:
+            if key not in item:
+                continue
+            limit = 10000 if key == "spec" else 2000
+            clean[key] = str(item.get(key) or "")[:limit]
+        if any(str(clean.get(key) or "").strip() for key in ("product_id", "brain_id", "product", "sku")):
+            rows.append(clean)
+    return rows
+
+
+def _encode_item_rows(rows: list[dict[str, Any]], *, include_prices: bool = True) -> str:
+    cleaned = _decode_item_rows(rows)
+    if not include_prices:
+        cleaned = [
+            {key: value for key, value in row.items() if key not in ITEM_PRICE_FIELDS}
+            for row in cleaned
+        ]
+    return json.dumps(cleaned, ensure_ascii=False, separators=(",", ":"))
 
 
 def load_document_fields(db: Session, ref_id: int) -> dict[str, str]:
@@ -128,6 +194,8 @@ def load_document_fields(db: Session, ref_id: int) -> dict[str, str]:
 
 def save_document_fields(db: Session, ref: OnlineDocumentRef, fields: dict[str, Any]) -> dict[str, str]:
     cleaned = _clean_fields(fields)
+    if ITEMS_FIELD in cleaned:
+        cleaned[ITEMS_FIELD] = _encode_item_rows(_decode_item_rows(cleaned[ITEMS_FIELD]))
     encoded = json.dumps(cleaned, ensure_ascii=False)
     now = datetime.now(timezone.utc)
     result = db.execute(
@@ -190,10 +258,96 @@ def _incoterm_candidate(requirements: str) -> str:
     return " ".join(part for part in hit.groups() if part).strip()
 
 
+def _match_product(db: Session, keyword: str) -> tuple[ProductBrainRecord | None, dict[str, Any]]:
+    term = str(keyword or "").strip()
+    if not term:
+        return None, {}
+    rows = db.scalars(select(ProductBrainRecord).order_by(ProductBrainRecord.updated_at.desc()).limit(500)).all()
+    lower = term.lower()
+    for row in rows:
+        if lower in str(row.name or "").lower() or lower in str(row.sku or "").lower():
+            return row, _product_payload(row)
+    return None, {}
+
+
+def _product_context(row: ProductBrainRecord, payload: dict[str, Any]) -> dict[str, Any]:
+    reference_price = _first(payload, "reference_price", "price", "unit_price")
+    return {
+        "id": row.local_product_id or row.brain_id,
+        "brain_id": row.brain_id,
+        "name": row.name or _first(payload, "name"),
+        "sku": row.sku or _first(payload, "sku", "model", "item_no"),
+        "specification": _first(payload, "specification", "spec", "specs", "material", "description"),
+        "moq": _first(payload, "moq", "minimum_order_quantity"),
+        "lead_time": _first(payload, "lead_time", "delivery_time", "delivery"),
+        "packing": _first(payload, "packing", "packaging", "package"),
+        "carton_size": _first(
+            payload,
+            "carton_size",
+            "carton_dimension",
+            "carton_dimensions",
+            "package_size",
+            "packing_size",
+        ),
+        "marks": _first(payload, "shipping_marks", "marks", "marking", "mark"),
+        "reference_price": reference_price,
+        "reference_price_note": "仅供核对，不自动写入正式单价。" if reference_price else "",
+    }
+
+
+def _deal_product_contexts(db: Session, deal: OnlineDeal) -> list[dict[str, Any]]:
+    try:
+        from .community_sync import CommunityDealProductLink
+
+        links = db.scalars(
+            select(CommunityDealProductLink)
+            .where(CommunityDealProductLink.deal_id == deal.id)
+            .order_by(CommunityDealProductLink.id.asc())
+        ).all()
+    except Exception:
+        links = []
+    if links:
+        rows = db.scalars(
+            select(ProductBrainRecord).where(
+                ProductBrainRecord.brain_id.in_([link.brain_id for link in links])
+            )
+        ).all()
+        by_brain = {row.brain_id: row for row in rows}
+        out: list[dict[str, Any]] = []
+        for link in links:
+            row = by_brain.get(link.brain_id)
+            if row:
+                out.append(_product_context(row, _product_payload(row)))
+        if out:
+            return out
+    row, payload = _match_product(db, deal.product_keyword)
+    if row:
+        return [_product_context(row, payload)]
+    if deal.product_keyword.strip():
+        return [
+            {
+                "id": "",
+                "brain_id": "",
+                "name": deal.product_keyword,
+                "sku": "",
+                "specification": "",
+                "moq": "",
+                "lead_time": "",
+                "packing": "",
+                "carton_size": "",
+                "marks": "",
+                "reference_price": "",
+                "reference_price_note": "",
+            }
+        ]
+    return []
+
+
 def _reuse_candidates(
     product_payload: dict[str, Any],
     requirements: str,
     inherited: dict[str, str],
+    product_count: int = 1,
 ) -> list[dict[str, Any]]:
     rows: list[dict[str, Any]] = []
 
@@ -227,54 +381,74 @@ def _reuse_candidates(
                 "applies_to": applies_to,
                 "default_selected": bool(default_selected and seedable),
                 "confirmation_required": bool(confirmation_required),
-                "seedable": bool(seedable and field in DRAFT_FIELDS and field not in PRICE_FIELDS),
+                "seedable": bool(seedable and field in DRAFT_FIELDS and field not in PRICE_FIELDS and field != ITEMS_FIELD),
                 "note": note,
             }
         )
 
-    add(
-        "product-spec",
-        "spec",
-        "规格 / 描述",
-        _first(product_payload, "specification", "spec", "specs", "material", "description"),
-        "product_brain",
-        "产品资料",
-        DOC_ORDER,
-        default_selected=True,
-        note="稳定产品资料可直接复用，进入单据后仍可修改。",
-    )
-    add(
-        "product-moq",
-        "moq",
-        "MOQ",
-        _first(product_payload, "moq", "minimum_order_quantity"),
-        "product_brain",
-        "产品资料",
-        DOC_ORDER,
-        default_selected=True,
-        note="复用产品资料中的 MOQ，不代表当前订单数量。",
-    )
-    add(
-        "product-lead-time",
-        "lead_time",
-        "交期参考",
-        _first(product_payload, "lead_time", "delivery_time", "delivery"),
-        "product_brain",
-        "产品资料",
-        COMMERCIAL_DOCUMENTS,
-        confirmation_required=True,
-        note="交期会随订单变化，勾选代表本次业务确认采用。",
-    )
+    if product_count <= 1:
+        add(
+            "product-spec",
+            "spec",
+            "规格 / 描述",
+            _first(product_payload, "specification", "spec", "specs", "material", "description"),
+            "product_brain",
+            "产品资料",
+            DOC_ORDER,
+            default_selected=True,
+            note="稳定产品资料可直接复用，进入单据后仍可修改。",
+        )
+        add(
+            "product-moq",
+            "moq",
+            "MOQ",
+            _first(product_payload, "moq", "minimum_order_quantity"),
+            "product_brain",
+            "产品资料",
+            DOC_ORDER,
+            default_selected=True,
+            note="复用产品资料中的 MOQ，不代表当前订单数量。",
+        )
+        add(
+            "product-lead-time",
+            "lead_time",
+            "交期参考",
+            _first(product_payload, "lead_time", "delivery_time", "delivery"),
+            "product_brain",
+            "产品资料",
+            COMMERCIAL_DOCUMENTS,
+            confirmation_required=True,
+            note="交期会随订单变化，勾选代表本次业务确认采用。",
+        )
+    else:
+        add(
+            "multi-product-rows",
+            "",
+            "多产品明细",
+            f"已关联 {product_count} 个产品",
+            "deal_products",
+            "询盘关联产品",
+            DOC_ORDER,
+            seedable=False,
+            note="产品名称、SKU 和稳定规格会逐行进入同一份正式单据；数量、单价和包装执行数据逐行确认。",
+        )
+
+    quantity = _quantity_candidate(requirements)
     add(
         "inquiry-quantity",
-        "quantity",
-        "数量",
-        _quantity_candidate(requirements),
+        "quantity" if product_count <= 1 else "",
+        "数量" if product_count <= 1 else "数量原话（逐行确认）",
+        quantity,
         "inquiry",
         "询盘内容",
         COMMERCIAL_DOCUMENTS,
         confirmation_required=True,
-        note="数量来自当前询盘内容，勾选后才提前写入单据草稿快照。",
+        seedable=product_count <= 1,
+        note=(
+            "数量来自当前询盘内容，勾选后才提前写入单据草稿快照。"
+            if product_count <= 1
+            else "当前询盘关联多个产品，数量不能安全分配到任一产品；正式单据中请逐行确认。"
+        ),
     )
     add(
         "inquiry-incoterm",
@@ -285,65 +459,55 @@ def _reuse_candidates(
         "询盘内容",
         COMMERCIAL_DOCUMENTS,
         confirmation_required=True,
-        note="贸易条款需按本次成交条件确认，不能由系统替你决定。",
+        note="贸易条款作为整笔业务公共条件时可确认复用；系统不会替你决定成交条件。",
     )
-    carton_size = _first(
-        product_payload,
-        "carton_size",
-        "carton_dimension",
-        "carton_dimensions",
-        "package_size",
-        "packing_size",
-    )
-    add(
-        "product-carton-size",
-        "carton_size",
-        "外箱 / 包装尺寸",
-        carton_size,
-        "product_brain",
-        "产品包装资料",
-        ["packing_list"],
-        confirmation_required=True,
-        note="仅在产品资料明确保存箱规时提供；装箱单仍需按本批次实际包装确认。",
-    )
-    add(
-        "product-marks",
-        "marks",
-        "唛头",
-        _first(product_payload, "shipping_marks", "marks", "marking", "mark"),
-        "product_brain",
-        "产品包装资料",
-        ["packing_list"],
-        confirmation_required=True,
-        note="唛头经常按订单变化，勾选代表本批次确认采用。",
-    )
-    packing_reference = _first(product_payload, "packing", "packaging", "package")
-    if packing_reference and packing_reference != carton_size:
+
+    if product_count <= 1:
+        carton_size = _first(
+            product_payload,
+            "carton_size",
+            "carton_dimension",
+            "carton_dimensions",
+            "package_size",
+            "packing_size",
+        )
         add(
-            "product-packing-reference",
-            "",
-            "包装资料参考",
-            packing_reference,
+            "product-carton-size",
+            "carton_size",
+            "外箱 / 包装尺寸",
+            carton_size,
             "product_brain",
             "产品包装资料",
             ["packing_list"],
             confirmation_required=True,
-            seedable=False,
-            note="通用包装描述只展示供核对，不直接写成装箱单箱规、重量或件数。",
+            note="仅在产品资料明确保存箱规时提供；装箱单仍需按本批次实际包装确认。",
         )
+        add(
+            "product-marks",
+            "marks",
+            "唛头",
+            _first(product_payload, "shipping_marks", "marks", "marking", "mark"),
+            "product_brain",
+            "产品包装资料",
+            ["packing_list"],
+            confirmation_required=True,
+            note="唛头经常按订单变化，勾选代表本批次确认采用。",
+        )
+        packing_reference = _first(product_payload, "packing", "packaging", "package")
+        if packing_reference and packing_reference != carton_size:
+            add(
+                "product-packing-reference",
+                "",
+                "包装资料参考",
+                packing_reference,
+                "product_brain",
+                "产品包装资料",
+                ["packing_list"],
+                confirmation_required=True,
+                seedable=False,
+                note="通用包装描述只展示供核对，不直接写成装箱单箱规、重量或件数。",
+            )
     return rows
-
-
-def _match_product(db: Session, keyword: str) -> tuple[ProductBrainRecord | None, dict[str, Any]]:
-    term = str(keyword or "").strip()
-    if not term:
-        return None, {}
-    rows = db.scalars(select(ProductBrainRecord).order_by(ProductBrainRecord.updated_at.desc()).limit(500)).all()
-    lower = term.lower()
-    for row in rows:
-        if lower in str(row.name or "").lower() or lower in str(row.sku or "").lower():
-            return row, _product_payload(row)
-    return None, {}
 
 
 def _doc_summary(db: Session, ref: OnlineDocumentRef) -> dict[str, Any]:
@@ -399,16 +563,25 @@ def _upstream_context(
             for key, value in fields.items()
             if key in INHERITABLE_FIELDS and str(value).strip()
         }
+        item_rows = _decode_item_rows(fields.get(ITEMS_FIELD))
+        if item_rows:
+            inherited[ITEMS_FIELD] = _encode_item_rows(item_rows, include_prices=False)
         source = _doc_summary(db, ref)
         price_values = {key: fields.get(key, "") for key in PRICE_FIELDS if fields.get(key, "").strip()}
-        if price_values:
+        item_price_count = sum(
+            1
+            for row in item_rows
+            if any(str(row.get(key) or "").strip() for key in ITEM_PRICE_FIELDS)
+        )
+        if price_values or item_price_count:
             price_references.append(
                 {
                     "source": "upstream_document",
                     "document": source_type,
                     "document_id": ref.document_id,
                     **price_values,
-                    "note": "上游单据已保存价格仅供核对，不自动写入当前正式价格。",
+                    "item_price_count": item_price_count,
+                    "note": "上游单据已保存价格仅供核对，不自动写入当前正式价格；多产品逐行价格同样不会继承。",
                 }
             )
         break
@@ -507,13 +680,33 @@ def build_document_context(
     if not customer:
         raise HTTPException(404, "没有找到对应客户")
     lead = db.get(Lead, deal.source_lead_id) if deal.source_lead_id else None
-    product, product_payload = _match_product(db, deal.product_keyword)
+    products = _deal_product_contexts(db, deal)
+    primary_product = products[0] if products else {
+        "id": "",
+        "brain_id": "",
+        "name": deal.product_keyword,
+        "sku": "",
+        "specification": "",
+        "moq": "",
+        "lead_time": "",
+        "packing": "",
+        "carton_size": "",
+        "marks": "",
+        "reference_price": "",
+        "reference_price_note": "",
+    }
+    primary_payload: dict[str, Any] = {}
+    if primary_product.get("brain_id"):
+        primary_row = db.scalar(
+            select(ProductBrainRecord).where(ProductBrainRecord.brain_id == primary_product["brain_id"])
+        )
+        primary_payload = _product_payload(primary_row)
     docs = _deal_documents(db, deal.id)
     inherited, inherited_from, price_references = _upstream_context(
         db, deal, document, current_ref_id=current_ref_id
     )
     master_fields, master_data = _master_fields(db, customer)
-    product_reference_price = _first(product_payload, "reference_price", "price", "unit_price")
+    product_reference_price = str(primary_product.get("reference_price") or "")
     if product_reference_price:
         price_references.insert(
             0,
@@ -554,7 +747,12 @@ def build_document_context(
     addresses = master_data["customer_addresses"]
     banks = master_data["bank_accounts"]
     inquiry_text = deal.requirements or (lead.reason if lead else "")
-    reuse_candidates = _reuse_candidates(product_payload, inquiry_text, inherited)
+    reuse_candidates = _reuse_candidates(
+        primary_payload,
+        inquiry_text,
+        inherited,
+        product_count=len(products),
+    )
     return {
         "schema": DOCUMENT_CONTEXT_SCHEMA,
         "deal_id": deal.id,
@@ -573,23 +771,29 @@ def build_document_context(
             "quantity_candidate": _quantity_candidate(inquiry_text),
             "incoterm_candidate": _incoterm_candidate(inquiry_text),
         },
-        "product": {
-            "brain_id": product.brain_id if product else "",
-            "name": product.name if product else deal.product_keyword,
-            "sku": product.sku if product else "",
-            "specification": _first(product_payload, "specification", "spec", "specs", "material", "description"),
-            "moq": _first(product_payload, "moq", "minimum_order_quantity"),
-            "lead_time": _first(product_payload, "lead_time", "delivery_time", "delivery"),
-            "packing": _first(product_payload, "packing", "packaging", "package"),
-            "reference_price": product_reference_price,
-            "reference_price_note": "仅供核对，不自动写入正式单价。" if product_reference_price else "",
+        "product": primary_product,
+        "products": products,
+        "multi_product": {
+            "enabled": len(products) > 1,
+            "count": len(products),
+            "source": "deal_product_links" if len(products) > 1 else "deal_product_or_keyword",
+            "quantity_policy": (
+                "逐产品确认；询盘总数量不会自动分摊。"
+                if len(products) > 1
+                else "单产品时可确认复用询盘数量。"
+            ),
+            "price_policy": "每个产品正式单价都由用户逐行确认；任何上游逐行价格均只作参考，不自动继承。",
         },
         "reuse_candidates": reuse_candidates,
         "reuse_policy": {
             "default_selected": [item["id"] for item in reuse_candidates if item.get("default_selected")],
             "requires_confirmation": [item["id"] for item in reuse_candidates if item.get("confirmation_required")],
             "never_auto_fields": sorted(PRICE_FIELDS),
-            "note": "产品稳定主数据可默认复用；数量、贸易条款、交期、箱规和唛头等订单相关事实需要本次业务确认。价格永远不在这组复用候选里。",
+            "note": (
+                "多产品时产品名称、SKU、稳定规格逐行来自关联产品；数量、正式价格、交期和包装执行数据逐行确认。"
+                if len(products) > 1
+                else "产品稳定主数据可默认复用；数量、贸易条款、交期、箱规和唛头等订单相关事实需要本次业务确认。价格永远不在这组复用候选里。"
+            ),
         },
         "current_documents": [_doc_summary(db, ref) for ref in docs],
         "inherited_fields": inherited,
@@ -611,7 +815,7 @@ def build_document_context(
                 "reason": "读取公司设置中的收款账户。" if banks else "公司还没有保存收款账户，可在公司设置中补充。",
             },
         },
-        "note": "同一 Deal 的客户、询盘、产品、客户地址、公司资料和已保存单据可联动复用；价格、历史金额和联网资料都只作参考，不会自动改写正式单价或 deal.amount。",
+        "note": "同一 Deal 的客户、询盘、全部关联产品、客户地址、公司资料和已保存单据可联动复用；价格、历史金额和联网资料都只作参考，不会自动改写正式单价或 deal.amount。",
     }
 
 
@@ -659,7 +863,7 @@ def put_document_draft(ref_id: int, req: DocumentDraftRequest, db: Session = Dep
         "deal_id": ref.deal_id,
         "document_type": ref.document_type,
         "fields": fields,
-        "note": "草稿已保存到当前 OnlineDocumentRef；价格不会自动写回询盘金额或产品参考价。",
+        "note": "草稿已保存到当前 OnlineDocumentRef；用户可手工保存当前正式价格，但价格不会自动写回询盘金额或产品参考价。",
     }
 
 
@@ -670,8 +874,10 @@ def patch_document_draft(ref_id: int, req: DocumentDraftRequest, db: Session = D
         raise HTTPException(404, "没有找到这份单据")
     incoming = _clean_fields(req.fields)
     forbidden = sorted(PRICE_FIELDS.intersection(incoming))
+    if ITEMS_FIELD in incoming:
+        forbidden.append(ITEMS_FIELD)
     if forbidden:
-        raise HTTPException(400, "复用预填不得写入正式单价或总金额")
+        raise HTTPException(400, "复用预填不得写入正式单价、总金额或多产品逐行明细")
     deal = db.get(OnlineDeal, ref.deal_id)
     before_amount = deal.amount if deal else None
     existing = load_document_fields(db, ref.id)
@@ -687,5 +893,5 @@ def patch_document_draft(ref_id: int, req: DocumentDraftRequest, db: Session = D
         "document_type": ref.document_type,
         "fields": fields,
         "patched_fields": sorted(incoming),
-        "note": "只合并本次确认的非价格复用字段；已有草稿和人工正式价格保持不变。",
+        "note": "只合并本次确认的非价格公共复用字段；多产品逐行明细由正式单据本人保存，已有草稿和人工正式价格保持不变。",
     }
