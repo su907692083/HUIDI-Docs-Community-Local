@@ -151,6 +151,7 @@ jobs:
               rows = wait.until(EC.presence_of_all_elements_located((By.CSS_SELECTOR, 'tr[data-deal]')))
               target = next((row for row in rows if 'Standalone Browser Buyer' in row.text), rows[0])
               target.click()
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#huidiBusinessMain .hb-detail')))
               quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-make-doc="quotation"]')))
               handles_before = list(driver.window_handles)
               quote.click()
@@ -163,13 +164,13 @@ jobs:
               assert '/documents/online/' in frame_src, frame_src
               assert '8765' not in frame_src, frame_src
               driver.switch_to.frame(frame)
-              source = driver.page_source
-              assert 'Standalone Browser Buyer' in source
-              assert 'stainless steel hinge' in source
-              assert '打印 / 另存 PDF' in source
-              assert 'online-bridge.html' not in source
+              wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-k="buyer"]').get_attribute('value') == 'Standalone Browser Buyer')
+              assert driver.find_element(By.CSS_SELECTOR, '[data-k="product"]').get_attribute('value') == 'stainless steel hinge'
+              assert driver.find_element(By.CSS_SELECTOR, '[data-k="unit_price"]').get_attribute('value') == ''
+              assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME, 'body').text
+              assert 'online-bridge.html' not in driver.page_source
               driver.switch_to.default_content()
-              print('HUIDI standalone business + same-workspace native quotation browser PASS')
+              print('HUIDI standalone business + stable same-workspace native quotation browser PASS')
           finally:
               driver.quit()
           PY
