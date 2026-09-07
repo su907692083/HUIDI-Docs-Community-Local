@@ -35,7 +35,7 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "yes",
     "on",
 }
-FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-3"
+FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-4"
 
 
 def community_surface_status() -> dict[str, object]:
@@ -57,26 +57,30 @@ def _workspace_html() -> str:
     if not COMMUNITY_SURFACE_ENABLED:
         return html
 
-    # Capability UI can initialize with the page, but the Online navigation
-    # extension must run after Community R1-R6 have finished constructing the
-    # mature sidebar. This preserves Community as the navigation owner instead
-    # of racing it with a body observer or maintaining a second shell.
+    # Community remains the visual/business owner. The first fusion layer adds
+    # shared Online summaries and base pages. Full Fusion V2 then mounts the
+    # existing Online capability modules into those Community pages.
     if "huidi-community-online-fusion.js" not in html:
         head_assets = (
             f'<link rel="stylesheet" href="/community/huidi-community-online-fusion.css?v={FUSION_ASSET_VERSION}">'
+            f'<link rel="stylesheet" href="/community/huidi-community-online-full-v2.css?v={FUSION_ASSET_VERSION}">'
             f'<script src="/community/huidi-community-online-fusion.js?v={FUSION_ASSET_VERSION}"></script>'
         )
         if "</head>" not in html:
             raise HTTPException(status_code=500, detail="Community workspace head is invalid")
         html = html.replace("</head>", head_assets + "</head>", 1)
 
+    # Online navigation and Full Fusion V2 must run after Community R1-R6 have
+    # completed the mature sidebar and page owners. No global observer, iframe,
+    # localhost bridge or second application shell is used.
     if "huidi-community-online-nav-v1.js" not in html:
-        nav_asset = (
+        body_assets = (
             f'<script src="/community/huidi-community-online-nav-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+            f'<script src="/community/huidi-community-online-full-v2.js?v={FUSION_ASSET_VERSION}"></script>'
         )
         if "</body>" not in html:
             raise HTTPException(status_code=500, detail="Community workspace body is invalid")
-        html = html.replace("</body>", nav_asset + "</body>", 1)
+        html = html.replace("</body>", body_assets + "</body>", 1)
 
     html = html.replace(
         "<title>HUIDI Docs · 本地外贸工作台</title>",
