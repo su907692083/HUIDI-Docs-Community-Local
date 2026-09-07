@@ -154,6 +154,43 @@ jobs:
               scope = driver.get_cookie('huidi_workspace_scope')
               assert scope and scope['value'] == f"org-{org['id']}", (scope, driver.get_cookies())
 
+              seeded = driver.execute_async_script("""
+                const done=arguments[arguments.length-1];
+                (async()=>{
+                  try{
+                    const product=await fetch('/api/product-brains/ci-fusion-hinge',{
+                      method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({
+                        name:'Stainless Steel Hinge',sku:'H-304',
+                        payload:{
+                          id:'ci-fusion-hinge',brain_id:'ci-fusion-hinge',name:'Stainless Steel Hinge',
+                          sku:'H-304',spec:'SUS304 4 inch',moq:'500 pcs',lead_time:'15 days',
+                          price:1.25,currency:'USD',unit:'PCS',
+                          target_keywords:['stainless steel hinge','hinge'],
+                          differentiators:['custom sizes','SUS304']
+                        }
+                      })
+                    });
+                    const productBody=await product.text();
+                    const lead=await fetch('/api/leads/manual',{
+                      method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({
+                        company_name:'Fusion Test Buyer',product_keyword:'stainless steel hinge',country:'Germany',
+                        website:'https://fusion-test-buyer.example',contact_name:'Anna Buyer',
+                        contact_role:'Purchasing Manager',contact_email:'anna@fusion-test-buyer.example',
+                        requirements:'Interested in SUS304 4 inch hinges. Please introduce your factory capability.',
+                        create_inquiry:false
+                      })
+                    });
+                    const leadBody=await lead.text();
+                    done({productStatus:product.status,productBody,leadStatus:lead.status,leadBody});
+                  }catch(e){done({error:String(e)})}
+                })();
+              """)
+              assert not seeded.get('error'), seeded
+              assert seeded['productStatus'] == 200, seeded
+              assert seeded['leadStatus'] == 200, seeded
+
               driver.get(BASE + '/')
               wait.until(lambda d: '/community/workspace.html' in d.current_url)
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFusion)"))
@@ -199,6 +236,50 @@ jobs:
               click_tab('online-find', 'company', '#view-online-find [data-fv2-pane="company"] #huidiServiceBack')
               click_tab('online-find', 'smart', '#fv2ProductBrains')
               click_tab('online-find', 'develop', '#hdwWorkbench')
+              wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#hdwLead'))"))
+              dev = driver.execute_script("""
+                return {
+                  company: document.querySelector('.hdw-lead-meta b')?.textContent || '',
+                  product: document.querySelector('#hdwProduct')?.value || '',
+                  summary: document.querySelector('#hdwProductSummary')?.value || '',
+                  handles: window.length
+                };
+              """)
+              assert dev['company'] == 'Fusion Test Buyer', dev
+              assert dev['product'] == 'ci-fusion-hinge', dev
+              assert 'Stainless Steel Hinge' in dev['summary'], dev
+
+              generated = driver.execute_script("""
+                const b=document.querySelector('[data-hdw-generate]');if(!b)return false;b.click();return true;
+              """)
+              assert generated
+              wait.until(lambda d: d.execute_script(
+                  "return Boolean(document.querySelector('#hdwSubject')?.value && document.querySelector('#hdwBody')?.value)"
+              ))
+              approved = driver.execute_script("""
+                const b=document.querySelector('[data-hdw-approve]');if(!b)return false;b.click();return true;
+              """)
+              assert approved
+              wait.until(lambda d: '已确认' in d.execute_script(
+                  "return document.querySelector('.hdw-card-head .hdw-badge')?.textContent || ''"
+              ))
+
+              edited = driver.execute_script("""
+                const s=document.querySelector('#hdwSubject');
+                if(!s)return false;
+                s.value='Edited development subject';
+                s.dispatchEvent(new Event('input',{bubbles:true}));
+                const b=document.querySelector('[data-hdw-save]');if(!b)return false;b.click();return true;
+              """)
+              assert edited
+              lead_id = driver.execute_script("return document.querySelector('#hdwLead')?.value || ''")
+              wait.until(lambda d: d.execute_async_script("""
+                const id=arguments[0],done=arguments[arguments.length-1];
+                fetch(`/api/leads/${id}/development-context`,{credentials:'same-origin'})
+                  .then(r=>r.json()).then(x=>done(x.review_state||''))
+                  .catch(()=>done(''));
+              """, lead_id) == 'rejected')
+              assert len(driver.window_handles) == 1
 
               # Mail + automation: Local draft owner plus real Online mail owners.
               click_nav('mail')
@@ -240,7 +321,7 @@ jobs:
               assert '<iframe' not in source, 'iframe leaked into fused workspace'
               assert 'online-bridge.html' not in source, 'legacy Online bridge leaked into fused workspace'
               assert '127.0.0.1:8765' not in source, 'legacy Local bridge leaked into fused workspace'
-              print('HUIDI Community × Online FULL capability + development fusion Chrome smoke PASS')
+              print('HUIDI Community × Online FULL capability + real lead development Chrome smoke PASS')
           finally:
               driver.quit()
               client.close()
@@ -252,5 +333,5 @@ jobs:
             kill "$(cat /tmp/huidi-fusion-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-fusion-server.log ]; then
-            tail -320 /tmp/huidi-fusion-server.log
+            tail -360 /tmp/huidi-fusion-server.log
           fi
