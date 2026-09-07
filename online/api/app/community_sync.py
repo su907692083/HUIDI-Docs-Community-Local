@@ -22,6 +22,10 @@ FORMAL_DOCUMENT_TYPES = {
     "commercial_invoice",
     "packing_list",
 }
+OWNER_PAYLOAD_TABLES = {
+    "customer": "online_customers",
+    "deal": "online_deals",
+}
 
 
 class CommunityDealProductLink(Base):
@@ -95,6 +99,81 @@ def _json(value: Any, fallback: Any) -> Any:
     return decoded if isinstance(decoded, type(fallback)) else fallback
 
 
+def _owner_payload(db: Session, kind: str, row_id: int) -> dict[str, Any]:
+    table = OWNER_PAYLOAD_TABLES.get(kind)
+    if not table:
+        return {}
+    try:
+        raw = db.execute(
+            text(f"SELECT payload_json FROM {table} WHERE id=:id"),
+            {"id": int(row_id)},
+        ).scalar_one_or_none()
+    except Exception:
+        return {}
+    return _json(raw, {})
+
+
+def _save_owner_payload(
+    db: Session,
+    kind: str,
+    row_id: int,
+    payload: dict[str, Any],
+    *,
+    local_customer_id: str = "",
+) -> None:
+    table = OWNER_PAYLOAD_TABLES.get(kind)
+    if not table:
+        return
+    encoded = json.dumps(payload, ensure_ascii=False)
+    if kind == "customer":
+        db.execute(
+            text(
+                "UPDATE online_customers SET payload_json=:payload, "
+                "local_customer_id=:local_id WHERE id=:id"
+            ),
+            {
+                "payload": encoded,
+                "local_id": _clean(local_customer_id, 160),
+                "id": int(row_id),
+            },
+        )
+        return
+    db.execute(
+        text(f"UPDATE {table} SET payload_json=:payload WHERE id=:id"),
+        {"payload": encoded, "id": int(row_id)},
+    )
+
+
+def _customer_local_id(db: Session, row_id: int) -> str:
+    try:
+        return _clean(
+            db.execute(
+                text("SELECT local_customer_id FROM online_customers WHERE id=:id"),
+                {"id": int(row_id)},
+            ).scalar_one_or_none(),
+            160,
+        )
+    except Exception:
+        return ""
+
+
+def _customer_by_local_id(db: Session, local_id: str) -> OnlineCustomer | None:
+    local_id = _clean(local_id, 160)
+    if not local_id:
+        return None
+    try:
+        row_id = db.execute(
+            text(
+                "SELECT id FROM online_customers "
+                "WHERE local_customer_id=:local_id ORDER BY id ASC LIMIT 1"
+            ),
+            {"local_id": local_id},
+        ).scalar_one_or_none()
+    except Exception:
+        row_id = None
+    return db.get(OnlineCustomer, int(row_id)) if row_id else None
+
+
 def _archive_key(kind: str, key: Any) -> str:
     return f"{kind}:{_clean(key, 160)}"
 
@@ -134,21 +213,29 @@ def _archived_sets(db: Session) -> dict[str, set[str]]:
 
 def _customer_local(row: OnlineCustomer, db: Session) -> dict[str, Any]:
     address = default_customer_address(db, row.id)
-    return {
-        "id": str(row.id),
-        "company": row.company_name,
-        "name": row.company_name,
-        "contact": row.contact_name,
-        "email": row.email,
-        "phone": row.phone,
-        "country": row.country,
-        "website": row.website,
-        "address": address_dict(address).get("formatted", "") if address else "",
-        "source": "HUIDI Online",
-        "notes": row.notes,
-        "updated_at": row.updated_at.isoformat() if row.updated_at else "",
-        "created_at": row.created_at.isoformat() if row.created_at else "",
-    }
+    payload = _owner_payload(db, "customer", row.id)
+    out = dict(payload)
+    stable_local_id = _customer_local_id(db, row.id) or _clean(payload.get("local_customer_id"), 160)
+    out.update(
+        {
+            "id": str(row.id),
+            "company": row.company_name,
+            "name": row.company_name,
+            "contact": row.contact_name,
+            "email": row.email,
+            "phone": row.phone,
+            "country": row.country,
+            "website": row.website,
+            "address": address_dict(address).get("formatted", "") if address else _clean(payload.get("address"), 2000),
+            "notes": row.notes,
+            "updated_at": row.updated_at.isoformat() if row.updated_at else "",
+            "created_at": row.created_at.isoformat() if row.created_at else "",
+        }
+    )
+    if stable_local_id:
+        out["local_customer_id"] = stable_local_id
+    out.setdefault("source", "HUIDI Online")
+    return out
 
 
 def _product_payload(row: ProductBrainRecord) -> dict[str, Any]:
@@ -174,24 +261,31 @@ def _deal_product_ids(db: Session, deal_id: int, product_ids: dict[str, str]) ->
 
 
 def _deal_local(row: OnlineDeal, db: Session, product_ids: dict[str, str]) -> dict[str, Any]:
-    return {
-        "id": str(row.id),
-        "customer_id": str(row.customer_id),
-        "title": row.title,
-        "stage": row.stage,
-        "probability": row.probability,
-        "currency": row.currency,
-        "estimated_amount": row.amount,
-        "amount": row.amount,
-        "product_ids": _deal_product_ids(db, row.id, product_ids),
-        "product_keyword": row.product_keyword,
-        "requirements": row.requirements,
-        "next_action": row.next_action,
-        "next_action_at": row.next_action_at,
-        "source": "HUIDI Online",
-        "updated_at": row.updated_at.isoformat() if row.updated_at else "",
-        "created_at": row.created_at.isoformat() if row.created_at else "",
-    }
+    payload = _owner_payload(db, "deal", row.id)
+    out = dict(payload)
+    out.update(
+        {
+            "id": str(row.id),
+            "customer_id": str(row.customer_id),
+            "title": row.title,
+            "stage": row.stage,
+            "probability": row.probability,
+            "currency": row.currency,
+            "estimated_amount": row.amount,
+            "amount": row.amount,
+            "product_ids": _deal_product_ids(db, row.id, product_ids),
+            "product_keyword": row.product_keyword,
+            "requirements": row.requirements,
+            "next_action": row.next_action,
+            "next_action_at": row.next_action_at,
+            "updated_at": row.updated_at.isoformat() if row.updated_at else "",
+            "created_at": row.created_at.isoformat() if row.created_at else "",
+        }
+    )
+    if row.local_deal_id:
+        out["local_deal_id"] = row.local_deal_id
+    out.setdefault("source", "HUIDI Online")
+    return out
 
 
 def _document_payload(db: Session, ref: OnlineDocumentRef) -> dict[str, Any]:
@@ -234,11 +328,14 @@ def _document_index(record: dict[str, Any], ref: OnlineDocumentRef) -> dict[str,
 
 def build_bootstrap(db: Session) -> dict[str, Any]:
     archived = _archived_sets(db)
-    customers = [
-        _customer_local(row, db)
-        for row in db.scalars(select(OnlineCustomer).order_by(OnlineCustomer.updated_at.desc()).limit(2000)).all()
-        if str(row.id) not in archived.get("customer", set())
-    ]
+    customer_rows = db.scalars(select(OnlineCustomer).order_by(OnlineCustomer.updated_at.desc()).limit(2000)).all()
+    customers = []
+    for row in customer_rows:
+        local = _customer_local(row, db)
+        keys = {str(row.id), _clean(local.get("local_customer_id"), 160)}
+        if any(key and key in archived.get("customer", set()) for key in keys):
+            continue
+        customers.append(local)
     product_rows = db.scalars(select(ProductBrainRecord).order_by(ProductBrainRecord.updated_at.desc()).limit(4000)).all()
     products = [
         _product_payload(row)
@@ -247,11 +344,13 @@ def build_bootstrap(db: Session) -> dict[str, Any]:
         and (row.local_product_id or row.brain_id) not in archived.get("product", set())
     ]
     product_id_map = {row.brain_id: (row.local_product_id or row.brain_id) for row in product_rows}
-    deals = [
-        _deal_local(row, db, product_id_map)
-        for row in db.scalars(select(OnlineDeal).order_by(OnlineDeal.updated_at.desc()).limit(2000)).all()
-        if str(row.id) not in archived.get("deal", set())
-    ]
+    deal_rows = db.scalars(select(OnlineDeal).order_by(OnlineDeal.updated_at.desc()).limit(2000)).all()
+    deals = []
+    for row in deal_rows:
+        keys = {str(row.id), _clean(row.local_deal_id, 160)}
+        if any(key and key in archived.get("deal", set()) for key in keys):
+            continue
+        deals.append(_deal_local(row, db, product_id_map))
     docs: list[dict[str, Any]] = []
     for ref in db.scalars(
         select(OnlineDocumentRef)
@@ -273,9 +372,9 @@ def build_bootstrap(db: Session) -> dict[str, Any]:
         "deals": deals,
         "documents": docs,
         "cloud_scopes": {
-            "customers": "canonical-online-customers",
+            "customers": "canonical-online-customers+local-payload",
             "products": "existing-product-brain-owner",
-            "deals": "canonical-online-deals",
+            "deals": "canonical-online-deals+local-payload",
             "documents": "existing-online-document-refs",
             "deal_product_links": "relation-only",
         },
@@ -285,7 +384,10 @@ def build_bootstrap(db: Session) -> dict[str, Any]:
 
 def _save_customer(db: Session, raw: dict[str, Any], id_map: dict[str, int]) -> OnlineCustomer:
     client_id = _clean(raw.get("id"), 160)
-    row = db.get(OnlineCustomer, _int_id(client_id)) if _int_id(client_id) else None
+    stable_local_id = _clean(raw.get("local_customer_id"), 160)
+    row = _customer_by_local_id(db, stable_local_id or client_id)
+    if not row and _int_id(client_id):
+        row = db.get(OnlineCustomer, _int_id(client_id))
     if not row:
         email = _clean(raw.get("email"), 255)
         if email:
@@ -304,9 +406,30 @@ def _save_customer(db: Session, raw: dict[str, Any], id_map: dict[str, int]) -> 
     row.status = "active"
     row.updated_at = _now()
     db.flush()
+
+    existing_local_id = _customer_local_id(db, row.id)
+    if not stable_local_id:
+        if existing_local_id:
+            stable_local_id = existing_local_id
+        elif client_id and (not client_id.isdigit() or client_id != str(row.id)):
+            stable_local_id = client_id
+    full_payload = dict(raw)
+    if stable_local_id:
+        full_payload["local_customer_id"] = stable_local_id
+    _save_owner_payload(
+        db,
+        "customer",
+        row.id,
+        full_payload,
+        local_customer_id=stable_local_id,
+    )
+
     if client_id:
         id_map[client_id] = row.id
-    _unarchive(db, "customer", client_id, row.id)
+    if stable_local_id:
+        id_map[stable_local_id] = row.id
+    id_map[str(row.id)] = row.id
+    _unarchive(db, "customer", client_id, stable_local_id, row.id)
 
     address_text = _clean(raw.get("address") or raw.get("ship_to"), 2000)
     if address_text:
@@ -360,9 +483,12 @@ def _save_deal(
     product_lookup: dict[str, ProductBrainRecord],
 ) -> OnlineDeal:
     client_id = _clean(raw.get("id"), 160)
-    row = db.get(OnlineDeal, _int_id(client_id)) if _int_id(client_id) else None
-    if not row and client_id:
-        row = db.scalar(select(OnlineDeal).where(OnlineDeal.local_deal_id == client_id))
+    stable_local_id = _clean(raw.get("local_deal_id"), 160) or client_id
+    row = None
+    if stable_local_id:
+        row = db.scalar(select(OnlineDeal).where(OnlineDeal.local_deal_id == stable_local_id))
+    if not row and _int_id(client_id):
+        row = db.get(OnlineDeal, _int_id(client_id))
     customer_key = _clean(raw.get("customer_id"), 160)
     customer_id = customer_ids.get(customer_key) or _int_id(customer_key)
     customer = db.get(OnlineCustomer, customer_id) if customer_id else None
@@ -372,7 +498,7 @@ def _save_deal(
         row = OnlineDeal(
             customer_id=customer.id,
             title=_clean(raw.get("title") or f"{customer.company_name} · 新询盘", 255),
-            local_deal_id=client_id,
+            local_deal_id=stable_local_id,
             created_at=_now(),
         )
         db.add(row)
@@ -395,10 +521,10 @@ def _save_deal(
     row.next_action = _clean(raw.get("next_action"), 2000)
     row.next_action_at = _clean(raw.get("next_action_at"), 80)
     row.updated_at = _now()
-    if client_id and not row.local_deal_id:
-        row.local_deal_id = client_id
+    if stable_local_id and not row.local_deal_id:
+        row.local_deal_id = stable_local_id
     db.flush()
-    _unarchive(db, "deal", client_id, row.id)
+    _unarchive(db, "deal", client_id, stable_local_id, row.id)
 
     selected = [_clean(x, 160) for x in (raw.get("product_ids") or []) if _clean(x, 160)]
     for link in db.scalars(select(CommunityDealProductLink).where(CommunityDealProductLink.deal_id == row.id)).all():
@@ -419,6 +545,11 @@ def _save_deal(
         row.product_keyword = explicit_keyword
     elif selected_rows:
         row.product_keyword = _clean(selected_rows[0].name, 255)
+
+    full_payload = dict(raw)
+    if row.local_deal_id:
+        full_payload["local_deal_id"] = row.local_deal_id
+    _save_owner_payload(db, "deal", row.id, full_payload)
     return row
 
 
