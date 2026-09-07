@@ -28,6 +28,12 @@ from . import business_center  # noqa: F401,E402
 # but makes the Windows review package usable without Community Local running:
 # manual real-data entry + native Online quotation / PI / contract / CI / packing.
 from . import standalone_business  # noqa: F401,E402
+# Batch entry decorates only the existing native multi-product document renderer.
+# It adds row selection + explicit copy-to-selected controls and does not create
+# another route, document owner, storage owner, or automatic price path.
+from .native_document_batch import install_native_document_batch  # noqa: E402
+
+install_native_document_batch(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
