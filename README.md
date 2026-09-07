@@ -35,6 +35,7 @@ Source Available · Local-first · Windows / Browser
 核心资料默认保存在你自己的电脑浏览器中。换电脑或清理浏览器前，请先使用 **完整 JSON 备份**。
 
 ---
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/600c8178-88dc-46dd-a881-fbc5ce5cfef7" />
 
 ## 一条完整的外贸工作链
 
@@ -59,6 +60,7 @@ Commercial Invoice / CI + Packing List
 历史单据保留自己的业务快照。以后客户地址或商品资料发生变化，不会静默篡改已经保存的历史文件；需要时由用户主动同步。
 
 ---
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/86c23e5c-d347-41ae-9ffa-c4860aa1ba87" />
 
 ## 五类正式外贸单据
 
@@ -95,6 +97,7 @@ HUIDI Docs 当前统一支持：
 ---
 
 ## PDF 不只是一个固定模板
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/0f670568-622f-41d5-a7ce-0a0ec82ff082" />
 
 ### 5 套统一 PDF 风格
 
@@ -120,6 +123,7 @@ HUIDI Docs 当前统一支持：
 - **紧凑 / 标准** 两种排版密度，不通过无限缩字强塞成一页。
 
 ---
+<img width="2559" height="1398" alt="image" src="https://github.com/user-attachments/assets/15885961-2411-420e-a7d3-31590964b094" />
 
 ## 18 种文档语言模式
 
