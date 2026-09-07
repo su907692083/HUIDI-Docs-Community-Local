@@ -1,7 +1,6 @@
 (()=>{
 'use strict';
-const online=window.HUIDI_COMMUNITY_ONLINE;
-if(!online?.enabled||window.HUIDICommunityFormalPriceGuard)return;
+if(window.HUIDICommunityFormalPriceGuard)return;
 const clean=v=>String(v??'').trim();
 const state={done:false,tries:0};
 function context(){try{return JSON.parse(sessionStorage.getItem('huidi_local_document_context_v2')||'null')}catch(_){return null}}
@@ -37,5 +36,5 @@ function protect(){
 function schedule(){if(state.done)return;state.tries=0;const run=()=>{if(protect()||state.tries++>=24)return;setTimeout(run,80)};queueMicrotask(run)}
 window.addEventListener('HUIDI:document.context.applied',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.HUIDICommunityFormalPriceGuard=Object.freeze({version:'1.0.0',protect,referencePrice,samePrice});
+window.HUIDICommunityFormalPriceGuard=Object.freeze({version:'1.0.1',protect,referencePrice,samePrice});
 })();
