@@ -36,6 +36,14 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         self.assertIn("scheduleRefreshBurst", pagination)
         self.assertIn("scheduleEnsureBurst", threads)
 
+    def test_sequence_pagination_is_action_driven_not_global_dom_watcher(self):
+        source = (WEB / "sequence-pagination-ui.js").read_text(encoding="utf-8")
+        self.assertNotIn("MutationObserver", source)
+        self.assertNotIn("observe(document.body", source)
+        self.assertIn("window.addEventListener('click'", source)
+        self.assertIn("scheduleRefreshBurst", source)
+        self.assertIn("[data-huidi-sequences]", source)
+
     def test_legacy_mail_usability_layer_yields_navigation_to_workspace_router(self):
         source = (WEB / "workflow-usability-closure.js").read_text(encoding="utf-8")
         self.assertIn("if(window.HUIDIWorkspacePages?.open)return", source)
