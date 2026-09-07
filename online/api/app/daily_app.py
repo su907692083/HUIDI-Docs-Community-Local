@@ -20,6 +20,10 @@ from . import business_center  # noqa: F401,E402
 # but makes the Windows review package usable without Community Local running:
 # manual real-data entry + native Online quotation / PI / contract / CI / packing.
 from . import standalone_business  # noqa: F401,E402
+# The document workbench adds only navigation/projection over the existing
+# Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
+# bundle from an already-confirmed Online deal so users do not re-enter data.
+from . import document_workbench  # noqa: F401,E402
 # Reuses Product Brain + mailbox replies + the existing business-center owner to
 # reduce re-entry. It has no second customer/deal/document tables.
 from . import low_input_workflow  # noqa: F401,E402
