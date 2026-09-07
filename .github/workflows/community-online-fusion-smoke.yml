@@ -6,6 +6,7 @@ on:
       - 'public/huidi-community-online-fusion.*'
       - 'public/huidi-community-online-nav-v1.js'
       - 'public/huidi-community-online-full-v2.*'
+      - 'public/huidi-community-online-intelligence-v2.js'
       - 'public/community-local-mode.js'
       - 'public/huidi-community-cloud-adapter-v1.js'
       - 'public/workspace.html'
@@ -18,6 +19,7 @@ on:
       - 'public/huidi-community-online-fusion.*'
       - 'public/huidi-community-online-nav-v1.js'
       - 'public/huidi-community-online-full-v2.*'
+      - 'public/huidi-community-online-intelligence-v2.js'
       - 'public/community-local-mode.js'
       - 'public/huidi-community-cloud-adapter-v1.js'
       - 'public/workspace.html'
@@ -53,6 +55,7 @@ jobs:
           node --check ../../public/huidi-community-online-fusion.js
           node --check ../../public/huidi-community-online-nav-v1.js
           node --check ../../public/huidi-community-online-full-v2.js
+          node --check ../../public/huidi-community-online-intelligence-v2.js
       - name: Start fused HUIDI workspace
         run: |
           set -euo pipefail
@@ -146,6 +149,7 @@ jobs:
               wait.until(lambda d: '/community/workspace.html' in d.current_url)
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFusion)"))
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFullV2)"))
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineIntelligenceV2)"))
               wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
               wait.until(lambda d: d.execute_script("return document.body.dataset.huidiFullFusion || ''") == 'v2')
 
@@ -168,7 +172,7 @@ jobs:
               assert snapshot['iframeCount'] == 0, snapshot
               assert snapshot['find'] and snapshot['intel'] and snapshot['admin'], snapshot
               assert snapshot['today'] and snapshot['mail'], snapshot
-              assert snapshot['fullTabs'] >= 27, snapshot
+              assert snapshot['fullTabs'] >= 29, snapshot
               assert snapshot['mode'] == 'community-online', snapshot
               assert snapshot['scope'] == f"org-{org['id']}", snapshot
 
@@ -190,8 +194,10 @@ jobs:
               click_tab('mail', 'queue', '#view-mail [data-fv2-pane="queue"] #huidiServiceBack')
               click_tab('mail', 'sequences', '#view-mail [data-fv2-pane="sequences"] #sqBack')
 
-              # Market intelligence tools.
+              # Market intelligence tools and fused intelligence projects.
               click_nav('online-intel')
+              click_tab('online-intel', 'world-map', '#view-online-intel [data-fv2-pane="world-map"] #wiMap')
+              click_tab('online-intel', 'customer-intel', '#view-online-intel [data-fv2-pane="customer-intel"] #huidiIntelBack')
               for tab in ('live','trade','tariff','fx','shipping'):
                   click_tab('online-intel', tab, f'#view-online-intel [data-fv2-pane="{tab}"] #huidiServiceBack')
 
@@ -232,5 +238,5 @@ jobs:
             kill "$(cat /tmp/huidi-fusion-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-fusion-server.log ]; then
-            tail -260 /tmp/huidi-fusion-server.log
+            tail -280 /tmp/huidi-fusion-server.log
           fi
