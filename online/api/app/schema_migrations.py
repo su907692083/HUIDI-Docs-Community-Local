@@ -10,7 +10,7 @@ from sqlalchemy.engine import Connection, Engine
 
 
 SCHEMA_SERIES = "huidi.online.schema/v1"
-LATEST_SCHEMA_REVISION = "20260907_004_online_document_payload"
+LATEST_SCHEMA_REVISION = "20260907_005_document_master_data"
 # Stable signed bigint used only to serialize HUIDI schema revisions inside one
 # PostgreSQL database. It contains no customer or deployment-specific data.
 POSTGRES_MIGRATION_LOCK_ID = 6843443791448361
@@ -69,6 +69,44 @@ _industry_pref_table = Table(
     Column("updated_at", DateTime, nullable=False),
 )
 
+_master_meta = MetaData()
+_customer_address_table = Table(
+    "online_customer_addresses",
+    _master_meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("customer_id", Integer, nullable=False, index=True),
+    Column("address_type", String(40), nullable=False, default="shipping", index=True),
+    Column("label", String(120), nullable=False, default=""),
+    Column("contact_name", String(255), nullable=False, default=""),
+    Column("phone", String(120), nullable=False, default=""),
+    Column("country", String(120), nullable=False, default=""),
+    Column("region", String(160), nullable=False, default=""),
+    Column("city", String(160), nullable=False, default=""),
+    Column("postal_code", String(60), nullable=False, default=""),
+    Column("address_line1", Text, nullable=False, default=""),
+    Column("address_line2", Text, nullable=False, default=""),
+    Column("is_default", Integer, nullable=False, default=0, index=True),
+    Column("notes", Text, nullable=False, default=""),
+    Column("created_at", DateTime, nullable=False),
+    Column("updated_at", DateTime, nullable=False, index=True),
+)
+_bank_account_table = Table(
+    "company_bank_accounts",
+    _master_meta,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("label", String(120), nullable=False, default=""),
+    Column("bank_name", String(255), nullable=False, default=""),
+    Column("account_name", String(255), nullable=False, default=""),
+    Column("account_number", String(255), nullable=False, default=""),
+    Column("swift_code", String(120), nullable=False, default=""),
+    Column("bank_address", Text, nullable=False, default=""),
+    Column("currency", String(40), nullable=False, default=""),
+    Column("is_default", Integer, nullable=False, default=0, index=True),
+    Column("notes", Text, nullable=False, default=""),
+    Column("created_at", DateTime, nullable=False),
+    Column("updated_at", DateTime, nullable=False, index=True),
+)
+
 
 def _baseline(_engine: Engine) -> None:
     # Existing installations are treated as the Online V0.1 baseline. Business
@@ -92,12 +130,7 @@ def _industry_playbook_context(engine: Engine) -> None:
 
 
 def _online_document_payload(engine: Engine) -> None:
-    """Add durable draft payload to the existing DocumentRef owner.
-
-    This is deliberately a column on online_document_refs, not a second
-    document/draft owner. Fresh databases may already contain the column once
-    the ORM model catches up; legacy databases are upgraded in place.
-    """
+    """Add durable draft payload to the existing DocumentRef owner."""
     inspector = inspect(engine)
     if "online_document_refs" not in inspector.get_table_names():
         return
@@ -111,6 +144,35 @@ def _online_document_payload(engine: Engine) -> None:
                 "ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'"
             )
         )
+
+
+def _document_master_data(engine: Engine) -> None:
+    """Extend the existing Customer and Company Settings owners for documents."""
+    inspector = inspect(engine)
+    tables = set(inspector.get_table_names())
+    if "online_customer_addresses" not in tables:
+        _customer_address_table.create(engine, checkfirst=True)
+    if "company_bank_accounts" not in tables:
+        _bank_account_table.create(engine, checkfirst=True)
+    inspector = inspect(engine)
+    if "company_settings" not in inspector.get_table_names():
+        return
+    columns = {str(col.get("name") or "") for col in inspector.get_columns("company_settings")}
+    additions = [
+        ("company_name", "VARCHAR(255) NOT NULL DEFAULT ''"),
+        ("legal_name", "VARCHAR(255) NOT NULL DEFAULT ''"),
+        ("country", "VARCHAR(120) NOT NULL DEFAULT ''"),
+        ("address", "TEXT NOT NULL DEFAULT ''"),
+        ("website", "TEXT NOT NULL DEFAULT ''"),
+        ("phone", "VARCHAR(120) NOT NULL DEFAULT ''"),
+        ("email", "VARCHAR(255) NOT NULL DEFAULT ''"),
+        ("tax_id", "VARCHAR(160) NOT NULL DEFAULT ''"),
+    ]
+    with engine.begin() as conn:
+        for name, ddl in additions:
+            if name in columns:
+                continue
+            conn.execute(text(f"ALTER TABLE company_settings ADD COLUMN {name} {ddl}"))
 
 
 MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
@@ -134,6 +196,11 @@ MIGRATIONS: list[tuple[str, str, Callable[[Engine], None]]] = [
         "20260907_004_online_document_payload",
         "Durable draft payload on the existing OnlineDocumentRef owner",
         _online_document_payload,
+    ),
+    (
+        "20260907_005_document_master_data",
+        "Customer address history and seller payment data under existing owners",
+        _document_master_data,
     ),
 ]
 
