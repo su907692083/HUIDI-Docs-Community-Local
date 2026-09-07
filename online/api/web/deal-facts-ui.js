@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.HUIDIDealFactsUI)return;
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let activeDealId=0,lastRendered=0,loadEpoch=0,loadingDealId=0;
 async function api(url){const r=await fetch(url);if(!r.ok)throw new Error(await r.text()||r.statusText);return r.json()}
 function value(v){if(v===null||v===undefined||v==='')return '';if(Array.isArray(v))return v.slice(0,4).join('、');return String(v)}
