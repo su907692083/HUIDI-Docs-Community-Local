@@ -90,12 +90,7 @@ jobs:
               wait.until(EC.presence_of_element_located((By.ID,'hnContactSearch')))
               contacts_surface = driver.execute_script("""
                 const node=document.querySelector('#huidiNavBack');
-                return {
-                  open: node?.classList.contains('open'),
-                  nativePage: node?.classList.contains('hn-page-surface'),
-                  legacyDock: node?.classList.contains('hpr-docked'),
-                  position: node ? getComputedStyle(node).position : ''
-                };
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('hn-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
               """)
               assert contacts_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, contacts_surface
 
@@ -105,12 +100,7 @@ jobs:
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-note-refresh]')))
               notifications_surface = driver.execute_script("""
                 const node=document.querySelector('#huidiNavBack');
-                return {
-                  open: node?.classList.contains('open'),
-                  nativePage: node?.classList.contains('hn-page-surface'),
-                  legacyDock: node?.classList.contains('hpr-docked'),
-                  position: node ? getComputedStyle(node).position : ''
-                };
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('hn-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
               """)
               assert notifications_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, notifications_surface
 
@@ -120,14 +110,43 @@ jobs:
               wait.until(EC.presence_of_element_located((By.ID,'ciKeyword')))
               intelligence_surface = driver.execute_script("""
                 const node=document.querySelector('#huidiIntelBack');
-                return {
-                  open: node?.classList.contains('open'),
-                  nativePage: node?.classList.contains('ci-page-surface'),
-                  legacyDock: node?.classList.contains('hpr-docked'),
-                  position: node ? getComputedStyle(node).position : ''
-                };
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('ci-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
               """)
               assert intelligence_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, intelligence_surface
+
+              mail_links=driver.find_elements(By.CSS_SELECTOR,'.side [data-huidi-service="mail"]')
+              inbox_link=next(x for x in mail_links if x.get_attribute('data-huidi-mail-folder')!='sent')
+              inbox_link.click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'收件箱'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiServiceBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'邮箱与回复'))
+              service_surface = driver.execute_script("""
+                const node=document.querySelector('#huidiServiceBack');
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('hs-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
+              """)
+              assert service_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, service_surface
+
+              driver.find_element(By.CSS_SELECTOR,'.side [data-huidi-service="mail"][data-huidi-mail-folder="sent"]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'已发送'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'已发送'))
+              assert 'page=sent' in driver.current_url, driver.current_url
+              assert driver.execute_script("return document.querySelector('#huidiServiceBack')?.classList.contains('hs-page-surface')") is True
+
+              driver.find_element(By.CSS_SELECTOR,'.side [data-huidi-service="queue"]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'待发送'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'待发送'))
+              assert 'page=queue' in driver.current_url, driver.current_url
+              assert driver.execute_script("return document.querySelector('#huidiServiceBack')?.classList.contains('hpr-docked')") is False
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-audit]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'操作记录'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#auBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.ID,'auFilters')))
+              audit_surface = driver.execute_script("""
+                const node=document.querySelector('#auBack');
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('au-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
+              """)
+              assert audit_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, audit_surface
 
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品资料'))
@@ -135,14 +154,11 @@ jobs:
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#pbBackdrop [data-pbf="name"]')))
               assert driver.execute_script("return document.querySelector('#huidiNavBack')?.classList.contains('open')") is False
               assert driver.execute_script("return document.querySelector('#huidiIntelBack')?.classList.contains('open')") is False
+              assert driver.execute_script("return document.querySelector('#huidiServiceBack')?.classList.contains('open')") is False
+              assert driver.execute_script("return document.querySelector('#auBack')?.classList.contains('open')") is False
               product_surface = driver.execute_script("""
                 const node=document.querySelector('#pbBackdrop');
-                return {
-                  open: node?.classList.contains('open'),
-                  nativePage: node?.classList.contains('pb-page-surface'),
-                  legacyDock: node?.classList.contains('hpr-docked'),
-                  position: node ? getComputedStyle(node).position : ''
-                };
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('pb-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
               """)
               assert product_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, product_surface
 
@@ -152,12 +168,7 @@ jobs:
               wait.until(EC.text_to_be_present_in_element((By.ID,'sqMain'),'跟进内容'))
               seq_surface = driver.execute_script("""
                 const node=document.querySelector('#sqBack');
-                return {
-                  open: node?.classList.contains('open'),
-                  nativePage: node?.classList.contains('sq-page-surface'),
-                  legacyDock: node?.classList.contains('hpr-docked'),
-                  position: node ? getComputedStyle(node).position : ''
-                };
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('sq-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
               """)
               assert seq_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, seq_surface
 
@@ -173,12 +184,7 @@ jobs:
               assert active == [], active
               surface = driver.execute_script("""
                 const node=document.querySelector('#huidiBusinessBack');
-                return {
-                  open: node?.classList.contains('open'),
-                  nativePage: node?.classList.contains('hb-page-surface'),
-                  legacyDock: node?.classList.contains('hpr-docked'),
-                  position: node ? getComputedStyle(node).position : ''
-                };
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('hb-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
               """)
               assert surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, surface
 
@@ -206,7 +212,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI native contacts + notifications + intelligence + product + follow-up + business + document PASS')
+              print('HUIDI native navigation + intelligence + mail services + audit + product + follow-up + business + document PASS')
           finally:
               driver.quit()
           PY
