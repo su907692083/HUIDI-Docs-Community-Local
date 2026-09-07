@@ -45,8 +45,22 @@ class SchemaMigrationTests(unittest.TestCase):
                     self.assertIn("online_intelligence_projections", tables)
                     self.assertIn("intelligence_feed_sources", tables)
                     self.assertIn("lead_industry_preferences", tables)
+                    self.assertIn("online_customer_addresses", tables)
+                    self.assertIn("company_bank_accounts", tables)
                     document_columns = {x["name"] for x in inspector.get_columns("online_document_refs")}
                     self.assertIn("payload_json", document_columns)
+                    setting_columns = {x["name"] for x in inspector.get_columns("company_settings")}
+                    for name in {
+                        "company_name",
+                        "legal_name",
+                        "country",
+                        "address",
+                        "website",
+                        "phone",
+                        "email",
+                        "tax_id",
+                    }:
+                        self.assertIn(name, setting_columns)
                 finally:
                     reset_current_organization(token)
 
@@ -67,7 +81,7 @@ class SchemaMigrationTests(unittest.TestCase):
             finally:
                 reset_current_organization(token)
 
-    def test_legacy_document_ref_table_is_upgraded_in_place(self):
+    def test_legacy_document_and_company_tables_are_upgraded_in_place(self):
         with tempfile.TemporaryDirectory() as tmp:
             engine = create_engine(f"sqlite:///{Path(tmp) / 'legacy-document.db'}")
             with engine.begin() as conn:
@@ -80,11 +94,25 @@ class SchemaMigrationTests(unittest.TestCase):
                         "created_at DATETIME, updated_at DATETIME)"
                     )
                 )
+                conn.execute(
+                    text(
+                        "CREATE TABLE company_settings ("
+                        "id INTEGER PRIMARY KEY, timezone_name VARCHAR(80) NOT NULL DEFAULT 'Asia/Shanghai', "
+                        "updated_by VARCHAR(160) NOT NULL DEFAULT '', updated_at DATETIME)"
+                    )
+                )
             before = {x["name"] for x in inspect(engine).get_columns("online_document_refs")}
             self.assertNotIn("payload_json", before)
             first = apply_schema_migrations(engine)
-            after = {x["name"] for x in inspect(engine).get_columns("online_document_refs")}
+            inspector = inspect(engine)
+            after = {x["name"] for x in inspector.get_columns("online_document_refs")}
             self.assertIn("payload_json", after)
+            self.assertIn("online_customer_addresses", inspector.get_table_names())
+            self.assertIn("company_bank_accounts", inspector.get_table_names())
+            settings = {x["name"] for x in inspector.get_columns("company_settings")}
+            self.assertIn("legal_name", settings)
+            self.assertIn("address", settings)
+            self.assertIn("tax_id", settings)
             self.assertTrue(first["up_to_date"])
             second = apply_schema_migrations(engine)
             self.assertEqual(second["newly_applied"], [])
