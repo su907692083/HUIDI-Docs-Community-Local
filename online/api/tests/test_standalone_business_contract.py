@@ -44,11 +44,15 @@ class StandaloneBusinessContractTests(unittest.TestCase):
         self.assertIn("5000 pcs", payload["deal"]["requirements"])
         self.__class__.deal_id = int(payload["deal"]["id"])
 
-    def test_all_five_documents_generate_inside_online(self):
+    def _deal_id(self) -> int:
         deal_id = getattr(self.__class__, "deal_id", None)
         if not deal_id:
             self.test_manual_real_customer_can_become_inquiry_without_provider()
             deal_id = self.__class__.deal_id
+        return int(deal_id)
+
+    def test_all_five_documents_generate_inside_online(self):
+        deal_id = self._deal_id()
         types = {
             "quotation": "报价单",
             "proforma_invoice": "形式发票 PI",
@@ -64,6 +68,7 @@ class StandaloneBusinessContractTests(unittest.TestCase):
             self.assertEqual(created.status_code, 200, created.text)
             data = created.json()
             self.assertTrue(data["url"].startswith("/documents/online/"))
+            self.assertIn("document-context", data["context_url"])
             self.assertNotIn("8765", data["url"])
             page = self.client.get(data["url"])
             self.assertEqual(page.status_code, 200, page.text)
@@ -71,12 +76,80 @@ class StandaloneBusinessContractTests(unittest.TestCase):
             self.assertIn("Standalone Contract Buyer", page.text)
             self.assertIn("stainless steel hinge", page.text.lower())
             self.assertIn("打印 / 另存 PDF", page.text)
+            self.assertIn("保存草稿", page.text)
             self.assertNotIn("online-bridge.html", page.text)
             if document_type != "packing_list":
                 self.assertIn("data-k='unit_price' value=''", page.text)
                 self.assertNotIn("data-k='unit_price' value='1.25'", page.text)
                 if "产品资料参考价" in page.text:
                     self.assertIn("仅供核对，不会自动写入正式单价", page.text)
+
+    def test_durable_draft_inherits_non_price_fields_but_never_formal_price(self):
+        deal_id = self._deal_id()
+        before = self.client.get(f"/api/business/deals/{deal_id}")
+        self.assertEqual(before.status_code, 200, before.text)
+        amount_before = before.json()["amount"]
+
+        quote = self.client.post(
+            f"/api/business/deals/{deal_id}/native-document",
+            json={"document_type": "quotation"},
+        )
+        self.assertEqual(quote.status_code, 200, quote.text)
+        quote_id = int(quote.json()["id"])
+        saved = self.client.put(
+            f"/api/business/documents/{quote_id}/draft",
+            json={
+                "fields": {
+                    "seller": "HUIDI Metal Works",
+                    "quantity": "7200 pcs",
+                    "payment": "T/T 30% deposit",
+                    "terms": "Artwork confirmed before production.",
+                    "unit_price": "8.50",
+                    "total": "61200",
+                }
+            },
+        )
+        self.assertEqual(saved.status_code, 200, saved.text)
+        self.assertEqual(saved.json()["fields"]["unit_price"], "8.50")
+
+        reopened = self.client.get(quote.json()["url"])
+        self.assertEqual(reopened.status_code, 200, reopened.text)
+        self.assertIn("data-k='unit_price' value='8.50'", reopened.text)
+        self.assertIn("value='7200 pcs'", reopened.text)
+
+        pi = self.client.post(
+            f"/api/business/deals/{deal_id}/native-document",
+            json={"document_type": "proforma_invoice"},
+        )
+        self.assertEqual(pi.status_code, 200, pi.text)
+        pi_id = int(pi.json()["id"])
+        context = self.client.get(
+            f"/api/business/deals/{deal_id}/document-context",
+            params={"document": "proforma_invoice", "current_ref_id": pi_id},
+        )
+        self.assertEqual(context.status_code, 200, context.text)
+        data = context.json()
+        self.assertEqual(data["schema"], "huidi.document.context/v1")
+        self.assertEqual(data["inherited_fields"]["seller"], "HUIDI Metal Works")
+        self.assertEqual(data["inherited_fields"]["quantity"], "7200 pcs")
+        self.assertEqual(data["inherited_fields"]["payment"], "T/T 30% deposit")
+        self.assertEqual(data["inherited_fields"]["terms"], "Artwork confirmed before production.")
+        self.assertNotIn("unit_price", data["inherited_fields"])
+        self.assertNotIn("total", data["inherited_fields"])
+        self.assertTrue(any(x.get("source") == "upstream_document" for x in data["price_references"]))
+        self.assertFalse(data["availability"]["customer_address_history"]["available"])
+        self.assertFalse(data["availability"]["seller_bank_accounts"]["available"])
+
+        pi_page = self.client.get(pi.json()["url"])
+        self.assertEqual(pi_page.status_code, 200, pi_page.text)
+        self.assertIn("value='7200 pcs'", pi_page.text)
+        self.assertIn("T/T 30% deposit", pi_page.text)
+        self.assertIn("data-k='unit_price' value=''", pi_page.text)
+        self.assertIn("仅供返单/议价核对", pi_page.text)
+
+        after = self.client.get(f"/api/business/deals/{deal_id}")
+        self.assertEqual(after.status_code, 200, after.text)
+        self.assertEqual(after.json()["amount"], amount_before)
 
     def test_manual_entry_and_document_navigation_have_separate_single_owners(self):
         standalone = (WEB / "standalone-business-ui.js").read_text(encoding="utf-8")
