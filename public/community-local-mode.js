@@ -152,7 +152,7 @@ const applyType=()=>{
 const loadCloudAdapter=()=>{
   if(!ONLINE||document.querySelector('script[data-huidi-community-cloud]'))return;
   const script=document.createElement('script');
-  script.src='/community/huidi-community-cloud-adapter-v1.js?v=HUIDI-COMMUNITY-ONLINE-1';
+  script.src='/community/huidi-community-cloud-adapter-v1.js?v=HUIDI-COMMUNITY-ONLINE-2';
   script.dataset.huidiCommunityCloud='1';
   document.head.appendChild(script);
 };
@@ -175,8 +175,6 @@ const boot=()=>{
   setTimeout(()=>{permit();hideByText();applyType();window.FlypigBOXDocumentGate?.setTrialWatermark?.(false)},250);
   setTimeout(()=>{permit();hideByText()},1200);
   setTimeout(()=>{permit();hideByText();window.FlypigBOXApp?.applyEditorAccessGate?.(false)},3000);
-  const obs=new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType===1)hideByText(n)})));
-  obs.observe(document.body,{subtree:true,childList:true});
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
