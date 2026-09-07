@@ -15,10 +15,14 @@ PUBLIC = REPO / "public"
 class CommunityOnlineFusionContractTests(unittest.TestCase):
     def setUp(self):
         self.surface = (APP / "community_surface.py").read_text(encoding="utf-8")
+        self.daily = (APP / "daily_app.py").read_text(encoding="utf-8")
+        self.development_backend = (APP / "development_workflow.py").read_text(encoding="utf-8")
         self.fusion = (PUBLIC / "huidi-community-online-fusion.js").read_text(encoding="utf-8")
         self.full_v2 = (PUBLIC / "huidi-community-online-full-v2.js").read_text(encoding="utf-8")
         self.intel_v2 = (PUBLIC / "huidi-community-online-intelligence-v2.js").read_text(encoding="utf-8")
+        self.development = (PUBLIC / "huidi-community-online-development-workbench-v1.js").read_text(encoding="utf-8")
         self.full_v2_css = (PUBLIC / "huidi-community-online-full-v2.css").read_text(encoding="utf-8")
+        self.development_css = (PUBLIC / "huidi-community-online-development-workbench-v1.css").read_text(encoding="utf-8")
         self.nav = (PUBLIC / "huidi-community-online-nav-v1.js").read_text(encoding="utf-8")
         self.fusion_css = (PUBLIC / "huidi-community-online-fusion.css").read_text(encoding="utf-8")
 
@@ -30,9 +34,11 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             "huidi-community-online-fusion.css",
             "huidi-community-online-fusion.js",
             "huidi-community-online-full-v2.css",
+            "huidi-community-online-development-workbench-v1.css",
             "huidi-community-online-nav-v1.js",
             "huidi-community-online-full-v2.js",
             "huidi-community-online-intelligence-v2.js",
+            "huidi-community-online-development-workbench-v1.js",
         ):
             self.assertIn(asset, self.surface)
         self.assertIn('"mode": "community-online-fused-workspace"', self.surface)
@@ -45,12 +51,26 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             self.surface.index("huidi-community-online-full-v2.js"),
             self.surface.index("huidi-community-online-intelligence-v2.js"),
         )
+        self.assertLess(
+            self.surface.index("huidi-community-online-intelligence-v2.js"),
+            self.surface.index("huidi-community-online-development-workbench-v1.js"),
+        )
         self.assertIn("https://cdn.jsdelivr.net", self.surface)
         self.assertIn('request.url.path == "/"', self.surface)
         self.assertIn('RedirectResponse("/community/workspace.html"', self.surface)
 
     def test_fusion_is_capability_layer_not_second_business_shell(self):
-        combined = (self.fusion + "\n" + self.full_v2 + "\n" + self.intel_v2 + "\n" + self.nav).lower()
+        combined = (
+            self.fusion
+            + "\n"
+            + self.full_v2
+            + "\n"
+            + self.intel_v2
+            + "\n"
+            + self.development
+            + "\n"
+            + self.nav
+        ).lower()
         self.assertIn("window.HUIDI_COMMUNITY_ONLINE", self.fusion)
         self.assertIn("window.HUIDILocalCore", self.fusion)
         self.assertIn("repositories.customers", self.fusion)
@@ -99,6 +119,7 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             self.assertIn(label, self.full_v2)
         self.assertIn("互动地图", self.intel_v2)
         self.assertIn("客户情报", self.intel_v2)
+        self.assertIn("开发与发送", self.development)
         self.assertIn("客户开发", self.nav)
         self.assertIn("市场情报", self.nav)
         self.assertIn("团队与设置", self.nav)
@@ -129,6 +150,7 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
         self.assertIn("country.enhance", self.intel_v2)
         self.assertNotIn("MutationObserver", self.full_v2)
         self.assertNotIn("MutationObserver", self.intel_v2)
+        self.assertNotIn("MutationObserver", self.development)
 
     def test_network_capabilities_and_fused_projects_use_real_apis(self):
         for path in (
@@ -161,6 +183,42 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             self.assertIn(view, self.full_v2)
         self.assertIn("mail", self.full_v2)
 
+    def test_development_workbench_delegates_to_existing_draft_mail_and_followup_owners(self):
+        for marker in (
+            "/development-context",
+            "/product-context",
+            "/draft-content",
+            "/draft-approval",
+            "/delivery-readiness",
+            "/send",
+            "/followup",
+            "/industry",
+            "/industry-sequence",
+        ):
+            self.assertIn(marker, self.development)
+        self.assertIn("/draft`", self.development)
+        self.assertIn("confirm:true", self.development)
+        self.assertIn("我已核对收件人和邮件内容", self.development)
+        self.assertIn("发送条件还没有全部通过", self.development)
+        self.assertNotIn("window.open", self.development)
+        self.assertNotIn("window.confirm", self.development)
+        self.assertNotIn("confirm(", self.development)
+        self.assertIn("from . import development_workflow", self.daily)
+        for marker in (
+            "@app.get(\"/api/leads/{lead_id}/development-context\")",
+            "@app.put(\"/api/leads/{lead_id}/product-context\")",
+            "@app.put(\"/api/leads/{lead_id}/draft-content\")",
+            "ProductBrainRecord",
+            "MailboxAccount",
+            "MailDeliveryLog",
+            "draft_rejected",
+            "开发信已修改，需重新确认",
+        ):
+            self.assertIn(marker, self.development_backend)
+        self.assertNotIn("__tablename__", self.development_backend)
+        self.assertNotIn("unit_price", self.development_backend)
+        self.assertNotIn("deal.amount", self.development_backend)
+
     def test_formal_customer_deal_owner_and_price_guard_are_preserved(self):
         self.assertIn("core.repositories.customers.upsert", self.fusion)
         self.assertIn("core.repositories.deals.upsert", self.fusion)
@@ -175,22 +233,27 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
         self.assertIn("adoptLead", self.full_v2)
         self.assertNotIn("repositories.deals.upsert", self.full_v2)
         self.assertIn("Product Brain 价格只作参考", self.full_v2)
+        self.assertIn("不会自动写正式报价", self.development)
 
     def test_standalone_local_does_not_activate_online_fusion(self):
         workspace = (PUBLIC / "workspace.html").read_text(encoding="utf-8")
         self.assertIn("if(!online?.enabled", self.fusion)
         self.assertIn("if(!online?.enabled", self.full_v2)
         self.assertIn("if(!online?.enabled", self.intel_v2)
+        self.assertIn("if(!online?.enabled", self.development)
         self.assertNotIn("huidi-community-online-fusion", workspace)
         self.assertNotIn("huidi-community-online-full-v2", workspace)
         self.assertNotIn("huidi-community-online-intelligence-v2", workspace)
+        self.assertNotIn("huidi-community-online-development-workbench-v1", workspace)
         self.assertNotIn("huidi-community-online-nav-v1", workspace)
 
     def test_fusion_assets_parse_and_exist(self):
         self.assertGreater(len(self.fusion_css), 1000)
         self.assertGreater(len(self.full_v2_css), 3000)
+        self.assertGreater(len(self.development_css), 3000)
         self.assertGreater(len(self.full_v2), 10000)
         self.assertGreater(len(self.intel_v2), 2500)
+        self.assertGreater(len(self.development), 10000)
         node = shutil.which("node")
         if not node:
             self.skipTest("node is not installed")
@@ -199,6 +262,7 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             PUBLIC / "huidi-community-online-nav-v1.js",
             PUBLIC / "huidi-community-online-full-v2.js",
             PUBLIC / "huidi-community-online-intelligence-v2.js",
+            PUBLIC / "huidi-community-online-development-workbench-v1.js",
         ):
             result = subprocess.run(
                 [node, "--check", str(path)],
