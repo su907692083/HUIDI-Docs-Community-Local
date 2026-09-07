@@ -42,8 +42,11 @@ class WorkflowFusionContractTest(unittest.TestCase):
         self.assertIn("method:'PATCH'", self.text)
         self.assertIn("不会发送邮件，也不会改正式询盘", self.text)
 
-    def test_batch_observer_is_scoped_to_lead_table(self) -> None:
-        self.assertIn("batchObserver.observe(tbody,{childList:true})", self.text)
+    def test_batch_refresh_reuses_owner_without_observer(self) -> None:
+        self.assertIn("hookLeadRefresh", self.text)
+        self.assertIn("scheduleLeadDecorationBurst", self.text)
+        self.assertIn("owner.refresh=async function", self.text)
+        self.assertNotIn("MutationObserver", self.text)
         self.assertNotIn("observe(document.body", self.text)
 
     def test_batch_export_is_local_csv_only(self) -> None:
