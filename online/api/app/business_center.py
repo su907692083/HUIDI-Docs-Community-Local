@@ -30,6 +30,29 @@ class OnlineCustomer(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 
 
+class OnlineCustomerAddress(Base):
+    """Address history subordinate to the canonical OnlineCustomer owner."""
+
+    __tablename__ = "online_customer_addresses"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    customer_id: Mapped[int] = mapped_column(ForeignKey("online_customers.id"), index=True)
+    address_type: Mapped[str] = mapped_column(String(40), default="shipping", index=True)
+    label: Mapped[str] = mapped_column(String(120), default="")
+    contact_name: Mapped[str] = mapped_column(String(255), default="")
+    phone: Mapped[str] = mapped_column(String(120), default="")
+    country: Mapped[str] = mapped_column(String(120), default="")
+    region: Mapped[str] = mapped_column(String(160), default="")
+    city: Mapped[str] = mapped_column(String(160), default="")
+    postal_code: Mapped[str] = mapped_column(String(60), default="")
+    address_line1: Mapped[str] = mapped_column(Text, default="")
+    address_line2: Mapped[str] = mapped_column(Text, default="")
+    is_default: Mapped[int] = mapped_column(Integer, default=0, index=True)
+    notes: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+
 class OnlineDeal(Base):
     __tablename__ = "online_deals"
 
@@ -66,6 +89,32 @@ class OnlineDocumentRef(Base):
 Base.metadata.create_all(engine)
 
 
+class CustomerPatch(BaseModel):
+    company_name: str | None = Field(default=None, min_length=1, max_length=255)
+    contact_name: str | None = Field(default=None, max_length=255)
+    email: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=120)
+    country: str | None = Field(default=None, max_length=120)
+    website: str | None = Field(default=None, max_length=2000)
+    status: str | None = Field(default=None, max_length=40)
+    notes: str | None = Field(default=None, max_length=10000)
+
+
+class CustomerAddressRequest(BaseModel):
+    address_type: str = Field(default="shipping", pattern="^(shipping|billing|office|other)$")
+    label: str = Field(default="", max_length=120)
+    contact_name: str = Field(default="", max_length=255)
+    phone: str = Field(default="", max_length=120)
+    country: str = Field(default="", max_length=120)
+    region: str = Field(default="", max_length=160)
+    city: str = Field(default="", max_length=160)
+    postal_code: str = Field(default="", max_length=60)
+    address_line1: str = Field(default="", max_length=2000)
+    address_line2: str = Field(default="", max_length=2000)
+    is_default: bool = False
+    notes: str = Field(default="", max_length=4000)
+
+
 class DealPatch(BaseModel):
     stage: str | None = Field(default=None, max_length=60)
     probability: int | None = Field(default=None, ge=0, le=100)
@@ -97,6 +146,95 @@ def customer_dict(row: OnlineCustomer) -> dict[str, Any]:
         "notes": row.notes,
         "updated_at": row.updated_at.isoformat() if row.updated_at else None,
     }
+
+
+def address_text(row: OnlineCustomerAddress) -> str:
+    locality = " ".join(x for x in [row.postal_code, row.city, row.region, row.country] if str(x or "").strip())
+    return ", ".join(
+        x
+        for x in [row.address_line1, row.address_line2, locality]
+        if str(x or "").strip()
+    )
+
+
+def address_dict(row: OnlineCustomerAddress) -> dict[str, Any]:
+    return {
+        "id": row.id,
+        "customer_id": row.customer_id,
+        "address_type": row.address_type,
+        "label": row.label,
+        "contact_name": row.contact_name,
+        "phone": row.phone,
+        "country": row.country,
+        "region": row.region,
+        "city": row.city,
+        "postal_code": row.postal_code,
+        "address_line1": row.address_line1,
+        "address_line2": row.address_line2,
+        "formatted": address_text(row),
+        "is_default": bool(row.is_default),
+        "notes": row.notes,
+        "updated_at": row.updated_at.isoformat() if row.updated_at else None,
+    }
+
+
+def customer_addresses(db: Session, customer_id: int) -> list[OnlineCustomerAddress]:
+    return db.scalars(
+        select(OnlineCustomerAddress)
+        .where(OnlineCustomerAddress.customer_id == customer_id)
+        .order_by(
+            OnlineCustomerAddress.is_default.desc(),
+            OnlineCustomerAddress.updated_at.desc(),
+            OnlineCustomerAddress.id.desc(),
+        )
+    ).all()
+
+
+def default_customer_address(
+    db: Session,
+    customer_id: int,
+    preferred_types: tuple[str, ...] = ("shipping", "billing", "office", "other"),
+) -> OnlineCustomerAddress | None:
+    rows = customer_addresses(db, customer_id)
+    for address_type in preferred_types:
+        for row in rows:
+            if row.address_type == address_type and row.is_default:
+                return row
+    for address_type in preferred_types:
+        for row in rows:
+            if row.address_type == address_type:
+                return row
+    return rows[0] if rows else None
+
+
+def _apply_address_request(row: OnlineCustomerAddress, req: CustomerAddressRequest) -> None:
+    values = req.model_dump()
+    values["is_default"] = 1 if req.is_default else 0
+    for key, value in values.items():
+        if isinstance(value, str):
+            value = value.strip()
+        setattr(row, key, value)
+    row.updated_at = datetime.now(timezone.utc)
+
+
+def _ensure_single_default(db: Session, row: OnlineCustomerAddress, requested_default: bool) -> None:
+    siblings = db.scalars(
+        select(OnlineCustomerAddress)
+        .where(OnlineCustomerAddress.customer_id == row.customer_id)
+        .where(OnlineCustomerAddress.address_type == row.address_type)
+        .where(OnlineCustomerAddress.id != row.id)
+    ).all()
+    if requested_default:
+        for sibling in siblings:
+            sibling.is_default = 0
+        row.is_default = 1
+        return
+    if any(bool(sibling.is_default) for sibling in siblings):
+        row.is_default = 0
+        return
+    # The first address of a type becomes its default automatically. This is a
+    # deterministic convenience over user-entered master data, not guessed data.
+    row.is_default = 1
 
 
 def deal_dict(row: OnlineDeal, db: Session) -> dict[str, Any]:
@@ -251,6 +389,116 @@ def list_customers(
     }
 
 
+@app.get("/api/business/customers/{customer_id}")
+def get_customer(customer_id: int, db: Session = Depends(get_db)):
+    row = db.get(OnlineCustomer, customer_id)
+    if not row:
+        raise HTTPException(404, "没有找到这个客户")
+    deals = db.scalars(
+        select(OnlineDeal)
+        .where(OnlineDeal.customer_id == customer_id)
+        .order_by(OnlineDeal.updated_at.desc(), OnlineDeal.id.desc())
+        .limit(50)
+    ).all()
+    return {
+        **customer_dict(row),
+        "addresses": [address_dict(x) for x in customer_addresses(db, customer_id)],
+        "deals": [
+            {
+                "id": x.id,
+                "title": x.title,
+                "stage": x.stage,
+                "currency": x.currency,
+                "amount": x.amount,
+                "product_keyword": x.product_keyword,
+                "updated_at": x.updated_at.isoformat() if x.updated_at else None,
+            }
+            for x in deals
+        ],
+    }
+
+
+@app.patch("/api/business/customers/{customer_id}")
+def patch_customer(customer_id: int, req: CustomerPatch, db: Session = Depends(get_db)):
+    row = db.get(OnlineCustomer, customer_id)
+    if not row:
+        raise HTTPException(404, "没有找到这个客户")
+    values = req.model_dump(exclude_none=True)
+    for key, value in values.items():
+        setattr(row, key, value.strip() if isinstance(value, str) else value)
+    row.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, **customer_dict(row)}
+
+
+@app.post("/api/business/customers/{customer_id}/addresses")
+def create_customer_address(
+    customer_id: int,
+    req: CustomerAddressRequest,
+    db: Session = Depends(get_db),
+):
+    customer = db.get(OnlineCustomer, customer_id)
+    if not customer:
+        raise HTTPException(404, "没有找到这个客户")
+    if not req.address_line1.strip():
+        raise HTTPException(400, "请填写客户地址")
+    row = OnlineCustomerAddress(customer_id=customer_id)
+    db.add(row)
+    db.flush()
+    _apply_address_request(row, req)
+    _ensure_single_default(db, row, req.is_default)
+    customer.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, "address": address_dict(row)}
+
+
+@app.put("/api/business/customers/{customer_id}/addresses/{address_id}")
+def update_customer_address(
+    customer_id: int,
+    address_id: int,
+    req: CustomerAddressRequest,
+    db: Session = Depends(get_db),
+):
+    customer = db.get(OnlineCustomer, customer_id)
+    row = db.get(OnlineCustomerAddress, address_id)
+    if not customer or not row or row.customer_id != customer_id:
+        raise HTTPException(404, "没有找到这个客户地址")
+    if not req.address_line1.strip():
+        raise HTTPException(400, "请填写客户地址")
+    _apply_address_request(row, req)
+    _ensure_single_default(db, row, req.is_default)
+    customer.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(row)
+    return {"ok": True, "address": address_dict(row)}
+
+
+@app.delete("/api/business/customers/{customer_id}/addresses/{address_id}")
+def delete_customer_address(customer_id: int, address_id: int, db: Session = Depends(get_db)):
+    customer = db.get(OnlineCustomer, customer_id)
+    row = db.get(OnlineCustomerAddress, address_id)
+    if not customer or not row or row.customer_id != customer_id:
+        raise HTTPException(404, "没有找到这个客户地址")
+    address_type = row.address_type
+    was_default = bool(row.is_default)
+    db.delete(row)
+    db.flush()
+    if was_default:
+        replacement = db.scalar(
+            select(OnlineCustomerAddress)
+            .where(OnlineCustomerAddress.customer_id == customer_id)
+            .where(OnlineCustomerAddress.address_type == address_type)
+            .order_by(OnlineCustomerAddress.updated_at.desc(), OnlineCustomerAddress.id.desc())
+        )
+        if replacement:
+            replacement.is_default = 1
+    customer.updated_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"ok": True}
+
+
 @app.get("/api/business/deals")
 def list_deals(
     q: str = "",
@@ -350,6 +598,8 @@ def business_bundle(
     }
     if document not in allowed_docs:
         document = "quotation"
+    addresses = customer_addresses(db, customer.id)
+    default_address = default_customer_address(db, customer.id)
     return {
         "schema": "huidi.business.bundle/v1",
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -369,6 +619,8 @@ def business_bundle(
             "phone": customer.phone,
             "country": customer.country,
             "website": customer.website,
+            "addresses": [address_dict(x) for x in addresses],
+            "default_address": address_dict(default_address) if default_address else None,
         },
         "deal": {
             "title": deal.title,
