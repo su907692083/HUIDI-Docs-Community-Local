@@ -40,6 +40,10 @@ from . import low_input_workflow  # noqa: F401,E402
 # OnlineCustomer / ProductBrainRecord / OnlineDeal / OnlineDocumentRef owners;
 # it does not create a second business data plane.
 from . import community_sync  # noqa: F401,E402
+# Relation-only endpoint for selecting existing Product Brain records on the
+# current Deal. It reuses CommunityDealProductLink and never owns product price,
+# Deal amount or formal document price.
+from . import deal_product_selection  # noqa: F401,E402
 from . import community_sync_bulk  # noqa: F401,E402
 from . import contact_center  # noqa: F401,E402
 from . import company_settings  # noqa: F401,E402
