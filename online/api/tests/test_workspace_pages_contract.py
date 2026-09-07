@@ -77,6 +77,20 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("Object.freeze({open,mount,unmount", sequence)
         subprocess.run(["node", "--check", str(WEB / "sequence-ui.js")], check=True)
 
+    def test_product_brain_is_a_native_page_surface_not_a_docked_modal(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        product = (WEB / "product-brain.js").read_text(encoding="utf-8")
+        self.assertIn("openProductPage", router)
+        self.assertIn("HUIDIProductBrain.mount", router)
+        self.assertIn("HUIDIProductBrain?.unmount", router)
+        self.assertIn("pb-page-surface", product)
+        self.assertIn("async function mount(", product)
+        self.assertIn("function unmount()", product)
+        self.assertIn("surface='page'", product)
+        self.assertIn("position:static", product)
+        self.assertIn("open:openManager,mount,unmount", product)
+        subprocess.run(["node", "--check", str(WEB / "product-brain.js")], check=True)
+
     def test_detail_enhancers_are_explicit_not_global_dom_watchers(self):
         deal_facts = (WEB / "deal-facts-ui.js").read_text(encoding="utf-8")
         intelligence = (WEB / "customer-intelligence.js").read_text(encoding="utf-8")
