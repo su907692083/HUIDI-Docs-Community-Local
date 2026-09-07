@@ -36,6 +36,30 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         self.assertIn("scheduleRefreshBurst", pagination)
         self.assertIn("scheduleEnsureBurst", threads)
 
+    def test_legacy_mail_usability_layer_yields_navigation_to_workspace_router(self):
+        source = (WEB / "workflow-usability-closure.js").read_text(encoding="utf-8")
+        self.assertIn("if(window.HUIDIWorkspacePages?.open)return", source)
+        self.assertIn("function interceptMailNavigation", source)
+        self.assertNotIn("MutationObserver", source)
+
+    def test_secondary_modal_closure_excludes_native_page_surfaces(self):
+        source = (WEB / "secondary-page-closure.js").read_text(encoding="utf-8")
+        for token in [
+            "hn-page-surface",
+            "hb-page-surface",
+            "hs-page-surface",
+            "ci-page-surface",
+            "sq-page-surface",
+            "pb-page-surface",
+            "au-page-surface",
+        ]:
+            self.assertIn(token, source)
+        self.assertIn("function pageSurface(el)", source)
+        self.assertIn("if(pageSurface(el))return false", source)
+        self.assertIn("p.removeAttribute('aria-modal')", source)
+        self.assertIn("HUIDIWorkspacePages.open('mail')", source)
+        self.assertNotIn("MutationObserver", source)
+
     def test_layout_enhancement_owners_do_not_watch_the_whole_document(self):
         for name in ["workflow-usability-closure.js", "secondary-page-closure.js"]:
             source = (WEB / name).read_text(encoding="utf-8")
