@@ -35,6 +35,11 @@ from . import community_sync  # noqa: F401,E402
 from . import community_sync_bulk  # noqa: F401,E402
 from . import contact_center  # noqa: F401,E402
 from . import company_settings  # noqa: F401,E402
+# Aggregates the existing Lead, Product Brain, industry, mailbox and company
+# owners for the fused Community development page. It adds no second storage
+# owner and delegates generation, approval, delivery and follow-up to the
+# existing routes.
+from . import development_workflow  # noqa: F401,E402
 from . import backup_restore  # noqa: F401,E402
 from . import backup_automation  # noqa: F401,E402
 from . import online_notifications  # noqa: F401,E402
