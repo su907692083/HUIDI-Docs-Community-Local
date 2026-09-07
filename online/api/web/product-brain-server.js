@@ -10,10 +10,11 @@ function merge(localRows,serverRows){const map=new Map();for(const row of [...lo
 let busy=false,timer=0;
 async function sync(){if(busy)return;busy=true;try{const server=await api('/api/product-brains');const merged=merge(read(),Array.isArray(server)?server:[]);write(merged);await api('/api/product-brains/import',{method:'POST',body:JSON.stringify({items:merged})});window.dispatchEvent(new CustomEvent('huidi-product-brain-synced',{detail:{count:merged.length}}))}catch(_){/* 本地仍可继续使用，恢复联网后会再次同步 */}finally{busy=false}}
 function later(ms=800){clearTimeout(timer);timer=setTimeout(sync,ms)}
+function loadAcquisitionFusion(){if(document.querySelector('script[data-huidi-acquisition-batch]')||window.HUIDIAcquisitionBatchFusion)return;const s=document.createElement('script');s.dataset.huidiAcquisitionBatch='1';s.src='/assets/acquisition-batch-fusion.js?v=HUIDI-ACQ-BATCH-1';document.head.appendChild(s)}
 document.addEventListener('submit',e=>{if(e.target?.id==='pbForm')later(1000)},true);
 document.addEventListener('click',e=>{if(e.target.closest?.('#pbDelete,#pbActivate,#pbNew'))later(1200)},true);
 window.addEventListener('storage',e=>{if(e.key===KEY)later(500)});
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>sync(),{once:true});else sync();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>{sync();loadAcquisitionFusion()},{once:true});else{sync();loadAcquisitionFusion()}
 setInterval(()=>sync(),120000);
 window.HUIDIProductServer=Object.freeze({sync});
 })();
