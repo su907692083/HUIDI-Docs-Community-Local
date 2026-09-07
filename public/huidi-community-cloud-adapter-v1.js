@@ -1,7 +1,7 @@
 (()=>{'use strict';
 const online=window.HUIDI_COMMUNITY_ONLINE;
 if(!online?.enabled||window.HUIDICommunityCloudAdapter)return;
-const state={ready:false,hydrating:false,syncingState:false,stateQueued:false,syncingDocs:false,docsQueued:false,identity:null,knownCloudDocs:new Set(),docFingerprints:new Map(),customerIds:new Map(),dealIds:new Map(),stateTimer:0,docTimer:0};
+const state={ready:false,hydrating:false,syncingState:false,stateQueued:false,stateRunPromise:null,stateFollowupPromise:null,syncingDocs:false,docsQueued:false,identity:null,knownCloudDocs:new Set(),docFingerprints:new Map(),customerIds:new Map(),dealIds:new Map(),stateTimer:0,docTimer:0};
 const clean=v=>String(v??'').trim();
 const lower=v=>clean(v).toLowerCase();
 const clone=v=>{try{return structuredClone(v)}catch(_){return JSON.parse(JSON.stringify(v))}};
@@ -98,18 +98,42 @@ function archivedPayload(){
   return out;
 }
 function statePayload(core){return{customers:core.repositories.customers.list(),products:core.repositories.products.list(),deals:core.repositories.deals.list(),archived:archivedPayload()}}
-async function syncState(){
-  if(!state.ready||state.hydrating||!navigator.onLine)return;
-  if(state.syncingState){state.stateQueued=true;return}
+function queueStateBarrier(){
+  state.stateQueued=true;
+  if(state.stateFollowupPromise)return state.stateFollowupPromise;
+  const active=state.stateRunPromise;
+  if(!active)return syncState();
+  let followup;
+  followup=active.then(()=>{
+    state.stateQueued=false;
+    return syncState();
+  }).finally(()=>{
+    if(state.stateFollowupPromise===followup)state.stateFollowupPromise=null;
+  });
+  state.stateFollowupPromise=followup;
+  return followup;
+}
+function syncState(){
+  if(!state.ready||state.hydrating||!navigator.onLine)return Promise.resolve();
+  if(state.stateRunPromise)return queueStateBarrier();
   state.syncingState=true;
-  try{
-    const {core}=await waitOwners();
-    const before={customers:core.repositories.customers.list(),deals:core.repositories.deals.list()};
-    const result=await api('/api/community-sync/state',{method:'PUT',body:JSON.stringify(statePayload(core))});
-    applyCoreBootstrap(core,result,{mapFrom:before});
-    document.documentElement.dataset.huidiCloudState='saved';
-  }catch(error){document.documentElement.dataset.huidiCloudState='error';console.error('HUIDI Community cloud state sync failed',error)}
-  finally{state.syncingState=false;if(state.stateQueued){state.stateQueued=false;scheduleState(120)}}
+  const run=(async()=>{
+    try{
+      const {core}=await waitOwners();
+      const before={customers:core.repositories.customers.list(),deals:core.repositories.deals.list()};
+      const result=await api('/api/community-sync/state',{method:'PUT',body:JSON.stringify(statePayload(core))});
+      applyCoreBootstrap(core,result,{mapFrom:before});
+      document.documentElement.dataset.huidiCloudState='saved';
+      return result;
+    }catch(error){document.documentElement.dataset.huidiCloudState='error';console.error('HUIDI Community cloud state sync failed',error);return null}
+  })();
+  let barrier;
+  barrier=run.finally(()=>{
+    state.syncingState=false;
+    if(state.stateRunPromise===barrier)state.stateRunPromise=null;
+  });
+  state.stateRunPromise=barrier;
+  return barrier;
 }
 function mapId(map,value){const raw=clean(value);return map.get(raw)||raw}
 function canonicalDocument(record){
@@ -179,6 +203,6 @@ async function boot(){
     document.documentElement.dataset.huidiCloud='ready';
   }catch(error){document.documentElement.dataset.huidiCloud='error';console.error('HUIDI Community cloud adapter boot failed',error)}
 }
-window.HUIDICommunityCloudAdapter=Object.freeze({version:'1',scope:online.scope,status:()=>({ready:state.ready,scope:online.scope,organization:state.identity?.organization||null}),syncState,syncDocuments});
+window.HUIDICommunityCloudAdapter=Object.freeze({version:'1.1',scope:online.scope,status:()=>({ready:state.ready,scope:online.scope,organization:state.identity?.organization||null,syncingState:state.syncingState,stateQueued:state.stateQueued}),syncState,syncDocuments});
 boot();
 })();
