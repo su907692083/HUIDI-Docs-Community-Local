@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
 import unittest
 from pathlib import Path
 
@@ -12,8 +14,10 @@ PUBLIC = REPO / "public"
 
 class CommunityCloudAdapterContractTests(unittest.TestCase):
     def setUp(self):
-        self.mode = (PUBLIC / "community-local-mode.js").read_text(encoding="utf-8")
-        self.adapter = (PUBLIC / "huidi-community-cloud-adapter-v1.js").read_text(encoding="utf-8")
+        self.mode_path = PUBLIC / "community-local-mode.js"
+        self.adapter_path = PUBLIC / "huidi-community-cloud-adapter-v1.js"
+        self.mode = self.mode_path.read_text(encoding="utf-8")
+        self.adapter = self.adapter_path.read_text(encoding="utf-8")
         self.scope = (APP / "workspace_scope.py").read_text(encoding="utf-8")
         self.bulk = (APP / "community_sync_bulk.py").read_text(encoding="utf-8")
         self.daily = (APP / "daily_app.py").read_text(encoding="utf-8")
@@ -24,6 +28,7 @@ class CommunityCloudAdapterContractTests(unittest.TestCase):
         self.assertIn(r"/^org-\d+$/", self.mode)
         self.assertIn("HUIDI_COMMUNITY_ONLINE", self.mode)
         self.assertIn("huidi_workspace_${ONLINE.scope}__", self.mode)
+        self.assertIn("/community/huidi-community-cloud-adapter-v1.js", self.mode)
 
     def test_localstorage_and_indexeddb_are_scoped_before_local_owners_load(self):
         self.assertIn("Storage?.prototype", self.mode)
@@ -76,6 +81,19 @@ class CommunityCloudAdapterContractTests(unittest.TestCase):
         self.assertIn("from . import workspace_scope", self.daily)
         self.assertLess(self.daily.index("from . import auth_portal"), self.daily.index("from . import workspace_scope"))
         self.assertLess(self.daily.index("from . import workspace_scope"), self.daily.index("from . import community_surface"))
+
+    def test_new_browser_files_parse_with_node_when_available(self):
+        node = shutil.which("node")
+        if not node:
+            self.skipTest("node is not installed in this local test environment")
+        for path in (self.mode_path, self.adapter_path):
+            result = subprocess.run(
+                [node, "--check", str(path)],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr or result.stdout)
 
 
 if __name__ == "__main__":
