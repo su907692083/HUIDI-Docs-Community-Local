@@ -35,7 +35,7 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "yes",
     "on",
 }
-FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-8"
+FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-9"
 
 
 def community_surface_status() -> dict[str, object]:
