@@ -170,7 +170,7 @@ class DealProductSelectionTest(unittest.TestCase):
             context,
         )
         self.assertIn("function noteBusinessDeal", context)
-        self.assertIn(r"^\/api\/business\/deals\/(\d+)$", context)
+        self.assertIn(r"^\/api\/business\/deals\/(\d+)$".replace("\\\\", "\\"), context)
         self.assertIn("HUIDIBusinessLowInputFusion?.setDealId", context)
         self.assertIn("dealId:()=>dealId", context)
         self.assertIn("from . import deal_product_selection", daily)
