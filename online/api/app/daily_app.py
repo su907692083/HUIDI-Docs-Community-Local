@@ -1,4 +1,12 @@
-from .online_app import app  # noqa: F401
+import warnings
+
+warnings.filterwarnings(
+    "ignore",
+    message='Field name "schema" in "LocalBusinessEventRequest" shadows an attribute in parent "BaseModel"',
+    category=UserWarning,
+)
+
+from .online_app import app  # noqa: F401,E402
 from .tenant_storage import install_session_router
 
 # Install the company-aware business-session router before importing modules
