@@ -85,10 +85,40 @@ jobs:
               assert '127.0.0.1:8765' not in driver.current_url
 
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-contacts]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'联系人'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.ID,'hnContactSearch')))
+              contacts_surface = driver.execute_script("""
+                const node=document.querySelector('#huidiNavBack');
+                return {
+                  open: node?.classList.contains('open'),
+                  nativePage: node?.classList.contains('hn-page-surface'),
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
+              """)
+              assert contacts_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, contacts_surface
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-notifications]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'提醒'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-note-refresh]')))
+              notifications_surface = driver.execute_script("""
+                const node=document.querySelector('#huidiNavBack');
+                return {
+                  open: node?.classList.contains('open'),
+                  nativePage: node?.classList.contains('hn-page-surface'),
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
+              """)
+              assert notifications_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, notifications_surface
+
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品资料'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#pbBackdrop')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#pbBackdrop [data-pbf="name"]')))
+              assert driver.execute_script("return document.querySelector('#huidiNavBack')?.classList.contains('open')") is False
               product_surface = driver.execute_script("""
                 const node=document.querySelector('#pbBackdrop');
                 return {
@@ -160,7 +190,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI native product page + follow-up page + business page + document PASS')
+              print('HUIDI native contacts + notifications + product + follow-up + business + document PASS')
           finally:
               driver.quit()
           PY
