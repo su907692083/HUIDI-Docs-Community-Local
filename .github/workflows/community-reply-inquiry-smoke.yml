@@ -57,7 +57,7 @@ jobs:
               'landInInquiry',
               'data-view="deals"',
               '#dealSearch',
-              'data.huidiFocusedInquiry',
+              'dataset.huidiFocusedInquiry',
           ):
               assert marker in text, marker
           assert 'observe(document.body' not in text
@@ -270,7 +270,7 @@ jobs:
               """, lead_id) == 'converted')
 
               wait.until(lambda d: d.execute_script("return document.body.dataset.huidiView === 'deals'"))
-              wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#dealRows tr[data-huidi-focused-inquiry=" + '"1"' + "]'))"))
+              wait.until(lambda d: d.execute_script("""return Boolean(document.querySelector('#dealRows tr[data-huidi-focused-inquiry="1"]'))"""))
               landing = driver.execute_script("""
                 const row=document.querySelector('#dealRows tr[data-huidi-focused-inquiry="1"]');
                 return {
