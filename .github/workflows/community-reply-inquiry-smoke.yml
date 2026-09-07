@@ -5,22 +5,26 @@ on:
     paths:
       - 'public/huidi-community-online-development-routing-v1.js'
       - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'public/huidi-community-online-formal-price-guard-v1.js'
       - 'online/api/app/low_input_workflow.py'
       - 'online/api/app/mail_sync.py'
       - 'online/api/app/business_center.py'
       - 'online/api/app/community_surface.py'
       - 'online/api/tests/community_reply_inquiry_browser_smoke.py'
+      - 'online/api/tests/community_formal_price_guard_browser_smoke.py'
       - '.github/workflows/community-reply-inquiry-smoke.yml'
   push:
     branches: ['online/v0.1-lead-workbench']
     paths:
       - 'public/huidi-community-online-development-routing-v1.js'
       - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'public/huidi-community-online-formal-price-guard-v1.js'
       - 'online/api/app/low_input_workflow.py'
       - 'online/api/app/mail_sync.py'
       - 'online/api/app/business_center.py'
       - 'online/api/app/community_surface.py'
       - 'online/api/tests/community_reply_inquiry_browser_smoke.py'
+      - 'online/api/tests/community_formal_price_guard_browser_smoke.py'
       - '.github/workflows/community-reply-inquiry-smoke.yml'
 
 jobs:
@@ -45,12 +49,13 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install 'selenium>=4.20,<5'
-      - name: Check reply routing JavaScript
+      - name: Check reply routing and formal price guard JavaScript
         run: |
           node --check ../../public/huidi-community-online-development-routing-v1.js
+          node --check ../../public/huidi-community-online-formal-price-guard-v1.js
           python - <<'PY'
           from pathlib import Path
-          text = Path('../../public/huidi-community-online-development-routing-v1.js').read_text(encoding='utf-8')
+          routing = Path('../../public/huidi-community-online-development-routing-v1.js').read_text(encoding='utf-8')
           for marker in (
               '处理回复',
               '确认回复并转询盘',
@@ -61,9 +66,20 @@ jobs:
               '#dealSearch',
               'dataset.huidiFocusedInquiry',
           ):
-              assert marker in text, marker
-          assert 'observe(document.body' not in text
-          assert 'new MutationObserver' in text
+              assert marker in routing, marker
+          assert 'observe(document.body' not in routing
+          assert 'new MutationObserver' in routing
+
+          guard = Path('../../public/huidi-community-online-formal-price-guard-v1.js').read_text(encoding='utf-8')
+          for marker in (
+              'huidiReferencePrice',
+              '不会自动写入正式单价',
+              'sourceDocumentId',
+              'huidi_local_doc_id_v1',
+              'reference-only',
+          ):
+              assert marker in guard, marker
+          assert 'MutationObserver' not in guard
           PY
       - name: Start fused HUIDI workspace
         run: |
@@ -80,6 +96,8 @@ jobs:
           exit 1
       - name: Verify real reply stop and inquiry conversion in Chrome
         run: python tests/community_reply_inquiry_browser_smoke.py
+      - name: Verify reference price stays out of formal quote in Chrome
+        run: python tests/community_formal_price_guard_browser_smoke.py
       - name: Stop HUIDI
         if: always()
         run: |
