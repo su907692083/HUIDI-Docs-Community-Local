@@ -21,6 +21,7 @@ class CommunityCloudAdapterContractTests(unittest.TestCase):
         self.scope = (APP / "workspace_scope.py").read_text(encoding="utf-8")
         self.bulk = (APP / "community_sync_bulk.py").read_text(encoding="utf-8")
         self.daily = (APP / "daily_app.py").read_text(encoding="utf-8")
+        self.surface = (APP / "community_surface.py").read_text(encoding="utf-8")
 
     def test_online_cache_scope_requires_community_path_and_server_cookie(self):
         self.assertIn("huidi_workspace_scope", self.mode)
@@ -87,6 +88,15 @@ class CommunityCloudAdapterContractTests(unittest.TestCase):
         self.assertIn("Depends(get_db)", self.bulk)
         self.assertNotIn("__tablename__", self.bulk)
         self.assertNotIn("Base.metadata", self.bulk)
+
+    def test_packaged_community_surface_prefers_explicit_public_dir(self):
+        self.assertIn('os.getenv("HUIDI_COMMUNITY_PUBLIC_DIR", "")', self.surface)
+        self.assertIn("if configured:", self.surface)
+        self.assertIn("for parent in current.parents:", self.surface)
+        self.assertIn('candidate = parent / "public"', self.surface)
+        # Docker installs the module at /app/app/community_surface.py. Fixed
+        # parents[n] indexing is invalid there and must never be reintroduced.
+        self.assertNotIn("parents[3]", self.surface)
 
     def test_daily_app_loads_scope_and_bulk_adapter(self):
         self.assertIn("from . import community_sync_bulk", self.daily)
