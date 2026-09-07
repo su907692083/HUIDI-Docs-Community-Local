@@ -44,7 +44,6 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("#huidiIntelBack", source)
         self.assertIn("#sqBack", source)
         self.assertIn("#auBack", source)
-        self.assertIn("HUIDISequenceUI?.open", source)
         self.assertIn("HUIDIAuditUI?.open", source)
         subprocess.run(["node", "--check", str(WEB / "page-router.js")], check=True)
         subprocess.run(["node", "--check", str(WEB / "catalog-studio-online.js")], check=True)
@@ -63,6 +62,20 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("position:static", business)
         self.assertIn("Object.freeze({open,mount,unmount", business)
         subprocess.run(["node", "--check", str(WEB / "business-center-ui.js")], check=True)
+
+    def test_automatic_followup_is_a_native_page_surface_not_a_docked_modal(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        sequence = (WEB / "sequence-ui.js").read_text(encoding="utf-8")
+        self.assertIn("openSequencePage", router)
+        self.assertIn("HUIDISequenceUI.mount", router)
+        self.assertIn("HUIDISequenceUI?.unmount", router)
+        self.assertIn("sq-page-surface", sequence)
+        self.assertIn("function mount(", sequence)
+        self.assertIn("function unmount()", sequence)
+        self.assertIn("surface='page'", sequence)
+        self.assertIn("position:static", sequence)
+        self.assertIn("Object.freeze({open,mount,unmount", sequence)
+        subprocess.run(["node", "--check", str(WEB / "sequence-ui.js")], check=True)
 
     def test_detail_enhancers_are_explicit_not_global_dom_watchers(self):
         deal_facts = (WEB / "deal-facts-ui.js").read_text(encoding="utf-8")
