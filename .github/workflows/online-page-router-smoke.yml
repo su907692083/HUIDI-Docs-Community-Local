@@ -52,7 +52,7 @@ jobs:
             -H 'Content-Type: application/json' \
             --data '{"company_name":"Router Smoke Buyer","product_keyword":"Router Hinge","country":"DE","contact_name":"Purchasing","contact_email":"purchasing@router-smoke.example","requirements":"Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch","create_inquiry":true}' > /tmp/inquiry.json
           grep -F 'Router Smoke Buyer' /tmp/inquiry.json
-      - name: Verify single workspace routing, native catalog and native document in Chrome
+      - name: Verify single workspace routing, native pages, catalog and native document in Chrome
         run: |
           python - <<'PY'
           import time
@@ -87,11 +87,26 @@ jobs:
               driver.execute_script("""
                 document.querySelector('[data-huidi-contacts]').click();
                 document.querySelector('[data-huidi-product]').click();
-                document.querySelector('[data-huidi-business=\"deals\"]').click();
+                document.querySelector('[data-huidi-sequences]').click();
               """)
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'自动跟进'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#sqBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.text_to_be_present_in_element((By.ID,'sqMain'),'跟进内容'))
+              seq_surface = driver.execute_script("""
+                const node=document.querySelector('#sqBack');
+                return {
+                  open: node?.classList.contains('open'),
+                  nativePage: node?.classList.contains('sq-page-surface'),
+                  legacyDock: node?.classList.contains('hpr-docked'),
+                  position: node ? getComputedStyle(node).position : ''
+                };
+              """)
+              assert seq_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, seq_surface
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-business="deals"]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'客户 / 询盘'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiBusinessBack')?.parentElement?.id")=='huidiPageMount')
-              time.sleep(.6)
+              time.sleep(.4)
               assert driver.find_element(By.CSS_SELECTOR,'.side').is_displayed()
               active = driver.execute_script("""
                 return ['#huidiNavBack','#huidiServiceBack','#pbBackdrop','#huidiIntelBack','#sqBack','#auBack']
@@ -133,7 +148,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI native business page + catalog + native document PASS')
+              print('HUIDI native follow-up page + native business page + catalog + document PASS')
           finally:
               driver.quit()
           PY
