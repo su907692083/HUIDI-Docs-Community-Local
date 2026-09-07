@@ -59,11 +59,19 @@ from . import team_access  # noqa: F401,E402
 # owner. Registration creates organization #2+ only; business data remains routed
 # through tenant_storage and never creates a second customer/deal data plane.
 from . import auth_portal  # noqa: F401,E402
+# The published Community Local workspace/editor is the target Online mother
+# surface. Import it only after auth so the existing auth/team middleware remains
+# the single access gate. Activation is deployment-controlled while the cloud
+# storage adapter is converged onto the Local repository contract.
+from . import community_surface  # noqa: F401,E402
 from . import production_readiness  # noqa: F401,E402
 from . import acquisition_status_bridge  # noqa: F401,E402
 from . import tenant_jobs  # noqa: F401,E402
 from . import tenant_webhooks  # noqa: F401,E402
 from . import frontend_runtime_guard  # noqa: F401,E402
 
-# Daily Workbench is the Online product entrypoint. The imported modules register
-# the daily business routes on one FastAPI application.
+# One FastAPI application now has two layers during convergence:
+# - the published Community Local workspace/editor is the target business UI;
+# - Online modules provide authenticated tenant storage, mail, acquisition,
+#   intelligence, automation and other network capabilities.
+# HUIDI_COMMUNITY_SURFACE=1 selects the published workspace as GET /.
