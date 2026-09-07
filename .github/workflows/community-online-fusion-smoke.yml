@@ -140,7 +140,7 @@ jobs:
                   ('online-admin', '#hfAdminGrid'),
                   ('customers', '#customerRows'),
                   ('deals', '#dealRows'),
-                  ('documents', '#documentRows'),
+                  ('documents', '#docRows'),
               ):
                   clicked = driver.execute_script("""
                     const view=arguments[0];
