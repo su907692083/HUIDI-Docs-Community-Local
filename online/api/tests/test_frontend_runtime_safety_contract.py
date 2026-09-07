@@ -56,6 +56,15 @@ class FrontendRuntimeSafetyContractTests(unittest.TestCase):
         self.assertIn("leaveIntelligencePage", world)
         self.assertIn("scheduleBurst", country)
 
+    def test_intelligence_source_settings_are_action_driven_not_document_watched(self):
+        source = (WEB / "intelligence-source-settings.js").read_text(encoding="utf-8")
+        self.assertNotIn("MutationObserver", source)
+        self.assertNotIn("observe(document.body", source)
+        self.assertIn("window.addEventListener('click'", source)
+        self.assertIn("[data-huidi-service-settings]", source)
+        self.assertIn("scheduleRefreshBurst", source)
+        self.assertIn("refreshSettings", source)
+
     def test_legacy_mail_usability_layer_yields_navigation_to_workspace_router(self):
         source = (WEB / "workflow-usability-closure.js").read_text(encoding="utf-8")
         self.assertIn("if(window.HUIDIWorkspacePages?.open)return", source)
