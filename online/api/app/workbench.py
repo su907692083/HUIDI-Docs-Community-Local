@@ -193,6 +193,23 @@ def _unanswered_replies(db: Session, limit: int = 30) -> list[dict[str, Any]]:
     ]
 
 
+def _needs_reply(
+    db: Session,
+    rows: list[MailboxMessage] | None = None,
+    *,
+    limit: int = 30,
+) -> list[dict[str, Any]]:
+    """Backward-compatible private alias for the persistent reply queue.
+
+    Older extensions/tests passed a same-day ``rows`` list here. That argument
+    is intentionally ignored now: actionable replies are owned by the durable
+    cross-day queue and still use the single SQL query above rather than the
+    former per-row N+1 lookups.
+    """
+
+    return _unanswered_replies(db, limit=limit)
+
+
 @app.get("/api/workbench/today")
 def workbench_today(db: Session = Depends(get_db)):
     start_utc, end_utc, zone = _day_bounds(db)
