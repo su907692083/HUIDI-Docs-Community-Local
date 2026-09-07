@@ -27,6 +27,11 @@ from . import document_workbench  # noqa: F401,E402
 # Reuses Product Brain + mailbox replies + the existing business-center owner to
 # reduce re-entry. It has no second customer/deal/document tables.
 from . import low_input_workflow  # noqa: F401,E402
+# Cloud persistence adapter for the published Community Local mother surface.
+# It maps Local customer/product/deal/document contracts onto the existing
+# OnlineCustomer / ProductBrainRecord / OnlineDeal / OnlineDocumentRef owners;
+# it does not create a second business data plane.
+from . import community_sync  # noqa: F401,E402
 from . import contact_center  # noqa: F401,E402
 from . import company_settings  # noqa: F401,E402
 from . import backup_restore  # noqa: F401,E402
