@@ -146,6 +146,7 @@ class DealProductSelectionTest(unittest.TestCase):
 
     def test_frontend_and_loader_contracts(self) -> None:
         subprocess.run(["node", "--check", str(FRONTEND)], check=True)
+        subprocess.run(["node", "--check", str(CONTEXT)], check=True)
         js = FRONTEND.read_text(encoding="utf-8")
         context = CONTEXT.read_text(encoding="utf-8")
         daily = DAILY_APP.read_text(encoding="utf-8")
@@ -155,6 +156,9 @@ class DealProductSelectionTest(unittest.TestCase):
         self.assertIn("hbCurrency", js)
         self.assertIn("hbNext", js)
         self.assertIn("产品参考价不会写入询盘金额", js)
+        self.assertIn("function setDealId", js)
+        self.assertIn("dealAtRequest!==activeDealId", js)
+        self.assertIn("dealAtSave!==activeDealId", js)
         self.assertNotIn("localStorage", js)
         self.assertNotIn("indexedDB", js)
         self.assertNotIn("MutationObserver", js)
@@ -162,9 +166,13 @@ class DealProductSelectionTest(unittest.TestCase):
         self.assertNotIn("location.href", js)
 
         self.assertIn(
-            "/assets/business-low-input-fusion.js?v=HUIDI-BUSINESS-LOW-INPUT-1",
+            "/assets/business-low-input-fusion.js?v=HUIDI-BUSINESS-LOW-INPUT-2",
             context,
         )
+        self.assertIn("function noteBusinessDeal", context)
+        self.assertIn(r"^\/api\/business\/deals\/(\d+)$", context)
+        self.assertIn("HUIDIBusinessLowInputFusion?.setDealId", context)
+        self.assertIn("dealId:()=>dealId", context)
         self.assertIn("from . import deal_product_selection", daily)
         self.assertLess(
             daily.index("from . import community_sync"),
