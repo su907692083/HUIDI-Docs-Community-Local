@@ -3,24 +3,19 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-from fastapi import Request
-from fastapi.responses import RedirectResponse
+from fastapi import HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from .online_app import app
 
 
-# HUIDI Online must reuse the published Community Local workspace/editor as its
-# primary business UI instead of growing a second customer/deal/document shell.
-# The Online backend remains the network/auth/tenant/provider capability layer.
+# Community owns the mature workspace, customer/product/deal repositories and
+# formal document editor. Online supplies auth, tenant, cloud persistence and
+# network capabilities. The deployed product fuses those layers into one UI;
+# it must not grow a second customer/deal/document shell.
 def _community_public_dir() -> Path:
-    """Resolve the published Local surface without assuming repository depth.
-
-    Docker/packaged Online explicitly sets HUIDI_COMMUNITY_PUBLIC_DIR to
-    /app/community-public. Source/dev runs fall back to the nearest ancestor
-    containing public/. Never index a fixed parents[n] depth: the packaged
-    module lives at /app/app/community_surface.py and has a shallower tree.
-    """
+    """Resolve the published Community surface without assuming repo depth."""
 
     configured = os.getenv("HUIDI_COMMUNITY_PUBLIC_DIR", "").strip()
     if configured:
@@ -40,6 +35,7 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "yes",
     "on",
 }
+FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-1"
 
 
 def community_surface_status() -> dict[str, object]:
@@ -49,14 +45,44 @@ def community_surface_status() -> dict[str, object]:
         "workspace": "/community/workspace.html",
         "document_start": "/community/document-start.html",
         "editor": "/community/editor.html",
-        "mode": "published-community-local-mother-surface",
+        "mode": "community-online-fused-workspace",
     }
 
 
+def _workspace_html() -> str:
+    path = COMMUNITY_PUBLIC_DIR / "workspace.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Community workspace is unavailable")
+    html = path.read_text(encoding="utf-8")
+    if not COMMUNITY_SURFACE_ENABLED:
+        return html
+    assets = (
+        f'<link rel="stylesheet" href="/community/huidi-community-online-fusion.css?v={FUSION_ASSET_VERSION}">'
+        f'<script src="/community/huidi-community-online-fusion.js?v={FUSION_ASSET_VERSION}"></script>'
+    )
+    if "huidi-community-online-fusion.js" in html:
+        return html
+    if "</head>" not in html:
+        raise HTTPException(status_code=500, detail="Community workspace head is invalid")
+    return html.replace("</head>", assets + "</head>", 1)
+
+
+# This exact route must be registered before the StaticFiles /community mount.
+# The standalone Community files are never rewritten: only the deployed Online
+# response receives the fusion assets, so downloaded/offline Local stays Local.
+@app.get("/community/workspace.html", response_class=HTMLResponse)
+def get_fused_community_workspace():
+    return HTMLResponse(
+        _workspace_html(),
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+            "X-HUIDI-Workspace-Mode": "community-online-fused-workspace",
+        },
+    )
+
+
 if COMMUNITY_PUBLIC_DIR.is_dir():
-    # StaticFiles is mounted on the same FastAPI application. Existing auth/team
-    # middleware therefore remains the only access gate; this module does not
-    # create a second session, customer, deal, product or document owner.
     app.mount(
         "/community",
         StaticFiles(directory=str(COMMUNITY_PUBLIC_DIR), html=True),
@@ -71,16 +97,7 @@ def get_community_surface_status():
 
 @app.middleware("http")
 async def community_surface_entry(request: Request, call_next):
-    """Switch only the authenticated product entrypoint in deployed Online mode.
-
-    The middleware deliberately redirects only GET / and returns no protected
-    content itself. An unauthenticated browser is redirected to /community first
-    and then passes through the existing Team/Auth middleware, which sends it to
-    the login portal. After login, / resolves to the published Local workspace.
-
-    Direct source/CI runs keep the legacy Online surface unless
-    HUIDI_COMMUNITY_SURFACE=1 is explicitly set, allowing staged convergence.
-    """
+    """Use the fused Community workspace as the one deployed product entry."""
 
     if (
         COMMUNITY_SURFACE_ENABLED
