@@ -66,6 +66,23 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("Object.freeze({notifications,contacts:openContacts,mount,unmount", navigation)
         subprocess.run(["node", "--check", str(WEB / "daily-navigation.js")], check=True)
 
+    def test_market_intelligence_is_a_native_page_surface_not_a_docked_modal(self):
+        router = (WEB / "page-router.js").read_text(encoding="utf-8")
+        intelligence = (WEB / "customer-intelligence.js").read_text(encoding="utf-8")
+        self.assertIn("openIntelligencePage", router)
+        self.assertIn("HUIDICustomerIntelligence.mount", router)
+        self.assertIn("HUIDICustomerIntelligence?.unmount", router)
+        self.assertIn("return openIntelligencePage()", router)
+        self.assertIn("ci-page-surface", intelligence)
+        self.assertIn("function mount(", intelligence)
+        self.assertIn("function unmount()", intelligence)
+        self.assertIn("surface='page'", intelligence)
+        self.assertIn("position:static", intelligence)
+        self.assertIn("open:openDaily,mount,unmount", intelligence)
+        self.assertIn("needs_source_check", intelligence)
+        self.assertIn("不会自动改正式询盘事实", intelligence)
+        subprocess.run(["node", "--check", str(WEB / "customer-intelligence.js")], check=True)
+
     def test_business_center_is_a_native_page_surface_not_a_docked_modal(self):
         router = (WEB / "page-router.js").read_text(encoding="utf-8")
         business = (WEB / "business-center-ui.js").read_text(encoding="utf-8")
