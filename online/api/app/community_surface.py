@@ -35,7 +35,7 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "yes",
     "on",
 }
-FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-9"
+FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-10"
 
 
 def community_surface_status() -> dict[str, object]:
@@ -46,6 +46,7 @@ def community_surface_status() -> dict[str, object]:
         "document_start": "/community/document-start.html",
         "editor": "/community/editor.html",
         "mode": "community-online-fused-workspace",
+        "formal_price_policy": "reference-only-until-human-confirmation",
     }
 
 
@@ -110,9 +111,32 @@ def _workspace_html() -> str:
     return html
 
 
-# This exact route must be registered before the StaticFiles /community mount.
+def _editor_html() -> str:
+    """Fuse only Online governance into the existing Community formal editor.
+
+    Community still owns every formal document field, save/export flow and
+    document record. The injected guard only prevents product/reference prices
+    from silently becoming a formal unit price on a fresh document.
+    """
+
+    path = COMMUNITY_PUBLIC_DIR / "editor.html"
+    if not path.is_file():
+        raise HTTPException(status_code=404, detail="Community editor is unavailable")
+    html = path.read_text(encoding="utf-8")
+    if not COMMUNITY_SURFACE_ENABLED:
+        return html
+    asset = "huidi-community-online-formal-price-guard-v1.js"
+    if asset not in html:
+        if "</body>" not in html:
+            raise HTTPException(status_code=500, detail="Community editor body is invalid")
+        script = f'<script src="/community/{asset}?v={FUSION_ASSET_VERSION}"></script>'
+        html = html.replace("</body>", script + "</body>", 1)
+    return html
+
+
+# These exact routes must be registered before the StaticFiles /community mount.
 # The standalone Community files are never rewritten: only the deployed Online
-# response receives fused assets, so downloaded/offline Local stays Local.
+# responses receive fused assets, so downloaded/offline Local stays Local.
 @app.get("/community/workspace.html", response_class=HTMLResponse)
 def get_fused_community_workspace():
     return HTMLResponse(
@@ -121,6 +145,19 @@ def get_fused_community_workspace():
             "Cache-Control": "no-store, max-age=0",
             "Pragma": "no-cache",
             "X-HUIDI-Workspace-Mode": "community-online-fused-workspace",
+        },
+    )
+
+
+@app.get("/community/editor.html", response_class=HTMLResponse)
+def get_fused_community_editor():
+    return HTMLResponse(
+        _editor_html(),
+        headers={
+            "Cache-Control": "no-store, max-age=0",
+            "Pragma": "no-cache",
+            "X-HUIDI-Editor-Owner": "community-formal-document-owner",
+            "X-HUIDI-Formal-Price-Policy": "reference-only-until-human-confirmation",
         },
     )
 
