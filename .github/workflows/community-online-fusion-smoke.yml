@@ -7,11 +7,15 @@ on:
       - 'public/huidi-community-online-nav-v1.js'
       - 'public/huidi-community-online-full-v2.*'
       - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.*'
       - 'public/community-local-mode.js'
       - 'public/huidi-community-cloud-adapter-v1.js'
       - 'public/workspace.html'
       - 'online/api/app/community_surface.py'
+      - 'online/api/app/development_workflow.py'
+      - 'online/api/app/daily_app.py'
       - 'online/api/tests/test_community_online_fusion_contract.py'
+      - 'online/api/tests/test_development_workflow_contract.py'
       - '.github/workflows/community-online-fusion-smoke.yml'
   push:
     branches: ['online/v0.1-lead-workbench']
@@ -20,11 +24,15 @@ on:
       - 'public/huidi-community-online-nav-v1.js'
       - 'public/huidi-community-online-full-v2.*'
       - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.*'
       - 'public/community-local-mode.js'
       - 'public/huidi-community-cloud-adapter-v1.js'
       - 'public/workspace.html'
       - 'online/api/app/community_surface.py'
+      - 'online/api/app/development_workflow.py'
+      - 'online/api/app/daily_app.py'
       - 'online/api/tests/test_community_online_fusion_contract.py'
+      - 'online/api/tests/test_development_workflow_contract.py'
       - '.github/workflows/community-online-fusion-smoke.yml'
 
 jobs:
@@ -51,11 +59,12 @@ jobs:
           pip install 'selenium>=4.20,<5'
       - name: Verify fusion contracts and JavaScript
         run: |
-          python -m unittest tests.test_community_online_fusion_contract -v
+          python -m unittest tests.test_community_online_fusion_contract tests.test_development_workflow_contract -v
           node --check ../../public/huidi-community-online-fusion.js
           node --check ../../public/huidi-community-online-nav-v1.js
           node --check ../../public/huidi-community-online-full-v2.js
           node --check ../../public/huidi-community-online-intelligence-v2.js
+          node --check ../../public/huidi-community-online-development-workbench-v1.js
       - name: Start fused HUIDI workspace
         run: |
           set -euo pipefail
@@ -150,8 +159,10 @@ jobs:
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFusion)"))
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFullV2)"))
               wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineIntelligenceV2)"))
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityDevelopmentWorkbench)"))
               wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
               wait.until(lambda d: d.execute_script("return document.body.dataset.huidiFullFusion || ''") == 'v2')
+              wait.until(lambda d: d.execute_script("return document.body.dataset.huidiDevelopmentWorkbench || ''") == 'ready')
 
               snapshot = driver.execute_script("""
                 return {
@@ -164,6 +175,7 @@ jobs:
                   today: Boolean(document.querySelector('#huidiFusionToday')),
                   mail: Boolean(document.querySelector('#huidiFusionMail')),
                   fullTabs: document.querySelectorAll('[data-fv2-tab]').length,
+                  developTab: Boolean(document.querySelector('[data-fv2-tab="develop"]')),
                   mode: document.documentElement.dataset.huidiEdition || '',
                   scope: document.documentElement.dataset.huidiWorkspaceScope || ''
                 };
@@ -172,11 +184,12 @@ jobs:
               assert snapshot['iframeCount'] == 0, snapshot
               assert snapshot['find'] and snapshot['intel'] and snapshot['admin'], snapshot
               assert snapshot['today'] and snapshot['mail'], snapshot
-              assert snapshot['fullTabs'] >= 29, snapshot
+              assert snapshot['fullTabs'] >= 30, snapshot
+              assert snapshot['developTab'], snapshot
               assert snapshot['mode'] == 'community-online', snapshot
               assert snapshot['scope'] == f"org-{org['id']}", snapshot
 
-              # Customer development: all Online customer acquisition surfaces.
+              # Customer development: all Online acquisition + native development surfaces.
               click_nav('online-find')
               click_tab('online-find', 'pool', '#fv2PoolTable')
               click_tab('online-find', 'followups', '#view-online-find [data-fv2-pane="followups"] .fv2-grid')
@@ -185,6 +198,7 @@ jobs:
               click_tab('online-find', 'contacts', '#view-online-find [data-fv2-pane="contacts"] #huidiNavBack')
               click_tab('online-find', 'company', '#view-online-find [data-fv2-pane="company"] #huidiServiceBack')
               click_tab('online-find', 'smart', '#fv2ProductBrains')
+              click_tab('online-find', 'develop', '#hdwWorkbench')
 
               # Mail + automation: Local draft owner plus real Online mail owners.
               click_nav('mail')
@@ -226,7 +240,7 @@ jobs:
               assert '<iframe' not in source, 'iframe leaked into fused workspace'
               assert 'online-bridge.html' not in source, 'legacy Online bridge leaked into fused workspace'
               assert '127.0.0.1:8765' not in source, 'legacy Local bridge leaked into fused workspace'
-              print('HUIDI Community × Online FULL capability fusion Chrome smoke PASS')
+              print('HUIDI Community × Online FULL capability + development fusion Chrome smoke PASS')
           finally:
               driver.quit()
               client.close()
@@ -238,5 +252,5 @@ jobs:
             kill "$(cat /tmp/huidi-fusion-server.pid)" 2>/dev/null || true
           fi
           if [ -s /tmp/huidi-fusion-server.log ]; then
-            tail -280 /tmp/huidi-fusion-server.log
+            tail -320 /tmp/huidi-fusion-server.log
           fi
