@@ -13,7 +13,7 @@ from app.mail_delivery import MailDeliveryLog  # noqa: E402
 from app.mail_sync import MailboxMessage  # noqa: E402
 from app.main import Lead, SessionLocal  # noqa: E402
 from app.tenant_storage import reset_current_organization, set_current_organization  # noqa: E402
-from app.workbench import _day_bounds, _needs_reply, _today_deal_tasks  # noqa: E402
+from app.workbench import _day_bounds, _today_deal_tasks, _unanswered_replies  # noqa: E402
 
 
 class WorkbenchActionTests(unittest.TestCase):
@@ -73,7 +73,7 @@ class WorkbenchActionTests(unittest.TestCase):
                 incoming = self._incoming(lead, now)
                 db.add(incoming)
                 db.flush()
-                self.assertEqual(len(_needs_reply(db, [incoming])), 1)
+                self.assertEqual(len(_unanswered_replies(db)), 1)
                 db.add(
                     MailboxMessage(
                         mailbox_id=1,
@@ -90,7 +90,7 @@ class WorkbenchActionTests(unittest.TestCase):
                     )
                 )
                 db.commit()
-                self.assertEqual(_needs_reply(db, [incoming]), [])
+                self.assertEqual(_unanswered_replies(db), [])
             finally:
                 db.close()
                 reset_current_organization(token)
@@ -104,7 +104,7 @@ class WorkbenchActionTests(unittest.TestCase):
                 incoming = self._incoming(lead, now, "thread-direct")
                 db.add(incoming)
                 db.flush()
-                self.assertEqual(len(_needs_reply(db, [incoming])), 1)
+                self.assertEqual(len(_unanswered_replies(db)), 1)
                 db.add(
                     MailDeliveryLog(
                         lead_id=lead.id,
@@ -117,7 +117,23 @@ class WorkbenchActionTests(unittest.TestCase):
                     )
                 )
                 db.commit()
-                self.assertEqual(_needs_reply(db, [incoming]), [])
+                self.assertEqual(_unanswered_replies(db), [])
+            finally:
+                db.close()
+                reset_current_organization(token)
+
+    def test_unanswered_reply_survives_calendar_day_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            token, db = self._open(tmp, 893005)
+            try:
+                lead = self._lead(db, "BuyerE")
+                old = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(days=2)
+                db.add(self._incoming(lead, old, "thread-old"))
+                db.commit()
+                rows = _unanswered_replies(db)
+                self.assertEqual(len(rows), 1)
+                self.assertEqual(rows[0]["lead_id"], lead.id)
+                self.assertEqual(rows[0]["company_name"], "BuyerE")
             finally:
                 db.close()
                 reset_current_organization(token)
