@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY online/api/requirements.txt ./requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY online/api/app ./app
+COPY online/api/web ./web
+# The published Community Local source is packaged unchanged as the Online
+# mother surface. Online auth/tenant/provider services stay in ./app.
+COPY public ./community-public
+
+ENV APP_HOST=0.0.0.0 \
+    APP_PORT=8080 \
+    HUIDI_COMMUNITY_PUBLIC_DIR=/app/community-public
+
+EXPOSE 8080
+CMD ["uvicorn","app.daily_app:app","--host","0.0.0.0","--port","8080"]
