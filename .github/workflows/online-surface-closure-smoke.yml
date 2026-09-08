@@ -42,7 +42,7 @@ jobs:
           done
           cat /tmp/huidi-surface-server.log
           exit 1
-      - name: Verify screenshot regressions in real Chrome
+      - name: Verify consolidated first-level surface and retained second-level owners in real Chrome
         run: |
           python - <<'PY'
           import time
@@ -92,14 +92,25 @@ jobs:
 
           try:
               driver.get('http://127.0.0.1:18081/')
-              wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, '.side .nav a')) >= 10)
-              time.sleep(1.2)
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '[data-huidi-foundation]')))
+              wait.until(lambda d: len(labels()) >= 10)
+              time.sleep(1.0)
 
               current = labels()
-              for duplicate in ('客户回复', '提醒方式', '邮箱设置'):
-                  assert duplicate not in current, (duplicate, current)
-              for expected in ('提醒', '收件箱', '已发送', '待发送', '自动跟进', '数据来源'):
+              expected_visible = (
+                  '今天的工作', '客户沟通', '待跟进', '提醒',
+                  '找客户', '潜在客户', '客户 / 询盘',
+                  '产品资料', '产品目录', '单据工作台',
+                  '市场 / 关税 / 物流', '基础设置',
+              )
+              for expected in expected_visible:
                   assert expected in current, (expected, current)
+              for hidden_secondary in (
+                  '客户回复', '联系人', '收件箱', '已发送', '邮箱设置', '待发送',
+                  '自动跟进', '地图找客户', '客户背调', '市场动态', '贸易记录',
+                  'HS 编码 / 关税', '汇率换算', '船期 / 物流', '数据来源', '操作记录'
+              ):
+                  assert hidden_secondary not in current, (hidden_secondary, current)
 
               reminder = nav('提醒')
               assert reminder is not None
@@ -135,8 +146,8 @@ jobs:
               assert nr['headDisplay'] == 'none', nr
               assert nr['closeDisplay'] == 'none', nr
 
-              data_source = wait.until(lambda d: nav('数据来源'))
-              data_source.click()
+              # 数据来源已经退出普通一级导航，但管理员二级 Owner 必须继续可用。
+              driver.execute_script("document.querySelector('[data-huidi-service-settings]')?.click()")
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, '#ssBack.hpsc-surface')))
               time.sleep(0.15)
               ss = surface_snapshot('#ssBack', '#ssBack>.ss-modal', '#ssBack .ss-head')
@@ -147,8 +158,9 @@ jobs:
               assert ss['headDisplay'] == 'none', ss
               assert ss['closeDisplay'] == 'none', ss
 
-              inbox = wait.until(lambda d: nav('收件箱'))
+              inbox = wait.until(lambda d: nav('客户沟通'))
               inbox.click()
+              wait.until(EC.text_to_be_present_in_element((By.ID, 'hprTitle'), '收件箱'))
               gmail = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-connect="gmail"]')))
               before = len(driver.find_elements(By.CSS_SELECTOR, '#huidiToastStack .huidi-toast'))
               gmail.click()
@@ -159,7 +171,7 @@ jobs:
               except NoAlertPresentException:
                   pass
 
-              print('HUIDI surface closure Chrome smoke PASS: no duplicate nav; reminder/data-source are page surfaces; Gmail status is non-blocking')
+              print('HUIDI surface closure Chrome smoke PASS: five work domains visible; secondary owners retained; Gmail status is non-blocking')
           finally:
               driver.quit()
           PY
