@@ -27,16 +27,39 @@ class BeginnerWorkflowContractTests(unittest.TestCase):
         self.assertIn("产品资料", product)
         self.assertIn("当前开发重点", product)
 
-    def test_beginner_flow_uses_existing_business_owners_instead_of_new_fake_state(self):
+    def test_beginner_flow_uses_consolidated_work_domains_and_existing_owners(self):
         flow = self.text("web/beginner-flow.js")
         self.assertIn("不用找入口，按当前事情往下做", flow)
         self.assertIn("/api/workbench/today", flow)
+        self.assertIn("HUIDIWorkspaceFoundation", flow)
         self.assertIn("HUIDIDailyServices", flow)
         self.assertIn("HUIDIBusinessCenter", flow)
         self.assertIn("HUIDIProductBrain", flow)
+        self.assertIn("客户沟通", flow)
+        self.assertIn("单据工作台", flow)
+        self.assertIn("市场与工具", flow)
         self.assertIn("先回复", flow)
         self.assertIn("先处理", flow)
-        self.assertIn("做报价", flow)
+        self.assertIn("完成开箱设置", flow)
+        self.assertNotIn('data-bf-action="tariff">查关税', flow)
+        self.assertNotIn('data-bf-action="shipping">查船期', flow)
+
+    def test_beginner_mail_path_goes_to_setup_before_any_mail_owner(self):
+        flow = self.text("web/beginner-flow.js")
+        self.assertIn("connected_mailboxes", flow)
+        self.assertIn("if(!connected){if(foundation('open'))return", flow)
+        self.assertIn("if(foundation('communication'))return", flow)
+        self.assertIn("action==='communication'||action==='mail'||action==='queue'", flow)
+        self.assertIn("action:'setup',label:'完成开箱设置'", flow)
+
+    def test_beginner_documents_and_market_shortcuts_open_hubs_not_leaf_pages(self):
+        flow = self.text("web/beginner-flow.js")
+        self.assertIn("action==='documents'||action==='quotation'", flow)
+        self.assertIn("foundation('documents')", flow)
+        self.assertIn("action==='tools'||action==='tariff'||action==='shipping'", flow)
+        self.assertIn("foundation('tools')", flow)
+        self.assertIn("step('⑤ 单据 / 出运'", flow)
+        self.assertIn("'documents')", flow)
 
     def test_customer_detail_workflow_is_plain_business_progress(self):
         growth = self.text("web/growth-workflow.js")
