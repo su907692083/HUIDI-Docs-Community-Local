@@ -52,7 +52,7 @@ jobs:
             -H 'Content-Type: application/json' \
             --data '{"company_name":"Router Smoke Buyer","product_keyword":"Router Hinge","country":"DE","contact_name":"Purchasing","contact_email":"purchasing@router-smoke.example","requirements":"Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch","create_inquiry":true}' > /tmp/inquiry.json
           grep -F 'Router Smoke Buyer' /tmp/inquiry.json
-      - name: Verify single workspace routing, native pages, catalog and native document in Chrome
+      - name: Verify consolidated workspace routing, retained secondary owners, catalog and native document in Chrome
         run: |
           python - <<'PY'
           import time
@@ -70,9 +70,22 @@ jobs:
           options.add_argument('--window-size=1600,1100')
           driver=webdriver.Chrome(options=options)
           wait=WebDriverWait(driver,10)
+
+          def open_route(route):
+              ok = driver.execute_script("return Boolean(window.HUIDIWorkspacePages?.open(arguments[0]))", route)
+              # Some async page owners return undefined even though routing started.
+              return ok
+
           try:
               driver.get('http://127.0.0.1:18082/')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-foundation]')))
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-catalog]')))
+
+              visible=[x.text.strip() for x in driver.find_elements(By.CSS_SELECTOR,'.side .nav a') if x.text.strip()]
+              for expected in ('今天的工作','客户沟通','待跟进','提醒','找客户','潜在客户','客户 / 询盘','产品资料','产品目录','单据工作台','市场 / 关税 / 物流','基础设置'):
+                  assert expected in visible, (expected,visible)
+              for secondary in ('联系人','收件箱','已发送','待发送','自动跟进','市场动态','操作记录'):
+                  assert secondary not in visible, (secondary,visible)
 
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-catalog]').click()
               wait.until(lambda d: d.find_element(By.ID,'huidiPageHost').is_displayed())
@@ -84,7 +97,8 @@ jobs:
               assert '下载 HTML' in driver.find_element(By.ID,'huidiPageMount').text
               assert '127.0.0.1:8765' not in driver.current_url
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-contacts]').click()
+              # 联系人已退出一级导航，但正式二级 Owner 仍由 Page Router 打开。
+              driver.execute_script("window.HUIDIWorkspacePages.open('contacts')")
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'联系人'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.presence_of_element_located((By.ID,'hnContactSearch')))
@@ -104,7 +118,15 @@ jobs:
               """)
               assert notifications_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, notifications_surface
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-intelligence]').click()
+              # 一级只显示一个“市场 / 关税 / 物流”入口。
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-tool-hub]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'市场与工具'))
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huf-tool="intelligence"]')))
+              assert '市场动态' in driver.find_element(By.ID,'huidiPageMount').text
+              assert 'HS 编码 / 关税' in driver.find_element(By.ID,'huidiPageMount').text
+              assert '船期 / 物流' in driver.find_element(By.ID,'huidiPageMount').text
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('intelligence')")
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'市场动态'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiIntelBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.presence_of_element_located((By.ID,'ciKeyword')))
@@ -114,9 +136,8 @@ jobs:
               """)
               assert intelligence_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, intelligence_surface
 
-              mail_links=driver.find_elements(By.CSS_SELECTOR,'.side [data-huidi-service="mail"]')
-              inbox_link=next(x for x in mail_links if x.get_attribute('data-huidi-mail-folder')!='sent')
-              inbox_link.click()
+              # 邮件一级收成“客户沟通”，收件箱/已发送/队列继续是二级路由。
+              driver.find_element(By.CSS_SELECTOR,'.side .huf-nav [data-huidi-service="mail"]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'收件箱'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiServiceBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'邮箱与回复'))
@@ -126,19 +147,19 @@ jobs:
               """)
               assert service_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, service_surface
 
-              driver.find_element(By.CSS_SELECTOR,'.side [data-huidi-service="mail"][data-huidi-mail-folder="sent"]').click()
+              driver.execute_script("window.HUIDIWorkspacePages.open('sent')")
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'已发送'))
               wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'已发送'))
               assert 'page=sent' in driver.current_url, driver.current_url
               assert driver.execute_script("return document.querySelector('#huidiServiceBack')?.classList.contains('hs-page-surface')") is True
 
-              driver.find_element(By.CSS_SELECTOR,'.side [data-huidi-service="queue"]').click()
+              driver.execute_script("window.HUIDIWorkspacePages.open('queue')")
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'待发送'))
               wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'待发送'))
               assert 'page=queue' in driver.current_url, driver.current_url
               assert driver.execute_script("return document.querySelector('#huidiServiceBack')?.classList.contains('hpr-docked')") is False
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-audit]').click()
+              driver.execute_script("window.HUIDIWorkspacePages.open('audit')")
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'操作记录'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#auBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.presence_of_element_located((By.ID,'auFilters')))
@@ -162,7 +183,7 @@ jobs:
               """)
               assert product_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, product_surface
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huidi-sequences]').click()
+              driver.execute_script("window.HUIDIWorkspacePages.open('sequences')")
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'自动跟进'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#sqBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.text_to_be_present_in_element((By.ID,'sqMain'),'跟进内容'))
@@ -212,7 +233,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI native navigation + intelligence + mail services + audit + product + follow-up + business + document PASS')
+              print('HUIDI consolidated first-level navigation + retained secondary owners + business/document routing PASS')
           finally:
               driver.quit()
           PY
