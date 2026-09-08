@@ -213,6 +213,57 @@ def main() -> None:
         assert enabled(nav), 'lead continuity needs at least one enabled neighbor'
         pointer_click(driver, nav)
         wait.until(lambda d: d.find_element(By.ID, 'dCompany').text != before_lead)
+
+        # Deep-link/detail scale gate: create one more real Lead after the visible page
+        # has already loaded so it is deliberately absent from app.js' in-memory page.
+        # Opening that exact ID must issue only the single-record GET, never the legacy
+        # unpaged /api/leads collection request.
+        hidden_company = f'Continuity Lead {stamp}-OFFPAGE'
+        hidden_out = post(driver, '/api/leads/manual', {
+            'company_name': hidden_company,
+            'product_keyword': 'stainless steel hinge',
+            'country': 'DE',
+            'website': '',
+            'contact_name': '',
+            'contact_email': '',
+            'requirements': '',
+            'create_inquiry': False,
+        })
+        hidden_lead_id = str((hidden_out.get('lead') or {}).get('id') or '')
+        assert hidden_lead_id, hidden_out
+        driver.execute_script(
+            """
+            window.__hdcFetchUrls = [];
+            window.__hdcOriginalFetch = window.fetch;
+            window.fetch = function(...args) {
+              window.__hdcFetchUrls.push(String(args[0]));
+              return window.__hdcOriginalFetch.apply(this, args);
+            };
+            """
+        )
+        open_result = driver.execute_async_script(
+            """
+            const [leadId, done] = arguments;
+            Promise.resolve(window.HUIDILeadWorkbench.open(leadId))
+              .then(() => done({ok: true}))
+              .catch(error => done({ok: false, error: String(error)}));
+            """,
+            hidden_lead_id,
+        )
+        assert open_result.get('ok'), open_result
+        wait.until(lambda d: d.find_element(By.ID, 'dCompany').text.strip() == hidden_company)
+        wait.until(lambda d: f'lead={hidden_lead_id}' in d.current_url)
+        fetch_urls = driver.execute_script("return Array.from(window.__hdcFetchUrls || []);")
+        assert f'/api/leads/{hidden_lead_id}' in fetch_urls, fetch_urls
+        assert '/api/leads' not in fetch_urls, fetch_urls
+        driver.execute_script(
+            """
+            if (window.__hdcOriginalFetch) window.fetch = window.__hdcOriginalFetch;
+            delete window.__hdcOriginalFetch;
+            delete window.__hdcFetchUrls;
+            """
+        )
+        wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
         driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-back]').click()
         wait.until(lambda d: 'open' not in (d.find_element(By.ID, 'backdrop').get_attribute('class') or ''))
 

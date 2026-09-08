@@ -494,6 +494,15 @@ async def search_leads(req: LeadSearchRequest, db: Session = Depends(get_db)):
     return {"mode": "live" if SERPER_API_KEY else "demo", "items": [lead_to_dict(x, db) for x in created]}
 
 
+@app.get("/api/leads/{lead_id}")
+def get_lead(lead_id: int, db: Session = Depends(get_db)):
+    """Return exactly one lead for deep-link/detail loading without scanning the full lead collection."""
+    lead = db.get(Lead, lead_id)
+    if not lead:
+        raise HTTPException(404, "线索不存在")
+    return lead_to_dict(lead, db)
+
+
 @app.patch("/api/leads/{lead_id}")
 def patch_lead(lead_id: int, patch: LeadPatch, db: Session = Depends(get_db)):
     lead = db.get(Lead, lead_id)
