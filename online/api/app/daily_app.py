@@ -59,6 +59,13 @@ install_native_document_review(standalone_business)
 from .native_document_batch_confirm import install_native_document_batch_confirm  # noqa: E402
 
 install_native_document_batch_confirm(standalone_business)
+# Batch reconciliation is a sixth current-document review layer. It records only
+# a non-inheritable pre-split/manual quantity baseline, then reads the same rows
+# to show batch quantity totals, delivery sequence and Packing execution sums.
+# It never allocates quantities/packing data or creates another persistence path.
+from .native_document_batch_reconcile import install_native_document_batch_reconcile  # noqa: E402
+
+install_native_document_batch_reconcile(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
