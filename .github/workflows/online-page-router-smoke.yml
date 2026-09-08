@@ -69,7 +69,7 @@ jobs:
           options.add_argument('--disable-dev-shm-usage')
           options.add_argument('--window-size=1600,1100')
           driver=webdriver.Chrome(options=options)
-          wait=WebDriverWait(driver,10)
+          wait=WebDriverWait(driver,12)
 
           try:
               driver.get('http://127.0.0.1:18082/')
@@ -119,7 +119,6 @@ jobs:
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiIntelBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.presence_of_element_located((By.ID,'ciKeyword')))
 
-              # 客户沟通是一级工作域；邮件具体 owner 全部从二级入口进入。
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-communication]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'客户沟通'))
               for route in ('mail','sent','queue','sequences'):
@@ -162,29 +161,21 @@ jobs:
               wait.until(lambda d: d.execute_script("return document.querySelector('#sqBack')?.parentElement?.id")=='huidiPageMount')
               wait.until(EC.text_to_be_present_in_element((By.ID,'sqMain'),'跟进内容'))
 
-              # 单据工作台是一级工作域；五种正式单据只做二级入口，不产生第二个 Document owner。
+              # 只有一个真正能工作的单据工作台：选询盘后直接制作正式单据，不再经过第二个浅层入口页。
               driver.find_element(By.CSS_SELECTOR,'[data-huidi-doc-workbench]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'单据工作台'))
+              wait.until(EC.presence_of_element_located((By.ID,'hdwChain')))
               for route in ('quotation','proforma_invoice','sales_contract','commercial_invoice','packing_list'):
-                  wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,f'[data-huf-document="{route}"]')))
+                  wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,f'[data-hdw-doc="{route}"]')))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hdwList'),'Router Smoke Buyer'))
               docs_text=driver.find_element(By.ID,'huidiPageMount').text
-              assert '先去客户 / 询盘' in docs_text
-              assert '正式单价不会从参考价或上一张单据自动写入' in docs_text
+              assert '直接打开离线版' not in docs_text
+              assert '带当前业务到离线版' not in docs_text
+              assert '当前正式价格仍由你确认' in docs_text
+              assert 'page=documents' in driver.current_url, driver.current_url
 
-              driver.find_element(By.CSS_SELECTOR,'[data-huf-document-business]').click()
-              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'客户 / 询盘'))
-              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiBusinessBack')?.parentElement?.id")=='huidiPageMount')
-              time.sleep(.4)
-              assert driver.find_element(By.CSS_SELECTOR,'.side').is_displayed()
-
-              row = wait.until(EC.element_to_be_clickable((By.XPATH,"//tr[@data-deal][contains(.,'Router Smoke Buyer')]")))
-              row.click()
-              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#huidiBusinessMain .hb-detail')))
-              quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR,'[data-make-doc="quotation"]')))
-              handles_before = list(driver.window_handles)
-              quote.click()
-              WebDriverWait(driver,5).until(EC.alert_is_present())
-              driver.switch_to.alert.accept()
+              handles_before=list(driver.window_handles)
+              driver.find_element(By.CSS_SELECTOR,'[data-hdw-doc="quotation"]').click()
               frame = wait.until(EC.presence_of_element_located((By.ID,'hwpDocumentFrame')))
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'报价单'))
               assert driver.window_handles == handles_before, (handles_before, driver.window_handles)
@@ -200,7 +191,7 @@ jobs:
               assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
               driver.switch_to.default_content()
 
-              print('HUIDI consolidated work-domain hubs + retained secondary owners + business/document routing PASS')
+              print('HUIDI consolidated work domains + single capable document workbench + native document routing PASS')
           finally:
               driver.quit()
           PY
