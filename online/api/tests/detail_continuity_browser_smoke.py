@@ -97,10 +97,11 @@ def main() -> None:
         items[0].click()
         wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '#pbList [data-pbid].active'))
         before_product = driver.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value')
+        wait.until(lambda d: enabled(d.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]')))
         next_product = driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]')
-        assert enabled(next_product), 'next product should be enabled from first visible row'
         next_product.click()
         wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value') != before_product)
+        wait.until(lambda d: enabled(d.find_element(By.CSS_SELECTOR, '[data-hdc-product-prev]')))
         driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-prev]').click()
         wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value') == before_product)
 
