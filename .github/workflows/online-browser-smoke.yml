@@ -120,6 +120,8 @@ jobs:
           finally:
               driver.quit()
           PY
+      - name: Verify continuous product lead inquiry and customer detail review
+        run: python tests/detail_continuity_browser_smoke.py
       - name: Verify standalone customer inquiry and native quotation without blocking alerts
         run: |
           python - <<'PY'
