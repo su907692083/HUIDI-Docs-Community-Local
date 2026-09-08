@@ -346,10 +346,18 @@ function click(e){
   }
 }
 
+function syncLeadAfterNativeOpen(){
+  const back=$('#backdrop');
+  const current=window.HUIDILeadWorkbench?.current?.();
+  if(!back?.classList.contains('open')||!current?.id||$('#hdcLeadRail'))return;
+  armLeadDecoration(String(current.id));
+}
+
 function boot(){
   css();
   decorateProduct();
   document.addEventListener('click',click,true);
+  document.addEventListener('click',syncLeadAfterNativeOpen);
   document.addEventListener('keydown',saveShortcut,true);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
