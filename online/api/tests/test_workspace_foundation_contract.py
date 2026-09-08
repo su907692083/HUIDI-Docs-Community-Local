@@ -15,6 +15,7 @@ APP = ROOT / "app"
 class WorkspaceFoundationContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.js = (WEB / "workspace-foundation.js").read_text(encoding="utf-8")
+        self.documents = (WEB / "document-workbench-closure.js").read_text(encoding="utf-8")
         self.guard = (APP / "frontend_runtime_guard.py").read_text(encoding="utf-8")
 
     def test_root_surface_loads_foundation_through_versioned_runtime_guard(self) -> None:
@@ -63,17 +64,33 @@ class WorkspaceFoundationContractTests(unittest.TestCase):
         self.assertIn('普通用户不需要配置 SMTP', self.js)
         self.assertIn('不创建第二套客户库', self.js)
         self.assertIn("page==='communication'", self.js)
+        self.assertNotIn('邮件 Owner', self.js)
 
-    def test_documents_are_one_work_domain_over_existing_formal_document_owner(self) -> None:
-        self.assertIn("mount?.('documents','单据工作台'", self.js)
-        self.assertIn('data-huf-document="${route}"', self.js)
+    def test_documents_use_one_capable_native_workbench_not_a_second_shallow_hub(self) -> None:
+        self.assertIn('window.HUIDIDocumentWorkbench?.open', self.js)
+        self.assertNotIn('data-huf-document="${route}"', self.js)
+        self.assertIn("mount?.('documents','单据工作台'", self.documents)
+        self.assertIn('/api/business/deals?', self.documents)
+        self.assertIn('data-hdw-doc="${type}"', self.documents)
         for route in ['quotation', 'proforma_invoice', 'sales_contract', 'commercial_invoice', 'packing_list']:
-            self.assertIn(f"['{route}'", self.js)
-        self.assertIn('先在“客户 / 询盘”确认客户、产品和业务事实', self.js)
-        self.assertIn('正式单价不会从参考价或上一张单据自动写入', self.js)
-        self.assertIn('现有 OnlineDocumentRef / Community Document Owner', self.js)
-        self.assertIn('不新建第二套单据数据', self.js)
+            self.assertIn(f"['{route}'", self.documents)
+        self.assertIn('选一笔询盘后直接做报价、PI、合同、CI 或 Packing', self.documents)
+        self.assertIn('当前正式价格仍由你确认', self.documents)
         self.assertIn("page==='documents'", self.js)
+
+    def test_document_workbench_has_no_normal_path_local_bridge_or_extra_window(self) -> None:
+        for forbidden in [
+            'window.open(',
+            '127.0.0.1:8765',
+            'data-hdw-local',
+            'data-hdw-sync-local',
+            '直接打开离线版',
+            '带当前业务到离线版',
+            'online-bridge.html',
+        ]:
+            self.assertNotIn(forbidden, self.documents)
+        self.assertIn('data-hdw-business', self.documents)
+        self.assertIn('window.HUIDIWorkspacePages?.open?.(\'business\')', self.documents)
 
     def test_foundation_reuses_existing_owners_and_has_no_second_business_plane(self) -> None:
         for endpoint in [
@@ -111,18 +128,19 @@ class WorkspaceFoundationContractTests(unittest.TestCase):
         self.assertIn('只使用真实已连接数据', self.js)
         self.assertIn("'可用':'未连接'", self.js)
 
-    def test_browser_script_syntax(self) -> None:
+    def test_browser_scripts_syntax(self) -> None:
         node = shutil.which("node")
         if not node:
             self.skipTest("node is not installed")
-        with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as tmp:
-            tmp.write(self.js)
-            path = Path(tmp.name)
-        try:
-            result = subprocess.run([node, "--check", str(path)], capture_output=True, text=True)
-            self.assertEqual(result.returncode, 0, result.stderr)
-        finally:
-            path.unlink(missing_ok=True)
+        for source in (self.js, self.documents):
+            with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as tmp:
+                tmp.write(source)
+                path = Path(tmp.name)
+            try:
+                result = subprocess.run([node, "--check", str(path)], capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+            finally:
+                path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
