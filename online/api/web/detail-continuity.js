@@ -6,7 +6,9 @@ const $=s=>document.querySelector(s);
 const all=s=>[...document.querySelectorAll(s)];
 let leadIds=[];
 let leadId='';
+let leadEpoch=0;
 let business={kind:'',ids:[],id:'',page:1};
+let businessEpoch=0;
 
 function css(){
   if($('#huidiDetailContinuityCss'))return;
@@ -99,32 +101,51 @@ function decorateProduct(){
 
 function replaceSectionWithDetails(anchor,label){
   const section=anchor?.closest?.('.section');
-  if(!section||section.matches('details.hdc-collapsible'))return section;
+  if(!section||!section.isConnected)return null;
+  if(section.matches('details.hdc-collapsible'))return section;
+  const parent=section.parentNode;
+  if(!parent)return null;
   const details=document.createElement('details');
   details.className=section.className+' hdc-collapsible';
   details.dataset.hdcCollapse=label;
   details.innerHTML=`<summary><b>${label}</b><span>按需展开</span></summary>`;
-  section.replaceWith(details);
+  parent.replaceChild(details,section);
   while(section.firstChild)details.appendChild(section.firstChild);
   return details;
 }
 function decorateLeadSections(){
   const back=$('#backdrop');
   if(!back?.classList.contains('open'))return false;
-  replaceSectionWithDetails($('#assessmentBox'),'客户背调');
-  replaceSectionWithDetails($('#timeline'),'开发记录');
-  return true;
+  const assessment=replaceSectionWithDetails($('#assessmentBox'),'客户背调');
+  const timeline=replaceSectionWithDetails($('#timeline'),'开发记录');
+  return Boolean(assessment?.isConnected&&timeline?.isConnected);
 }
 function leadPosition(){
   const idx=leadIds.indexOf(String(leadId));
   return {idx,total:leadIds.length};
 }
+function leadDetailReady(expectedId=leadId){
+  const back=$('#backdrop');
+  const owner=window.HUIDILeadWorkbench;
+  const current=owner?.current?.();
+  if(!back?.classList.contains('open'))return false;
+  if(expectedId&&String(current?.id||'')!==String(expectedId))return false;
+  return Boolean($('#dWebsite')?.isConnected&&$('#dCompany')?.isConnected&&$('#timeline')?.isConnected);
+}
 async function openLeadOwner(id){
   const owner=window.HUIDILeadWorkbench;
   if(typeof owner?.open!=='function')return false;
-  leadId=String(id||'');
-  await owner.open(leadId);
-  scheduleLeadDecoration();
+  const expectedId=String(id||'');
+  const epoch=++leadEpoch;
+  leadId=expectedId;
+  try{
+    await owner.open(expectedId);
+  }catch(error){
+    if(epoch===leadEpoch)console.warn('HUIDI detail continuity: lead owner open failed',error);
+    return false;
+  }
+  if(epoch!==leadEpoch||leadId!==expectedId)return false;
+  scheduleLeadDecoration(expectedId,epoch,0);
   return true;
 }
 function gotoLead(delta){
@@ -138,12 +159,9 @@ function gotoLead(delta){
   const btn=$(`#tbody [data-open="${CSS.escape(String(target))}"]`);
   btn?.click();
 }
-function decorateLead(){
-  const back=$('#backdrop');
-  if(!back?.classList.contains('open'))return false;
+function decorateLead(expectedId=leadId){
+  if(!leadDetailReady(expectedId))return false;
   const website=$('#dWebsite');
-  if(!website)return false;
-  decorateLeadSections();
   let rail=$('#hdcLeadRail');
   if(!rail){
     rail=document.createElement('div');
@@ -159,12 +177,19 @@ function decorateLead(){
   rail.querySelector('[data-hdc-lead-prev]').disabled=idx<=0;
   rail.querySelector('[data-hdc-lead-next]').disabled=idx<0||idx>=total-1;
   rail.querySelector('[data-hdc-lead-state]').textContent=idx>=0?`${idx+1} / ${total}`:`${total} 条`;
-  return true;
+  if(!rail.isConnected)return false;
+  if(!decorateLeadSections())return false;
+  return Boolean($('[data-hdc-collapse="客户背调"]')?.isConnected&&$('[data-hdc-collapse="开发记录"]')?.isConnected);
 }
-function scheduleLeadDecoration(attempt=0){
-  if(decorateLead())return;
+function scheduleLeadDecoration(expectedId=leadId,epoch=leadEpoch,attempt=0){
+  if(epoch!==leadEpoch||String(expectedId)!==String(leadId))return;
+  let ready=false;
+  try{ready=decorateLead(expectedId)}catch(error){
+    if(attempt>=20)console.warn('HUIDI detail continuity: lead detail never became ready',error);
+  }
+  if(ready)return;
   if(attempt>=20)return;
-  setTimeout(()=>scheduleLeadDecoration(attempt+1),50);
+  setTimeout(()=>scheduleLeadDecoration(expectedId,epoch,attempt+1),50);
 }
 
 function currentBusinessPage(){
@@ -181,7 +206,8 @@ function captureBusiness(kind,node){
     id:String(node.dataset[attr]||''),
     page:currentBusinessPage()
   };
-  scheduleBusinessDecoration();
+  const epoch=++businessEpoch;
+  scheduleBusinessDecoration(epoch,0);
 }
 async function gotoBusiness(delta){
   const idx=business.ids.indexOf(String(business.id));
@@ -200,31 +226,33 @@ async function gotoBusiness(delta){
 }
 function foldReferenceCard(){
   const main=$('#huidiBusinessMain');
-  if(!main)return;
+  if(!main)return false;
   for(const card of allWithin(main,'.hb-card')){
     const h=card.querySelector(':scope > h3');
     if(!h||String(h.textContent||'').trim()!=='联网业务参考'||card.matches('details.hdc-collapsible'))continue;
+    if(!card.isConnected||!card.parentNode)continue;
     const details=document.createElement('details');
     details.className='hb-card hdc-collapsible';
     details.dataset.hdcCollapse='联网业务参考';
     details.innerHTML='<summary><b>联网业务参考</b><span>仅核对时展开</span></summary>';
-    card.replaceWith(details);
+    card.parentNode.replaceChild(details,card);
     while(card.firstChild){
       if(card.firstChild===h){card.removeChild(h);continue;}
       details.appendChild(card.firstChild);
     }
   }
+  return true;
 }
 function decorateBusiness(){
   const main=$('#huidiBusinessMain');
-  if(!main)return false;
+  if(!main?.isConnected)return false;
   const isDeal=Boolean(main.querySelector('[data-back-deals]'));
   const isCustomer=Boolean(main.querySelector('[data-back-customers]'));
   if(!isDeal&&!isCustomer)return false;
   const kind=isDeal?'deal':'customer';
   if(business.kind!==kind)return false;
   const top=main.querySelector(isDeal?'[data-back-deals]':'[data-back-customers]')?.closest('.hb-actions');
-  if(!top)return false;
+  if(!top?.isConnected)return false;
   top.classList.add('hdc-business-rail');
   if(!top.querySelector('[data-hdc-business-prev]')){
     const prev=document.createElement('button');
@@ -252,13 +280,18 @@ function decorateBusiness(){
   top.querySelector('[data-hdc-business-prev]').disabled=idx<=0;
   top.querySelector('[data-hdc-business-next]').disabled=idx<0||idx>=total-1;
   top.querySelector('[data-hdc-business-state]').textContent=idx>=0?`${idx+1} / ${total}`:`${total} 条`;
-  if(isDeal)foldReferenceCard();
-  return true;
+  if(isDeal&&!foldReferenceCard())return false;
+  return Boolean(top.querySelector('[data-hdc-business-prev]')&&top.querySelector('[data-hdc-business-next]'));
 }
-function scheduleBusinessDecoration(attempt=0){
-  if(decorateBusiness())return;
+function scheduleBusinessDecoration(epoch=businessEpoch,attempt=0){
+  if(epoch!==businessEpoch)return;
+  let ready=false;
+  try{ready=decorateBusiness()}catch(error){
+    if(attempt>=20)console.warn('HUIDI detail continuity: business detail never became ready',error);
+  }
+  if(ready)return;
   if(attempt>=20)return;
-  setTimeout(()=>scheduleBusinessDecoration(attempt+1),50);
+  setTimeout(()=>scheduleBusinessDecoration(epoch,attempt+1),50);
 }
 
 function saveShortcut(e){
