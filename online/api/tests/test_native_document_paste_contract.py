@@ -33,7 +33,7 @@ class NativeDocumentPasteContractTest(unittest.TestCase):
             "批量粘贴 Excel / 旧表格",
             "填到目标空白",
             "覆盖目标字段",
-            "有 SKU/产品列时只用于匹配现有产品行",
+            "SKU/产品始终只用于匹配现有产品行",
             "line.split('\\t')",
             "identityColumns",
             "rowMatch(source,targets,used)",
@@ -78,6 +78,62 @@ class NativeDocumentPasteContractTest(unittest.TestCase):
             target = Path(tmp) / "native-paste.js"
             target.write_text(scripts[0], encoding="utf-8")
             subprocess.run(["node", "--check", str(target)], check=True)
+
+    def test_smart_headers_scan_preamble_and_common_foreign_trade_columns(self) -> None:
+        page = decorate_native_document_paste(self._grid_page())
+        for marker in (
+            "headerCandidates=Math.min(matrix.length,5)",
+            "function headerKey(value)",
+            "unitprice",
+            "netweight",
+            "grossweight",
+            "cartonsize",
+            "packageqty",
+            "表头第 ${info.headerIndex+1} 行",
+            "QTY(PCS)",
+            "Unit Price(USD)",
+            "N.W.(KG)",
+            "G.W.(KG)",
+            "Carton Size(CM)",
+        ):
+            self.assertIn(marker, page, marker)
+
+    def test_numeric_normalization_is_bounded_and_ambiguous_values_are_skipped(self) -> None:
+        page = decorate_native_document_paste(self._grid_page())
+        for marker in (
+            "const numericKeys=new Set",
+            "可能是逗号小数，存在歧义，已跳过",
+            "的逗号格式无法安全识别，已跳过",
+            "含非 KG 单位，未自动换算",
+            "含未知单位，未自动换算",
+            "hnd-paste-cell-warning",
+            "跳过歧义 ${blocked} 项",
+            "if(normalized.safe)ops.push",
+            "表头检测到币种 ${code}",
+            "请确认与当前正式单据币种一致",
+        ):
+            self.assertIn(marker, page, marker)
+
+        self.assertIn("(?:pcs?|pieces?|sets?|units?|件|套)$", page)
+        self.assertIn("(?:cartons?|ctns?|boxes?|packages?|箱|件)$", page)
+        self.assertIn("(?:kg|kgs|公斤|千克)$", page)
+        self.assertIn("(?:cbm|m3|m³|立方米)$", page)
+        self.assertNotIn("* 2.204", page)
+        self.assertNotIn("/ 2.204", page)
+        self.assertNotIn("自动换算", page.replace("未自动换算", ""))
+
+    def test_row_level_issue_panel_is_local_preview_only(self) -> None:
+        page = decorate_native_document_paste(self._grid_page())
+        for marker in (
+            "data-hnd-paste-issues",
+            "粘贴核对提示 ${plan.issues.length} 项",
+            "未匹配当前可见产品，已跳过整行",
+            "renderIssues(plan)",
+            "escapeHtml(item.message)",
+        ):
+            self.assertIn(marker, page, marker)
+        self.assertNotIn("form.submit", page)
+        self.assertNotIn("requestSubmit", page)
 
     def test_single_product_or_ungridded_document_is_untouched(self) -> None:
         single = "<html><head><style></style></head><body><div data-hnd-grid-tools></div><table class='item-table'></table></body></html>"
