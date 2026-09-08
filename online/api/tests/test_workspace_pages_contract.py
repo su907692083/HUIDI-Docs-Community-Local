@@ -25,6 +25,30 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertLess(router, index.index('/assets/customer-intelligence.js'))
         self.assertLess(router, index.index('/assets/audit-ui.js'))
 
+    def test_root_html_first_render_is_already_the_five_domain_navigation(self):
+        index = (WEB / "index.html").read_text(encoding="utf-8")
+        self.assertIn('<aside class="side" data-huf-nav="1">', index)
+        for label in ["今天", "客户", "产品与单据", "市场与工具", "设置"]:
+            self.assertIn(f'<div class="nav-title">{label}</div>', index)
+        for legacy in ["开发客户", "邮件跟进", "客户与业务", "查资料", "管理"]:
+            self.assertNotIn(f'<div class="nav-title">{legacy}</div>', index)
+        self.assertIn('data-huidi-communication>客户沟通', index)
+        self.assertIn('data-huidi-doc-workbench>单据工作台', index)
+        self.assertIn('data-huidi-tool-hub>市场 / 关税 / 物流', index)
+        self.assertIn('data-huidi-foundation>基础设置', index)
+        self.assertIn('huf-side-hidden', index)
+
+    def test_today_shortcuts_route_to_work_domains_not_leaf_owner_modals(self):
+        source = (WEB / "daily-workbench.js").read_text(encoding="utf-8")
+        for label in ["找客户", "客户沟通", "客户 / 询盘", "单据工作台"]:
+            self.assertIn(label, source)
+        self.assertIn("HUIDIWorkspaceFoundation?.communication?.()", source)
+        self.assertIn("HUIDIWorkspacePages?.open?.('business')", source)
+        self.assertIn("HUIDIDocumentWorkbench?.open?.()", source)
+        self.assertNotIn("HUIDIDailyServices?.open?.('mail')", source)
+        self.assertNotIn("HUIDIBusinessCenter?.open?.('deals')", source)
+        subprocess.run(["node", "--check", str(WEB / "daily-workbench.js")], check=True)
+
     def test_primary_sidebar_routes_into_one_main_workspace_page(self):
         source = (WEB / "page-router.js").read_text(encoding="utf-8")
         self.assertIn("#huidiPageHost", source)
@@ -178,14 +202,18 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("不再打开第二个窗口", source)
         self.assertNotIn("window.open(out.url", source)
 
-    def test_catalog_is_native_and_does_not_require_local_8765(self):
+    def test_catalog_is_native_reuses_company_facts_and_auto_previews(self):
         source = (WEB / "catalog-studio-online.js").read_text(encoding="utf-8")
         self.assertIn("产品目录", source)
         self.assertIn("/api/product-brains", source)
-        self.assertIn("生成 / 刷新目录预览", source)
+        self.assertIn("/api/company-settings", source)
+        self.assertIn("defaultContact", source)
+        self.assertNotIn("生成 / 刷新目录预览", source)
         self.assertIn("打印 / 另存 PDF", source)
         self.assertIn("下载 HTML", source)
         self.assertIn("selected=new Set", source)
+        self.assertIn("data-hoc-go-product", source)
+        self.assertIn("addEventListener('input',renderPreview)", source)
         self.assertNotIn("catalog-studio/index.html", source)
         self.assertNotIn("127.0.0.1:8765", source)
         self.assertNotIn("localhost:8765", source)
