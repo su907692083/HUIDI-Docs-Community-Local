@@ -40,6 +40,12 @@ install_native_document_batch(standalone_business)
 from .native_document_grid import install_native_document_grid  # noqa: E402
 
 install_native_document_grid(standalone_business)
+# Excel/TSV paste is a third bounded presentation layer. It only writes into
+# existing visible row controls after an explicit user action; product identity
+# is match-only and the native draft owner remains the sole persistence path.
+from .native_document_paste import install_native_document_paste  # noqa: E402
+
+install_native_document_paste(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
