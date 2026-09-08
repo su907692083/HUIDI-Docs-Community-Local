@@ -21,6 +21,33 @@
 .hb-page-surface .hb-search{height:32px}
 .hb-page-surface .hb-main{padding:11px 12px 15px}
 
+/* Desktop shell: keep the navigation quiet and reserve the viewport for work. */
+@media(min-width:901px){
+  .app{grid-template-columns:202px minmax(0,1fr)}
+  .side{padding:14px 10px 12px}
+  .brand{font-size:18px;padding:5px 8px 13px}
+  .nav-title{padding:8px 8px 4px}
+  .nav a{padding:7px 9px;margin:1px 0}
+  .side-note{display:none}
+
+  /* “找客户” is a focused working surface, not the whole home dashboard. */
+  .app:has(.side [data-huidi-nav="find"].active) .main{padding:14px 22px 28px}
+  .app:has(.side [data-huidi-nav="find"].active) .main #dailyWorkbench,
+  .app:has(.side [data-huidi-nav="find"].active) .main #beginnerFlow,
+  .app:has(.side [data-huidi-nav="find"].active) .main #hufHome{display:none!important}
+  .app:has(.side [data-huidi-nav="find"].active) .main .top{align-items:center;margin-bottom:8px;gap:12px}
+  .app:has(.side [data-huidi-nav="find"].active) .main .top h1{font-size:19px}
+  .app:has(.side [data-huidi-nav="find"].active) .main .top p{display:none}
+  .app:has(.side [data-huidi-nav="find"].active) .main .health{padding:5px 9px;font-size:11px;max-width:46%;overflow:hidden;text-overflow:ellipsis}
+  .app:has(.side [data-huidi-nav="find"].active) .main .search{padding:11px 13px;margin-bottom:7px;border-radius:10px;box-shadow:none}
+  .app:has(.side [data-huidi-nav="find"].active) .main .field input,
+  .app:has(.side [data-huidi-nav="find"].active) .main .field select,
+  .app:has(.side [data-huidi-nav="find"].active) .main .search .primary{height:34px}
+  .app:has(.side [data-huidi-nav="find"].active) .main .toolbar{margin:7px 0 6px;gap:8px}
+  .app:has(.side [data-huidi-nav="find"].active) .main .tab{padding:5px 9px}
+  .app:has(.side [data-huidi-nav="find"].active) .main .table-wrap{height:calc(100vh - 188px);min-height:460px}
+}
+
 @media(max-width:900px){
   .hpr-head{padding:9px 10px 8px;align-items:flex-start}
   .hpr-head p{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
