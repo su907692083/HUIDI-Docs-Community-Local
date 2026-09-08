@@ -120,7 +120,7 @@ def main() -> None:
 
         driver.find_element(By.CSS_SELECTOR, "[data-hoc-none]").click()
         first_box = driver.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")[0]
-        first_box.click()
+        driver.execute_script("arguments[0].click();", first_box)
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "#hocPreview .hoc-card")) == 1)
 
         driver.find_element(By.CSS_SELECTOR, "[data-hoc-next]").click()
@@ -128,7 +128,7 @@ def main() -> None:
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "#hocList .hoc-item")) == 5)
 
         second_box = driver.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")[0]
-        second_box.click()
+        driver.execute_script("arguments[0].click();", second_box)
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "#hocPreview .hoc-card")) == 2)
 
         page_urls = driver.execute_script("return Array.from(window.__hocFetchUrls || []);")
