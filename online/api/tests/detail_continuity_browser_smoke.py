@@ -100,14 +100,13 @@ def main() -> None:
         wait.until(lambda d: 'hpr-active' not in (d.find_element(By.CSS_SELECTOR, '.main').get_attribute('class') or ''))
         wait.until(EC.presence_of_element_located((By.ID, 'tbody')))
 
-        # Lead detail: create two real manual leads, then click the visible “全部” tab.
-        # Its mature app.js handler resets the current filter/page and calls the real
-        # list load(), matching the actual user path instead of relying on an internal
-        # global refresh object.
-        lead_names = [f'Continuity Lead {stamp}-A', f'Continuity Lead {stamp}-B']
-        for company in lead_names:
-            post(driver, '/api/leads/manual', {
-                'company_name': company,
+        # Lead detail: create two real manual leads. Use the exact lead IDs returned by
+        # the existing endpoint, then click the visible “全部” tab so app.js performs
+        # the real list reload. This verifies object identity rather than text matching.
+        lead_ids: list[str] = []
+        for suffix in ("A", "B"):
+            out = post(driver, '/api/leads/manual', {
+                'company_name': f'Continuity Lead {stamp}-{suffix}',
                 'product_keyword': 'stainless steel hinge',
                 'country': 'DE',
                 'website': '',
@@ -116,9 +115,12 @@ def main() -> None:
                 'requirements': '',
                 'create_inquiry': False,
             })
-        all_tab = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#tabs .tab[data-status=""]')))
-        all_tab.click()
-        first_lead = wait.until(EC.element_to_be_clickable((By.XPATH, f'//tr[contains(., "{lead_names[0]}")]//button[@data-open]')))
+            lead_id = str((out.get('lead') or {}).get('id') or '')
+            assert lead_id, out
+            lead_ids.append(lead_id)
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#tabs .tab[data-status=""]'))).click()
+        first_lead = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[0]}"]')))
+        assert driver.find_elements(By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[1]}"]')
         first_lead.click()
         rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
         assert rail.is_displayed()
@@ -134,12 +136,13 @@ def main() -> None:
         driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-back]').click()
         wait.until(lambda d: 'open' not in (d.find_element(By.ID, 'backdrop').get_attribute('class') or ''))
 
-        # Inquiry + customer detail: manual confirmed inquiries create the existing
-        # Customer -> Deal chain, then the same Business owner is used for continuity.
-        inquiry_names = [f'Continuity Buyer {stamp}-A', f'Continuity Buyer {stamp}-B']
-        for company in inquiry_names:
-            post(driver, '/api/leads/manual', {
-                'company_name': company,
+        # Inquiry + customer detail: use exact returned Deal/Customer IDs so continuity
+        # is verified across the same Customer -> Deal identity chain.
+        deal_ids: list[str] = []
+        customer_ids: list[str] = []
+        for suffix in ("A", "B"):
+            out = post(driver, '/api/leads/manual', {
+                'company_name': f'Continuity Buyer {stamp}-{suffix}',
                 'product_keyword': 'stainless steel hinge',
                 'country': 'US',
                 'website': '',
@@ -148,10 +151,16 @@ def main() -> None:
                 'requirements': 'Quantity 1000 pcs',
                 'create_inquiry': True,
             })
+            deal_id = str((out.get('deal') or {}).get('id') or '')
+            customer_id = str((out.get('customer') or {}).get('id') or '')
+            assert deal_id and customer_id, out
+            deal_ids.append(deal_id)
+            customer_ids.append(customer_id)
 
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-huidi-business="deals"]'))).click()
         wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open.hb-page-surface')))
-        deal_row = wait.until(EC.element_to_be_clickable((By.XPATH, f'//tr[@data-deal and contains(., "{inquiry_names[0]}")]')))
+        deal_row = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#huidiBusinessMain [data-deal="{deal_ids[0]}"]')))
+        assert driver.find_elements(By.CSS_SELECTOR, f'#huidiBusinessMain [data-deal="{deal_ids[1]}"]')
         deal_row.click()
         wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessMain .hdc-business-rail')))
         reference = driver.find_element(By.CSS_SELECTOR, 'details[data-hdc-collapse="联网业务参考"]')
@@ -166,7 +175,8 @@ def main() -> None:
 
         driver.find_element(By.CSS_SELECTOR, '[data-back-deals]').click()
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hb-view="customers"]'))).click()
-        customer_row = wait.until(EC.element_to_be_clickable((By.XPATH, f'//tr[@data-customer-id and contains(., "{inquiry_names[0]}")]')))
+        customer_row = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#huidiBusinessMain [data-customer-id="{customer_ids[0]}"]')))
+        assert driver.find_elements(By.CSS_SELECTOR, f'#huidiBusinessMain [data-customer-id="{customer_ids[1]}"]')
         customer_row.click()
         wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessMain .hdc-business-rail')))
         before_customer = driver.find_element(By.ID, 'hbCustomerCompany').get_attribute('value')
