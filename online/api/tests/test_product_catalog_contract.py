@@ -26,6 +26,7 @@ class ProductCatalogLargeDataContractTests(unittest.TestCase):
         self.assertIn("全选本页", text)
         self.assertIn("setTimeout(()=>loadProducts(1,next),260)", text)
         self.assertNotIn("fetch('/api/product-brains')", text)
+        self.assertNotIn("HUIDIProductServer?.sync", text)
 
     def test_real_browser_large_data_gate_exists(self):
         smoke = ROOT / "tests" / "product_catalog_large_data_browser_smoke.py"

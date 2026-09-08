@@ -279,10 +279,6 @@ async function open(){
   defaultsApplied=false;
   m.innerHTML='<div class="hoc-empty">正在读取产品资料…</div>';
 
-  try{
-    await Promise.resolve(window.HUIDIProductServer?.sync?.());
-  }catch(_){}
-
   let company={};
   try{
     const companyResponse=await fetch('/api/company-settings');
