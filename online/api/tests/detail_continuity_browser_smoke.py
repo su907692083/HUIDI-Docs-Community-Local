@@ -62,6 +62,8 @@ def pointer_click(driver: webdriver.Chrome, element) -> None:
 def runtime_state(driver: webdriver.Chrome) -> dict:
     return driver.execute_script(
         """
+        const rail = document.querySelector('#hdcLeadRail');
+        const current = window.HUIDILeadWorkbench?.current?.();
         return {
           ready: document.readyState,
           leadOwner: typeof window.HUIDILeadWorkbench?.open,
@@ -73,7 +75,18 @@ def runtime_state(driver: webdriver.Chrome) -> dict:
           productClass: document.querySelector('#pbBackdrop')?.className || '',
           leadButtons: document.querySelectorAll('#tbody [data-open]').length,
           firstLeadId: document.querySelector('#tbody [data-open]')?.dataset?.open || '',
-          hprActive: document.querySelector('.main')?.classList.contains('hpr-active') || false
+          hprActive: document.querySelector('.main')?.classList.contains('hpr-active') || false,
+          ownerCurrentId: String(current?.id || ''),
+          ownerCurrentCompany: String(current?.company_name || ''),
+          dCompany: document.querySelector('#dCompany')?.textContent || '',
+          dWebsiteConnected: Boolean(document.querySelector('#dWebsite')?.isConnected),
+          timelineConnected: Boolean(document.querySelector('#timeline')?.isConnected),
+          assessmentConnected: Boolean(document.querySelector('#assessmentBox')?.isConnected),
+          hdcRailPresent: Boolean(rail),
+          hdcRailDisplay: rail ? getComputedStyle(rail).display : '',
+          hdcLeadState: document.querySelector('[data-hdc-lead-state]')?.textContent || '',
+          leadCollapseCount: document.querySelectorAll('[data-hdc-collapse]').length,
+          drawerRailPresent: Boolean(document.querySelector('#huidiDrawerRail'))
         };
         """
     )
@@ -182,7 +195,14 @@ def main() -> None:
             dump_browser_log(driver, "lead-open-timeout")
             raise
         wait.until(lambda d: d.find_element(By.ID, 'dCompany').text.strip() == lead_names[0])
-        rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
+        try:
+            rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
+        except TimeoutException:
+            print("HUIDI runtime state after lead rail timeout:", runtime_state(driver))
+            drawer_html = driver.execute_script("return document.querySelector('#backdrop .drawer')?.innerHTML || '';")
+            print("HUIDI lead drawer HTML after rail timeout:", drawer_html[:8000])
+            dump_browser_log(driver, "lead-rail-timeout")
+            raise
         assert rail.is_displayed()
         assert driver.find_element(By.CSS_SELECTOR, '[data-hdc-collapse="客户背调"]').get_attribute('open') is None
         assert driver.find_element(By.CSS_SELECTOR, '[data-hdc-collapse="开发记录"]').get_attribute('open') is None
