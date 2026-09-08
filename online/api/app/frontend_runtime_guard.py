@@ -9,6 +9,8 @@ from .main import WEB_DIR, app
 
 
 _ASSET_RX = re.compile(r'(?P<prefix>(?:src|href)="/assets/[^"?]+)(?P<tail>")')
+_FOUNDATION_ASSET = "/assets/workspace-foundation.js"
+_FOUNDATION_TAG = f'<script src="{_FOUNDATION_ASSET}"></script>'
 
 
 def _asset_version() -> str:
@@ -39,6 +41,18 @@ def _headers(response_headers: dict[str, str] | None = None, *, clear_cache: boo
     return headers
 
 
+def inject_workspace_foundation(html: str) -> str:
+    """Load the open-box information-architecture layer on the root workbench.
+
+    The layer only reorders/combines existing owners and reuses their APIs. It
+    does not replace Customer/Product/Deal/Document/Mail owners or create a
+    second persistence route.
+    """
+    if _FOUNDATION_ASSET in html or "</body>" not in html:
+        return html
+    return html.replace("</body>", _FOUNDATION_TAG + "</body>", 1)
+
+
 def version_asset_refs(html: str) -> str:
     return _ASSET_RX.sub(lambda match: f"{match.group('prefix')}?v={ASSET_VERSION}{match.group('tail')}", html)
 
@@ -51,7 +65,8 @@ async def frontend_runtime_guard(request, call_next):
         chunks: list[bytes] = []
         async for chunk in response.body_iterator:
             chunks.append(chunk if isinstance(chunk, bytes) else str(chunk).encode("utf-8"))
-        html = version_asset_refs(b"".join(chunks).decode("utf-8"))
+        html = inject_workspace_foundation(b"".join(chunks).decode("utf-8"))
+        html = version_asset_refs(html)
         return HTMLResponse(
             html,
             status_code=response.status_code,
