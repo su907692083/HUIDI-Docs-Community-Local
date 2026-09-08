@@ -54,6 +54,25 @@ class DocumentWorkbenchContractTests(unittest.TestCase):
         self.assertNotIn("observe(document.body", source)
         self.assertNotIn("observe(document.documentElement", source)
 
+    def test_document_workbench_paginates_large_deal_sets_without_full_render(self):
+        source = (WEB / "document-workbench-closure.js").read_text(encoding="utf-8")
+        self.assertIn("page_size:'50'", source)
+        self.assertIn("page:String(requested)", source)
+        self.assertIn("data-hdw-prev", source)
+        self.assertIn("data-hdw-next", source)
+        self.assertIn("id=\"hdwPager\"", source)
+        self.assertIn("共 ${total} 笔业务", source)
+        self.assertIn("page=1;loadDeals(1)", source)
+        self.assertNotIn("page:'1',page_size:'50'", source)
+
+    def test_large_data_document_browser_gate_is_present(self):
+        browser = (ROOT / "tests" / "document_pagination_browser_smoke.py").read_text(encoding="utf-8")
+        self.assertIn("SEED_COUNT = 55", browser)
+        self.assertIn("page=2", browser)
+        self.assertIn("page_size=50", browser)
+        self.assertIn('[data-hdw-doc="quotation"]', browser)
+        self.assertIn("/api/business/deals/{target_id}", browser)
+
     def test_normal_document_workbench_has_no_local_bridge_or_extra_window(self):
         source = (WEB / "document-workbench-closure.js").read_text(encoding="utf-8")
         for forbidden in [
@@ -68,9 +87,14 @@ class DocumentWorkbenchContractTests(unittest.TestCase):
         ]:
             self.assertNotIn(forbidden, source)
 
-    def test_browser_script_parses(self):
+    def test_browser_scripts_parse(self):
         subprocess.run(
             ["node", "--check", str(WEB / "document-workbench-closure.js")],
+            check=True,
+            cwd=ROOT,
+        )
+        subprocess.run(
+            ["python", "-m", "py_compile", str(ROOT / "tests" / "document_pagination_browser_smoke.py")],
             check=True,
             cwd=ROOT,
         )
