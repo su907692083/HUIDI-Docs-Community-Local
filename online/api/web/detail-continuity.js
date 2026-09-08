@@ -109,8 +109,11 @@ function replaceSectionWithDetails(anchor,label){
   return details;
 }
 function decorateLeadSections(){
+  const back=$('#backdrop');
+  if(!back?.classList.contains('open'))return false;
   replaceSectionWithDetails($('#assessmentBox'),'客户背调');
   replaceSectionWithDetails($('#timeline'),'开发记录');
+  return true;
 }
 function leadPosition(){
   const idx=leadIds.indexOf(String(leadId));
@@ -148,8 +151,8 @@ function decorateLead(){
 }
 function scheduleLeadDecoration(attempt=0){
   if(decorateLead())return;
-  if(attempt>=12)return;
-  setTimeout(()=>scheduleLeadDecoration(attempt+1),40);
+  if(attempt>=20)return;
+  setTimeout(()=>scheduleLeadDecoration(attempt+1),50);
 }
 
 function currentBusinessPage(){
@@ -242,8 +245,8 @@ function decorateBusiness(){
 }
 function scheduleBusinessDecoration(attempt=0){
   if(decorateBusiness())return;
-  if(attempt>=12)return;
-  setTimeout(()=>scheduleBusinessDecoration(attempt+1),40);
+  if(attempt>=20)return;
+  setTimeout(()=>scheduleBusinessDecoration(attempt+1),50);
 }
 
 function saveShortcut(e){
@@ -290,7 +293,6 @@ function click(e){
 function boot(){
   css();
   decorateProduct();
-  decorateLeadSections();
   document.addEventListener('click',click,true);
   document.addEventListener('keydown',saveShortcut,true);
 }
