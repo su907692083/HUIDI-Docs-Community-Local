@@ -44,18 +44,6 @@ def post(driver: webdriver.Chrome, path: str, payload: dict) -> dict:
     return json.loads(result["body"] or "{}")
 
 
-def refresh_lead_owner(driver: webdriver.Chrome) -> None:
-    result = driver.execute_async_script(
-        """
-        const done = arguments[arguments.length - 1];
-        const refresh = window.HUIDILeadWorkbench?.refresh;
-        if (typeof refresh !== 'function') return done('missing lead refresh owner');
-        Promise.resolve(refresh()).then(() => done(true)).catch(error => done(String(error)));
-        """
-    )
-    assert result is True, result
-
-
 def ctrl_s(driver: webdriver.Chrome) -> None:
     ActionChains(driver).key_down(Keys.CONTROL).send_keys("s").key_up(Keys.CONTROL).perform()
 
@@ -98,8 +86,7 @@ def main() -> None:
         wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '#pbList [data-pbid].active'))
         before_product = driver.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value')
         wait.until(lambda d: enabled(d.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]')))
-        next_product = driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]')
-        next_product.click()
+        driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]').click()
         wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value') != before_product)
         wait.until(lambda d: enabled(d.find_element(By.CSS_SELECTOR, '[data-hdc-product-prev]')))
         driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-prev]').click()
@@ -113,8 +100,10 @@ def main() -> None:
         wait.until(lambda d: 'hpr-active' not in (d.find_element(By.CSS_SELECTOR, '.main').get_attribute('class') or ''))
         wait.until(EC.presence_of_element_located((By.ID, 'tbody')))
 
-        # Lead detail: create two real manual leads, then refresh through the mature
-        # Lead owner so current filters/paging remain authoritative.
+        # Lead detail: create two real manual leads, then click the visible “全部” tab.
+        # Its mature app.js handler resets the current filter/page and calls the real
+        # list load(), matching the actual user path instead of relying on an internal
+        # global refresh object.
         lead_names = [f'Continuity Lead {stamp}-A', f'Continuity Lead {stamp}-B']
         for company in lead_names:
             post(driver, '/api/leads/manual', {
@@ -127,10 +116,8 @@ def main() -> None:
                 'requirements': '',
                 'create_inquiry': False,
             })
-        all_tab = driver.find_element(By.CSS_SELECTOR, '#tabs .tab[data-status=""]')
-        if 'active' not in (all_tab.get_attribute('class') or ''):
-            all_tab.click()
-        refresh_lead_owner(driver)
+        all_tab = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#tabs .tab[data-status=""]')))
+        all_tab.click()
         first_lead = wait.until(EC.element_to_be_clickable((By.XPATH, f'//tr[contains(., "{lead_names[0]}")]//button[@data-open]')))
         first_lead.click()
         rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
