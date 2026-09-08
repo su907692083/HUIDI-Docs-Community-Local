@@ -158,8 +158,12 @@ jobs:
               assert ss['headDisplay'] == 'none', ss
               assert ss['closeDisplay'] == 'none', ss
 
-              inbox = wait.until(lambda d: nav('客户沟通'))
-              inbox.click()
+              communication = wait.until(lambda d: nav('客户沟通'))
+              communication.click()
+              wait.until(EC.text_to_be_present_in_element((By.ID, 'hprTitle'), '客户沟通'))
+              for route in ('mail','sent','queue','sequences'):
+                  wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, f'[data-huf-communication="{route}"]')))
+              driver.find_element(By.CSS_SELECTOR, '[data-huf-communication="mail"]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID, 'hprTitle'), '收件箱'))
               gmail = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-connect="gmail"]')))
               before = len(driver.find_elements(By.CSS_SELECTOR, '#huidiToastStack .huidi-toast'))
@@ -171,7 +175,7 @@ jobs:
               except NoAlertPresentException:
                   pass
 
-              print('HUIDI surface closure Chrome smoke PASS: five work domains visible; secondary owners retained; Gmail status is non-blocking')
+              print('HUIDI surface closure Chrome smoke PASS: five work domains visible; communication hub retains mail owner; Gmail status is non-blocking')
           finally:
               driver.quit()
           PY
