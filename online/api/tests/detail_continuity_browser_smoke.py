@@ -52,6 +52,11 @@ def enabled(element) -> bool:
     return element.is_enabled() and element.get_attribute("disabled") is None
 
 
+def pointer_click(driver: webdriver.Chrome, element) -> None:
+    driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'nearest'});", element)
+    ActionChains(driver).move_to_element(element).pause(0.05).click().perform()
+
+
 def main() -> None:
     driver = webdriver.Chrome(options=options())
     driver.set_page_load_timeout(20)
@@ -99,14 +104,19 @@ def main() -> None:
         wait.until(lambda d: d.execute_script("return window.HUIDIWorkspacePages?.current?.()") == 'home')
         wait.until(lambda d: 'hpr-active' not in (d.find_element(By.CSS_SELECTOR, '.main').get_attribute('class') or ''))
         wait.until(EC.presence_of_element_located((By.ID, 'tbody')))
+        wait.until(lambda d: 'open' not in (d.find_element(By.ID, 'pbBackdrop').get_attribute('class') or ''))
 
         # Lead detail: create two real manual leads. Use the exact lead IDs returned by
         # the existing endpoint, then click the visible “全部” tab so app.js performs
-        # the real list reload. This verifies object identity rather than text matching.
+        # the real list reload. The first open is a real pointer action. Verify the
+        # mature native drawer opens and owns the target record before checking the
+        # continuity enhancement rail.
         lead_ids: list[str] = []
+        lead_names: list[str] = []
         for suffix in ("A", "B"):
+            company = f'Continuity Lead {stamp}-{suffix}'
             out = post(driver, '/api/leads/manual', {
-                'company_name': f'Continuity Lead {stamp}-{suffix}',
+                'company_name': company,
                 'product_keyword': 'stainless steel hinge',
                 'country': 'DE',
                 'website': '',
@@ -118,10 +128,13 @@ def main() -> None:
             lead_id = str((out.get('lead') or {}).get('id') or '')
             assert lead_id, out
             lead_ids.append(lead_id)
+            lead_names.append(company)
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#tabs .tab[data-status=""]'))).click()
         first_lead = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[0]}"]')))
         assert driver.find_elements(By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[1]}"]')
-        first_lead.click()
+        pointer_click(driver, first_lead)
+        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#backdrop.open')))
+        wait.until(lambda d: d.find_element(By.ID, 'dCompany').text.strip() == lead_names[0])
         rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
         assert rail.is_displayed()
         assert driver.find_element(By.CSS_SELECTOR, '[data-hdc-collapse="客户背调"]').get_attribute('open') is None
@@ -131,7 +144,7 @@ def main() -> None:
         lead_prev = driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-prev]')
         nav = lead_next if enabled(lead_next) else lead_prev
         assert enabled(nav), 'lead continuity needs at least one enabled neighbor'
-        nav.click()
+        pointer_click(driver, nav)
         wait.until(lambda d: d.find_element(By.ID, 'dCompany').text != before_lead)
         driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-back]').click()
         wait.until(lambda d: 'open' not in (d.find_element(By.ID, 'backdrop').get_attribute('class') or ''))
