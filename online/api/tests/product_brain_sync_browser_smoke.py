@@ -83,8 +83,10 @@ def main() -> None:
             window.__pbsFetchUrls = [];
             window.__pbsOriginalFetch = window.fetch;
             window.fetch = function(...args) {
-              const stack = String(new Error().stack || '');
-              if (stack.includes('performSync')) window.__pbsFetchUrls.push(String(args[0]));
+              const frames = String(new Error().stack || '').split('\n').slice(1, 3);
+              if (frames.some(line => line.includes('product-brain-server.js'))) {
+                window.__pbsFetchUrls.push(String(args[0]));
+              }
               return window.__pbsOriginalFetch.apply(this, args);
             };
             """
