@@ -166,22 +166,6 @@ function scheduleLeadDecoration(attempt=0){
   if(attempt>=20)return;
   setTimeout(()=>scheduleLeadDecoration(attempt+1),50);
 }
-function bindLeadOwner(){
-  const tbody=$('#tbody');
-  if(!tbody||tbody.dataset.hdcLeadOwnerBound==='1')return false;
-  tbody.dataset.hdcLeadOwnerBound='1';
-  tbody.addEventListener('click',e=>{
-    const lead=e.target.closest('[data-open]');
-    if(!lead||!lead.closest('#tbody'))return;
-    if(typeof window.HUIDILeadWorkbench?.open!=='function')return;
-    e.preventDefault();
-    e.stopPropagation();
-    leadIds=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
-    leadId=String(lead.dataset.open||'');
-    openLeadOwner(leadId);
-  });
-  return true;
-}
 
 function currentBusinessPage(){
   const txt=$('#huidiBusinessMain .hb-page')?.textContent||'';
@@ -299,6 +283,15 @@ function saveShortcut(e){
 }
 
 function click(e){
+  const lead=e.target.closest('#tbody [data-open]');
+  if(lead&&typeof window.HUIDILeadWorkbench?.open==='function'){
+    e.preventDefault();
+    e.stopPropagation();
+    leadIds=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
+    leadId=String(lead.dataset.open||'');
+    openLeadOwner(leadId);
+    return;
+  }
   const deal=e.target.closest('#huidiBusinessMain [data-deal]');
   if(deal)captureBusiness('deal',deal);
   const customer=e.target.closest('#huidiBusinessMain [data-customer-id]');
@@ -315,7 +308,6 @@ function click(e){
 function boot(){
   css();
   decorateProduct();
-  bindLeadOwner();
   document.addEventListener('click',click,true);
   document.addEventListener('keydown',saveShortcut,true);
 }
