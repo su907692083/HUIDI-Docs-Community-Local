@@ -180,7 +180,8 @@ _RECONCILE_SCRIPT = r"""
         warn+=1;
         if(target.number!==null&&quantity.missing)statusText=`待核对：${quantity.missing} 个批次数量未安全识别；当前可合计 ${format(quantity.total)}`;
       }
-      const sourceText=saved.targets[group.key]?.source==='pre_split'?'拆批前自动记录':'人工基准';
+      const sourceKind=saved.targets[group.key]?.source;
+      const sourceText=sourceKind==='pre_split'?'拆批前自动记录':sourceKind==='manual'?'人工基准':'未记录';
       return `<div class='hnd-batch-reconcile-card' data-reconcile-key='${esc(group.key)}' data-state='${state}'>
         <div class='hnd-batch-reconcile-head'><b>${esc(group.label)} × ${group.rows.length} 批</b><small class='${state==='ok'?'hnd-batch-reconcile-ok':state==='bad'?'hnd-batch-reconcile-bad':'hnd-batch-reconcile-warn'}'>${esc(statusText)}</small><label class='hnd-batch-reconcile-target'>总量基准 <input data-hnd-batch-target value='${esc(target.raw)}' placeholder='例如 1000'><em>${esc(sourceText)}</em></label></div>
         <div class='hnd-batch-reconcile-metrics'><strong>数量核对：</strong>已安全识别 ${quantity.known}/${group.rows.length} 批 · 当前合计 ${quantity.known?format(quantity.total):'—'}${quantity.missing?` · ${quantity.missing} 批待核对`:''}</div>
@@ -192,7 +193,7 @@ _RECONCILE_SCRIPT = r"""
   splitButton.addEventListener('click',captureSplitBaseline,true);
   splitButton.addEventListener('click',()=>queueMicrotask(render));
   sourceSelect.addEventListener('change',updateSplitAvailability);
-  groupsBox.addEventListener('input',event=>{
+  groupsBox.addEventListener('change',event=>{
     const input=event.target?.closest?.('[data-hnd-batch-target]');
     if(!input)return;
     const card=input.closest('[data-reconcile-key]');
