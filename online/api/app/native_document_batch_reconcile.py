@@ -18,7 +18,7 @@ document_context.DRAFT_FIELDS.add(BATCH_RECONCILE_FIELD)
 document_context.LONG_FIELDS.add(BATCH_RECONCILE_FIELD)
 
 _RECONCILE_STYLE = """
-.hnd-batch-reconcile{margin:0 0 8px;border:1px solid #e4e7ec;border-radius:8px;background:#fff}.hnd-batch-reconcile>summary{cursor:pointer;padding:7px 9px;color:#344054;font-size:12px;font-weight:700;list-style:none}.hnd-batch-reconcile>summary::-webkit-details-marker{display:none}.hnd-batch-reconcile>summary:after{content:'⌄';float:right;color:#98a2b3}.hnd-batch-reconcile[open]>summary:after{content:'⌃'}.hnd-batch-reconcile-body{padding:0 9px 9px}.hnd-batch-reconcile-summary{color:#667085;font-size:11px}.hnd-batch-reconcile-groups{display:grid;gap:7px;margin-top:7px}.hnd-batch-reconcile-card{padding:8px 9px;border:1px solid #e4e7ec;border-radius:7px;background:#f8fafc}.hnd-batch-reconcile-card[data-state='ok']{border-color:#86efac;background:#f0fdf4}.hnd-batch-reconcile-card[data-state='warn']{border-color:#fedf89;background:#fffaeb}.hnd-batch-reconcile-card[data-state='bad']{border-color:#fda29b;background:#fff5f5}.hnd-batch-reconcile-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.hnd-batch-reconcile-head b{color:#344054}.hnd-batch-reconcile-head small{color:#667085}.hnd-batch-reconcile-target{display:flex;gap:6px;align-items:center;margin-left:auto;color:#667085;font-size:10px}.hnd-batch-reconcile-target input{width:108px;height:28px;margin:0;padding:4px 6px;font-size:11px}.hnd-batch-reconcile-metrics{margin-top:5px;color:#475467;font-size:10px;line-height:1.55}.hnd-batch-reconcile-metrics strong{color:#344054}.hnd-batch-reconcile-ok{color:#166534}.hnd-batch-reconcile-warn{color:#a15c00}.hnd-batch-reconcile-bad{color:#b42318}.hnd-batch-timeline{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:6px}.hnd-batch-timeline span{padding:3px 6px;border:1px solid #d0d5dd;border-radius:999px;background:#fff;color:#475467;font-size:10px}.hnd-batch-timeline i{color:#98a2b3;font-style:normal;font-size:10px}.hnd-batch-packing-check{margin-top:6px;color:#667085;font-size:10px}.hnd-batch-reconcile-note{display:block;margin-top:6px;color:#667085;font-size:10px}
+.hnd-batch-reconcile{margin:0 0 8px;border:1px solid #e4e7ec;border-radius:8px;background:#fff}.hnd-batch-reconcile>summary{cursor:pointer;padding:7px 9px;color:#344054;font-size:12px;font-weight:700;list-style:none}.hnd-batch-reconcile>summary::-webkit-details-marker{display:none}.hnd-batch-reconcile>summary:after{content:'⌄';float:right;color:#98a2b3}.hnd-batch-reconcile[open]>summary:after{content:'⌃'}.hnd-batch-reconcile-body{padding:0 9px 9px}.hnd-batch-reconcile-summary{color:#667085;font-size:11px}.hnd-batch-reconcile-groups{display:grid;gap:7px;margin-top:7px}.hnd-batch-reconcile-card{padding:8px 9px;border:1px solid #e4e7ec;border-radius:7px;background:#f8fafc}.hnd-batch-reconcile-card[data-state='ok']{border-color:#86efac;background:#f0fdf4}.hnd-batch-reconcile-card[data-state='warn']{border-color:#fedf89;background:#fffaeb}.hnd-batch-reconcile-card[data-state='bad']{border-color:#fda29b;background:#fff5f5}.hnd-batch-reconcile-head{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.hnd-batch-reconcile-head b{color:#344054}.hnd-batch-reconcile-head small{color:#667085}.hnd-batch-reconcile-target{display:flex;gap:6px;align-items:center;margin-left:auto;color:#667085;font-size:10px}.hnd-batch-reconcile-target input{width:108px;height:28px;margin:0;padding:4px 6px;font-size:11px}.hnd-batch-reconcile-target button{height:28px;padding:3px 7px;border:1px solid #d0d5dd;border-radius:6px;background:#fff;color:#344054;font-size:10px;cursor:pointer}.hnd-batch-reconcile-target [data-hnd-batch-target-confirm]{border-color:#84adff;background:#eff8ff;color:#175cd3}.hnd-batch-reconcile-metrics{margin-top:5px;color:#475467;font-size:10px;line-height:1.55}.hnd-batch-reconcile-metrics strong{color:#344054}.hnd-batch-reconcile-ok{color:#166534}.hnd-batch-reconcile-warn{color:#a15c00}.hnd-batch-reconcile-bad{color:#b42318}.hnd-batch-timeline{display:flex;gap:5px;align-items:center;flex-wrap:wrap;margin-top:6px}.hnd-batch-timeline span{padding:3px 6px;border:1px solid #d0d5dd;border-radius:999px;background:#fff;color:#475467;font-size:10px}.hnd-batch-timeline i{color:#98a2b3;font-style:normal;font-size:10px}.hnd-batch-packing-check{margin-top:6px;color:#667085;font-size:10px}.hnd-batch-reconcile-note{display:block;margin-top:6px;color:#667085;font-size:10px}
 @media print{.hnd-batch-reconcile{display:none!important}}
 """
 
@@ -28,7 +28,7 @@ _RECONCILE_PANEL = """
   <div class='hnd-batch-reconcile-body'>
     <div class='hnd-batch-reconcile-summary' data-hnd-batch-reconcile-summary>读取当前批次行进行核对；不会修改任何业务字段。</div>
     <div class='hnd-batch-reconcile-groups' data-hnd-batch-reconcile-groups></div>
-    <small class='hnd-batch-reconcile-note'>第一次从单行人工拆批时，会在数量可安全识别的情况下记录“拆批前总量基准”。也可人工修改总量基准；核对结果只读，不自动分配数量、箱数、重量、CBM 或交期。</small>
+    <small class='hnd-batch-reconcile-note'>第一次从单行人工拆批时，会在数量可安全识别的情况下记录“拆批前总量基准”。人工填写或修改总量基准后必须先点“确认变更”，再点顶部“保存草稿”；未确认的输入不会覆盖已保存基准。核对结果只读，不自动分配数量、箱数、重量、CBM 或交期。</small>
   </div>
 </details>
 """
@@ -51,6 +51,7 @@ _RECONCILE_SCRIPT = r"""
   const norm=v=>String(v||'').trim().toLocaleLowerCase().replace(/[\s_\-\/]+/g,'');
   const esc=v=>String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
   let saved={schema:'huidi.document.batch-reconcile/v1',targets:{}};
+  const pendingTargets=new Map();
   try{
     const parsed=JSON.parse(String(stateField.value||'{}'));
     if(parsed&&typeof parsed==='object'&&parsed.targets&&typeof parsed.targets==='object')saved={schema:'huidi.document.batch-reconcile/v1',targets:parsed.targets};
@@ -160,6 +161,7 @@ _RECONCILE_SCRIPT = r"""
     const groups=duplicateGroups();
     const active=new Set(groups.map(group=>group.key));
     Object.keys(saved.targets||{}).forEach(key=>{if(!active.has(key))delete saved.targets[key];});
+    [...pendingTargets.keys()].forEach(key=>{if(!active.has(key))pendingTargets.delete(key);});
     writeState();
     if(!groups.length){
       groupsBox.innerHTML="<div class='hnd-batch-reconcile-card'><small>当前没有需要做批次总量核对的重复 SKU / 产品行。</small></div>";
@@ -170,6 +172,7 @@ _RECONCILE_SCRIPT = r"""
     groupsBox.innerHTML=groups.map(group=>{
       const quantity=metricSum(group,'quantity','quantity');
       const target=targetFor(group);
+      const hasPending=pendingTargets.has(group.key),pending=hasPending?String(pendingTargets.get(group.key)||''):'';
       let state='warn',statusText='缺少总量基准，需人工填写';
       if(target.number!==null&&quantity.known===group.rows.length){
         const tolerance=Math.max(0.000001,Math.abs(target.number)*0.000001);
@@ -181,10 +184,10 @@ _RECONCILE_SCRIPT = r"""
         if(target.number!==null&&quantity.missing)statusText=`待核对：${quantity.missing} 个批次数量未安全识别；当前可合计 ${format(quantity.total)}`;
       }
       const sourceKind=saved.targets[group.key]?.source;
-      const sourceText=sourceKind==='pre_split'?'拆批前自动记录':sourceKind==='manual'?'人工基准':'未记录';
+      const sourceText=hasPending?'待确认变更':sourceKind==='pre_split'?'拆批前自动记录':sourceKind==='manual'?'人工基准':'未记录';
       return `<div class='hnd-batch-reconcile-card' data-reconcile-key='${esc(group.key)}' data-state='${state}'>
-        <div class='hnd-batch-reconcile-head'><b>${esc(group.label)} × ${group.rows.length} 批</b><small class='${state==='ok'?'hnd-batch-reconcile-ok':state==='bad'?'hnd-batch-reconcile-bad':'hnd-batch-reconcile-warn'}'>${esc(statusText)}</small><label class='hnd-batch-reconcile-target'>总量基准 <input data-hnd-batch-target value='${esc(target.raw)}' placeholder='例如 1000'><em>${esc(sourceText)}</em></label></div>
-        <div class='hnd-batch-reconcile-metrics'><strong>数量核对：</strong>已安全识别 ${quantity.known}/${group.rows.length} 批 · 当前合计 ${quantity.known?format(quantity.total):'—'}${quantity.missing?` · ${quantity.missing} 批待核对`:''}</div>
+        <div class='hnd-batch-reconcile-head'><b>${esc(group.label)} × ${group.rows.length} 批</b><small class='${state==='ok'?'hnd-batch-reconcile-ok':state==='bad'?'hnd-batch-reconcile-bad':'hnd-batch-reconcile-warn'}'>${esc(statusText)}</small><span class='hnd-batch-reconcile-target'>总量基准 <input data-hnd-batch-target value='${esc(hasPending?pending:target.raw)}' placeholder='例如 1000'><em>${esc(sourceText)}</em>${hasPending?"<button type='button' data-hnd-batch-target-confirm>确认变更</button><button type='button' data-hnd-batch-target-cancel>撤销</button>":''}</span></div>
+        <div class='hnd-batch-reconcile-metrics'><strong>数量核对：</strong>已安全识别 ${quantity.known}/${group.rows.length} 批 · 当前合计 ${quantity.known?format(quantity.total):'—'}${quantity.missing?` · ${quantity.missing} 批待核对`:''}${hasPending?' · 新基准尚未写入草稿状态':''}</div>
         ${timeline(group)}${packingCheck(group)}
       </div>`;
     }).join('');
@@ -199,9 +202,23 @@ _RECONCILE_SCRIPT = r"""
     const card=input.closest('[data-reconcile-key]');
     const key=String(card?.dataset.reconcileKey||'');
     if(!key)return;
+    const group=duplicateGroups().find(item=>item.key===key);if(!group)return;
+    const next=String(input.value||'').slice(0,120),current=targetFor(group).raw;
+    if(next===current)pendingTargets.delete(key);else pendingTargets.set(key,next);
+    queueMicrotask(render);
+  });
+  groupsBox.addEventListener('click',event=>{
+    const confirm=event.target?.closest?.('[data-hnd-batch-target-confirm]');
+    const cancel=event.target?.closest?.('[data-hnd-batch-target-cancel]');
+    if(!confirm&&!cancel)return;
+    const card=event.target.closest('[data-reconcile-key]'),key=String(card?.dataset.reconcileKey||'');
+    if(!key||!pendingTargets.has(key))return;
+    if(cancel){pendingTargets.delete(key);render();if(summary)summary.textContent+=' · 已撤销未确认的总量基准修改。';return;}
+    const group=duplicateGroups().find(item=>item.key===key);if(!group)return;
     const current=saved.targets[key]||{};
-    current.quantity=String(input.value||'').slice(0,120);current.source='manual';
-    saved.targets[key]=current;writeState();queueMicrotask(render);
+    current.quantity=String(pendingTargets.get(key)||'').slice(0,120);current.source='manual';current.label=group.label;
+    saved.targets[key]=current;pendingTargets.delete(key);writeState();render();
+    if(summary)summary.textContent+=' · 总量基准变更已确认；请点击顶部“保存草稿”持久化。';
   });
   table.addEventListener('input',()=>queueMicrotask(render));
   table.addEventListener('change',()=>queueMicrotask(render));
