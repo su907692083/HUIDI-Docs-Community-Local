@@ -141,7 +141,10 @@ function leadDetailReady(expectedId=leadId){
   const back=$('#backdrop');
   const owner=window.HUIDILeadWorkbench;
   const current=owner?.current?.();
+  const surface=window.HUIDIPageSurfaceClosure;
   if(!back?.classList.contains('open'))return false;
+  if(surface?.current&&surface.current()!=='lead')return false;
+  if(surface&&!back.classList.contains('lead-page-surface'))return false;
   if(expectedId&&String(current?.id||'')!==String(expectedId))return false;
   return Boolean($('#dWebsite')?.isConnected&&$('#dCompany')?.isConnected&&$('#timeline')?.isConnected);
 }
@@ -353,11 +356,19 @@ function syncLeadAfterNativeOpen(){
   armLeadDecoration(String(current.id));
 }
 
+function pageSurfaceReady(e){
+  const detail=e?.detail||{};
+  if(String(detail.route||'')!=='lead')return;
+  const id=String(detail.leadId||window.HUIDILeadWorkbench?.current?.()?.id||'');
+  if(id)armLeadDecoration(id);
+}
+
 function boot(){
   css();
   decorateProduct();
   document.addEventListener('click',click,true);
   document.addEventListener('click',syncLeadAfterNativeOpen);
+  document.addEventListener('huidi:page-surface-ready',pageSurfaceReady);
   document.addEventListener('keydown',saveShortcut,true);
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
