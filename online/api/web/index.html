@@ -10,23 +10,20 @@
 </head>
 <body>
 <div class="app">
-  <aside class="side">
+  <aside class="side" data-huf-nav="1">
     <div class="brand">HUIDI <span>Online</span></div>
     <div class="nav-title">今天</div>
-    <nav class="nav"><a class="active" data-huidi-nav="today">今天的工作</a><a data-huidi-nav="followups">待跟进</a><a data-huidi-service="mail" data-huidi-mail-folder="inbox">客户回复</a><a data-huidi-notifications>提醒</a></nav>
-    <div class="nav-title">开发客户</div>
-    <nav class="nav"><a data-huidi-nav="find">找客户</a><a data-huidi-service="map">地图找客户</a><a data-huidi-nav="leads">潜在客户</a><a data-huidi-service="company">客户背调</a><a data-huidi-contacts>联系人</a></nav>
-    <div class="nav-title">邮件跟进</div>
-    <nav class="nav"><a data-huidi-service="mail" data-huidi-mail-folder="inbox">收件箱</a><a data-huidi-service="mail" data-huidi-mail-folder="sent">已发送</a><a data-huidi-service="mail" data-huidi-mail-folder="inbox">邮箱设置</a><a data-huidi-service="queue">待发送</a><a data-huidi-sequences>自动跟进</a></nav>
-    <div class="nav-title">客户与业务</div>
-    <nav class="nav"><a data-huidi-business="deals">客户 / 询盘</a><a data-huidi-doc-workbench>单据工作台</a><a data-huidi-business="quotation" style="display:none">报价单</a><a data-huidi-business="proforma_invoice" style="display:none">形式发票 PI</a><a data-huidi-business="sales_contract" style="display:none">销售合同</a><a data-huidi-business="commercial_invoice" style="display:none">商业发票 CI</a><a data-huidi-business="packing_list" style="display:none">装箱单</a></nav>
-    <div class="nav-title">产品</div>
-    <nav class="nav"><a data-huidi-product>产品资料</a><a data-huidi-catalog>产品目录</a></nav>
-    <div class="nav-title">查资料</div>
-    <nav class="nav"><a data-huidi-intelligence>市场动态</a><a data-huidi-service="trade">贸易记录</a><a data-huidi-service="tariff">HS 编码 / 关税</a><a data-huidi-service="fx">汇率换算</a><a data-huidi-service="shipping">船期 / 物流</a></nav>
-    <div class="nav-title">管理</div>
-    <nav class="nav"><a data-huidi-audit>操作记录</a><a data-huidi-service-settings hidden>数据来源</a><a data-huidi-admin-safety hidden>使用检查与备份</a></nav>
-    <div class="side-note">每天先看“今天的工作”<br>客户、询盘和正式单据沿同一条在线业务链继续。</div>
+    <nav class="nav huf-nav"><a class="active" data-huidi-nav="today">今天的工作</a><a data-huidi-communication>客户沟通</a><a data-huidi-nav="followups">待跟进</a><a data-huidi-notifications>提醒</a></nav>
+    <div class="nav-title">客户</div>
+    <nav class="nav huf-nav"><a data-huidi-nav="find">找客户</a><a data-huidi-nav="leads">潜在客户</a><a data-huidi-business="deals">客户 / 询盘</a></nav>
+    <div class="nav-title">产品与单据</div>
+    <nav class="nav huf-nav"><a data-huidi-product>产品资料</a><a data-huidi-catalog>产品目录</a><a data-huidi-doc-workbench>单据工作台</a></nav>
+    <div class="nav-title">市场与工具</div>
+    <nav class="nav huf-nav"><a data-huidi-tool-hub>市场 / 关税 / 物流</a></nav>
+    <div class="nav-title">设置</div>
+    <nav class="nav huf-nav"><a data-huidi-foundation>基础设置</a></nav>
+    <nav class="nav huf-side-hidden" aria-hidden="true"><a data-huidi-contacts>联系人</a><a data-huidi-service="mail" data-huidi-mail-folder="inbox">收件箱</a><a data-huidi-service="mail" data-huidi-mail-folder="sent">已发送</a><a data-huidi-service="queue">待发送</a><a data-huidi-sequences>自动跟进</a><a data-huidi-service="map">地图找客户</a><a data-huidi-service="company">客户背调</a><a data-huidi-intelligence>市场动态</a><a data-huidi-service="trade">贸易记录</a><a data-huidi-service="tariff">HS 编码 / 关税</a><a data-huidi-service="fx">汇率换算</a><a data-huidi-service="shipping">船期 / 物流</a><a data-huidi-service="services">可用功能</a><a data-huidi-audit>操作记录</a><a data-huidi-service-settings hidden>数据来源</a><a data-huidi-admin-safety hidden>使用检查与备份</a><a data-huidi-business="quotation">报价单</a><a data-huidi-business="proforma_invoice">PI</a><a data-huidi-business="sales_contract">合同</a><a data-huidi-business="commercial_invoice">CI</a><a data-huidi-business="packing_list">装箱单</a></nav>
+    <div class="side-note">按“今天 → 客户 → 产品与单据”推进。基础资料只填一次；高级连接由平台或管理员处理。</div>
   </aside>
   <main class="main">
     <div class="top"><div><h1>外贸工作台</h1><p>先处理客户回复和到期事项，再找客户、发邮件、推进询盘、做报价与单据。</p></div><div id="health" class="health">正在检查可用功能…</div></div>
