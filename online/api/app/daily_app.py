@@ -66,6 +66,13 @@ install_native_document_batch_confirm(standalone_business)
 from .native_document_batch_reconcile import install_native_document_batch_reconcile  # noqa: E402
 
 install_native_document_batch_reconcile(standalone_business)
+# Delivery/Packing risk review is a seventh presentation-only layer. It reads
+# explicit calendar dates and current Packing rows to surface overdue/near-due,
+# sequence-review, missing-field and whole-vs-batch-total signals. No data write,
+# status mutation, date inference, price path or second owner is introduced.
+from .native_document_batch_risk import install_native_document_batch_risk  # noqa: E402
+
+install_native_document_batch_risk(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
