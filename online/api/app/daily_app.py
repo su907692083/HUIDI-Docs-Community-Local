@@ -52,6 +52,13 @@ install_native_document_paste(standalone_business)
 from .native_document_review import install_native_document_review  # noqa: E402
 
 install_native_document_review(standalone_business)
+# Manual batch confirmation is a fifth bounded layer. It can copy one existing
+# row into a new user-controlled batch row, but the same native Save Draft owner
+# remains the only persistence path. Batch confirmation/notes are stored only as
+# non-inheritable review metadata on the same OnlineDocumentRef.
+from .native_document_batch_confirm import install_native_document_batch_confirm  # noqa: E402
+
+install_native_document_batch_confirm(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
