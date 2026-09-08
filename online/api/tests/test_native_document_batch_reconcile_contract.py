@@ -89,10 +89,23 @@ class NativeDocumentBatchReconcileContractTest(unittest.TestCase):
         self.assertNotIn("data-item-k=\"unit_price\"", text)
         self.assertNotIn("data-item-k=\"total\"", text)
 
-    def test_target_edit_refreshes_on_change_not_per_keystroke(self) -> None:
+    def test_target_change_requires_explicit_confirmation(self) -> None:
         source = (Path(__file__).parents[1] / "app" / "native_document_batch_reconcile.py").read_text(encoding="utf-8")
-        self.assertIn("groupsBox.addEventListener('change'", source)
+        for marker in (
+            "const pendingTargets=new Map()",
+            "groupsBox.addEventListener('change'",
+            "groupsBox.addEventListener('click'",
+            "data-hnd-batch-target-confirm",
+            "确认变更",
+            "pendingTargets.set(key,next)",
+            "pendingTargets.delete(key)",
+            "current.quantity=String(pendingTargets.get(key)||'')",
+            "总量基准变更已确认",
+            "未确认的输入不会覆盖已保存基准",
+        ):
+            self.assertIn(marker, source, marker)
         self.assertNotIn("groupsBox.addEventListener('input'", source)
+        self.assertNotIn("current.quantity=String(input.value", source)
         self.assertIn("?'拆批前自动记录':", source)
         self.assertIn("'未记录'", source)
 
