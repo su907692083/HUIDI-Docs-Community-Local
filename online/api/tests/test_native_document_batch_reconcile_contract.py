@@ -50,7 +50,7 @@ class NativeDocumentBatchReconcileContractTest(unittest.TestCase):
             "数量核对",
             "各批数量合计",
             "交期未填",
-            "系统不会自动",
+            "不自动分配数量、箱数、重量、CBM 或交期",
             "pre_split",
             "safeNumber",
             "stopImmediatePropagation",
