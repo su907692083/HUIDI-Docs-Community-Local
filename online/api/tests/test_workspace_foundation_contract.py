@@ -38,9 +38,10 @@ class WorkspaceFoundationContractTests(unittest.TestCase):
         ]:
             self.assertNotIn(legacy_visible_label, self.js)
         self.assertIn('huf-side-hidden', self.js)
-        self.assertIn('客户沟通', self.js)
-        self.assertIn('单据工作台', self.js)
-        self.assertIn('基础设置', self.js)
+        self.assertIn('data-huidi-communication>客户沟通', self.js)
+        self.assertIn('data-huidi-doc-workbench>单据工作台', self.js)
+        self.assertIn('data-huidi-foundation>基础设置', self.js)
+        self.assertNotIn('data-huidi-service="mail" data-huidi-mail-folder="inbox">客户沟通', self.js)
 
     def test_first_run_requires_only_company_product_and_mailbox(self) -> None:
         self.assertIn('先完成 3 项基础设置', self.js)
@@ -52,6 +53,27 @@ class WorkspaceFoundationContractTests(unittest.TestCase):
         self.assertIn('其他企业邮箱（高级）', self.js)
         self.assertIn('普通用户不需要理解 SMTP', self.js)
         self.assertIn('普通业务员不需要配置 Serper / Tavily / Hunter', self.js)
+
+    def test_communication_is_one_work_domain_over_existing_mail_owners(self) -> None:
+        self.assertIn("mount?.('communication','客户沟通'", self.js)
+        self.assertIn('data-huf-communication="${route}"', self.js)
+        for route in ['mail', 'sent', 'queue', 'sequences']:
+            self.assertIn(f"['{route}'", self.js)
+        self.assertIn('收件箱、已发送、待发送和自动跟进集中在一个工作域', self.js)
+        self.assertIn('普通用户不需要配置 SMTP', self.js)
+        self.assertIn('不创建第二套客户库', self.js)
+        self.assertIn("page==='communication'", self.js)
+
+    def test_documents_are_one_work_domain_over_existing_formal_document_owner(self) -> None:
+        self.assertIn("mount?.('documents','单据工作台'", self.js)
+        self.assertIn('data-huf-document="${route}"', self.js)
+        for route in ['quotation', 'proforma_invoice', 'sales_contract', 'commercial_invoice', 'packing_list']:
+            self.assertIn(f"['{route}'", self.js)
+        self.assertIn('先在“客户 / 询盘”确认客户、产品和业务事实', self.js)
+        self.assertIn('正式单价不会从参考价或上一张单据自动写入', self.js)
+        self.assertIn('现有 OnlineDocumentRef / Community Document Owner', self.js)
+        self.assertIn('不新建第二套单据数据', self.js)
+        self.assertIn("page==='documents'", self.js)
 
     def test_foundation_reuses_existing_owners_and_has_no_second_business_plane(self) -> None:
         for endpoint in [
