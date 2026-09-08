@@ -46,6 +46,12 @@ install_native_document_grid(standalone_business)
 from .native_document_paste import install_native_document_paste  # noqa: E402
 
 install_native_document_paste(standalone_business)
+# Review is a fourth read-only presentation layer over the same native rows.
+# It aggregates anomaly/duplicate/amount signals and navigation only: no merge,
+# row creation, API, persistence owner, or automatic price/quantity mutation.
+from .native_document_review import install_native_document_review  # noqa: E402
+
+install_native_document_review(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
