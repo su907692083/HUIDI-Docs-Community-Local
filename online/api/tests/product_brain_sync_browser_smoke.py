@@ -83,7 +83,8 @@ def main() -> None:
             window.__pbsFetchUrls = [];
             window.__pbsOriginalFetch = window.fetch;
             window.fetch = function(...args) {
-              window.__pbsFetchUrls.push(String(args[0]));
+              const stack = String(new Error().stack || '');
+              if (stack.includes('performSync')) window.__pbsFetchUrls.push(String(args[0]));
               return window.__pbsOriginalFetch.apply(this, args);
             };
             """
