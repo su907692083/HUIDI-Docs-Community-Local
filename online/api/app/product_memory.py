@@ -6,7 +6,7 @@ from typing import Any
 
 from fastapi import Depends, HTTPException
 from pydantic import BaseModel, Field
-from sqlalchemy import DateTime, Integer, String, Text, func, select
+from sqlalchemy import DateTime, Integer, String, Text, func, or_, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from .main import Base, engine, get_db
@@ -136,9 +136,56 @@ def _upsert(db: Session, raw: dict[str, Any]) -> ProductBrainRecord:
 
 
 @app.get("/api/product-brains")
-def list_product_brains(db: Session = Depends(get_db)):
-    rows = db.scalars(select(ProductBrainRecord).order_by(ProductBrainRecord.updated_at.desc()).limit(500)).all()
-    return [_row_payload(x) for x in rows]
+def list_product_brains(
+    paged: bool = False,
+    page: int = 1,
+    page_size: int = 50,
+    q: str = "",
+    db: Session = Depends(get_db),
+):
+    term = str(q or "").strip()
+    condition = None
+    if term:
+        pattern = f"%{term}%"
+        condition = or_(
+            ProductBrainRecord.name.ilike(pattern),
+            ProductBrainRecord.sku.ilike(pattern),
+            ProductBrainRecord.local_product_id.ilike(pattern),
+            ProductBrainRecord.payload_json.ilike(pattern),
+        )
+
+    stmt = select(ProductBrainRecord)
+    if condition is not None:
+        stmt = stmt.where(condition)
+
+    # Preserve the existing list contract for Product Brain synchronization and
+    # older callers. Pagination is opt-in so this endpoint keeps one business owner.
+    if not paged:
+        rows = db.scalars(
+            stmt.order_by(ProductBrainRecord.updated_at.desc(), ProductBrainRecord.id.desc()).limit(500)
+        ).all()
+        return [_row_payload(x) for x in rows]
+
+    safe_size = max(1, min(int(page_size or 50), 100))
+    count_stmt = select(func.count(ProductBrainRecord.id))
+    if condition is not None:
+        count_stmt = count_stmt.where(condition)
+    total = int(db.scalar(count_stmt) or 0)
+    pages = max(1, (total + safe_size - 1) // safe_size)
+    current_page = max(1, min(int(page or 1), pages))
+    rows = db.scalars(
+        stmt.order_by(ProductBrainRecord.updated_at.desc(), ProductBrainRecord.id.desc())
+        .offset((current_page - 1) * safe_size)
+        .limit(safe_size)
+    ).all()
+    return {
+        "items": [_row_payload(x) for x in rows],
+        "page": current_page,
+        "pages": pages,
+        "page_size": safe_size,
+        "total": total,
+        "q": term,
+    }
 
 
 @app.get("/api/product-brains/state")
