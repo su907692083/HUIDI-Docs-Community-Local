@@ -4,6 +4,7 @@ import json
 import time
 
 from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -22,6 +23,7 @@ def options() -> Options:
     opts.add_argument("--disable-gpu")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--window-size=1440,1000")
+    opts.set_capability("goog:loggingPrefs", {"browser": "ALL"})
     return opts
 
 
@@ -57,6 +59,35 @@ def pointer_click(driver: webdriver.Chrome, element) -> None:
     ActionChains(driver).move_to_element(element).pause(0.05).click().perform()
 
 
+def runtime_state(driver: webdriver.Chrome) -> dict:
+    return driver.execute_script(
+        """
+        return {
+          ready: document.readyState,
+          leadOwner: typeof window.HUIDILeadWorkbench?.open,
+          leadRefresh: typeof window.HUIDILeadWorkbench?.refresh,
+          detailContinuity: typeof window.HUIDIDetailContinuity?.decorateLead,
+          workspacePages: typeof window.HUIDIWorkspacePages?.open,
+          page: window.HUIDIWorkspacePages?.current?.() || '',
+          backdropClass: document.querySelector('#backdrop')?.className || '',
+          productClass: document.querySelector('#pbBackdrop')?.className || '',
+          leadButtons: document.querySelectorAll('#tbody [data-open]').length,
+          firstLeadId: document.querySelector('#tbody [data-open]')?.dataset?.open || '',
+          hprActive: document.querySelector('.main')?.classList.contains('hpr-active') || false
+        };
+        """
+    )
+
+
+def dump_browser_log(driver: webdriver.Chrome, label: str) -> None:
+    try:
+        rows = driver.get_log("browser")
+    except Exception as exc:
+        print(f"HUIDI browser console {label}: unavailable: {exc}")
+        return
+    print(f"HUIDI browser console {label}: {json.dumps(rows, ensure_ascii=False)}")
+
+
 def main() -> None:
     driver = webdriver.Chrome(options=options())
     driver.set_page_load_timeout(20)
@@ -65,6 +96,12 @@ def main() -> None:
     stamp = str(int(time.time() * 1000))[-8:]
     try:
         driver.get(BASE + "/")
+        initial_state = runtime_state(driver)
+        print("HUIDI runtime state initial:", initial_state)
+        assert initial_state["leadOwner"] == "function", initial_state
+        assert initial_state["detailContinuity"] == "function", initial_state
+        assert initial_state["workspacePages"] == "function", initial_state
+        dump_browser_log(driver, "initial")
 
         # Product detail: low-frequency sections collapse, Ctrl+S uses the existing
         # product owner, and current visible product list can be reviewed continuously.
@@ -132,8 +169,18 @@ def main() -> None:
         wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#tabs .tab[data-status=""]'))).click()
         first_lead = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[0]}"]')))
         assert driver.find_elements(By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[1]}"]')
+        before_click_state = runtime_state(driver)
+        print("HUIDI runtime state before lead click:", before_click_state)
+        assert before_click_state["leadOwner"] == "function", before_click_state
+        assert before_click_state["detailContinuity"] == "function", before_click_state
+        dump_browser_log(driver, "before-lead-click")
         pointer_click(driver, first_lead)
-        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#backdrop.open')))
+        try:
+            wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#backdrop.open')))
+        except TimeoutException:
+            print("HUIDI runtime state after lead click timeout:", runtime_state(driver))
+            dump_browser_log(driver, "lead-open-timeout")
+            raise
         wait.until(lambda d: d.find_element(By.ID, 'dCompany').text.strip() == lead_names[0])
         rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
         assert rail.is_displayed()
