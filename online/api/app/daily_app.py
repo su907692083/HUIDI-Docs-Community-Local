@@ -73,6 +73,13 @@ install_native_document_batch_reconcile(standalone_business)
 from .native_document_batch_risk import install_native_document_batch_risk  # noqa: E402
 
 install_native_document_batch_risk(standalone_business)
+# Pre-save readiness is an eighth presentation-only closure over the existing
+# review signals. It replaces the older anomaly-only navigator with one compact
+# "next review item" navigator and reports advisory readiness without disabling,
+# intercepting or owning the existing Save Draft path.
+from .native_document_save_readiness import install_native_document_save_readiness  # noqa: E402
+
+install_native_document_save_readiness(standalone_business)
 # The document workbench adds only navigation/projection over the existing
 # Customer / Deal / DocumentRef owners. It also exposes the existing Local bridge
 # bundle from an already-confirmed Online deal so users do not re-enter data.
