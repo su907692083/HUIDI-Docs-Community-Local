@@ -106,12 +106,12 @@ def main() -> None:
         wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value') == before_product)
 
         # Return through the existing Page Router, then assert the actual lead-list
-        # workspace is active. Do not reload the whole document and accidentally
-        # restore ?page=product.
+        # workspace is active. Empty tbody is zero-height, so presence—not visibility—
+        # is the correct precondition before the first manual leads are created.
         driver.find_element(By.CSS_SELECTOR, '[data-hpr-home]').click()
         wait.until(lambda d: d.execute_script("return window.HUIDIWorkspacePages?.current?.()") == 'home')
         wait.until(lambda d: 'hpr-active' not in (d.find_element(By.CSS_SELECTOR, '.main').get_attribute('class') or ''))
-        wait.until(EC.visibility_of_element_located((By.ID, 'tbody')))
+        wait.until(EC.presence_of_element_located((By.ID, 'tbody')))
 
         # Lead detail: create two real manual leads, then refresh through the mature
         # Lead owner so current filters/paging remain authoritative.
