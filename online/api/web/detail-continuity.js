@@ -124,6 +124,19 @@ function leadPosition(){
   const idx=leadIds.indexOf(String(leadId));
   return {idx,total:leadIds.length};
 }
+function refreshLeadIds(){
+  const ids=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
+  if(ids.length)leadIds=ids;
+}
+function armLeadDecoration(id){
+  const expectedId=String(id||'');
+  if(!expectedId)return 0;
+  refreshLeadIds();
+  leadId=expectedId;
+  const epoch=++leadEpoch;
+  scheduleLeadDecoration(expectedId,epoch,0);
+  return epoch;
+}
 function leadDetailReady(expectedId=leadId){
   const back=$('#backdrop');
   const owner=window.HUIDILeadWorkbench;
@@ -136,17 +149,16 @@ async function openLeadOwner(id){
   const owner=window.HUIDILeadWorkbench;
   if(typeof owner?.open!=='function')return false;
   const expectedId=String(id||'');
-  const epoch=++leadEpoch;
-  leadId=expectedId;
+  const epoch=armLeadDecoration(expectedId);
+  if(!epoch)return false;
   try{
-    await owner.open(expectedId);
+    const out=await owner.open(expectedId);
+    if(epoch===leadEpoch&&leadId===expectedId)scheduleLeadDecoration(expectedId,epoch,0);
+    return out;
   }catch(error){
     if(epoch===leadEpoch)console.warn('HUIDI detail continuity: lead owner open failed',error);
     return false;
   }
-  if(epoch!==leadEpoch||leadId!==expectedId)return false;
-  scheduleLeadDecoration(expectedId,epoch,0);
-  return true;
 }
 function gotoLead(delta){
   const {idx}=leadPosition();
@@ -317,12 +329,8 @@ function saveShortcut(e){
 
 function click(e){
   const lead=e.target.closest('#tbody [data-open]');
-  if(lead&&typeof window.HUIDILeadWorkbench?.open==='function'){
-    e.preventDefault();
-    e.stopPropagation();
-    leadIds=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
-    leadId=String(lead.dataset.open||'');
-    openLeadOwner(leadId);
+  if(lead){
+    armLeadDecoration(lead.dataset.open||'');
     return;
   }
   const deal=e.target.closest('#huidiBusinessMain [data-deal]');
