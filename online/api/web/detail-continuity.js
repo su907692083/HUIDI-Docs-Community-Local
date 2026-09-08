@@ -119,10 +119,22 @@ function leadPosition(){
   const idx=leadIds.indexOf(String(leadId));
   return {idx,total:leadIds.length};
 }
+async function openLeadOwner(id){
+  const owner=window.HUIDILeadWorkbench;
+  if(typeof owner?.open!=='function')return false;
+  leadId=String(id||'');
+  await owner.open(leadId);
+  scheduleLeadDecoration();
+  return true;
+}
 function gotoLead(delta){
   const {idx}=leadPosition();
   const target=leadIds[idx+delta];
   if(!target)return;
+  if(typeof window.HUIDILeadWorkbench?.open==='function'){
+    openLeadOwner(target);
+    return;
+  }
   const btn=$(`#tbody [data-open="${CSS.escape(String(target))}"]`);
   btn?.click();
 }
@@ -153,6 +165,22 @@ function scheduleLeadDecoration(attempt=0){
   if(decorateLead())return;
   if(attempt>=20)return;
   setTimeout(()=>scheduleLeadDecoration(attempt+1),50);
+}
+function bindLeadOwner(){
+  const tbody=$('#tbody');
+  if(!tbody||tbody.dataset.hdcLeadOwnerBound==='1')return false;
+  tbody.dataset.hdcLeadOwnerBound='1';
+  tbody.addEventListener('click',e=>{
+    const lead=e.target.closest('[data-open]');
+    if(!lead||!lead.closest('#tbody'))return;
+    if(typeof window.HUIDILeadWorkbench?.open!=='function')return;
+    e.preventDefault();
+    e.stopPropagation();
+    leadIds=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
+    leadId=String(lead.dataset.open||'');
+    openLeadOwner(leadId);
+  });
+  return true;
 }
 
 function currentBusinessPage(){
@@ -271,12 +299,6 @@ function saveShortcut(e){
 }
 
 function click(e){
-  const lead=e.target.closest('[data-open]');
-  if(lead&&lead.closest('#tbody')){
-    leadIds=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
-    leadId=String(lead.dataset.open||'');
-    scheduleLeadDecoration();
-  }
   const deal=e.target.closest('#huidiBusinessMain [data-deal]');
   if(deal)captureBusiness('deal',deal);
   const customer=e.target.closest('#huidiBusinessMain [data-customer-id]');
@@ -293,6 +315,7 @@ function click(e){
 function boot(){
   css();
   decorateProduct();
+  bindLeadOwner();
   document.addEventListener('click',click,true);
   document.addEventListener('keydown',saveShortcut,true);
 }
