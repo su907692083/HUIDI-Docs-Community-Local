@@ -124,7 +124,9 @@ jobs:
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'客户沟通'))
               for route in ('mail','sent','queue','sequences'):
                   wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,f'[data-huf-communication="{route}"]')))
-              assert '普通用户不需要配置 SMTP' in driver.find_element(By.ID,'huidiPageMount').text
+              communication_text=driver.find_element(By.ID,'huidiPageMount').text
+              for label in ('收件箱','已发送','待发送','自动跟进'):
+                  assert label in communication_text, (label, communication_text)
               driver.find_element(By.CSS_SELECTOR,'[data-huf-communication="mail"]').click()
               wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'收件箱'))
               wait.until(lambda d: d.execute_script("return document.querySelector('#huidiServiceBack')?.parentElement?.id")=='huidiPageMount')
