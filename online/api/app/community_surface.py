@@ -54,7 +54,7 @@ _CRITICAL_TABS = (
     '<style data-huidi-critical-tabs>'
     '.fv2-pane[hidden]{display:none!important}'
     '.fv2-tabs{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0}'
-    '.fv2-tab{font:inherit;font-size:13px;min-height:34px;padding:6px 12px;border:1px solid #d9e2ec;border-radius:7px;background:#fff;color:#36516f;cursor:pointer}'
+    'body.huidi-community-online .fv2-tabs .fv2-tab{font:inherit;font-size:13px;min-height:34px;padding:6px 12px;border:1px solid #d9e2ec;border-radius:7px;background:#fff;color:#36516f;cursor:pointer}'
     '.fv2-tab[aria-selected=true]{background:#eaf2ff;color:#185fc2;border-color:#a5c3ef}'
     '.huidi-tab-more{position:relative;margin-left:auto}'
     '.huidi-tab-more:not([open])>.huidi-tab-more-menu{display:none}'
