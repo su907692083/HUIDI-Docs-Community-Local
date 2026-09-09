@@ -83,8 +83,8 @@ jobs:
               'acquisition_provider_fusion', 'acquisition_status_bridge', 'customer_intelligence',
               'industry_playbooks', 'mail_delivery', 'mail_provider', 'mail_sync', 'main',
               'production_readiness', 'provider_guard', 'provider_settings', 'service_adapters',
-              'service_connections', 'service_hub')}
-          provider_paths.update(('tools/provider_configuration_browser_audit.py', '.github/workflows/provider-configuration-audit.yml'))
+              'service_connections', 'service_hub', 'community_surface', 'frontend_runtime_guard')}
+          provider_paths.update(('tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', '.github/workflows/provider-configuration-audit.yml'))
           provider_plan = Path(candidates[0]).name.startswith('PROVIDER-CONFIG-')
           for name, edit in files.items():
               p = Path(name)
