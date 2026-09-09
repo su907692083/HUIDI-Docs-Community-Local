@@ -31,6 +31,8 @@ def exercise(base: str, output: Path) -> None:
             report['checks'].append({'name':name,'ok':bool(condition)});assert condition,name
         def shot(name):page.screenshot(path=str(output/(name+'.png')))
         def ready():page.wait_for_function("() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDITaskFlow) && Boolean(window.HUIDICommunityOnlineFullV2)",timeout=35000)
+        def wait_context(*values):
+            page.wait_for_function("vals => {const t=document.querySelector('.htf-context')?.innerText||'';return vals.every(v=>t.includes(v))}",arg=list(values),timeout=3500)
         try:
             page.goto(base+'/',wait_until='domcontentloaded');ready()
             page.evaluate("""() => {
@@ -67,13 +69,15 @@ def exercise(base: str, output: Path) -> None:
             check('quote task explicitly states price stays manual','价格、数量、交期仍由你在正式业务/单据里确认' in page.locator('.htf-dialog').inner_text())
             page.locator('.htf-dialog [data-htf-go]').click();page.wait_for_selector('#view-documents.active')
             check('quote routes into the existing document owner',page.locator('#view-documents.active').count()==1)
-            check('quote context carries customer and product',all(x in page.locator('.htf-context').inner_text() for x in ['Nordic Hardware GmbH','Stainless Steel Hinge','USD','FOB']))
+            wait_context('Nordic Hardware GmbH','Stainless Steel Hinge','USD','FOB')
+            check('quote context carries customer product currency and incoterm',all(x in page.locator('.htf-context').inner_text() for x in ['Nordic Hardware GmbH','Stainless Steel Hinge','USD','FOB']))
             shot('quote-existing-document-owner')
             page.locator('.sidebar .nav-btn[data-view="home"]').click();page.locator('[data-htf-task="market"]').click()
             page.locator('.htf-dialog [data-htf-set="product"]').filter(has_text='Garden Plant Stand').first.click()
             page.locator('.htf-dialog [data-htf-set="market"]').filter(has_text='德国').first.click()
             page.locator('.htf-dialog [data-htf-go]').click();page.wait_for_selector('#view-online-intel.active')
             check('market task reuses the existing intelligence domain',page.locator('#view-online-intel.active').count()==1)
+            wait_context('Garden Plant Stand','德国')
             check('market task keeps visible context','Garden Plant Stand' in page.locator('.htf-context').inner_text() and '德国' in page.locator('.htf-context').inner_text())
             shot('market-existing-intelligence-owner')
             page.locator('.htf-context [data-htf-clear]').click();check('task can end without changing business records',page.locator('.htf-context').count()==0)
