@@ -76,9 +76,9 @@ jobs:
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-foundation]')))
               wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-catalog]')))
 
-              # Read the navigation in one browser-side snapshot. Individual WebElements can be
-              # replaced while the navigation enhancement finishes and are not stable references.
-              visible=driver.execute_script("return [...document.querySelectorAll('.side .nav a')].map(x=>(x.textContent||'').trim()).filter(Boolean)")
+              # Read only currently rendered navigation entries in one browser-side snapshot.
+              # Individual WebElements may be replaced while navigation enhancement finishes.
+              visible=driver.execute_script("return [...document.querySelectorAll('.side .nav a')].filter(x=>x.getClientRects().length).map(x=>(x.textContent||'').trim()).filter(Boolean)")
               for expected in ('今天的工作','客户沟通','待跟进','提醒','找客户','潜在客户','客户 / 询盘','产品资料','产品目录','单据工作台','市场 / 关税 / 物流','基础设置'):
                   assert expected in visible, (expected,visible)
               for secondary in ('联系人','收件箱','已发送','待发送','自动跟进','市场动态','操作记录'):
