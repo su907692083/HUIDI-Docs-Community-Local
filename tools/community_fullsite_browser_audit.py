@@ -271,7 +271,13 @@ def run_browser(base, output, strict):
             def editor_ready(kind):
                 page.wait_for_function("""(kind) => {
                   const p=document.querySelector('#piPaper');
-                  return !document.documentElement.classList.contains('huidi-rc1615-boot') &&
+                  const root=document.documentElement;
+                  const shown=(el)=>{for(let n=el;n&&n.nodeType===1;n=n.parentElement){
+                    const c=getComputedStyle(n);
+                    if(n.hidden||c.display==='none'||c.visibility==='hidden'||Number(c.opacity)<0.95)return false;
+                  }return !!el;};
+                  return !root.classList.contains('huidi-rc1615-boot') &&
+                    !root.classList.contains('fp-startup-stabilizing') && shown(p) &&
                     document.querySelector('#documentType')?.value===kind && p &&
                     (p.dataset.fpDocumentKind===kind || p.dataset.fpDocumentType===kind) &&
                     p.innerText.trim().length>100 && p.getBoundingClientRect().width>100;
