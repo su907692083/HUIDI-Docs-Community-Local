@@ -55,7 +55,7 @@ class WorldIntelligenceContractTests(unittest.TestCase):
         for marker in [
             "/api/intel/world",
             "/api/intel/world/country",
-            "openstreetmap.org",
+            "HUIDIWorldCountryInteraction",
             "renderFallback",
             "HUIDILeadWorkbench",
             "找这个市场的客户",
@@ -74,7 +74,7 @@ class WorldIntelligenceContractTests(unittest.TestCase):
             "pointermove",
             "wi-country-bubble",
             "HUIDIWorldIntelligenceMap?.selectMarket",
-            "点击查看当地动态和现有业务",
+            "点击进入该市场业务面板",
             "潜在客户",
             "联系人",
             "正式客户",
@@ -89,7 +89,7 @@ class WorldIntelligenceContractTests(unittest.TestCase):
 
     def test_country_geometry_failure_keeps_original_world_map_fallback(self):
         source = self.text("web/world-country-interaction.js")
-        load_pos = source.index("await loadData()")
+        load_pos = source.index("await loadData(")
         replace_pos = source.index("box.replaceWith(replacement)")
         self.assertLess(load_pos, replace_pos)
         self.assertIn("catch(_){return}", source)
