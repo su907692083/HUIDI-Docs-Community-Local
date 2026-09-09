@@ -14,8 +14,9 @@ class TaskFlowContract(unittest.TestCase):
 
     def test_task_flow_is_loaded_only_from_online_nav(self):
         self.assertIn('window.HUIDI_COMMUNITY_ONLINE?.enabled', self.task)
-        self.assertIn('/community/huidi-task-flow-v1.js', self.nav)
-        self.assertIn('data-huidi-task-flow', self.nav)
+        self.assertIn("taskAsset('huidi-task-flow-v1.js','data-huidi-task-flow'", self.nav)
+        self.assertIn("taskAsset('huidi-task-context-r1.js','data-huidi-task-context'", self.nav)
+        self.assertIn('`/community/${file}?v=', self.nav)
 
     def test_task_model_covers_high_frequency_foreign_trade_jobs(self):
         for token in ('develop:', 'followup:', 'quote:', 'market:', 'ship:'):
