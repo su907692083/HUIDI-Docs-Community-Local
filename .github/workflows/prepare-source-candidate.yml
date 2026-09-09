@@ -1,0 +1,115 @@
+name: Prepare Hash-Locked Source Candidate
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths: ['tools/source-candidates/*.json']
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: github.repository == 'su907692083/HUIDI-Docs-Community-Local'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: python -m pip install -r online/api/requirements.txt
+      - name: Verify exact source, test edits, create unpromoted commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          EXPECTED_HEAD: ${{ github.sha }}
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, os, re, subprocess, tempfile, urllib.request, zlib
+          from pathlib import Path
+          repo = os.environ['REPOSITORY']
+          head = os.environ['EXPECTED_HEAD']
+          branch = 'online/v0.1-lead-workbench'
+          assert repo == 'su907692083/HUIDI-Docs-Community-Local'
+          assert os.environ['GITHUB_REF'] == 'refs/heads/' + branch
+          def api(path, payload=None):
+              assert path.startswith(('git/ref/', 'git/commits/', 'git/blobs', 'git/trees', 'git/commits'))
+              if payload is not None:
+                  assert path in ('git/blobs', 'git/trees', 'git/commits'), 'Ref writes are forbidden'
+              req = urllib.request.Request('https://api.github.com/repos/' + repo + '/' + path,
+                  data=json.dumps(payload).encode() if payload is not None else None,
+                  headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'], 'Accept':'application/vnd.github+json', 'Content-Type':'application/json'})
+              with urllib.request.urlopen(req, timeout=60) as response:
+                  return json.load(response)
+          assert api('git/ref/heads/' + branch)['object']['sha'] == head, 'Parallel HEAD drift'
+          changed = subprocess.check_output(['git','diff-tree','--no-commit-id','--name-only','-r',head],text=True).splitlines()
+          candidates = [p for p in changed if re.fullmatch(r'tools/source-candidates/[A-Za-z0-9_-]+\.json',p)]
+          assert len(candidates) == 1, 'Exactly one explicit source plan required'
+          envelope = json.loads(Path(candidates[0]).read_text())
+          raw = zlib.decompress(base64.b64decode(envelope['payload'],validate=True))
+          assert len(raw) < 2000000
+          assert hashlib.sha256(raw).hexdigest() == envelope['sha256'], 'Plan digest mismatch'
+          plan = json.loads(raw)
+          assert plan['schema'] == 'huidi.source-candidate/v1'
+          subprocess.run(['git','merge-base','--is-ancestor',plan['base_commit'],head],check=True)
+          files = plan['files']; assert 1 <= len(files) <= 80
+          output = Path('/tmp/huidi-source-candidate'); output.mkdir()
+          (output/'DECODED-PLAN.json').write_bytes(raw)
+          for name, edit in files.items():
+              p = Path(name)
+              assert not p.is_absolute() and '..' not in p.parts and not p.is_symlink()
+              assert name.startswith(('public/','online/api/web/','online/api/tests/','docs/')) or name in ('tools/community_fullsite_browser_audit.py','.github/workflows/community-fullsite-audit.yml')
+              expected = edit['sha256']
+              if expected is None:
+                  assert not p.exists(), 'New path already exists: '+name
+              else:
+                  assert p.is_file() and hashlib.sha256(p.read_bytes()).hexdigest() == expected, 'Source drift: '+name
+          for name, edit in files.items():
+              p = Path(name)
+              if edit['sha256'] is None:
+                  text = edit['content']
+              else:
+                  text = p.read_text()
+                  for replacement in edit['replacements']:
+                      old,new = replacement['old'],replacement['new']
+                      assert text.count(old) == replacement.get('count',1), 'Replacement ambiguity: '+name
+                      text = text.replace(old,new)
+              p.parent.mkdir(parents=True,exist_ok=True); p.write_text(text)
+              if name.endswith('.js'):
+                  subprocess.run(['node','--check',name],check=True)
+              if name.endswith('.py'):
+                  compile(text,name,'exec')
+          test_env = {k:v for k,v in os.environ.items() if k not in ('GH_TOKEN','GITHUB_TOKEN')}
+          test_env.update(HUIDI_DISABLE_BACKGROUND_JOBS='1',HUIDI_SECRET_KEY='isolated-candidate-test-only',DATABASE_URL='sqlite:////tmp/huidi-candidate-tests.db')
+          subprocess.run(['python','-m','unittest','discover','-s','tests','-p','test_*.py'],cwd='online/api',env=test_env,check=True)
+          subprocess.run(['git','add','--',*files],check=True)
+          (output/'DIFF.patch').write_bytes(subprocess.check_output(['git','diff','--cached','--binary']))
+          assert api('git/ref/heads/' + branch)['object']['sha'] == head, 'Parallel HEAD drift before candidate'
+          parent = api('git/commits/' + head)
+          entries = []
+          for name in files:
+              content = Path(name).read_text()
+              blob = api('git/blobs',{'content':content,'encoding':'utf-8'})
+              entries.append({'path':name,'mode':'100644','type':'blob','sha':blob['sha']})
+          tree = api('git/trees',{'base_tree':parent['tree']['sha'],'tree':entries})
+          commit = api('git/commits',{'message':'fix: repair fullsite pagination, shared pane lifecycle and mail continuity','tree':tree['sha'],'parents':[head]})
+          result = {'parent':head,'candidate':commit['sha'],'tree':tree['sha'],'branch':branch,'promoted':False,'files':list(files),'plan_sha256':envelope['sha256']}
+          (output/'CANDIDATE.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
+          print(json.dumps(result,ensure_ascii=False))
+          print('Candidate prepared only. No branch ref, main, PR merge or deployment was changed.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HUIDI-UNPROMOTED-SOURCE-CANDIDATE-${{ github.sha }}
+          path: /tmp/huidi-source-candidate/
+          retention-days: 14
+          if-no-files-found: error
