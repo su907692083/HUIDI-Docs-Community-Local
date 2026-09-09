@@ -8,6 +8,13 @@ if(!online?.enabled||window.HUIDICommunityOnlineFunctionalClosure)return;
 const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const clean=v=>String(v??'').trim();
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const PAGE_COPY={
+  home:['外贸工作台','今天的客户回复、跟进、询盘、邮件和单据集中处理。'],
+  mail:['客户沟通','收件、发送、待发送和自动跟进统一处理。'],
+  'online-find':['客户开发','搜索、地图、联系人、背调与潜客池在一条开发流程。'],
+  'online-intel':['市场情报','市场、贸易、关税、汇率与物流用于开发和订单判断。'],
+  'online-admin':['团队与设置','团队、公司资料、数据来源与安全设置统一管理。']
+};
 let capabilityPromise=null, mapRows=[], cleanupTimer=0, renderTimer=0;
 
 async function api(url,opt={}){
@@ -19,6 +26,13 @@ async function api(url,opt={}){
   if(!r.ok)throw new Error(clean(body?.detail||body?.message||body)||`请求失败 (${r.status})`);
   return body;
 }
+function normalizePageCopy(){
+  const view=document.body.dataset.huidiView||location.hash.replace(/^#/,'')||'home',copy=PAGE_COPY[view];
+  if(!copy)return;
+  const title=$('#pageTitle'),desc=$('#pageDesc');
+  if(title&&title.textContent!==copy[0])title.textContent=copy[0];
+  if(desc&&desc.textContent!==copy[1])desc.textContent=copy[1];
+}
 function normalizeCounts(){
   $$('.sidebar .nav-btn[data-view]').forEach(b=>{
     const count=$('.workspace-nav-count',b);if(!count)return;
@@ -27,6 +41,7 @@ function normalizeCounts(){
       count.textContent='';count.hidden=true;
     }
   });
+  normalizePageCopy();
 }
 function scheduleCleanup(ms=70){clearTimeout(cleanupTimer);cleanupTimer=setTimeout(normalizeCounts,ms)}
 function statusLabel(on){return on?'可用':'待连接'}
@@ -106,6 +121,7 @@ async function renderCapabilities(force=false){
       capCard('外贸数据源',!!(s.company_check||s.trade_data||s.tariff||s.shipping),'企业、贸易、关税、物流统一在“数据来源”管理','online-admin:sources')
     ].join('');
   }
+  normalizePageCopy();
   document.body.dataset.huidiFunctionalClosure='v1';
 }
 function scheduleCapabilities(ms=80,force=false){clearTimeout(renderTimer);renderTimer=setTimeout(()=>renderCapabilities(force).catch(()=>{}),ms)}
@@ -231,5 +247,5 @@ function boot(){
   [120,360,900,1800].forEach(ms=>setTimeout(()=>{normalizeCounts();renderCapabilities().catch(()=>{})},ms));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDICommunityOnlineFunctionalClosure=Object.freeze({version:'1.0.0',normalizeCounts,renderCapabilities,runMap});
+window.HUIDICommunityOnlineFunctionalClosure=Object.freeze({version:'1.0.1',normalizeCounts,normalizePageCopy,renderCapabilities,runMap});
 })();
