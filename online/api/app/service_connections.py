@@ -15,6 +15,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from .main import Base, engine, get_db
 from .online_app import app
+from .provider_settings import PROVIDERS, public_provider_status, save_provider, test_provider
 
 
 SERVICE_DEFS: dict[str, dict[str, str]] = {
@@ -46,6 +47,13 @@ class ServiceConnectionPatch(BaseModel):
     token: str = Field(default="", max_length=12000)
     enabled: bool = True
     clear_token: bool = False
+    client_id: str | None = Field(default=None, max_length=1000)
+    client_secret: str | None = Field(default=None, max_length=12000)
+    tenant: str | None = Field(default=None, max_length=255)
+    redirect_uri: str | None = Field(default=None, max_length=2000)
+    model: str | None = Field(default=None, max_length=200)
+    adapter_key: str | None = Field(default=None, max_length=60)
+    credential_name: str | None = Field(default=None, max_length=120)
 
 
 def _fernet() -> Fernet:
@@ -72,7 +80,7 @@ def _decrypt(value: str) -> str:
 
 
 def _definition(service_key: str) -> dict[str, str]:
-    definition = SERVICE_DEFS.get(service_key)
+    definition = SERVICE_DEFS.get(service_key) or PROVIDERS.get(service_key)
     if not definition:
         raise HTTPException(404, "没有找到这个数据服务")
     return definition
@@ -132,6 +140,8 @@ def resolve_service_connection(db: Session, service_key: str) -> dict[str, Any]:
 
 
 def public_service_status(db: Session, service_key: str) -> dict[str, Any]:
+    if service_key in PROVIDERS:
+        return public_provider_status(db, service_key)
     definition = _definition(service_key)
     row = db.scalar(select(ServiceConnection).where(ServiceConnection.service_key == service_key))
     if row:
@@ -171,36 +181,16 @@ def _test_payload(service_key: str) -> dict[str, Any]:
 
 
 def test_resolved_service(db: Session, service_key: str) -> dict[str, Any]:
-    resolved = resolve_service_connection(db, service_key)
-    endpoint = str(resolved.get("endpoint_url") or "").strip()
-    if not resolved.get("connected") or not endpoint:
-        raise HTTPException(503, f"{resolved.get('name') or '数据服务'}还没有连接")
-    headers = {
-        "Accept": "application/json",
-        "Content-Type": "application/json",
-        "X-HUIDI-Connection-Test": "1",
-    }
-    token = str(resolved.get("token") or "").strip()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    try:
-        with httpx.Client(timeout=20) as client:
-            response = client.post(endpoint, headers=headers, json=_test_payload(service_key))
-    except httpx.RequestError:
-        raise HTTPException(502, "连接不到这个数据服务，请检查服务地址或网络")
-    if response.status_code in {401, 403}:
-        raise HTTPException(502, "数据服务没有接受当前授权信息，请重新检查")
-    if response.status_code == 404:
-        raise HTTPException(502, "没有找到这个数据服务地址，请重新检查")
-    if response.status_code >= 400:
-        raise HTTPException(502, "数据服务已经响应，但没有通过连接检查")
-    return {
-        "ok": True,
-        "service_key": service_key,
-        "name": resolved["name"],
-        "source": resolved["source"],
-        "message": f"{resolved['name']}连接正常",
-    }
+    if service_key in PROVIDERS:
+        return test_provider(db, service_key)
+    # Identical transport and credentials to actual company/trade/tariff/shipping calls.
+    from .service_adapters import execute_service_request
+    data = execute_service_request(db, service_key, _test_payload(service_key), test=True)
+    if not isinstance(data, (dict, list)) or (isinstance(data, dict) and (data.get("text") or data.get("error") or data.get("errors"))):
+        raise HTTPException(502, "服务未返回有效业务 JSON，不能判定为连接成功")
+    return {"ok": True, "verified": True, "service_key": service_key,
+            "name": SERVICE_DEFS[service_key]["name"], "source": public_service_status(db, service_key)["source"],
+            "message": "本次接口检查通过；具体业务字段须符合 HUIDI 数据服务协议。"}
 
 
 @app.get("/api/service-connections")
@@ -208,7 +198,9 @@ def list_service_connections(request: Request, db: Session = Depends(get_db)):
     _require_manager(request)
     return {
         "ok": True,
-        "items": [public_service_status(db, key) for key in SERVICE_DEFS],
+        "items": [public_provider_status(db, key, request) for key in PROVIDERS] + [
+            {**public_service_status(db, key), "kind": "custom", "enabled": bool((_row.enabled if (_row := db.scalar(select(ServiceConnection).where(ServiceConnection.service_key == key))) else True)),
+             "verified": False} for key in SERVICE_DEFS],
     }
 
 
@@ -221,6 +213,25 @@ def save_service_connection(
 ):
     definition = _definition(service_key)
     current = _require_manager(request)
+    if service_key in PROVIDERS:
+        save_provider(db, service_key, req.model_dump(exclude_unset=True), str(current.get("display_name") or "管理员"), public_provider_status(db, service_key, request).get("redirect_uri", ""))
+        return {"ok": True, "service": public_provider_status(db, service_key, request), "message": "设置已加密保存，尚未验证连接"}
+    # Save connection and its adapter in one existing tenant transaction.
+    if req.adapter_key is not None:
+        from .service_adapters import ADAPTERS, ServiceAdapterSetting, validate_credential_name
+        if req.adapter_key not in ADAPTERS:
+            raise HTTPException(400, "不支持这种接入方式")
+        validate_credential_name(req.credential_name or "")
+        setting = db.scalar(select(ServiceAdapterSetting).where(ServiceAdapterSetting.service_key == service_key))
+        if setting is None:
+            setting = ServiceAdapterSetting(service_key=service_key)
+            db.add(setting)
+        setting.adapter_key, setting.credential_name = req.adapter_key, (req.credential_name or "").strip()
+    if req.enabled and not req.endpoint_url.strip():
+        raise HTTPException(400, "请填写服务商提供的连接地址，或关闭这个来源")
+    if req.endpoint_url.strip():
+        from .service_adapters import _validate_endpoint
+        _validate_endpoint(req.endpoint_url.strip())
     row = db.scalar(select(ServiceConnection).where(ServiceConnection.service_key == service_key))
     if not row:
         row = ServiceConnection(service_key=service_key, created_at=datetime.now(timezone.utc))

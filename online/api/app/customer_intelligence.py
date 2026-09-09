@@ -6,6 +6,7 @@ import html
 import ipaddress
 import json
 import os
+from .provider_settings import provider_ready
 import re
 from datetime import datetime, timedelta, timezone
 from email.utils import parsedate_to_datetime
@@ -415,12 +416,14 @@ async def _gnews(client: httpx.AsyncClient, query: str, preferred: str) -> list[
 
 
 async def _serper_news(client: httpx.AsyncClient, query: str, preferred: str) -> list[dict[str, Any]]:
-    if not SERPER_API_KEY:
+    from .provider_settings import resolve_provider
+    cfg = resolve_provider("serper")
+    if not cfg["configured"]:
         return []
     try:
         response = await client.post(
             "https://google.serper.dev/news",
-            headers={"X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json"},
+            headers={"X-API-KEY": cfg["token"], "Content-Type": "application/json"},
             json={"q": query, "num": MAX_SOURCE_ITEMS},
         )
         response.raise_for_status()
@@ -542,7 +545,7 @@ async def _collect(*, country: str, product: str, company: str, limit: int = 20)
         "sources": {
             "google_news": True,
             "gnews": bool(GNEWS_API_KEY),
-            "serper_news": bool(SERPER_API_KEY),
+            "serper_news": provider_ready("serper"),
             "configured_rss": len(sources),
             "official_or_association": sum(1 for x in sources if x.get("source_type") in {"official", "association"}),
         },
@@ -691,7 +694,7 @@ def intelligence_status():
         "sources": {
             "全球新闻": "可用（Google News RSS）",
             "GNews": "已连接" if GNEWS_API_KEY else "可选，未连接",
-            "现有在线搜索": "已连接" if SERPER_API_KEY else "可选，未连接",
+            "现有在线搜索": "已连接" if provider_ready("serper") else "可选，未连接",
             "行业 / 协会来源": len(sources),
             "官方 / 协会来源": sum(1 for x in sources if x.get("source_type") in {"official", "association"}),
         },

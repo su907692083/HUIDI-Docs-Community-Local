@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+from .provider_settings import provider_ready
 from datetime import datetime, timezone
 from typing import Any
 
@@ -220,7 +221,7 @@ def build_production_readiness() -> dict[str, Any]:
     finally:
         db.close()
 
-    if os.getenv("LLM_API_KEY", "").strip():
+    if provider_ready("llm"):
         items.append(_item("AI 辅助", "开发信与内容", "ready", "AI 写信能力已连接。"))
     else:
         items.append(_item("AI 辅助", "开发信与内容", "optional", "AI 写信能力还没有连接，将使用基础模板。", "需要更强写信能力时再连接。"))

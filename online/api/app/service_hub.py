@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from .intelligence_records import record_intelligence
 from .lead_engine import clean_domain
 from .main import Lead, add_activity, get_db
+from .provider_settings import resolve_provider, provider_ready, read_provider_json
 from .online_app import app
 from .service_connections import public_service_status, resolve_service_connection
 
@@ -91,8 +92,9 @@ class ShippingRequest(BaseModel):
     deal_id: int | None = None
 
 
-def _configured(name: str) -> bool:
-    return bool(os.getenv(name, "").strip())
+def _configured(name: str, db=None) -> bool:
+    from .provider_settings import configured_env
+    return configured_env(name, db)
 
 
 def _provider_status(db: Session) -> dict[str, Any]:
@@ -102,13 +104,13 @@ def _provider_status(db: Session) -> dict[str, Any]:
     shipping_status = public_service_status(db, "shipping")
     return {
         "mail": {
-            "gmail": _configured("GMAIL_CLIENT_ID") and _configured("GMAIL_CLIENT_SECRET"),
-            "outlook": _configured("OUTLOOK_CLIENT_ID") and _configured("OUTLOOK_CLIENT_SECRET"),
+            "gmail": _configured("GMAIL_CLIENT_ID", db) and _configured("GMAIL_CLIENT_SECRET", db),
+            "outlook": _configured("OUTLOOK_CLIENT_ID", db) and _configured("OUTLOOK_CLIENT_SECRET", db),
             "company_mail": True,
         },
-        "lead_search": bool(SERPER_API_KEY),
-        "map_search": bool(SERPER_API_KEY),
-        "trade_news": bool(SERPER_API_KEY),
+        "lead_search": provider_ready("serper", db),
+        "map_search": provider_ready("serper", db),
+        "trade_news": provider_ready("serper", db),
         "company_check": company["connected"],
         "trade_data": trade["connected"],
         "tariff": tariff_status["connected"],
@@ -129,17 +131,16 @@ def service_status(db: Session = Depends(get_db)):
 
 
 def _serper(path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    if not SERPER_API_KEY:
+    cfg = resolve_provider("serper")
+    if not cfg["configured"]:
         raise HTTPException(503, "还没有连接在线搜索服务")
     with httpx.Client(timeout=30) as client:
         r = client.post(
             f"https://google.serper.dev/{path}",
-            headers={"X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json"},
+            headers={"X-API-KEY": cfg["token"], "Content-Type": "application/json"},
             json=payload,
         )
-        if r.status_code >= 400:
-            raise HTTPException(502, "在线数据暂时没有返回，请稍后再试")
-        return r.json()
+        return read_provider_json(r, "Serper")
 
 
 def _record_and_note(

@@ -9,19 +9,20 @@ _original_provider_status = service_hub._provider_status
 _original_readiness = production_readiness.build_production_readiness
 
 
-def _configured(name: str) -> bool:
-    return bool(os.getenv(name, "").strip())
+def _configured(name: str, db=None) -> bool:
+    from .provider_settings import configured_env
+    return configured_env(name, db)
 
 
 def _provider_status(db):
     out = _original_provider_status(db)
-    out["lead_search"] = _configured("SERPER_API_KEY") or _configured("TAVILY_API_KEY")
-    out["contact_search"] = _configured("SERPER_API_KEY") or _configured("HUNTER_API_KEY")
+    out["lead_search"] = _configured("SERPER_API_KEY", db) or _configured("TAVILY_API_KEY", db)
+    out["contact_search"] = _configured("SERPER_API_KEY", db) or _configured("HUNTER_API_KEY", db)
     out["acquisition"] = {
-        "company_primary": "serper" if _configured("SERPER_API_KEY") else "tavily" if _configured("TAVILY_API_KEY") else "",
-        "company_fallback": "tavily" if _configured("SERPER_API_KEY") and _configured("TAVILY_API_KEY") else "",
-        "contact_primary": "hunter" if _configured("HUNTER_API_KEY") else "serper" if _configured("SERPER_API_KEY") else "",
-        "contact_fallback": "serper" if _configured("HUNTER_API_KEY") and _configured("SERPER_API_KEY") else "",
+        "company_primary": "serper" if _configured("SERPER_API_KEY", db) else "tavily" if _configured("TAVILY_API_KEY", db) else "",
+        "company_fallback": "tavily" if _configured("SERPER_API_KEY", db) and _configured("TAVILY_API_KEY", db) else "",
+        "contact_primary": "hunter" if _configured("HUNTER_API_KEY", db) else "serper" if _configured("SERPER_API_KEY", db) else "",
+        "contact_fallback": "serper" if _configured("HUNTER_API_KEY", db) and _configured("SERPER_API_KEY", db) else "",
     }
     return out
 

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 import httpx
-from fastapi import Request
+from fastapi import Request, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -14,13 +14,8 @@ from sqlalchemy import select
 from .lead_engine import clean_domain, merge_evidence, score_search_result
 from .main import Lead, LeadSearchRequest, SessionLocal, add_activity, lead_to_dict, serper_search
 from .online_app import app
+from .provider_settings import provider_ready, resolve_provider, read_provider_json
 
-
-TAVILY_API_KEY = os.getenv("TAVILY_API_KEY", "").strip()
-TAVILY_BASE_URL = os.getenv("TAVILY_BASE_URL", "https://api.tavily.com").rstrip("/")
-HUNTER_API_KEY = os.getenv("HUNTER_API_KEY", "").strip()
-HUNTER_BASE_URL = os.getenv("HUNTER_BASE_URL", "https://api.hunter.io/v2").rstrip("/")
-SERPER_CONFIGURED = bool(os.getenv("SERPER_API_KEY", "").strip())
 
 _EXCLUDED_DOMAINS = {
     "linkedin.com", "facebook.com", "instagram.com", "youtube.com", "x.com", "twitter.com",
@@ -35,15 +30,12 @@ _OWNER_ROLE_TERMS = ("owner", "founder", "director", "general manager", "managin
 
 
 def acquisition_provider_status() -> dict[str, Any]:
-    return {
-        "serper": SERPER_CONFIGURED,
-        "tavily": bool(TAVILY_API_KEY),
-        "hunter": bool(HUNTER_API_KEY),
-        "live_company_search": bool(SERPER_CONFIGURED or TAVILY_API_KEY),
-        "live_contact_search": bool(SERPER_CONFIGURED or HUNTER_API_KEY),
-        "company_search_order": [x for x, ready in (("Serper", SERPER_CONFIGURED), ("Tavily", bool(TAVILY_API_KEY))) if ready],
-        "contact_search_order": [x for x, ready in (("Hunter", bool(HUNTER_API_KEY)), ("Serper", SERPER_CONFIGURED)) if ready],
-    }
+    with SessionLocal() as db:
+        serper, tavily, hunter = (provider_ready(key, db) for key in ("serper", "tavily", "hunter"))
+    return {"serper": serper, "tavily": tavily, "hunter": hunter,
+            "live_company_search": serper or tavily, "live_contact_search": serper or hunter,
+            "company_search_order": [name for name, ready in (("Serper", serper), ("Tavily", tavily)) if ready],
+            "contact_search_order": [name for name, ready in (("Hunter", hunter), ("Serper", serper)) if ready]}
 
 
 @app.get("/api/acquisition/status")
@@ -58,12 +50,13 @@ def _host_excluded(domain: str) -> bool:
 
 
 async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]:
+    cfg = resolve_provider("tavily")
     query = " ".join(x for x in [req.product_keyword, req.buyer_type, req.country, "company importer distributor buyer official website"] if x)
     try:
         async with httpx.AsyncClient(timeout=25) as client:
             response = await client.post(
-                f"{TAVILY_BASE_URL}/search",
-                headers={"Authorization": f"Bearer {TAVILY_API_KEY}", "Content-Type": "application/json"},
+                cfg["endpoint_url"] + "/search",
+                headers={"Authorization": "Bearer " + cfg["token"], "Content-Type": "application/json"},
                 json={
                     "query": query,
                     "search_depth": "basic",
@@ -82,7 +75,9 @@ async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]
     if response.status_code >= 400:
         raise RuntimeError("在线找客户备用来源没有成功返回结果")
     try:
-        payload = response.json()
+        payload = read_provider_json(response, "Tavily")
+        if not isinstance(payload.get("results"), list):
+            raise ValueError("missing results")
     except Exception as exc:
         raise RuntimeError("在线找客户备用来源返回了无法读取的数据") from exc
     rows: list[dict[str, Any]] = []
@@ -104,23 +99,28 @@ async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]
 
 async def _company_search_with_failover(req: LeadSearchRequest) -> tuple[str, list[dict[str, Any]], list[str]]:
     errors: list[str] = []
-    if SERPER_CONFIGURED:
+    empty_provider = ""
+    if provider_ready("serper"):
         try:
             rows = await serper_search(req)
             if rows:
                 return "serper", rows, errors
+            empty_provider = "serper"
             errors.append("主搜索来源没有返回候选")
+        except HTTPException as exc:
+            errors.append(str(exc.detail))
         except Exception:
-            errors.append("主搜索来源暂时不可用")
-    if TAVILY_API_KEY:
+            errors.append("主搜索来源暂时不可用，请检查服务器网络")
+    if provider_ready("tavily"):
         try:
             rows = await _tavily_company_search(req)
             if rows:
                 return "tavily", rows, errors
+            empty_provider = "tavily"
             errors.append("备用搜索来源没有返回候选")
         except RuntimeError as exc:
             errors.append(str(exc))
-    return "", [], errors
+    return empty_provider, [], errors
 
 
 def _persist_company_results(req: LeadSearchRequest, raw: list[dict[str, Any]], provider: str) -> JSONResponse:
@@ -186,7 +186,7 @@ async def _handle_company_search(request: Request) -> JSONResponse:
         req = LeadSearchRequest.model_validate(await request.json())
     except (ValidationError, ValueError, TypeError):
         return JSONResponse({"detail": "请填写产品关键词、目标市场和客户类型"}, status_code=422)
-    if not (SERPER_CONFIGURED or TAVILY_API_KEY):
+    if not (provider_ready("serper") or provider_ready("tavily")):
         return JSONResponse(
             {
                 "detail": "尚未配置真实客户搜索来源。为避免把演示数据混入客户库，本次不会生成或保存模拟客户。请管理员先连接 Serper 或 Tavily。",
@@ -240,11 +240,12 @@ def _best_hunter_contact(payload: dict[str, Any], domain: str) -> tuple[dict[str
 
 
 async def _hunter_domain_search(domain: str) -> dict[str, Any]:
+    cfg = resolve_provider("hunter")
     try:
         async with httpx.AsyncClient(timeout=25) as client:
             response = await client.get(
-                f"{HUNTER_BASE_URL}/domain-search",
-                params={"domain": domain, "limit": 10, "api_key": HUNTER_API_KEY},
+                cfg["endpoint_url"] + "/domain-search",
+                params={"domain": domain, "limit": 10, "api_key": cfg["token"]},
                 headers={"Accept": "application/json"},
             )
     except httpx.RequestError as exc:
@@ -256,7 +257,10 @@ async def _hunter_domain_search(domain: str) -> dict[str, Any]:
     if response.status_code >= 400:
         raise RuntimeError("联系人查找服务没有成功返回结果")
     try:
-        return response.json()
+        data = read_provider_json(response, "Hunter")
+        if not isinstance(data.get("data"), dict) or not isinstance(data["data"].get("emails"), list):
+            raise ValueError("missing emails")
+        return data
     except Exception as exc:
         raise RuntimeError("联系人查找服务返回了无法读取的数据") from exc
 
@@ -272,10 +276,10 @@ async def _handle_hunter_contact(lead_id: int) -> JSONResponse | None:
             return JSONResponse({"detail": "请先确认这个客户的公司官网，再查找联系人"}, status_code=400)
         try:
             payload = await _hunter_domain_search(domain)
-        except RuntimeError:
-            return None if SERPER_CONFIGURED else JSONResponse({"detail": "联系人查找服务暂时不可用，请稍后再试"}, status_code=503)
+        except RuntimeError as exc:
+            return None if provider_ready("serper") else JSONResponse({"detail": str(exc)}, status_code=503)
         best, emails = _best_hunter_contact(payload, domain)
-        if not emails and SERPER_CONFIGURED:
+        if not emails and provider_ready("serper"):
             return None
         if best:
             first = str(best.get("first_name") or "").strip(); last = str(best.get("last_name") or "").strip()
@@ -312,7 +316,7 @@ async def legacy_acquisition_provider_fusion(request: Request, call_next):
     if method == "POST" and path == "/api/leads/search":
         return await _handle_company_search(request)
     match = re.fullmatch(r"/api/leads/(\d+)/find-contact", path)
-    if method == "POST" and match and HUNTER_API_KEY:
+    if method == "POST" and match and provider_ready("hunter"):
         response = await _handle_hunter_contact(int(match.group(1)))
         if response is not None:
             return response

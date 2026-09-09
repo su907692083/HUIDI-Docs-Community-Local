@@ -236,7 +236,8 @@ _original_llm_draft = main_owner.llm_draft
 
 async def _industry_aware_llm_draft(lead: Lead, req: Any) -> tuple[str, str]:
     profile = _industry_for_lead_without_request_db(lead)
-    if not main_owner.LLM_API_KEY:
+    from .provider_settings import provider_ready
+    if not provider_ready("llm"):
         return _fallback_first_contact(lead, profile, str(getattr(req, "language", "English") or "English"))
     summary = str(getattr(req, "product_summary", "") or "").strip()
     enriched = (summary + "\n\n" + industry_prompt_context(profile)).strip()

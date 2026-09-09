@@ -10,13 +10,16 @@ from .online_app import app
 
 
 def _configured(name: str) -> bool:
-    return bool(os.getenv(name, "").strip())
+    from .provider_settings import configured_env
+    return configured_env(name)
 
 
 @app.middleware("http")
 async def require_real_business_sources(request: Request, call_next):
     path = request.url.path
     method = request.method.upper()
+    if method != "POST" or not (path == "/api/leads/search" or re.fullmatch(r"/api/leads/\d+/find-contact", path)):
+        return await call_next(request)
     company_search_ready = _configured("SERPER_API_KEY") or _configured("TAVILY_API_KEY")
     contact_search_ready = _configured("SERPER_API_KEY") or _configured("HUNTER_API_KEY")
 

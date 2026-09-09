@@ -291,6 +291,17 @@ def run_browser(base, output, strict):
                 page.screenshot(path=str(output/('native-chain-'+kind+'.png')))
                 report['checks'].append({'name':'native-chain-'+kind+'-rendered-with-customer','ok':True})
         except Exception as error:
+            try:
+                page.screenshot(path=str(output/'native-document-failure.png'))
+                evidence=page.evaluate('''() => ({url:location.href, classes:document.documentElement.className,
+                    type:document.querySelector('#documentType')?.value,
+                    paper:document.querySelector('#piPaper')?{data:{...document.querySelector('#piPaper').dataset},
+                    text:document.querySelector('#piPaper').innerText.slice(0,800),
+                    width:document.querySelector('#piPaper').getBoundingClientRect().width}:null,
+                    title:document.title, body:document.body.innerText.slice(0,16000)})''')
+                (output/'native-document-failure.json').write_text(json.dumps(evidence,ensure_ascii=False,indent=2),encoding='utf-8')
+            except Exception as evidence_error:
+                report['failures'].append('Could not capture document failure evidence: '+str(evidence_error))
             report['checks'].append({'name':'core-business-paging-dialog-chain','ok':False,'detail':str(error)})
         (output / 'REPORT.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
         print(json.dumps({'screens':len(report['screens']),'failures':report['failures'],'page_errors':report['page_errors'],'checks':report['checks']}, ensure_ascii=False), flush=True)

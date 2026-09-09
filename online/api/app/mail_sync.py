@@ -334,7 +334,7 @@ def _outlook_messages(db: Session, mailbox: MailboxAccount, folder: str, limit: 
 
 def sync_mailbox(db: Session, mailbox: MailboxAccount, limit: int = 50) -> dict[str, Any]:
     if mailbox.provider not in {"gmail", "outlook"} or mailbox.auth_mode != "oauth2":
-        raise HTTPException(400, "这个邮箱不需要自动收取")
+        raise HTTPException(400, "此邮箱使用 SMTP，仅支持发信；自动收件请授权 Gmail 或 Outlook")
     if not has_connected_token(db, mailbox.id):
         raise HTTPException(400, "这个邮箱还没有完成连接")
     added = 0
@@ -361,6 +361,8 @@ def mail_connect_start(
     mailbox_id: int | None = None,
     db: Session = Depends(get_db),
 ):
+    from .service_connections import _require_manager
+    _require_manager(request)
     callback = str(request.url_for("mail_connect_callback", provider=provider))
     return begin_connection(db, provider, callback, mailbox_id)
 
@@ -390,7 +392,7 @@ def mail_connect_callback(
         "<div style='max-width:520px;margin:auto;background:white;padding:28px;border-radius:16px'>"
         f"<h2>邮箱已连接</h2><p>{safe_email}</p>"
         "<p>现在可以回到 HUIDI 查看收件、回复和发送记录。</p></div>"
-        "<script>try{window.opener&&window.opener.postMessage({type:'huidi-mail-connected'},'*')}catch(e){};setTimeout(()=>window.close(),1200)</script>"
+        "<script>try{window.opener&&window.opener.postMessage({type:'huidi-mail-connected'},location.origin)}catch(e){};setTimeout(()=>window.close(),1200)</script>"
         "</body>"
     )
 

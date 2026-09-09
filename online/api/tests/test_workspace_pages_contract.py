@@ -120,7 +120,8 @@ class WorkspacePagesContractTests(unittest.TestCase):
         self.assertIn("position:static", services)
         self.assertIn("leavePageToReplies", services)
         self.assertIn("HUIDIWorkspacePages?.home", services)
-        self.assertIn("window.open(out.authorize_url,'huidi-mail-connect'", services)
+        self.assertIn("window.open('about:blank','huidi-mail-connect'", services)
+        self.assertIn('popup.location.href=dest.href', services)
         self.assertIn("Object.freeze({open,mount,unmount,close", services)
         subprocess.run(["node", "--check", str(WEB / "daily-services.js")], check=True)
 

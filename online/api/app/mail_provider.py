@@ -76,11 +76,17 @@ def _utc(value: datetime | None) -> datetime | None:
     return value.replace(tzinfo=timezone.utc) if value.tzinfo is None else value.astimezone(timezone.utc)
 
 
-def provider_config(provider: str, redirect_uri: str) -> dict[str, Any]:
+def provider_config(provider: str, redirect_uri: str, db: Session | None = None) -> dict[str, Any]:
+    from .provider_settings import resolve_provider, callback_uri
     provider = provider.strip().lower()
+    if provider not in {"gmail", "outlook"}:
+        raise HTTPException(400, "目前支持连接 Gmail 或 Outlook")
+    saved = resolve_provider(provider + "_oauth", db)
+    if not saved["configured"]:
+        raise HTTPException(503, provider.title() + " 尚未配置：请在团队与设置 → 数据来源中填写应用 ID 和密钥，再授权邮箱")
     if provider == "gmail":
-        client_id = os.getenv("GMAIL_CLIENT_ID", "").strip()
-        client_secret = os.getenv("GMAIL_CLIENT_SECRET", "").strip()
+        client_id = saved.get("client_id", "")
+        client_secret = saved.get("client_secret", "")
         if not client_id or not client_secret:
             raise HTTPException(503, "Gmail 还没有完成连接配置")
         return {
@@ -89,13 +95,13 @@ def provider_config(provider: str, redirect_uri: str) -> dict[str, Any]:
             "client_secret": client_secret,
             "authorize_url": "https://accounts.google.com/o/oauth2/v2/auth",
             "token_url": "https://oauth2.googleapis.com/token",
-            "redirect_uri": os.getenv("GMAIL_REDIRECT_URI", "").strip() or redirect_uri,
+            "redirect_uri": saved.get("redirect_uri") or callback_uri("gmail", redirect_uri),
             "scope": "openid email profile https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.send",
         }
     if provider == "outlook":
-        client_id = os.getenv("OUTLOOK_CLIENT_ID", "").strip()
-        client_secret = os.getenv("OUTLOOK_CLIENT_SECRET", "").strip()
-        tenant = os.getenv("OUTLOOK_TENANT", "common").strip() or "common"
+        client_id = saved.get("client_id", "")
+        client_secret = saved.get("client_secret", "")
+        tenant = saved.get("tenant") or "common"
         if not client_id or not client_secret:
             raise HTTPException(503, "Outlook 还没有完成连接配置")
         return {
@@ -104,14 +110,14 @@ def provider_config(provider: str, redirect_uri: str) -> dict[str, Any]:
             "client_secret": client_secret,
             "authorize_url": f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/authorize",
             "token_url": f"https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
-            "redirect_uri": os.getenv("OUTLOOK_REDIRECT_URI", "").strip() or redirect_uri,
+            "redirect_uri": saved.get("redirect_uri") or callback_uri("outlook", redirect_uri),
             "scope": "offline_access openid profile email User.Read Mail.Read Mail.Send",
         }
     raise HTTPException(400, "目前支持连接 Gmail 或 Outlook")
 
 
 def begin_connection(db: Session, provider: str, redirect_uri: str, mailbox_id: int | None = None) -> dict[str, Any]:
-    cfg = provider_config(provider, redirect_uri)
+    cfg = provider_config(provider, redirect_uri, db)
     state_value = secrets.token_urlsafe(32)
     row = MailboxOAuthState(
         state=state_value,
@@ -175,7 +181,8 @@ def finish_connection(db: Session, state_value: str, code: str) -> dict[str, Any
         db.commit()
         raise HTTPException(400, "连接时间过长，请重新连接邮箱")
 
-    cfg = provider_config(state.provider, state.redirect_uri)
+    cfg = provider_config(state.provider, state.redirect_uri, db)
+    cfg["redirect_uri"] = state.redirect_uri  # exact value used by this authorization request
     with httpx.Client(timeout=30) as client:
         data = {
             "client_id": cfg["client_id"],
@@ -250,7 +257,7 @@ def access_token(db: Session, mailbox: MailboxAccount) -> str:
     refresh = decrypt_secret(row.refresh_ciphertext)
     if not refresh:
         raise HTTPException(401, "邮箱连接已经过期，请重新连接")
-    cfg = provider_config(row.provider, "")
+    cfg = provider_config(row.provider, "", db)
     with httpx.Client(timeout=30) as client:
         payload = {
             "client_id": cfg["client_id"],

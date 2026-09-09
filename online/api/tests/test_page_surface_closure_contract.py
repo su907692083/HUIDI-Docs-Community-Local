@@ -85,7 +85,8 @@ class PageSurfaceClosureContractTests(unittest.TestCase):
         services = (WEB / "daily-services.js").read_text(encoding="utf-8")
         self.assertIn("loginGuard", closure)
         self.assertIn("ta-login", team)
-        self.assertIn("window.open(out.authorize_url,'huidi-mail-connect'", services)
+        self.assertIn("window.open('about:blank','huidi-mail-connect'", services)
+        self.assertIn('popup.location.href=dest.href', services)
         self.assertNotIn("authorize_url", closure)
 
 

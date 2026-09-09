@@ -231,16 +231,20 @@ def activity_to_dict(x: LeadActivity) -> dict[str, Any]:
 
 
 async def serper_query(query: str, num: int = 10) -> list[dict[str, Any]]:
-    if not SERPER_API_KEY:
+    from .provider_settings import resolve_provider, read_provider_json
+    cfg = resolve_provider("serper")
+    if not cfg["configured"]:
         return []
     async with httpx.AsyncClient(timeout=25) as client:
         resp = await client.post(
             "https://google.serper.dev/search",
-            headers={"X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json"},
+            headers={"X-API-KEY": cfg["token"], "Content-Type": "application/json"},
             json={"q": query, "num": min(num, 50)},
         )
-        resp.raise_for_status()
-        return resp.json().get("organic", [])
+        data = read_provider_json(resp, "Serper")
+        if not isinstance(data.get("organic"), list):
+            raise HTTPException(502, "Serper 返回格式不匹配")
+        return data["organic"]
 
 
 async def serper_search(req: LeadSearchRequest) -> list[dict[str, Any]]:
@@ -528,7 +532,8 @@ async def find_contact(lead_id: int, db: Session = Depends(get_db)):
     lead = db.get(Lead, lead_id)
     if not lead:
         raise HTTPException(404, "线索不存在")
-    if not SERPER_API_KEY:
+    from .provider_settings import provider_ready
+    if not provider_ready("serper", db):
         return {
             "mode": "demo",
             "message": "配置 SERPER_API_KEY 后可搜索公开采购联系人与业务邮箱。",
@@ -616,7 +621,9 @@ def list_activities(lead_id: int, db: Session = Depends(get_db)):
 
 
 async def llm_draft(lead: Lead, req: DraftRequest) -> tuple[str, str]:
-    if not LLM_API_KEY:
+    from .provider_settings import resolve_provider, read_provider_json
+    cfg = resolve_provider("llm")
+    if not cfg["configured"]:
         subject = f"Potential cooperation with {lead.company_name}"
         body = (
             f"Dear {lead.contact_name or 'Team'},\n\n"
@@ -649,19 +656,24 @@ Rules:
 - Write a draft for human review; do not imply it has already been sent.
 Return strict JSON: {{"subject":"...","body":"..."}}
 """
-    async with httpx.AsyncClient(timeout=45) as client:
+    from .service_adapters import _validate_endpoint
+    _validate_endpoint(cfg["endpoint_url"])
+    async with httpx.AsyncClient(timeout=45, follow_redirects=False) as client:
         resp = await client.post(
-            f"{LLM_BASE_URL}/chat/completions",
-            headers={"Authorization": f"Bearer {LLM_API_KEY}", "Content-Type": "application/json"},
+            f"{cfg['endpoint_url']}/chat/completions",
+            headers={"Authorization": f"Bearer {cfg['token']}", "Content-Type": "application/json"},
             json={
-                "model": LLM_MODEL,
+                "model": cfg["model"],
                 "messages": [{"role": "user", "content": prompt}],
                 "temperature": 0.4,
                 "response_format": {"type": "json_object"},
             },
         )
-        resp.raise_for_status()
-        content = resp.json()["choices"][0]["message"]["content"]
+        data = read_provider_json(resp, "文字生成")
+        try:
+            content = data["choices"][0]["message"]["content"]
+        except (KeyError, IndexError, TypeError):
+            raise HTTPException(502, "文字生成服务返回格式不匹配") from None
     data = json.loads(content)
     return data.get("subject", "Cooperation inquiry"), data.get("body", "")
 
@@ -678,7 +690,8 @@ async def create_draft(lead_id: int, req: DraftRequest, db: Session = Depends(ge
     add_activity(db, lead.id, "draft_created", "生成开发信草稿", subject, {"language": req.language})
     db.commit()
     db.refresh(lead)
-    return {"mode": "llm" if LLM_API_KEY else "fallback", "lead": lead_to_dict(lead, db)}
+    from .provider_settings import provider_ready
+    return {"mode": "llm" if provider_ready("llm", db) else "fallback", "lead": lead_to_dict(lead, db)}
 
 
 @app.post("/api/leads/{lead_id}/draft-approval")

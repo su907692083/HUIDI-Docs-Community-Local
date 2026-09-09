@@ -148,12 +148,13 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
             "/api/intelligence/summary/",
             "/api/team/members",
             "/api/company-settings",
-            "/api/service-connections",
             "/api/notification-routes",
             "/api/production/readiness",
             "/api/backups",
         ):
             self.assertIn(path, self.full_v2)
+        self.assertIn("HUIDIServiceSettings.mount(pane)", self.full_v2)
+        self.assertIn("/api/service-connections", (REPO / "online" / "api" / "web" / "service-settings.js").read_text())
         for view in ("online-find", "online-intel", "online-admin"):
             self.assertIn(view, self.full_v2)
         self.assertIn("mail", self.full_v2)

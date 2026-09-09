@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ipaddress
 import os
+import re
 import socket
 from datetime import datetime, timezone
 from typing import Any
@@ -59,6 +60,11 @@ def _require_manager(request: Request) -> dict[str, Any]:
     return member
 
 
+def validate_credential_name(name: str) -> None:
+    if name and not re.fullmatch(r"[A-Za-z0-9_-]{1,120}", name):
+        raise HTTPException(400, "密钥字段名只能含字母、数字、下划线或短横线")
+
+
 def _adapter_setting(db: Session, service_key: str) -> dict[str, str]:
     if service_key not in SERVICE_DEFS:
         raise HTTPException(404, "没有找到这个数据服务")
@@ -88,6 +94,8 @@ def _validate_endpoint(endpoint: str) -> None:
     parsed = urlparse(endpoint)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
         raise HTTPException(400, "数据服务地址必须是有效的 http 或 https 地址")
+    if parsed.username or parsed.password or parsed.fragment:
+        raise HTTPException(400, "服务地址不能包含账户密码或页面锚点")
     if _private_endpoint_allowed():
         return
     hostname = parsed.hostname.lower()
@@ -166,6 +174,7 @@ def save_service_adapter(service_key: str, req: AdapterPatch, request: Request, 
     if not row:
         row = ServiceAdapterSetting(service_key=service_key)
         db.add(row)
+    validate_credential_name(req.credential_name.strip())
     row.adapter_key = req.adapter_key
     row.credential_name = req.credential_name.strip()
     row.updated_by = str(current.get("display_name") or current.get("email") or "管理员")[:160]

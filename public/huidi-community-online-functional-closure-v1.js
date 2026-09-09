@@ -115,9 +115,9 @@ async function renderCapabilities(force=false){
       !!s.company_check,!!s.trade_data,!!s.tariff,s.fx===true,!!s.shipping
     ].filter(Boolean).length;
     $('.hfc-cap-grid',admin).innerHTML=[
-      `<div class="hfc-cap hfc-summary ready"><div><b>当前可用能力</b><span>按真实后端状态统计，不用演示数据冒充。</span></div><strong>${ready}/9</strong></div>`,
+      `<div class="hfc-cap hfc-summary ready"><div><b>当前配置状态</b><span>配置存在不代表授权或额度已通过检查。</span></div><strong>${ready}/9</strong></div>`,
       capCard('搜索与获客',!!a.live_company_search,`企业：${providers(a.company_search_order)} · 联系人：${providers(a.contact_search_order)}`,'online-find:base'),
-      capCard('邮箱与触达',mailReady,mailReady?`${connectedMail.length} 个邮箱已连接`:'尚无已连接邮箱 · 可使用 Gmail / Outlook / SMTP-IMAP','mail:mailbox'),
+      capCard('邮箱与触达',mailReady,mailReady?`${connectedMail.length} 个邮箱已连接`:'尚无已连接邮箱 · 可使用 Gmail / Outlook / SMTP（仅发信）','mail:mailbox'),
       capCard('外贸数据源',!!(s.company_check||s.trade_data||s.tariff||s.shipping),'企业、贸易、关税、物流统一在“数据来源”管理','online-admin:sources')
     ].join('');
   }
@@ -125,6 +125,7 @@ async function renderCapabilities(force=false){
   if(data.errors?.length){$$('.hfc-capability').forEach(host=>{const note=document.createElement('div');note.className='hfc-inline-state';note.setAttribute('role','status');note.textContent='部分连接状态未能读取，请刷新后核对。';host.appendChild(note)})}
   document.body.dataset.huidiFunctionalClosure='v1';
 }
+window.addEventListener('huidi:service-settings-changed',()=>scheduleCapabilities(0,true));
 function scheduleCapabilities(ms=80,force=false){clearTimeout(renderTimer);renderTimer=setTimeout(()=>renderCapabilities(force).catch(()=>{}),ms)}
 function openTabSpec(spec){
   const [view,key]=String(spec||'').split(':');if(!view||!key)return;
@@ -142,15 +143,19 @@ function inlineState(anchor,title,detail,tone='warn',actions=''){
 async function handleMailConnect(btn){
   const provider=clean(btn.dataset.connect);if(!provider)return;
   const label=provider==='gmail'?'Gmail':'Outlook';
+  const popup=window.open('about:blank','huidi-mail-connect','width=720,height=760');
   const old=btn.textContent;btn.disabled=true;btn.textContent='正在检查…';
   try{
     const out=await api(`/api/mail/connect/${encodeURIComponent(provider)}/start`);
     if(!out?.authorize_url)throw new Error(`${label} 尚未完成连接配置`);
-    window.open(out.authorize_url,'huidi-mail-connect','width=720,height=760');
+    const dest=new URL(out.authorize_url);
+    if(dest.protocol!=='https:'||!['accounts.google.com','login.microsoftonline.com'].includes(dest.hostname))throw new Error('授权地址异常');
+    if(popup)popup.location.href=dest.href;else throw new Error('浏览器拦截了授权窗口，请允许此站点弹窗后重新连接');
     inlineState(btn,`${label} 授权已打开`,'完成授权后返回本页刷新邮箱状态。','ok');
   }catch(e){
+    popup?.close();
     inlineState(btn,`${label} 当前不能连接`,clean(e.message||e)||'平台 OAuth 尚未配置。','warn',
-      '<button type="button" data-hfc-other-mail>连接其他邮箱</button><button type="button" data-hfc-tab="online-admin:sources">查看连接状态</button>');
+      '<button type="button" data-hfc-other-mail>连接其他邮箱</button><button type="button" data-hfc-tab="online-admin:sources">配置邮箱应用</button>');
   }finally{btn.disabled=false;btn.textContent=old}
 }
 async function handleMailSync(btn){
@@ -199,7 +204,7 @@ async function runMap(btn){
   if(!keyword){inlineState(btn,'先填写产品 / 行业','例如 stainless steel hinge、hardware importer。');$('#hsMapKeyword')?.focus();return}
   const {services}=await capabilities();
   if(!services?.map_search){
-    const box=$('#hsMapResults');if(box){box.className='';box.innerHTML='<div class="hfc-engine-missing"><b>地图找客户引擎尚未连接</b><span>当前部署没有配置在线地点搜索来源，所以这里不会生成假公司。平台管理员连接地图搜索服务后，本页会直接返回真实公司与坐标。</span><button type="button" data-hfc-tab="online-admin:base">查看全部引擎状态</button></div>'}
+    const box=$('#hsMapResults');if(box){box.className='';box.innerHTML='<div class="hfc-engine-missing"><b>地图找客户引擎尚未连接</b><span>当前部署没有配置在线地点搜索来源，所以这里不会生成假公司。在数据来源配置 Serper 并检查连接后，本页会直接返回真实公司与坐标。</span><button type="button" data-hfc-tab="online-admin:sources">查看全部引擎状态</button></div>'}
     return;
   }
   const box=$('#hsMapResults');if(box){box.className='';box.innerHTML='<div class="hfc-map-empty">正在读取真实地点结果…</div>'}
@@ -207,7 +212,7 @@ async function runMap(btn){
     const out=await api('/api/tools/map-leads',{method:'POST',body:JSON.stringify({keyword,location,buyer_type:buyer,limit:30})});
     renderMapResults(out.items||[]);
   }catch(e){
-    if(box)box.innerHTML=`<div class="hfc-engine-missing"><b>地图查询没有完成</b><span>${esc(clean(e.message||e))}</span><button type="button" data-hfc-tab="online-admin:base">查看引擎状态</button></div>`;
+    if(box)box.innerHTML=`<div class="hfc-engine-missing"><b>地图查询没有完成</b><span>${esc(clean(e.message||e))}</span><button type="button" data-hfc-tab="online-admin:sources">查看引擎状态</button></div>`;
   }
 }
 async function addMapLead(i,btn){

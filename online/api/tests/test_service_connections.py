@@ -22,6 +22,9 @@ from app.tenant_storage import reset_current_organization, set_current_organizat
 class FakeResponse:
     status_code = 200
 
+    def json(self):
+        return {"result": {"rate": "test-only"}}
+
 
 class FakeHttpClient:
     last_call = None
@@ -35,7 +38,7 @@ class FakeHttpClient:
     def __exit__(self, exc_type, exc, tb):
         return False
 
-    def post(self, url, headers=None, json=None):
+    def post(self, url, headers=None, json=None, params=None):
         FakeHttpClient.last_call = {"url": url, "headers": headers or {}, "json": json or {}}
         return FakeResponse()
 
@@ -178,7 +181,8 @@ class ServiceConnectionTests(unittest.TestCase):
                     with patch("app.service_connections.httpx.Client", FakeHttpClient):
                         out = test_resolved_service(db, "tariff")
                     self.assertTrue(out["ok"])
-                    self.assertEqual(out["message"], "HS / 关税连接正常")
+                    self.assertTrue(out["verified"])
+                    self.assertIn("本次接口检查通过", out["message"])
                     self.assertEqual(FakeHttpClient.last_call["url"], "https://tariff.example/check")
                     self.assertEqual(
                         FakeHttpClient.last_call["headers"].get("Authorization"),

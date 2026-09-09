@@ -69,7 +69,7 @@ class SmtpCredentialRequest(BaseModel):
     port: int = Field(default=587, ge=1, le=65535)
     security: str = Field(default="starttls", max_length=40)
     username: str = Field(default="", max_length=255)
-    password: str = Field(min_length=1, max_length=4096)
+    password: str = Field(default="", max_length=4096)
 
 
 class SmtpSendRequest(BaseModel):
@@ -238,6 +238,13 @@ def save_smtp_credentials(mailbox_id: int, req: SmtpCredentialRequest, db: Sessi
     if security not in SMTP_SECURITY:
         raise HTTPException(400, "连接方式不支持")
     row = _credential(db, mailbox_id)
+    # Never forward an old secret to a newly entered server or login identity.
+    if row and row.secret_ciphertext and not req.password and (
+        row.host.lower() != req.host.strip().lower() or
+        row.username != (req.username.strip() or mailbox.email) or
+        row.port != req.port or row.security != security
+    ):
+        raise HTTPException(400, "更换 SMTP 服务器、端口、连接方式或账号时，请重新填写授权码")
     if not row:
         row = MailboxCredential(mailbox_id=mailbox_id)
         db.add(row)
@@ -245,7 +252,10 @@ def save_smtp_credentials(mailbox_id: int, req: SmtpCredentialRequest, db: Sessi
     row.port = req.port
     row.security = security
     row.username = req.username.strip() or mailbox.email
-    row.secret_ciphertext = _encrypt_secret(req.password)
+    if req.password:
+        row.secret_ciphertext = _encrypt_secret(req.password)
+    elif not row.secret_ciphertext:
+        raise HTTPException(400, "首次连接请填写邮箱专用密码或授权码")
     row.updated_at = datetime.now(timezone.utc)
     mailbox.auth_mode = "smtp"
     mailbox.provider = "smtp"
@@ -284,7 +294,13 @@ def test_smtp_connection(mailbox_id: int, db: Session = Depends(get_db)):
         mailbox.connection_state = "error"
         mailbox.updated_at = datetime.now(timezone.utc)
         db.commit()
-        raise HTTPException(502, f"邮箱连接失败：{type(exc).__name__}: {exc}") from exc
+        if isinstance(exc, smtplib.SMTPAuthenticationError):
+            message = "邮箱授权被拒绝，请检查账号、专用密码或授权码，并确认服务商已开启 SMTP"
+        elif isinstance(exc, (TimeoutError, OSError)):
+            message = "SMTP 连接失败或超时，请检查服务器出站网络、主机和端口；部分托管套餐限制 SMTP，可改用 Gmail / Outlook HTTPS 授权接口"
+        else:
+            message = "SMTP 连接未通过，请检查服务商要求的端口及 SSL / STARTTLS 安全方式"
+        raise HTTPException(502, message) from None
 
 
 @app.get("/api/leads/{lead_id}/delivery-readiness")
