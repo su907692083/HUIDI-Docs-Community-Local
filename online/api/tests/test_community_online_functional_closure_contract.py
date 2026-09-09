@@ -22,6 +22,7 @@ class CommunityOnlineFunctionalClosureContractTests(unittest.TestCase):
         for marker in (
             "/api/services/status",
             "/api/acquisition/status",
+            "/api/mail/accounts",
             "/api/mail/connect/",
             "/api/mail/sync-all",
             "/api/tools/map-leads",
@@ -50,6 +51,27 @@ class CommunityOnlineFunctionalClosureContractTests(unittest.TestCase):
             "贸易记录",
             "HS / 关税",
             "船期 / 物流",
+        ):
+            self.assertIn(marker, self.script)
+
+    def test_online_page_copy_overrides_local_positioning_only_in_fused_layer(self):
+        for marker in (
+            "home:['外贸工作台'",
+            "mail:['客户沟通'",
+            "'online-find':['客户开发'",
+            "'online-intel':['市场情报'",
+            "'online-admin':['团队与设置'",
+            "normalizePageCopy",
+        ):
+            self.assertIn(marker, self.script)
+        self.assertIn("const online=window.HUIDI_COMMUNITY_ONLINE", self.script)
+
+    def test_mail_readiness_requires_a_connected_enabled_mailbox(self):
+        for marker in (
+            "x?.enabled&&x?.connection_state==='connected'",
+            "mailReady=connectedMail.length>0",
+            "尚无已连接发送邮箱",
+            "先连接至少一个发送邮箱",
         ):
             self.assertIn(marker, self.script)
 
