@@ -44,7 +44,7 @@ class TaskFlowContract(unittest.TestCase):
         self.assertIn("repositories?.[name]?.list?.()", self.task)
 
     def test_keyboard_choice_layer_remains_the_country_fallback(self):
-        self.assertIn('data-huidi-choice=\\"country\\"', self.task)
+        self.assertIn('data-huidi-choice="country"', self.task)
         self.assertIn('搜索其他国家 / 地区', self.task)
 
 
