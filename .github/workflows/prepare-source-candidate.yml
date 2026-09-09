@@ -33,7 +33,7 @@ jobs:
           EXPECTED_HEAD: ${{ github.sha }}
         run: |
           python - <<'PY'
-          import base64, hashlib, json, os, re, subprocess, tempfile, urllib.request, zlib
+          import base64, hashlib, json, os, re, subprocess, urllib.request, urllib.parse, zlib
           from pathlib import Path
           repo = os.environ['REPOSITORY']
           head = os.environ['EXPECTED_HEAD']
@@ -54,7 +54,23 @@ jobs:
           candidates = [p for p in changed if re.fullmatch(r'tools/source-candidates/[A-Za-z0-9_-]+\.json',p)]
           assert len(candidates) == 1, 'Exactly one explicit source plan required'
           envelope = json.loads(Path(candidates[0]).read_text())
-          raw = zlib.decompress(base64.b64decode(envelope['payload'],validate=True))
+          if 'source_url' in envelope:
+              url = envelope['source_url']
+              parsed = urllib.parse.urlsplit(url)
+              assert parsed.scheme == 'https' and (parsed.hostname or '').endswith('.oaiusercontent.com')
+              assert not parsed.username and not parsed.password and parsed.port in (None,443)
+              with urllib.request.urlopen(url, timeout=45) as response:
+                  assert urllib.parse.urlsplit(response.geturl()).hostname == parsed.hostname
+                  raw = response.read(2000000)
+          elif 'payload_blobs' in envelope:
+              assert 1 <= len(envelope['payload_blobs']) <= 20
+              parts = []
+              for sha in envelope['payload_blobs']:
+                  assert re.fullmatch(r'[0-9a-f]{40}',sha)
+                  parts.append(base64.b64decode(api('git/blobs/' + sha)['content']))
+              raw = zlib.decompress(b''.join(parts))
+          else:
+              raw = zlib.decompress(base64.b64decode(envelope['payload'],validate=True))
           assert len(raw) < 2000000
           assert hashlib.sha256(raw).hexdigest() == envelope['sha256'], 'Plan digest mismatch'
           plan = json.loads(raw)
