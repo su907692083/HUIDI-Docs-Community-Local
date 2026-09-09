@@ -21,11 +21,11 @@ function sync(){
  const state=read(),bar=$('.htf-context'),span=bar?.querySelector('span');if(!bar||!span||!state.task)return;
  span.innerHTML=values(state).map(x=>`<em>${esc(x)}</em>`).join('');
 }
-function schedule(){setTimeout(sync,0);setTimeout(sync,80);}
+function schedule(){for(const ms of [0,80,140,460,940])setTimeout(sync,ms)}
 document.addEventListener('click',e=>{if(e.target.closest('[data-htf-task],[data-htf-set],[data-htf-go],[data-htf-edit]'))schedule()},true);
 window.addEventListener('HUIDI:community-online-view',schedule);
 window.addEventListener('HUIDI:fusion-pane-rendered',schedule);
 window.addEventListener('storage',schedule);
-window.HUIDITaskContextR1=Object.freeze({version:'1.0.0',sync,values});
+window.HUIDITaskContextR1=Object.freeze({version:'1.0.1',sync,values});
 schedule();
 })();
