@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 from pathlib import Path
 
 from fastapi import HTTPException, Request
@@ -36,6 +37,35 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "on",
 }
 FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-13"
+
+def _fusion_content_revision() -> str:
+    digest = hashlib.sha256()
+    for folder in (COMMUNITY_PUBLIC_DIR, Path(__file__).resolve().parents[1] / "web"):
+        for asset in sorted(folder.glob("*")):
+            if asset.is_file() and asset.suffix in {".js", ".css"}:
+                digest.update(asset.name.encode())
+                digest.update(asset.read_bytes())
+    return digest.hexdigest()[:16]
+
+FUSION_ASSET_VERSION += "-" + _fusion_content_revision()
+# Only the existing tab owner's critical presentation is inlined. Hidden panels
+# also use the HTML hidden property: a missing stylesheet cannot expose them.
+_CRITICAL_TABS = (
+    '<style data-huidi-critical-tabs>'
+    '.fv2-pane[hidden]{display:none!important}'
+    '.fv2-tabs{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin:8px 0}'
+    '.fv2-tab{font:inherit;font-size:13px;min-height:34px;padding:6px 12px;border:1px solid #d9e2ec;border-radius:7px;background:#fff;color:#36516f;cursor:pointer}'
+    '.fv2-tab[aria-selected=true]{background:#eaf2ff;color:#185fc2;border-color:#a5c3ef}'
+    '.huidi-tab-more{position:relative;margin-left:auto}'
+    '.huidi-tab-more:not([open])>.huidi-tab-more-menu{display:none}'
+    '</style>'
+)
+
+def _interaction_assets(html: str, *, workspace: bool = False) -> str:
+    meta = f'<meta name="huidi-asset-revision" content="{FUSION_ASSET_VERSION}">'
+    assets = meta + (_CRITICAL_TABS if workspace else "")
+    assets += f'<script defer src="/community/huidi-quick-choices-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+    return html.replace("</head>", assets + "</head>", 1)
 
 
 def community_surface_status() -> dict[str, object]:
@@ -120,7 +150,7 @@ def _workspace_html() -> str:
         '<body class="huidi-community-online ',
         1,
     )
-    return html
+    return _interaction_assets(html, workspace=True)
 
 
 def _editor_html() -> str:
@@ -149,7 +179,7 @@ def _editor_html() -> str:
             html = html.replace("</head>", script + "</head>", 1)
         else:
             raise HTTPException(status_code=500, detail="Community editor head is invalid")
-    return html
+    return _interaction_assets(html)
 
 
 # These exact routes must be registered before the StaticFiles /community mount.

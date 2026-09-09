@@ -34,7 +34,7 @@ function loadModule(key){
  }
  let tag;
  const task=new Promise((resolve,reject)=>{
-  tag=document.createElement('script');tag.src=`/assets/${file}`;tag.dataset.fv2Module=file;
+  tag=document.createElement('script');tag.src=`/assets/${file}?v=${encodeURIComponent(document.querySelector('meta[name=huidi-asset-revision]')?.content||'ux-v1')}`;tag.dataset.fv2Module=file;
   const timer=setTimeout(()=>{tag.remove();reject(new Error(`${file} 加载超时，请重试`))},12000);
   tag.onload=()=>{clearTimeout(timer);window[global]?resolve(window[global]):reject(new Error(`${file} 未初始化`))};
   tag.onerror=()=>{clearTimeout(timer);tag.remove();reject(new Error(`${file} 加载失败，请重试`))};
@@ -76,7 +76,13 @@ function button(label,attrs='',tone=''){return `<button class="fv2-btn ${tone}" 
 function ensurePane(view,key){return view?.querySelector(`[data-fv2-pane="${CSS.escape(key)}"]`)||null}
 function tabState(viewId){return savedTabs[viewId]||'base'}
 function setHeading(view,title,desc){const h=view?.querySelector(':scope > .section-head h3'),p=view?.querySelector(':scope > .section-head p');if(h&&title)h.textContent=title;if(p&&desc)p.textContent=desc}
-function installTabs(viewId,tabs,title,desc){const view=$(`#view-${viewId}`);if(!view||view.dataset.fv2Installed==='1')return;view.dataset.fv2Installed='1';setHeading(view,title,desc);const head=view.querySelector(':scope > .section-head');const movable=[...view.children].filter(x=>x!==head);const bar=document.createElement('div');bar.className='fv2-tabs';bar.setAttribute('role','tablist');const area=document.createElement('div');area.className='fv2-panes';for(const t of tabs){const b=document.createElement('button');b.className='fv2-tab';b.dataset.fv2Tab=t.key;b.dataset.fv2View=viewId;b.textContent=t.label;bar.appendChild(b);const pane=document.createElement('section');pane.className='fv2-pane';pane.dataset.fv2Pane=t.key;pane.dataset.fv2View=viewId;if(t.key==='base')movable.forEach(n=>pane.appendChild(n));else pane.innerHTML='<div class="fv2-empty">首次打开时读取真实数据。</div>';area.appendChild(pane)}if(head)head.insertAdjacentElement('afterend',bar);else view.prepend(bar);bar.insertAdjacentElement('afterend',area);bar.addEventListener('click',e=>{const b=e.target.closest('[data-fv2-tab]');if(b)openTab(viewId,b.dataset.fv2Tab,{history:'push'})});openTab(viewId,'base')}
+function installTabs(viewId,tabs,title,desc){const view=$(`#view-${viewId}`);if(!view||view.dataset.fv2Installed==='1')return;view.dataset.fv2Installed='1';setHeading(view,title,desc);const head=view.querySelector(':scope > .section-head');const movable=[...view.children].filter(x=>x!==head);const bar=document.createElement('div');bar.className='fv2-tabs';bar.setAttribute('role','tablist');const area=document.createElement('div');area.className='fv2-panes';for(const t of tabs){const b=document.createElement('button');b.className='fv2-tab';b.dataset.fv2Tab=t.key;b.dataset.fv2View=viewId;b.textContent=t.label;bar.appendChild(b);const pane=document.createElement('section');pane.className='fv2-pane';pane.dataset.fv2Pane=t.key;pane.dataset.fv2View=viewId;pane.hidden=true;pane.id=`huidi-pane-${viewId}-${t.key}`;b.id=`huidi-tab-${viewId}-${t.key}`;b.type='button';b.setAttribute('aria-controls',pane.id);pane.setAttribute('aria-labelledby',b.id);if(t.key==='base')movable.forEach(n=>pane.appendChild(n));else pane.replaceChildren();area.appendChild(pane)}if(head)head.insertAdjacentElement('afterend',bar);else view.prepend(bar);bar.insertAdjacentElement('afterend',area);bar.addEventListener('click',e=>{const b=e.target.closest('[data-fv2-tab]');if(b)openTab(viewId,b.dataset.fv2Tab,{history:'push'})});bar.addEventListener('keydown',e=>{
+ const target=e.target.closest('[role=tab]');if(!target)return;
+ const visible=[...bar.querySelectorAll('[role=tab]')].filter(b=>b.getClientRects().length);
+ let i=visible.indexOf(target);if(i<0)return;
+ if(e.key==='ArrowRight')i=(i+1)%visible.length;else if(e.key==='ArrowLeft')i=(i+visible.length-1)%visible.length;else if(e.key==='Home')i=0;else if(e.key==='End')i=visible.length-1;else return;
+ e.preventDefault();visible[i].focus();openTab(viewId,visible[i].dataset.fv2Tab,{history:'push'});
+ });openTab(viewId,'base')}
 function openTab(viewId,key,options={}){
  const view=$(`#view-${viewId}`),pane=ensurePane(view,key);if(!pane)return Promise.resolve(false);
  const spec=`${viewId}:${key}`;
@@ -84,7 +90,7 @@ function openTab(viewId,key,options={}){
  if(previous&&previous!==pane)rememberPane(previous);
  savedTabs[viewId]=key;
  view.querySelectorAll(':scope > .fv2-tabs .fv2-tab').forEach(b=>{const selected=b.dataset.fv2Tab===key;b.classList.toggle('active',selected);b.setAttribute('role','tab');b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1});
- view.querySelectorAll(':scope > .fv2-panes > .fv2-pane').forEach(p=>{p.classList.toggle('active',p===pane);p.setAttribute('role','tabpanel')});
+ view.querySelectorAll(':scope > .fv2-panes > .fv2-pane').forEach(p=>{p.classList.toggle('active',p===pane);p.hidden=p!==pane;p.setAttribute('role','tabpanel')});
  if(view.classList.contains('active')){
   const url=new URL(location.href);if(key==='base')url.searchParams.delete('tab');else url.searchParams.set('tab',key);
   if(url.href!==location.href)history[options.history==='push'?'pushState':'replaceState'](null,'',url);

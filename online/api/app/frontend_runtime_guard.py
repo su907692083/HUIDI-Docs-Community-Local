@@ -74,7 +74,7 @@ async def frontend_runtime_guard(request, call_next):
             background=response.background,
         )
     if path.startswith("/assets/"):
-        response.headers["Cache-Control"] = _ASSET_CACHE_CONTROL
+        response.headers["Cache-Control"] = (_ASSET_CACHE_CONTROL if request.query_params.get("v") == ASSET_VERSION else "no-cache, max-age=0, must-revalidate")
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
         response.headers["X-HUIDI-Asset-Version"] = ASSET_VERSION

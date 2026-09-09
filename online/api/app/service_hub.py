@@ -108,7 +108,7 @@ def _provider_status(db: Session) -> dict[str, Any]:
             "outlook": _configured("OUTLOOK_CLIENT_ID", db) and _configured("OUTLOOK_CLIENT_SECRET", db),
             "company_mail": True,
         },
-        "lead_search": provider_ready("serper", db),
+        "lead_search": provider_ready("serper", db) or provider_ready("tavily", db),
         "map_search": provider_ready("serper", db),
         "trade_news": provider_ready("serper", db),
         "company_check": company["connected"],

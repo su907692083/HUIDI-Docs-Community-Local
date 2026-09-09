@@ -2,9 +2,9 @@ name: HUIDI Provider Configuration Audit
 on:
   push:
     branches: ['online/v0.1-lead-workbench']
-    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
+    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', '.github/workflows/provider-configuration-audit.yml']
   pull_request:
-    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
+    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', '.github/workflows/provider-configuration-audit.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -40,6 +40,8 @@ jobs:
           python -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee /tmp/huidi-provider-evidence/UNIT-TESTS.txt
       - name: Exercise actual configuration pages in Chromium
         run: python tools/provider_configuration_browser_audit.py --output /tmp/huidi-provider-evidence/browser
+      - name: Exercise human clicks, keyboard choices and stylesheet-failure isolation
+        run: python tools/workspace_human_operation_audit.py --output /tmp/huidi-provider-evidence/human
       - uses: actions/upload-artifact@v4
         if: always()
         with:

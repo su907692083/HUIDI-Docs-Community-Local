@@ -69,7 +69,7 @@ async function action(root,e){
 }
 const cardHTML=card;
 async function mount(host){
- css();host.innerHTML='<div class="ss-root"><p>先配置需要的来源，再检查连接。找客户只需 Serper 或 Tavily 任一项；邮箱授权与联系人搜索相互独立。</p><div data-ss-list>正在读取配置…</div><div class="ss-links"><button type="button" data-ss-mail>邮箱账号 / SMTP 连接</button><button type="button" data-ss-rss>新闻 RSS / Atom 来源</button></div></div>';
+ css();host.innerHTML='<div class="ss-root fv2-panel"><p>先配置需要的来源，再检查连接。找客户只需 Serper 或 Tavily 任一项；邮箱授权与联系人搜索相互独立。</p><div data-ss-list>正在读取配置…</div><div class="ss-links"><button type="button" data-ss-mail>邮箱账号 / SMTP 连接</button><button type="button" data-ss-rss>新闻 RSS / Atom 来源</button></div></div>';
  const root=$('.ss-root',host);root.onclick=e=>{if(e.target.closest('[data-ss-mail]')){if(window.HUIDICommunityOnlineFullV2){close();document.querySelector('.nav-btn[data-view="mail"]')?.click();window.HUIDICommunityOnlineFullV2.openTab('mail','mailbox');}else window.HUIDIDailyServices?.open?.('mailbox');return;}if(e.target.closest('[data-ss-rss]')){openRss().catch(err=>{root.querySelector('p').textContent=err.message;});return;}action(root,e);};
  root.addEventListener('input',e=>{const card=e.target.closest('[data-ss-card]');if(card&&!e.target.hasAttribute('data-ss-paste')){card.dataset.dirty='1';status(card,'有未保存修改，保存后再检查。');}});
  try{const [out,adapters]=await Promise.all([api('/api/service-connections'),api('/api/service-adapters')]);const state={items:out.items||[],adapters:Object.fromEntries((adapters.items||[]).map(x=>[x.service_key,x]))};mounts.set(root,state);$('[data-ss-list]',root).innerHTML=state.items.map(x=>cardHTML(x,state.adapters[x.service_key])).join('');}catch(e){$('[data-ss-list]',root).textContent=e.message;}

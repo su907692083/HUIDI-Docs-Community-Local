@@ -44,7 +44,7 @@ function normalizeCounts(){
   normalizePageCopy();
 }
 function scheduleCleanup(ms=70){clearTimeout(cleanupTimer);cleanupTimer=setTimeout(normalizeCounts,ms)}
-function statusLabel(on){return on?'可用':'待连接'}
+function statusLabel(on){return on?'已配置':'待配置'}
 function statusClass(on){return on?'ready':'off'}
 function providers(xs){return Array.isArray(xs)&&xs.length?xs.join(' → '):'未配置'}
 async function capabilities(force=false){
@@ -82,7 +82,7 @@ async function renderCapabilities(force=false){
     const cards=[
       capCard('企业搜索',!!a.live_company_search,`来源：${providers(a.company_search_order)}`,'online-find:base'),
       capCard('联系人搜索',!!a.live_contact_search,`来源：${providers(a.contact_search_order)}`,'online-find:contacts'),
-      capCard('地图线索',!!s.map_search,s.map_search?'在线地点搜索已连接':'在线地图搜索服务尚未配置','online-find:map'),
+      capCard('地图线索',!!s.map_search,s.map_search?'已配置地点搜索，查询时验证':'在线地图搜索服务尚未配置','online-find:map'),
       capCard('邮件触达',mailReady,mailReady?`${connectedMail.length} 个发送邮箱已连接`:`尚无已连接发送邮箱 · SMTP / IMAP ${s.mail?.company_mail?'可配置':'未启用'}`,'mail:mailbox')
     ];
     $('.hfc-cap-grid',find).innerHTML=cards.join('');
@@ -90,8 +90,8 @@ async function renderCapabilities(force=false){
   const mail=ensureCapHost('mail','邮件发送引擎','邮箱连接、待发送与自动跟进仍使用同一套邮件 Owner，不再用弹窗报错代替状态。');
   if(mail){
     $('.hfc-cap-grid',mail).innerHTML=[
-      capCard('Gmail OAuth',!!s.mail?.gmail,s.mail?.gmail?'平台 OAuth 已配置':'平台尚未配置 Gmail OAuth','mail:inbox'),
-      capCard('Outlook OAuth',!!s.mail?.outlook,s.mail?.outlook?'平台 OAuth 已配置':'平台尚未配置 Outlook OAuth','mail:inbox'),
+      capCard('Gmail OAuth',!!s.mail?.gmail,s.mail?.gmail?'应用已配置，邮箱仍需授权':'平台尚未配置 Gmail OAuth','mail:inbox'),
+      capCard('Outlook OAuth',!!s.mail?.outlook,s.mail?.outlook?'应用已配置，邮箱仍需授权':'平台尚未配置 Outlook OAuth','mail:inbox'),
       capCard('其他邮箱',!!s.mail?.company_mail,'可使用 SMTP / IMAP 连接','mail:mailbox'),
       capCard('自动跟进',mailReady,mailReady?'已有发送邮箱，可按确认序列执行':'先连接至少一个发送邮箱','mail:sequences')
     ].join('');
@@ -99,12 +99,12 @@ async function renderCapabilities(force=false){
   const intel=ensureCapHost('online-intel','外贸数据与判断引擎','把市场、企业、贸易、关税、汇率和物流能力放回各自业务位置。');
   if(intel){
     $('.hfc-cap-grid',intel).innerHTML=[
-      capCard('市场动态',!!s.trade_news,s.trade_news?'在线新闻搜索已连接':'在线新闻来源尚未配置','online-intel:live'),
-      capCard('企业核验',!!s.company_check,s.company_check?'企业数据源已连接':'企业核验数据源待连接','online-find:company'),
-      capCard('贸易记录',!!s.trade_data,s.trade_data?'贸易数据源已连接':'贸易数据源待连接','online-intel:trade'),
-      capCard('HS / 关税',!!s.tariff,s.tariff?'关税数据源已连接':'关税数据源待连接','online-intel:tariff'),
+      capCard('市场动态',!!s.trade_news,s.trade_news?'已配置新闻来源，查询时验证':'在线新闻来源尚未配置','online-intel:live'),
+      capCard('企业核验',!!s.company_check,s.company_check?'已配置企业来源，查询时验证':'企业核验数据源待连接','online-find:company'),
+      capCard('贸易记录',!!s.trade_data,s.trade_data?'已配置贸易来源，查询时验证':'贸易数据源待连接','online-intel:trade'),
+      capCard('HS / 关税',!!s.tariff,s.tariff?'已配置关税来源，查询时验证':'关税数据源待连接','online-intel:tariff'),
       capCard('汇率',s.fx===true,'内置实时汇率服务','online-intel:fx'),
-      capCard('船期 / 物流',!!s.shipping,s.shipping?'物流数据源已连接':'物流数据源待连接','online-intel:shipping')
+      capCard('船期 / 物流',!!s.shipping,s.shipping?'已配置物流来源，查询时验证':'物流数据源待连接','online-intel:shipping')
     ].join('');
   }
   const admin=ensureCapHost('online-admin','工作区能力总览','这里负责“能否使用/从哪里接入”；业务页面只负责使用，不重复配置。');
