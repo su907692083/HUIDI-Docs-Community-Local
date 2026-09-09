@@ -26,7 +26,7 @@ jobs:
         with:
           node-version: '20'
       - run: python -m pip install -r online/api/requirements.txt
-      - name: Verify exact source, test edits, create unpromoted commit
+      - name: Verify exact source and emit tested source blobs only
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -41,9 +41,9 @@ jobs:
           assert repo == 'su907692083/HUIDI-Docs-Community-Local'
           assert os.environ['GITHUB_REF'] == 'refs/heads/' + branch
           def api(path, payload=None):
-              assert path.startswith(('git/ref/', 'git/commits/', 'git/blobs', 'git/trees', 'git/commits'))
+              assert path.startswith(('git/ref/', 'git/commits/', 'git/blobs'))
               if payload is not None:
-                  assert path in ('git/blobs', 'git/trees', 'git/commits'), 'Ref writes are forbidden'
+                  assert path == 'git/blobs', 'Only unreferenced source blobs may be written'
               req = urllib.request.Request('https://api.github.com/repos/' + repo + '/' + path,
                   data=json.dumps(payload).encode() if payload is not None else None,
                   headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'], 'Accept':'application/vnd.github+json', 'Content-Type':'application/json'})
@@ -115,12 +115,10 @@ jobs:
               content = Path(name).read_text()
               blob = api('git/blobs',{'content':content,'encoding':'utf-8'})
               entries.append({'path':name,'mode':'100644','type':'blob','sha':blob['sha']})
-          tree = api('git/trees',{'base_tree':parent['tree']['sha'],'tree':entries})
-          commit = api('git/commits',{'message':'fix: repair fullsite pagination, shared pane lifecycle and mail continuity','tree':tree['sha'],'parents':[head]})
-          result = {'parent':head,'candidate':commit['sha'],'tree':tree['sha'],'branch':branch,'promoted':False,'files':list(files),'plan_sha256':envelope['sha256']}
-          (output/'CANDIDATE.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
+          result = {'parent':head,'base_tree':parent['tree']['sha'],'branch':branch,'promoted':False,'entries':entries,'plan_sha256':envelope['sha256']}
+          (output/'VERIFIED-BLOBS.json').write_text(json.dumps(result,ensure_ascii=False,indent=2))
           print(json.dumps(result,ensure_ascii=False))
-          print('Candidate prepared only. No branch ref, main, PR merge or deployment was changed.')
+          print('Source blobs prepared only. No commit, branch ref, main, PR merge or deployment was changed.')
           PY
       - uses: actions/upload-artifact@v4
         if: always()
