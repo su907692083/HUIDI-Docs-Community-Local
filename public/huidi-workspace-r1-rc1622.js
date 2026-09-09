@@ -95,7 +95,7 @@ function idsFor(view,key,d){if(!key||key==='all')return null;switch(view){
  case'documents':return new Set(d.docs.filter(x=>key==='quotation'?getDocType(x)==='quotation':key==='order'?['proforma_invoice','sales_contract'].includes(getDocType(x)):key==='shipment'?['commercial_invoice','packing_list'].includes(getDocType(x)):key==='recent'?recent(x.updated_at||x.created_at,7):true).map(x=>String(x.id)));
  default:return null}}
 function tableFor(view){return $(`#view-${view} tbody`)}
-function applyFilter(view,d){const tbody=tableFor(view);if(!tbody)return;const key=state.filters[view]||'all',ids=idsFor(view,key,d);$$('tr',tbody).forEach(row=>{const id=rowId(row);row.hidden=!!ids&&!!id&&!ids.has(String(id))});}
+function applyFilter(view,d){if(window.HUIDIWorkspaceClosure?.owns?.(view))return;const tbody=tableFor(view);if(!tbody)return;const key=state.filters[view]||'all',ids=idsFor(view,key,d);$$('tr',tbody).forEach(row=>{const id=rowId(row);row.hidden=!!ids&&!!id&&!ids.has(String(id))});}
 function markRows(){['deals','customers','products','documents'].forEach(v=>$$(`#view-${v} tbody tr`).forEach(r=>{if(rowId(r))r.classList.add('workspace-r1-clickable')}))}
 
 function detailField(label,value,full=false){return `<div class="workspace-r1-detail-field${full?' full':''}"><span>${esc(label)}</span><b>${esc(value||'—')}</b></div>`}
@@ -113,12 +113,13 @@ function refresh(){const d=data();navCounts(d);renderHomeR1(d);renderSummaries(d
 function scheduleRefresh(ms=0){clearTimeout(scheduleRefresh.t);scheduleRefresh.t=setTimeout(refresh,ms)}
 function onClick(e){
  const navAction=e.target.closest('[data-r1-nav]');if(navAction){const view=navAction.dataset.r1Nav,key=navAction.dataset.r1Filter||'all';state.filters[view]=key;nav(view);scheduleRefresh();return}
- const chip=e.target.closest('[data-r1-summary]');if(chip){const view=chip.dataset.r1Summary;state.filters[view]=chip.dataset.r1Filter||'all';refresh();return}
+ const chip=e.target.closest('[data-r1-summary]');if(chip){const view=chip.dataset.r1Summary;state.filters[view]=chip.dataset.r1Filter||'all';window.HUIDIWorkspaceClosure?.resetAndRender?.(view);refresh();return}
  if(e.target.closest('.workspace-r1-drawer-close'))return;
  if(e.target.closest('button,a,input,label,select,textarea,[data-action]')){scheduleRefresh(40);return}
- const row=e.target.closest('tbody tr.workspace-r1-clickable');if(row){const view=document.body.dataset.huidiView||'',id=rowId(row);if(['deals','customers','products','documents'].includes(view)&&id)showDetail(view,id)}
+ const row=e.target.closest('tbody tr.workspace-r1-clickable');if(row&&!window.HUIDIWorkspaceClosure){const view=document.body.dataset.huidiView||'',id=rowId(row);if(['deals','customers','products','documents'].includes(view)&&id)showDetail(view,id)}
  const navBtn=e.target.closest('.nav-btn');if(navBtn)scheduleRefresh();
 }
 function boot(){document.body.classList.add('workspace-r1');document.body.dataset.workspaceRelease=VERSION;buildNav();drawer();refresh();document.addEventListener('click',onClick);document.addEventListener('input',()=>scheduleRefresh(20),true);document.addEventListener('change',()=>scheduleRefresh(20),true);window.addEventListener('HUIDI:local-data-change',()=>scheduleRefresh(20));window.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.drawer)closeDrawer()});try{window.HUIDILocalCore?.bus?.on?.(()=>scheduleRefresh(30))}catch(_){}}
+window.HUIDIWorkspaceSummary=Object.freeze({filterRows(view,rows){const ids=idsFor(view,state.filters[view]||'all',data());return ids?rows.filter(x=>ids.has(String(x.id))):rows},clear(view){state.filters[view]='all'}});
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();

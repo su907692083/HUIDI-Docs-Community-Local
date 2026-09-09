@@ -120,3 +120,28 @@ body.huidi-community-online .mg-modal{max-width:min(900px,calc(100vw - 32px));ma
 body.huidi-community-online .mg-modal :is(input,select,textarea){font-size:13px;min-height:34px}
 body.huidi-community-online button:focus-visible,body.huidi-community-online summary:focus-visible{outline:2px solid #2174dc;outline-offset:2px}
 @media(max-width:900px){body.huidi-community-online .fv2-table-wrap{max-height:none}body.huidi-community-online .fv2-toolbar{flex-wrap:wrap}}
+/* Shared list geometry: preserve original event owners and keep paging below the viewport table. */
+body.huidi-community-online .fv2-table b{font-size:13px;color:var(--text,#304b67)}
+body.huidi-community-online :is(.fv2-section-title h4,.fv2-panel h4){font-size:14px}
+body.huidi-community-online :is(.fv2-section-title p,.fv2-item span,.fv2-item small,.huidi-source-purpose,.huidi-source-header){font-size:12px;line-height:1.5}
+body.huidi-community-online .fv2-table-wrap{max-height:calc(100vh - 325px)}
+body.huidi-community-online .huidi-pagebar{font-size:12px;min-height:42px}
+body.huidi-community-online .view .table-wrap{max-height:calc(100vh - 230px);overflow:auto}
+body.huidi-community-online .view .table-wrap thead th{position:sticky;top:0;z-index:2;background:var(--panel,#fff)}
+body.huidi-community-online .view .table-wrap td{font-size:13px;line-height:1.5}
+body.huidi-community-online .view .table-wrap td b{font-size:13px}
+body.huidi-community-online .sidebar-foot{background:transparent!important}
+body.huidi-community-online .huidi-online-more>summary span{color:var(--muted,#67758b);font-size:12px}
+body.huidi-community-online .huidi-online-more>summary small{font-size:10px}
+body.huidi-community-online :is(.hf-search,.fv2-toolbar){min-width:0;grid-template-columns:minmax(160px,1.3fr) minmax(130px,.8fr) minmax(160px,1fr) auto;gap:8px}
+body.huidi-community-online .hf-search>button{white-space:nowrap;min-width:94px}
+@media(min-width:1000px){
+ body.huidi-community-online .main>.view:not(#view-home)>.section-head{margin-top:-44px;margin-bottom:8px;min-height:36px;padding-left:min(50%,600px)}
+ body.huidi-community-online .main>.view:not(#view-home)>.section-head .section-actions{flex-wrap:nowrap}
+}
+@media(max-width:999px){body.huidi-community-online .hf-search{grid-template-columns:1fr 1fr}body.huidi-community-online .fv2-table-wrap{max-height:calc(100vh - 340px)}}
+html[data-theme="dark"] body.huidi-community-online :is(.fv2-panel,.fv2-table-wrap,.hf-online-block,.hs-card,.sq-card,.sq-item,.hfc-capability,.hfc-cap,.huidi-tab-more-menu){background:var(--panel,#172338);color:var(--text,#e7eef7);border-color:var(--line,#304057)}
+html[data-theme="dark"] body.huidi-community-online :is(.fv2-input,.fv2-select,.fv2-textarea,.hs-field input,.sq-field input,.sq-field textarea){background:var(--bg,#111b2b);color:var(--text,#e7eef7);border-color:var(--line,#304057)}
+html[data-theme="dark"] body.huidi-community-online :is(.fv2-table b,.hs-item b,.sq-item b,.hfc-cap b){color:var(--text,#e7eef7)}
+html[data-theme="dark"] body.huidi-community-online .fv2-table th{background:var(--panel,#172338);color:var(--text,#e7eef7)}
+

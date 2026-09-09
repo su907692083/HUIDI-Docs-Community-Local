@@ -72,8 +72,8 @@ def run_browser(base, output, strict):
         page.on('response', lambda r: report['http_errors'].append({'url': r.url.replace(base, ''), 'status': r.status}) if r.status >= 400 else None)
         page.on('dialog', lambda d: (report['dialogs'].append(d.message), d.dismiss()))
         page.goto(base + '/', wait_until='domcontentloaded')
-        page.wait_for_function("document.documentElement.dataset.huidiCloud==='ready'", timeout=35000)
-        page.wait_for_function('Boolean(window.HUIDICommunityOnlineFullV2)', timeout=15000)
+        page.wait_for_function("() => document.documentElement.dataset.huidiCloud==='ready'", timeout=35000)
+        page.wait_for_function('() => Boolean(window.HUIDICommunityOnlineFullV2)', timeout=15000)
         page.wait_for_timeout(1600)
         page.evaluate("""() => {const r=HUIDILocalCore.repositories;
           r.customers.upsert({id:'qa-customer',company:'QA Customer Long Company Name',contact:'Tester',email:'qa@example.test',country:'Germany'});
@@ -154,7 +154,7 @@ def run_browser(base, output, strict):
             next_button = page.locator('[data-fv2-pool-next]')
             if next_button.count():
                 next_button.click()
-                page.wait_for_function("Number(document.querySelector('#fv2PoolTable')?.dataset.page)===2")
+                page.wait_for_function("() => Number(document.querySelector('#fv2PoolTable')?.dataset.page)===2")
                 report['checks'].append({'name':'lead-pool-page-2','ok':True})
             else:
                 report['checks'].append({'name':'lead-pool-page-2','ok':False,'detail':'No functional page-2 control'})
@@ -171,7 +171,7 @@ def run_browser(base, output, strict):
             click_nav('online-find'); click_tab('online-find','pool')
             page.locator('#fv2PoolQ').fill('QA Buyer 000')
             page.locator('[data-fv2-pool-form] button[type="submit"]').click()
-            page.wait_for_function("document.querySelectorAll('#fv2PoolTable tbody tr[data-fv2-lead]').length===1")
+            page.wait_for_function("() => document.querySelectorAll('#fv2PoolTable tbody tr[data-fv2-lead]').length===1")
             row=page.locator('#fv2PoolTable tbody tr[data-fv2-lead]').first
             lead_id=row.get_attribute('data-fv2-lead')
             row.locator('[data-hdw-route-action="develop"]').click()
@@ -196,6 +196,72 @@ def run_browser(base, output, strict):
             page.set_viewport_size({'width':1640,'height':920})
         except Exception as error:
             report['checks'].append({'name':'expanded-navigation-forms','ok':False,'detail':str(error)})
+        # Business list/summary/pager owners, actual edit windows and durable document chain.
+        try:
+            awaitables = page.evaluate("""async () => {
+              const r=HUIDILocalCore.repositories;
+              const pad=n=>String(n).padStart(3,'0');
+              const fixture={
+                customers:n=>({id:'scale-c-'+pad(n),company:'Scale Customer '+pad(n),email:'scale-'+n+'@example.test',country:'Germany'}),
+                products:n=>({id:'scale-p-'+pad(n),name:'Scale Product '+pad(n),sku:'SC-'+pad(n),spec:'SUS304 test fixture',unit:'PCS',category:n>=50?'Late match':'General'}),
+                deals:n=>({id:'scale-d-'+pad(n),title:'Scale Inquiry '+pad(n),customer_id:'qa-customer',product_ids:['qa-product'],stage:n>=50?'production':'new_inquiry'}),
+                mail:n=>({id:'scale-m-'+pad(n),subject:'Scale Draft '+pad(n),to:'qa@example.test',body:'Not sent test fixture',updated_at:'2026-09-09T00:00:00Z'}),
+                brands:n=>({id:'scale-b-'+pad(n),brand_name:'Scale Brand '+pad(n),company_name:'Scale Company '+pad(n)}),
+                templates:n=>({id:'scale-t-'+pad(n),name:'Scale Terms '+pad(n),trade_terms:'FOB'}),
+                recycle:n=>({id:'scale-r-'+pad(n),type:'product',source_key:'huidi_local_products_v1',original_id:'removed-'+pad(n),payload:{id:'removed-'+pad(n),name:'Removed Product '+pad(n)},deleted_at:'2026-09-09T00:00:00Z'})
+              };
+              for(const [key,fn] of Object.entries(fixture))r[key].replaceAll([...r[key].list(),...Array.from({length:55},(_,n)=>fn(n))]);
+              for(let n=0;n<55;n++)await HUIDILocalDB.putDocument({id:'scale-doc-'+pad(n),document_type:'quotation',document_no:'QA-Q-'+pad(n),customer_name:'QA Customer',customer_id:'qa-customer',product_ids:['qa-product'],updated_at:'2026-09-09T00:00:00Z',payload:{documentType:'quotation',state:{documentType:'quotation',fields:{documentType:'quotation',documentNo:'QA-Q-'+pad(n),customerName:'QA Customer'},items:[]}}});
+              return true;
+            }""")
+            assert awaitables
+            page.wait_for_timeout(1600)
+            for view in ['customers','products','deals','documents','mail','brands','templates','recycle']:
+                click_nav(view)
+                if view=='mail':click_tab('mail','base')
+                pager=page.locator(f'#view-{view} .huidi-pagebar')
+                pager.locator('[data-page-next]').click()
+                page.wait_for_timeout(750)
+                assert pager.get_attribute('data-page')=='2',(view,pager.inner_text())
+                report['checks'].append({'name':view+'-page-2-survives-legacy-refresh','ok':True})
+                snapshot('paged_'+view)
+            click_nav('deals')
+            page.locator('[data-r1-summary="deals"][data-r1-filter="execution"]').click()
+            page.wait_for_timeout(750)
+            assert page.locator('#view-deals .huidi-pagebar').get_attribute('data-total')=='5'
+            assert page.locator('#dealRows tr[data-quick-id]').count()==5
+            report['checks'].append({'name':'summary-filter-applied-before-pagination','ok':True})
+            click_nav('customers')
+            row=page.locator('#customerRows tr[data-quick-id]').first
+            row.click()
+            page.wait_for_selector('#huidiQuickBackdrop.open')
+            assert page.locator('.workspace-r1-drawer.open').count()==0
+            page.keyboard.press('Escape')
+            page.wait_for_selector('#huidiQuickBackdrop.open',state='hidden')
+            report['checks'].append({'name':'single-detail-drawer-escape','ok':True})
+            row.click()
+            page.locator('#huidiQuickBackdrop [data-action="customer-edit"]').click()
+            page.wait_for_selector('#appDialog[open]')
+            assert page.locator('#huidiQuickBackdrop.open').count()==0
+            page.keyboard.press('Escape')
+            report['checks'].append({'name':'quick-detail-to-native-edit-and-return','ok':True})
+            # Discard no data: opening and cancelling the permanent-delete dialog must preserve the row.
+            click_nav('recycle')
+            before=page.evaluate('() => HUIDILocalCore.repositories.recycle.list().length')
+            page.locator('#recycleRows [data-action="recycle-empty"]').first.click()
+            page.wait_for_selector('#appDialog[open] [data-trash-cancel]')
+            page.locator('[data-trash-cancel]').click()
+            assert page.evaluate('() => HUIDILocalCore.repositories.recycle.list().length')==before
+            report['checks'].append({'name':'permanent-delete-cancel-preserves-data','ok':True})
+            click_nav('documents')
+            with page.expect_navigation(wait_until='domcontentloaded'):
+                page.locator('#docRows [data-action="doc-next"]').first.click()
+            assert '/community/editor.html' in page.url and 'proforma_invoice' in page.url,page.url
+            page.wait_for_timeout(900)
+            page.screenshot(path=str(output/'native-pi-chain.png'))
+            report['checks'].append({'name':'paged-quotation-opens-native-PI-chain','ok':True})
+        except Exception as error:
+            report['checks'].append({'name':'core-business-paging-dialog-chain','ok':False,'detail':str(error)})
         (output / 'REPORT.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
         print(json.dumps({'screens':len(report['screens']),'failures':report['failures'],'page_errors':report['page_errors'],'checks':report['checks']}, ensure_ascii=False), flush=True)
         browser.close()
