@@ -35,7 +35,7 @@ COMMUNITY_SURFACE_ENABLED = os.getenv("HUIDI_COMMUNITY_SURFACE", "0").strip().lo
     "yes",
     "on",
 }
-FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-12"
+FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-13"
 
 
 def community_surface_status() -> dict[str, object]:
@@ -60,14 +60,15 @@ def _workspace_html() -> str:
 
     # Community remains the visual/business owner. The first fusion layer adds
     # shared Online summaries and base pages. Full Fusion V2 then mounts the
-    # existing Online capability modules into those Community pages. The final
-    # shell-closure stylesheet only tightens the fused Online presentation.
+    # existing Online capability modules into those Community pages. Final
+    # shell/functional closures only position those existing capabilities.
     if "huidi-community-online-fusion.js" not in html:
         head_assets = (
             f'<link rel="stylesheet" href="/community/huidi-community-online-fusion.css?v={FUSION_ASSET_VERSION}">'
             f'<link rel="stylesheet" href="/community/huidi-community-online-full-v2.css?v={FUSION_ASSET_VERSION}">'
             f'<link rel="stylesheet" href="/community/huidi-community-online-development-workbench-v1.css?v={FUSION_ASSET_VERSION}">'
             f'<link rel="stylesheet" href="/community/huidi-community-online-shell-closure-v1.css?v={FUSION_ASSET_VERSION}">'
+            f'<link rel="stylesheet" href="/community/huidi-community-online-functional-closure-v1.css?v={FUSION_ASSET_VERSION}">'
             f'<script src="/community/huidi-community-online-fusion.js?v={FUSION_ASSET_VERSION}"></script>'
         )
         if "</head>" not in html:
@@ -75,20 +76,26 @@ def _workspace_html() -> str:
         html = html.replace("</head>", head_assets + "</head>", 1)
 
     # The interactive country map reads public Natural Earth geometry from the
-    # same upstream source used by the existing Online map project. This CSP
-    # relaxation applies only to the deployed fused response, never Local files.
+    # same upstream source used by the existing Online map project. Company map
+    # results may render a selected real coordinate with OpenStreetMap. These
+    # CSP relaxations apply only to the deployed fused response, never Local.
     html = html.replace(
         "connect-src 'self';",
         "connect-src 'self' https://cdn.jsdelivr.net;",
+        1,
+    )
+    html = html.replace(
+        "frame-src 'none';",
+        "frame-src https://www.openstreetmap.org;",
         1,
     )
 
     # Online navigation and Full Fusion V2 must run after Community R1-R6 have
     # completed the mature sidebar and page owners. The development workbench is
     # loaded after the capability tabs. A scoped routing bridge connects
-    # potential-customer / follow-up / reply rows into that same workbench. The
-    # final shell closure only reorganizes those existing DOM owners; it creates
-    # no second business owner and never observes document.body.
+    # potential-customer / follow-up / reply rows into that same workbench.
+    # Shell closure compacts the DOM; functional closure runs last and connects
+    # the visible pages to existing status, mail, map and sequence capabilities.
     if "huidi-community-online-nav-v1.js" not in html:
         body_assets = (
             f'<script src="/community/huidi-community-online-nav-v1.js?v={FUSION_ASSET_VERSION}"></script>'
@@ -97,6 +104,7 @@ def _workspace_html() -> str:
             f'<script src="/community/huidi-community-online-development-workbench-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-development-routing-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-shell-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+            f'<script src="/community/huidi-community-online-functional-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
         )
         if "</body>" not in html:
             raise HTTPException(status_code=500, detail="Community workspace body is invalid")
