@@ -23,8 +23,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Prepare exact-source evidence directory
+        run: |
+          mkdir -p /tmp/huidi-provider-evidence
+          git rev-parse HEAD > /tmp/huidi-provider-evidence/SOURCE-COMMIT.txt
       - name: Install isolated test dependencies
         run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
           python -m pip install -r online/api/requirements.txt playwright
           python -m playwright install --with-deps chromium
       - name: Verify runtime configuration, tenant isolation and secret handling
@@ -34,8 +40,6 @@ jobs:
           DATABASE_URL: 'sqlite:////tmp/huidi-provider-runtime-ci.db'
         run: |
           set -euo pipefail
-          mkdir -p /tmp/huidi-provider-evidence
-          git rev-parse HEAD > /tmp/huidi-provider-evidence/SOURCE-COMMIT.txt
           cd online/api
           python -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee /tmp/huidi-provider-evidence/UNIT-TESTS.txt
       - name: Exercise actual configuration pages in Chromium
