@@ -268,9 +268,28 @@ def run_browser(base, output, strict):
             with page.expect_navigation(wait_until='domcontentloaded'):
                 page.locator('#docRows [data-action="doc-next"]').first.click()
             assert '/community/editor.html' in page.url and 'proforma_invoice' in page.url,page.url
-            page.wait_for_timeout(900)
+            def editor_ready(kind):
+                page.wait_for_function("""(kind) => {
+                  const p=document.querySelector('#piPaper');
+                  return !document.documentElement.classList.contains('huidi-rc1615-boot') &&
+                    document.querySelector('#documentType')?.value===kind && p &&
+                    (p.dataset.fpDocumentKind===kind || p.dataset.fpDocumentType===kind) &&
+                    p.innerText.trim().length>100 && p.getBoundingClientRect().width>100;
+                }""", arg=kind, timeout=25000)
+                page.wait_for_timeout(900)
+                assert not page.evaluate('() => document.documentElement.scrollWidth > innerWidth + 2'), 'Editor viewport overflow'
+            editor_ready('proforma_invoice')
             page.screenshot(path=str(output/'native-pi-chain.png'))
-            report['checks'].append({'name':'paged-quotation-opens-native-PI-chain','ok':True})
+            report['checks'].append({'name':'paged-quotation-opens-native-PI-chain','ok':True,'preview_ready':True})
+            page.locator('#buyerName').fill('QA Chain Customer')
+            for kind in ['sales_contract','commercial_invoice','packing_list']:
+                page.locator('#huidiLocalNextHeader > summary').click()
+                with page.expect_navigation(wait_until='domcontentloaded'):
+                    page.locator(f'#huidiLocalNextMenu [data-local-next="{kind}"]').click()
+                editor_ready(kind)
+                assert page.locator('#buyerName').input_value()=='QA Chain Customer', 'Downstream customer facts lost'
+                page.screenshot(path=str(output/('native-chain-'+kind+'.png')))
+                report['checks'].append({'name':'native-chain-'+kind+'-rendered-with-customer','ok':True})
         except Exception as error:
             report['checks'].append({'name':'core-business-paging-dialog-chain','ok':False,'detail':str(error)})
         (output / 'REPORT.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
