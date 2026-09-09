@@ -131,7 +131,8 @@ def exercise(base: str, output: Path) -> None:
             for width,height in [(1366,768),(1640,920),(2048,1118)]:
                 page.set_viewport_size({'width':width,'height':height})
                 for view in ['online-find','mail','online-intel','online-admin']:
-                    nav(view);check(f'{view} viewport {width}: single panel',only_one_pane(view))
+                    nav(view,'world-map' if view=='online-intel' else 'base')
+                    check(f'{view} viewport {width}: single panel',only_one_pane(view))
                     check(f'{view} viewport {width}: no document overflow',page.evaluate('() => document.documentElement.scrollWidth<=innerWidth+2'))
                     shot(f'{view}-{width}')
             # Network failure simulation without changing any browser security policy.
