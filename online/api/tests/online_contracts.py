@@ -38,7 +38,7 @@ CHECKS = {
     "World intelligence owner": ("app/world_intelligence.py", "/api/intel/world"),
     "World market country detail": ("app/world_intelligence.py", "/api/intel/world/country"),
     "World map neutral business marker": ("app/world_intelligence.py", "不代表冲突等级或风险等级"),
-    "World intelligence map UI": ("web/world-intelligence-map.js", "全球市场地图"),
+    "World intelligence map UI": ("web/world-intelligence-map.js", "互动地球 · 全球市场驾驶舱"),
     "Secondary page closure": ("web/secondary-page-closure.js", "返回询盘列表"),
     "Server product persistence": ("app/product_memory.py", "ProductBrainRecord"),
     "Product server sync": ("web/product-brain-server.js", "/api/product-brains/import"),
