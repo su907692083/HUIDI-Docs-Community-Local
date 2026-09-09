@@ -30,6 +30,27 @@ def pointer_click(driver: webdriver.Chrome, element) -> None:
     ActionChains(driver).move_to_element(element).pause(0.05).click().perform()
 
 
+def dom_text(driver: webdriver.Chrome, selector: str) -> str:
+    return str(
+        driver.execute_script(
+            "return document.querySelector(arguments[0])?.textContent || '';",
+            selector,
+        )
+        or ""
+    )
+
+
+def dom_attr(driver: webdriver.Chrome, selector: str, attribute: str) -> str:
+    return str(
+        driver.execute_script(
+            "return document.querySelector(arguments[0])?.getAttribute(arguments[1]) || '';",
+            selector,
+            attribute,
+        )
+        or ""
+    )
+
+
 def seed_deals(driver: webdriver.Chrome, stamp: str) -> list[int]:
     result = driver.execute_async_script(
         """
@@ -106,7 +127,7 @@ def main() -> None:
         hub = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".side [data-huidi-doc-workbench]")))
         pointer_click(driver, hub)
         wait.until(EC.visibility_of_element_located((By.ID, "hdwList")))
-        wait.until(lambda d: "第 1/" in d.find_element(By.CSS_SELECTOR, "#hdwPager small").text)
+        wait.until(lambda d: "第 1/" in dom_text(d, "#hdwPager small"))
 
         first_rows = driver.find_elements(By.CSS_SELECTOR, "#hdwList [data-hdw-deal]")
         assert len(first_rows) == 50, len(first_rows)
@@ -125,7 +146,7 @@ def main() -> None:
             """
         )
         pointer_click(driver, next_button)
-        wait.until(lambda d: "第 2/" in d.find_element(By.CSS_SELECTOR, "#hdwPager small").text)
+        wait.until(lambda d: "第 2/" in dom_text(d, "#hdwPager small"))
         fetch_urls = driver.execute_script("return Array.from(window.__hdwFetchUrls || []);")
         assert any(
             url.startswith("/api/business/deals?") and "page=2" in url and "page_size=50" in url
@@ -150,14 +171,15 @@ def main() -> None:
         assert target_id not in first_ids
         pointer_click(driver, target)
         wait.until(
-            lambda d: d.find_element(By.CSS_SELECTOR, f'[data-hdw-deal="{target_id}"]').get_attribute("class").find("active") >= 0
+            lambda d: "active"
+            in dom_attr(d, f'[data-hdw-deal="{target_id}"]', "class").split()
         )
 
         quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hdw-doc="quotation"]')))
         pointer_click(driver, quote)
-        frame = wait.until(EC.presence_of_element_located((By.ID, "hwpDocumentFrame")))
-        wait.until(lambda d: "/documents/online/" in (d.find_element(By.ID, "hwpDocumentFrame").get_attribute("src") or ""))
-        frame_src = frame.get_attribute("src") or ""
+        wait.until(EC.presence_of_element_located((By.ID, "hwpDocumentFrame")))
+        wait.until(lambda d: "/documents/online/" in dom_attr(d, "#hwpDocumentFrame", "src"))
+        frame_src = dom_attr(driver, "#hwpDocumentFrame", "src")
         assert "8765" not in frame_src, frame_src
 
         deal = get_json(driver, f"/api/business/deals/{target_id}")
