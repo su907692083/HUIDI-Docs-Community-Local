@@ -1,0 +1,29 @@
+(()=>{
+'use strict';
+if(!window.HUIDI_COMMUNITY_ONLINE?.enabled||window.HUIDIWorldMarketCommandCenter)return;
+const $=(s,r=document)=>r.querySelector(s),clean=v=>String(v??'').trim();
+let scheduled=false;
+const TAB_FIELDS={
+ live:['#hsIntelCountry'],
+ trade:['#hsTradeCountry'],
+ tariff:['#hsTariffDest'],
+ shipping:['#hufCountry']
+};
+function taskState(){try{return JSON.parse(sessionStorage.getItem('huidi.task-flow/v1')||'{}')||{}}catch(_){return{}}}
+function currentCountry(){const selected=$('.wi-country-market.selected')?.dataset.marketId;const country=clean($('#ciCountry')?.value);const state=taskState();return{code:clean(selected),label:country||clean(state.marketLabel||state.market),product:clean(state.productLabel||state.product)}}
+function setValue(selector,value){const el=$(selector);if(!el||!value)return;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}))}
+function fillAfter(tab,country,product){[60,180,420].forEach(ms=>setTimeout(()=>{for(const selector of TAB_FIELDS[tab]||[])setValue(selector,country);if(tab==='live')setValue('#hsIntelKeyword',product);if(tab==='trade')setValue('#hsTradeKeyword',product);if(tab==='shipping')setValue('#hufKeyword',product)},ms))}
+async function openIntel(tab){const {label,product}=currentCountry();await window.HUIDICommunityOnlineFullV2?.openTab?.('online-intel',tab,{history:'push'});fillAfter(tab,label,product)}
+async function openFind(){const {label,product}=currentCountry();$('.nav-btn[data-view="online-find"]')?.click();setTimeout(()=>{window.HUIDICommunityOnlineFullV2?.openTab?.('online-find','base',{history:'push'});[50,180].forEach(ms=>setTimeout(()=>{setValue('#hfCountry',label);setValue('#hfKeyword',product);$('#hfKeyword')?.focus()},ms))},60)}
+async function openCustomerIntel(){await window.HUIDICommunityOnlineFullV2?.openTab?.('online-intel','customer-intel',{history:'push'});const {label,product}=currentCountry();[80,260].forEach(ms=>setTimeout(()=>{setValue('#ciCountry',label);setValue('#ciKeyword',product)},ms))}
+function style(){if($('#huidi-world-command-style'))return;const s=document.createElement('style');s.id='huidi-world-command-style';s.textContent=`
+.wmcc{margin:0 0 10px;padding:10px;border:1px solid #dce6f1;border-radius:10px;background:#f7fbff}.wmcc-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:7px}.wmcc-head b{font-size:11px;color:#294666}.wmcc-head span{font-size:8.5px;color:#6e8197}.wmcc-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.wmcc-actions button{min-height:34px;border:1px solid #d7e2ee;border-radius:8px;background:#fff;color:#36536f;font-size:9px;font-weight:800;cursor:pointer}.wmcc-actions button.primary{background:#1d63e9;border-color:#1d63e9;color:#fff}.wmcc-actions button:hover{border-color:#8eb4e6;background:#eef6ff}.wmcc-actions button.primary:hover{background:#1557d1}.wmcc-context{margin-top:6px;font-size:8px;color:#7a899a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}@media(max-width:900px){.wmcc-actions{grid-template-columns:repeat(2,minmax(0,1fr))}}
+`;document.head.appendChild(s)}
+function build(){const side=$('#wiSide');if(!side||!side.querySelector('.wi-stats')||side.querySelector('.wmcc'))return false;const {label,product}=currentCountry();const box=document.createElement('section');box.className='wmcc';box.innerHTML=`<div class="wmcc-head"><div><b>这个市场接下来做什么？</b><span>复用当前国家与产品，不重新输入。</span></div></div><div class="wmcc-actions"><button class="primary" data-wmcc="find">找当地买家</button><button data-wmcc="customer-intel">客户情报</button><button data-wmcc="trade">贸易记录</button><button data-wmcc="tariff">HS / 关税</button><button data-wmcc="fx">汇率</button><button data-wmcc="shipping">船期 / 物流</button><button data-wmcc="live">市场动态</button></div><div class="wmcc-context">${label?`市场：${label}`:'市场待选择'}${product?` · 产品：${product}`:''}</div>`;side.insertBefore(box,side.querySelector('.wi-section')||side.firstChild?.nextSibling);box.addEventListener('click',e=>{const b=e.target.closest('[data-wmcc]');if(!b)return;const key=b.dataset.wmcc;if(key==='find')return openFind();if(key==='customer-intel')return openCustomerIntel();return openIntel(key)});return true}
+function schedule(){if(scheduled)return;scheduled=true;queueMicrotask(()=>{scheduled=false;style();build()});[120,320,700].forEach(ms=>setTimeout(build,ms))}
+function promoteSurface(){const view=$('#view-online-intel');const world=view?.querySelector('[data-fv2-tab="world-map"]');const title=view?.querySelector(':scope > .section-head h3'),desc=view?.querySelector(':scope > .section-head p');if(title)title.textContent='全球市场';if(desc)desc.textContent='从世界地图进入国家市场，直接串联客户、贸易、关税、汇率与物流。';if(world)world.textContent='全球互动地图';const nav=$('.nav-btn[data-view="online-intel"] .nav-copy small');if(nav)nav.textContent='互动地图、客户、贸易、关税、汇率、物流'}
+function bind(){document.addEventListener('click',e=>{if(e.target.closest('#wiMap,[data-wi-market],[data-wi-open],[data-wi-region]'))schedule()},true);document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('.wi-country-market'))schedule()},true);window.addEventListener('HUIDI:fusion-pane-rendered',e=>{if(e.detail?.view==='online-intel'){promoteSurface();schedule()}});window.addEventListener('HUIDI:community-online-view',e=>{if(e.detail?.view==='online-intel'){setTimeout(promoteSurface,40);schedule()}})}
+function boot(){style();promoteSurface();bind();schedule()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.HUIDIWorldMarketCommandCenter=Object.freeze({version:'1.0.0',build,schedule,promoteSurface});
+})();
