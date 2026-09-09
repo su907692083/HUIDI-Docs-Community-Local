@@ -28,8 +28,8 @@ try:
   assert auth.status==200,auth.text()
   page=ctx.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
   page.goto(base+'/',wait_until='domcontentloaded')
-  page.wait_for_function("document.documentElement.dataset.huidiCloud==='ready'",timeout=35000)
-  page.wait_for_function('Boolean(window.HUIDICommunityOnlineFullV2)',timeout=15000)
+  page.wait_for_function("() => document.documentElement.dataset.huidiCloud==='ready'",timeout=35000)
+  page.wait_for_function('() => Boolean(window.HUIDICommunityOnlineFullV2)',timeout=15000)
   page.locator('.nav-btn[data-view="online-admin"]').click()
   page.locator('#view-online-admin [data-fv2-tab="sources"]').click()
   page.wait_for_selector('#view-online-admin [data-ss-card="tavily"]',timeout=15000)
@@ -45,7 +45,7 @@ try:
   tav.locator('[data-ss-apply]').click()
   assert tav.locator('[data-ss-field="token"]').input_value()=='fixture-browser-private-value'
   tav.locator('[data-ss-save]').click()
-  page.wait_for_function("document.querySelector('#view-online-admin [data-ss-card=tavily] [data-ss-state]')?.textContent.includes('已配置')")
+  page.wait_for_function("() => document.querySelector('#view-online-admin [data-ss-card=tavily] [data-ss-state]')?.textContent.includes('已配置')")
   assert tav.locator('[data-ss-field="token"]').input_value()==''
   status=ctx.request.get(base+'/api/acquisition/status').json();assert status['tavily'] is True,status
   assert 'fixture-browser-private-value' not in ctx.request.get(base+'/api/service-connections').text()
@@ -56,14 +56,14 @@ try:
   gmail.locator('[data-ss-field="client_id"]').fill('fixture-browser.apps.googleusercontent.com')
   gmail.locator('[data-ss-field="client_secret"]').fill('fixture-browser-oauth-private-value')
   gmail.locator('[data-ss-save]').click()
-  page.wait_for_function("document.querySelector('#view-online-admin [data-ss-card=gmail_oauth] [data-ss-state]')?.textContent.includes('已配置')")
+  page.wait_for_function("() => document.querySelector('#view-online-admin [data-ss-card=gmail_oauth] [data-ss-state]')?.textContent.includes('已配置')")
   gmail.locator('[data-ss-test]').click()
   gmail.locator('[data-ss-result]').filter(has_text='尚未验证应用密钥').wait_for()
   assert gmail.locator('[data-ss-field="redirect_uri"]').input_value()==base+'/api/mail/connect/gmail/callback'
   page.screenshot(path=str(OUT/'gmail-configured-not-authorized.png'))
   # Persist/reload test, no secret reappears.
   page.reload(wait_until='domcontentloaded')
-  page.wait_for_function('Boolean(window.HUIDICommunityOnlineFullV2)',timeout=15000)
+  page.wait_for_function('() => Boolean(window.HUIDICommunityOnlineFullV2)',timeout=15000)
   page.locator('.nav-btn[data-view="online-admin"]').click()
   page.locator('#view-online-admin [data-fv2-tab="sources"]').click()
   page.wait_for_selector('#view-online-admin [data-ss-card="tavily"]')

@@ -33,6 +33,7 @@ jobs:
           HUIDI_SECRET_KEY: 'isolated-provider-ci-only-not-production'
           DATABASE_URL: 'sqlite:////tmp/huidi-provider-runtime-ci.db'
         run: |
+          set -euo pipefail
           mkdir -p /tmp/huidi-provider-evidence
           git rev-parse HEAD > /tmp/huidi-provider-evidence/SOURCE-COMMIT.txt
           cd online/api
