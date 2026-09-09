@@ -15,6 +15,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 BASE = os.environ.get("HUIDI_WORLD_MARKET_BASE", "http://127.0.0.1:18096").rstrip("/")
 PASSWORD = "world-market-browser-password-2026"
 PRODUCT = "Garden Tool Set"
+ACTIVE_MAP = '#view-online-intel [data-fv2-pane="world-map"].active'
 
 
 def main() -> None:
@@ -43,8 +44,8 @@ def main() -> None:
 
     def selected_code() -> str:
         return driver.execute_script(
-            "return document.querySelector('.wi-country-market.selected')?.dataset.marketId || "
-            "document.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';"
+            "const p=document.querySelector(arguments[0]);return p?.querySelector('.wi-country-market.selected')?.dataset.marketId || p?.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';",
+            ACTIVE_MAP,
         )
 
     def wait_selected(code: str) -> None:
@@ -69,7 +70,7 @@ def main() -> None:
         phase(f"click-{code}")
         driver.execute_script("window.HUIDIWorldCountryInteraction?.resetView?.()")
         time.sleep(0.12)
-        marker = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, f'.wi-country-marker[data-market-id="{code}"]'))
+        marker = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, f'{ACTIVE_MAP} .wi-country-marker[data-market-id="{code}"]'))
         point = driver.execute_script(
             "const r=arguments[0].getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};",
             marker,
@@ -105,6 +106,24 @@ def main() -> None:
         assert metrics["mapWidth"] > 250 and metrics["sideWidth"] > 250, metrics
         assert metrics["overlap"] <= 1, metrics
         print("layout-pass", width, height, metrics, flush=True)
+
+    def visible_svg_point(svg):
+        driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});", svg)
+        time.sleep(0.12)
+        return driver.execute_script(
+            """
+            const svg=arguments[0],r=svg.getBoundingClientRect();
+            const vw=window.innerWidth,vh=window.innerHeight;
+            for(const fy of [.5,.35,.65,.2,.8]) for(const fx of [.5,.35,.65,.2,.8]){
+              const x=Math.max(2,Math.min(vw-3,r.left+r.width*fx));
+              const y=Math.max(2,Math.min(vh-3,r.top+r.height*fy));
+              const hit=document.elementFromPoint(x,y);
+              if(hit && (hit===svg || svg.contains(hit))) return {x,y,tag:hit.tagName,cls:hit.getAttribute?.('class')||'',rect:{left:r.left,top:r.top,width:r.width,height:r.height},vw,vh};
+            }
+            return {x:null,y:null,rect:{left:r.left,top:r.top,width:r.width,height:r.height},vw,vh,tag:'',cls:''};
+            """,
+            svg,
+        )
 
     try:
         phase("login")
@@ -149,7 +168,7 @@ def main() -> None:
         first = driver.execute_script("return document.querySelector('#view-online-intel > .fv2-tabs > .fv2-tab')?.dataset.fv2Tab || ''")
         assert first == "world-map", first
         wait.until(lambda d: d.execute_script("return Boolean(window.HUIDIWorldIntelligenceMap && document.querySelector('#wiMap'))"))
-        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('.wi-country-stage .wi-country-svg'))"))
+        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector(arguments[0]+' .wi-country-stage .wi-country-svg'))", ACTIVE_MAP))
 
         assert_layout(1280, 720)
         assert_layout(1640, 920)
@@ -165,25 +184,27 @@ def main() -> None:
 
         phase("zoom")
         driver.execute_script("window.HUIDIWorldCountryInteraction?.resetView?.()")
-        svg = driver.find_element(By.CSS_SELECTOR, ".wi-country-svg")
+        svg = driver.find_element(By.CSS_SELECTOR, f"{ACTIVE_MAP} .wi-country-svg")
         before = svg.get_attribute("viewBox")
-        center = driver.execute_script(
-            "const r=arguments[0].getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};",
-            svg,
-        )
+        point = visible_svg_point(svg)
+        assert point["x"] is not None, f"no visible SVG wheel target: {point}"
+        print("wheel-target", point, "before", before, flush=True)
+        driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": point["x"], "y": point["y"], "button": "none", "buttons": 0})
         driver.execute_cdp_cmd(
             "Input.dispatchMouseEvent",
-            {"type": "mouseWheel", "x": center["x"], "y": center["y"], "deltaX": 0, "deltaY": -180},
+            {"type": "mouseWheel", "x": point["x"], "y": point["y"], "deltaX": 0, "deltaY": -180},
         )
         wait.until(lambda _d: svg.get_attribute("viewBox") != before)
+        print("wheel-after", svg.get_attribute("viewBox"), flush=True)
 
         phase("drag")
         zoomed = svg.get_attribute("viewBox")
         ocean = driver.execute_script(
             """
-            const svg=arguments[0],r=svg.getBoundingClientRect();
+            const svg=arguments[0],r=svg.getBoundingClientRect(),vw=window.innerWidth,vh=window.innerHeight;
             for(const fy of [.88,.78,.68,.58,.48,.38,.28,.18]) for(const fx of [.08,.18,.28,.38,.48,.58,.68,.78,.88]){
-              const x=r.left+r.width*fx,y=r.top+r.height*fy;if(document.elementFromPoint(x,y)===svg)return{x,y};
+              const x=Math.max(2,Math.min(vw-3,r.left+r.width*fx)),y=Math.max(2,Math.min(vh-3,r.top+r.height*fy));
+              if(document.elementFromPoint(x,y)===svg)return{x,y};
             }
             return null;
             """,
