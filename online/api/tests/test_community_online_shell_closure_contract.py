@@ -20,13 +20,19 @@ class CommunityOnlineShellClosureContractTests(unittest.TestCase):
         self.shell = (PUBLIC / "huidi-community-online-shell-closure-v1.js").read_text(encoding="utf-8")
         self.shell_css = (PUBLIC / "huidi-community-online-shell-closure-v1.css").read_text(encoding="utf-8")
 
-    def test_deployed_surface_loads_final_shell_closure_last(self):
-        self.assertIn('FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-12"', self.surface)
+    def test_deployed_surface_loads_shell_before_functional_closure(self):
+        self.assertIn('FUSION_ASSET_VERSION = "HUIDI-COMMUNITY-ONLINE-FUSION-13"', self.surface)
         self.assertIn("huidi-community-online-shell-closure-v1.css", self.surface)
         self.assertIn("huidi-community-online-shell-closure-v1.js", self.surface)
+        self.assertIn("huidi-community-online-functional-closure-v1.css", self.surface)
+        self.assertIn("huidi-community-online-functional-closure-v1.js", self.surface)
         self.assertLess(
             self.surface.index("huidi-community-online-development-routing-v1.js"),
             self.surface.index("huidi-community-online-shell-closure-v1.js"),
+        )
+        self.assertLess(
+            self.surface.index("huidi-community-online-shell-closure-v1.js"),
+            self.surface.index("huidi-community-online-functional-closure-v1.js"),
         )
         self.assertNotIn("huidi-community-online-shell-closure-v1", self.workspace)
 
