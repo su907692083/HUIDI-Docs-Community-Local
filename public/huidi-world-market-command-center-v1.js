@@ -10,7 +10,7 @@ const TAB_FIELDS={
  shipping:['#hufCountry']
 };
 function taskState(){try{return JSON.parse(sessionStorage.getItem('huidi.task-flow/v1')||'{}')||{}}catch(_){return{}}}
-function currentCountry(){const selected=$('.wi-country-market.selected')?.dataset.marketId;const country=clean($('#ciCountry')?.value);const state=taskState();return{code:clean(selected),label:country||clean(state.marketLabel||state.market),product:clean(state.productLabel||state.product)}}
+function currentCountry(){const selected=$('.wi-country-market.selected')?.dataset.marketId;const country=clean($('#ciCountry')?.value);const state=taskState();const product=clean($('#wiProductContext')?.value||$('#ciKeyword')?.value||state.productLabel||state.product);return{code:clean(selected),label:country||clean(state.marketLabel||state.market),product}}
 function setValue(selector,value){const el=$(selector);if(!el||!value)return false;el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));el.dispatchEvent(new Event('change',{bubbles:true}));return clean(el.value)===clean(value)}
 function applyPending(){const handoff=pending;if(!handoff||Date.now()>handoff.expires){pending=null;clearTimeout(pendingTimer);pendingTimer=0;return false}let touched=false;for(const selector of TAB_FIELDS[handoff.tab]||[])touched=setValue(selector,handoff.country)||touched;if(handoff.tab==='live')touched=setValue('#hsIntelKeyword',handoff.product)||touched;if(handoff.tab==='trade')touched=setValue('#hsTradeKeyword',handoff.product)||touched;if(handoff.tab==='shipping')touched=setValue('#hufKeyword',handoff.product)||touched;return touched}
 function armHandoff(tab,country,product){pending={tab,country,product,expires:Date.now()+1800};clearTimeout(pendingTimer);[0,80,220,520,900,1400].forEach(ms=>setTimeout(()=>{if(pending?.tab===tab)applyPending()},ms));pendingTimer=setTimeout(()=>{if(pending?.tab===tab)pending=null;pendingTimer=0},1850)}
@@ -26,5 +26,5 @@ function promoteSurface(){const view=$('#view-online-intel');const world=view?.q
 function bind(){document.addEventListener('click',e=>{if(e.target.closest('#wiMap,[data-wi-market],[data-wi-open],[data-wi-region]'))schedule()},true);document.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&e.target.closest('.wi-country-market'))schedule()},true);window.addEventListener('HUIDI:fusion-pane-rendered',e=>{if(e.detail?.view==='online-intel'){promoteSurface();schedule();if(pending?.tab===e.detail?.key){applyPending();[60,180].forEach(ms=>setTimeout(()=>pending?.tab===e.detail?.key&&applyPending(),ms))}}});window.addEventListener('HUIDI:community-online-view',e=>{if(e.detail?.view==='online-intel'){setTimeout(promoteSurface,40);schedule()}})}
 function boot(){style();promoteSurface();bind();schedule()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDIWorldMarketCommandCenter=Object.freeze({version:'1.0.1',build,schedule,promoteSurface,applyPending});
+window.HUIDIWorldMarketCommandCenter=Object.freeze({version:'1.0.2',build,schedule,promoteSurface,applyPending});
 })();
