@@ -116,8 +116,13 @@ function ensureNav(){
   document.body.dataset.huidiOnlineNav='ready';
   return true;
 }
+function loadTaskFlow(){
+  if(window.HUIDITaskFlow||document.querySelector('script[data-huidi-task-flow]'))return;
+  const rev=document.querySelector('meta[name=huidi-asset-revision]')?.content||'task-v1';
+  const tag=document.createElement('script');tag.src=`/community/huidi-task-flow-v1.js?v=${encodeURIComponent(rev)}`;tag.defer=true;tag.dataset.huidiTaskFlow='1';document.head.appendChild(tag);
+}
 function boot(){
-  ensureNav();
+  ensureNav();loadTaskFlow();
   setTimeout(ensureNav,0);
   setTimeout(ensureNav,180);
   setTimeout(ensureNav,520);
@@ -126,5 +131,5 @@ function boot(){
   window.addEventListener('HUIDI:local-data-change',()=>setTimeout(ensureNav,0));
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDICommunityOnlineNav=Object.freeze({version:'1.2.0',ensureNav,activate});
+window.HUIDICommunityOnlineNav=Object.freeze({version:'1.3.0',ensureNav,activate,loadTaskFlow});
 })();
