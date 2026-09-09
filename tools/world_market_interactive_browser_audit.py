@@ -167,9 +167,13 @@ def main() -> None:
         driver.execute_script("window.HUIDIWorldCountryInteraction?.resetView?.()")
         svg = driver.find_element(By.CSS_SELECTOR, ".wi-country-svg")
         before = svg.get_attribute("viewBox")
-        driver.execute_script(
-            "const el=arguments[0],r=el.getBoundingClientRect();el.dispatchEvent(new WheelEvent('wheel',{bubbles:true,cancelable:true,deltaY:-180,clientX:r.left+r.width*.5,clientY:r.top+r.height*.5}));",
+        center = driver.execute_script(
+            "const r=arguments[0].getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};",
             svg,
+        )
+        driver.execute_cdp_cmd(
+            "Input.dispatchMouseEvent",
+            {"type": "mouseWheel", "x": center["x"], "y": center["y"], "deltaX": 0, "deltaY": -180},
         )
         wait.until(lambda _d: svg.get_attribute("viewBox") != before)
 
