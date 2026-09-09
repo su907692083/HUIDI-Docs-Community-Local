@@ -4,9 +4,11 @@ const online=window.HUIDI_COMMUNITY_ONLINE;
 if(!online?.enabled||window.HUIDICommunityOnlineFullV2)return;
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const clean=v=>String(v??'').trim();
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const when=v=>clean(v).replace('T',' ').slice(0,16)||'—';
 const savedTabs={};
+const paneLoaders=new Map(),paneStates=new WeakMap(),paneForms=new WeakMap();
+let paneSerial=Promise.resolve(),paneEpoch=0,activeRequest=null;
 const loaders=new Map();
 const roleName=v=>({owner:'老板',admin:'管理员',sales:'业务员',viewer:'只读成员'})[v]||v||'成员';
 const statusName=v=>({new:'新客户',qualified:'已筛选',contacted:'已联系',replied:'已回复',converted:'已转询盘',archived:'已归档'})[v]||v||'未设置';
@@ -15,27 +17,164 @@ const moduleDefs={
  nav:['daily-navigation.js','HUIDIDailyNavigation'],
  services:['daily-services.js','HUIDIDailyServices'],
  sequence:['sequence-ui.js','HUIDISequenceUI'],
- audit:['audit-ui.js','HUIDIAuditUI']
+ audit:['audit-ui.js','HUIDIAuditUI'],
+ mailbox:['mail-governance.js','HUIDIMailGovernance'],
+ mailPaging:['mail-list-pagination-ui.js','HUIDIMailListPagination'],
+ sequencePaging:['sequence-pagination-ui.js','HUIDISequencePagination'],
+ mailThreads:['mail-thread-ui.js','HUIDIMailThreads']
 };
 async function api(url,opt={}){const headers={Accept:'application/json',...(opt.headers||{})};if(opt.body&&!headers['Content-Type'])headers['Content-Type']='application/json';const r=await fetch(url,{credentials:'same-origin',...opt,headers});let body=null;try{body=await r.json()}catch(_){body=await r.text().catch(()=>null)}if(r.status===401){location.assign('/login');throw new Error('登录状态已失效')}if(!r.ok)throw new Error(clean(body?.detail||body?.message||body)||`请求失败 (${r.status})`);return body}
 function toast(message,type='ok'){const wrap=$('#toastWrap');if(!wrap)return;const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=message;wrap.appendChild(el);setTimeout(()=>el.remove(),3600)}
-function loadModule(key){if(loaders.has(key))return loaders.get(key);const def=moduleDefs[key];if(!def)return Promise.reject(new Error('未知联网模块'));const [file,global]=def;if(window[global])return Promise.resolve(window[global]);const p=new Promise((resolve,reject)=>{const existing=document.querySelector(`script[data-fv2-module="${file}"]`);if(existing){const timer=setInterval(()=>{if(window[global]){clearInterval(timer);resolve(window[global])}},25);setTimeout(()=>{clearInterval(timer);window[global]?resolve(window[global]):reject(new Error(`${file} 加载超时`))},5000);return}const s=document.createElement('script');s.src=`/assets/${file}`;s.dataset.fv2Module=file;s.onload=()=>window[global]?resolve(window[global]):reject(new Error(`${file} 未初始化`));s.onerror=()=>reject(new Error(`${file} 加载失败`));document.head.appendChild(s)});loaders.set(key,p);return p}
+function loadModule(key){
+ if(loaders.has(key))return loaders.get(key);
+ const def=moduleDefs[key];if(!def)return Promise.reject(new Error('未知联网模块'));
+ const [file,global]=def;if(window[global])return Promise.resolve(window[global]);
+ if(key==='mailbox'&&!document.querySelector('link[data-fv2-mailbox-css]')){
+  const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/mail-governance.css';link.dataset.fv2MailboxCss='1';document.head.appendChild(link);
+ }
+ let tag;
+ const task=new Promise((resolve,reject)=>{
+  tag=document.createElement('script');tag.src=`/assets/${file}`;tag.dataset.fv2Module=file;
+  const timer=setTimeout(()=>{tag.remove();reject(new Error(`${file} 加载超时，请重试`))},12000);
+  tag.onload=()=>{clearTimeout(timer);window[global]?resolve(window[global]):reject(new Error(`${file} 未初始化`))};
+  tag.onerror=()=>{clearTimeout(timer);tag.remove();reject(new Error(`${file} 加载失败，请重试`))};
+  document.head.appendChild(tag);
+ }).catch(error=>{loaders.delete(key);tag?.remove();throw error});
+ loaders.set(key,task);return task;
+}
+function rememberPane(pane){
+ if(!pane)return;
+ const fields=[...pane.querySelectorAll('input[id],select[id],textarea[id]')].filter(x=>!['password','file','hidden'].includes(x.type));
+ paneForms.set(pane,{scroll: pane.scrollTop,fields:fields.map(x=>({id:x.id,value:x.value,checked:x.checked}))});
+}
+function restorePane(pane){
+ const saved=paneForms.get(pane);if(!saved)return;
+ for(const f of saved.fields){const x=pane.querySelector('#'+CSS.escape(f.id));if(!x)continue;
+  if(x.tagName==='SELECT'&&![...x.options].some(o=>o.value===f.value))continue;
+  x.value=f.value;if(['checkbox','radio'].includes(x.type))x.checked=f.checked;
+ }
+ pane.scrollTop=saved.scroll||0;
+}
+function registerPane(view,key,loader){paneLoaders.set(`${view}:${key}`,loader)}
+function invalidate(view,key){const pane=ensurePane($(`#view-${view}`),key);if(pane)paneStates.delete(pane)}
+function sharedRoot(view,key){
+ if(view==='mail'&&['inbox','sent','mailbox','queue'].includes(key))return '#huidiServiceBack';
+ if(view==='online-find'&&['map','company'].includes(key))return '#huidiServiceBack';
+ if(view==='online-find'&&['contacts','notifications'].includes(key))return '#huidiNavBack';
+ if(view==='online-intel'&&['live','trade','tariff','fx','shipping'].includes(key))return '#huidiServiceBack';
+ if(view==='online-intel'&&['world-map','customer-intel'].includes(key))return '#huidiIntelBack';
+ if(view==='mail'&&key==='sequences')return '#sqBack';
+ return '';
+}
+function detachModule(name,rootSelector){
+ const root=$(rootSelector);if(root?.parentElement?.closest('.fv2-pane'))rememberPane(root.parentElement.closest('.fv2-pane'));
+ window[name]?.unmount?.();
+}
 function note(text,tone=''){return `<div class="fv2-note ${tone}">${esc(text)}</div>`}
 function empty(text){return `<div class="fv2-empty">${esc(text)}</div>`}
 function button(label,attrs='',tone=''){return `<button class="fv2-btn ${tone}" ${attrs}>${esc(label)}</button>`}
 function ensurePane(view,key){return view?.querySelector(`[data-fv2-pane="${CSS.escape(key)}"]`)||null}
 function tabState(viewId){return savedTabs[viewId]||'base'}
 function setHeading(view,title,desc){const h=view?.querySelector(':scope > .section-head h3'),p=view?.querySelector(':scope > .section-head p');if(h&&title)h.textContent=title;if(p&&desc)p.textContent=desc}
-function installTabs(viewId,tabs,title,desc){const view=$(`#view-${viewId}`);if(!view||view.dataset.fv2Installed==='1')return;view.dataset.fv2Installed='1';setHeading(view,title,desc);const head=view.querySelector(':scope > .section-head');const movable=[...view.children].filter(x=>x!==head);const bar=document.createElement('div');bar.className='fv2-tabs';bar.setAttribute('role','tablist');const area=document.createElement('div');area.className='fv2-panes';for(const t of tabs){const b=document.createElement('button');b.className='fv2-tab';b.dataset.fv2Tab=t.key;b.dataset.fv2View=viewId;b.textContent=t.label;bar.appendChild(b);const pane=document.createElement('section');pane.className='fv2-pane';pane.dataset.fv2Pane=t.key;pane.dataset.fv2View=viewId;if(t.key==='base')movable.forEach(n=>pane.appendChild(n));else pane.innerHTML='<div class="fv2-empty">首次打开时读取真实数据。</div>';area.appendChild(pane)}if(head)head.insertAdjacentElement('afterend',bar);else view.prepend(bar);bar.insertAdjacentElement('afterend',area);bar.addEventListener('click',e=>{const b=e.target.closest('[data-fv2-tab]');if(b)openTab(viewId,b.dataset.fv2Tab)});openTab(viewId,'base')}
-async function openTab(viewId,key){const view=$(`#view-${viewId}`);if(!view)return;const pane=ensurePane(view,key);if(!pane)return;savedTabs[viewId]=key;view.querySelectorAll(':scope > .fv2-tabs .fv2-tab').forEach(b=>b.classList.toggle('active',b.dataset.fv2Tab===key));view.querySelectorAll(':scope > .fv2-panes > .fv2-pane').forEach(p=>p.classList.toggle('active',p===pane));try{await loadPane(viewId,key,pane)}catch(e){pane.innerHTML=note(e.message||String(e),'warn')}}
-async function loadPane(view,key,pane){if(key==='base')return;if(view==='online-find'){if(key==='pool')return renderLeadPool(pane);if(key==='followups')return renderFollowups(pane);if(key==='notifications')return mountNavigation(pane,'notifications');if(key==='map')return mountService(pane,'map');if(key==='contacts')return mountNavigation(pane,'contacts');if(key==='company')return mountService(pane,'company');if(key==='smart')return renderSmartDevelopment(pane)}if(view==='mail'){if(key==='inbox')return mountService(pane,'mail','inbox');if(key==='sent')return mountService(pane,'mail','sent');if(key==='mailbox')return mountService(pane,'mail','inbox');if(key==='queue')return mountService(pane,'queue');if(key==='sequences')return mountSequence(pane)}if(view==='online-intel'){if(key==='live')return mountService(pane,'intel');if(['trade','tariff','fx','shipping'].includes(key))return mountService(pane,key)}if(view==='online-admin'){if(key==='team')return renderTeam(pane);if(key==='company')return renderCompanySettings(pane);if(key==='sources')return renderSources(pane);if(key==='notifications')return renderNotificationRoutes(pane);if(key==='audit')return mountAudit(pane);if(key==='safety')return renderSafety(pane)}}
-async function mountNavigation(pane,view){pane.innerHTML='';pane.classList.add('fv2-mounted');await loadModule('plain').catch(()=>null);const nav=await loadModule('nav');await nav.mount(pane,view)}
-async function mountService(pane,view,detail=''){pane.innerHTML='';pane.classList.add('fv2-mounted');await loadModule('plain').catch(()=>null);const services=await loadModule('services');await services.mount(pane,view,detail)}
-async function mountSequence(pane){pane.innerHTML='';pane.classList.add('fv2-mounted');await loadModule('plain').catch(()=>null);const seq=await loadModule('sequence');await seq.mount(pane)}
-async function mountAudit(pane){pane.innerHTML='';pane.classList.add('fv2-mounted');await loadModule('plain').catch(()=>null);const audit=await loadModule('audit');await audit.mount(pane)}
+function installTabs(viewId,tabs,title,desc){const view=$(`#view-${viewId}`);if(!view||view.dataset.fv2Installed==='1')return;view.dataset.fv2Installed='1';setHeading(view,title,desc);const head=view.querySelector(':scope > .section-head');const movable=[...view.children].filter(x=>x!==head);const bar=document.createElement('div');bar.className='fv2-tabs';bar.setAttribute('role','tablist');const area=document.createElement('div');area.className='fv2-panes';for(const t of tabs){const b=document.createElement('button');b.className='fv2-tab';b.dataset.fv2Tab=t.key;b.dataset.fv2View=viewId;b.textContent=t.label;bar.appendChild(b);const pane=document.createElement('section');pane.className='fv2-pane';pane.dataset.fv2Pane=t.key;pane.dataset.fv2View=viewId;if(t.key==='base')movable.forEach(n=>pane.appendChild(n));else pane.innerHTML='<div class="fv2-empty">首次打开时读取真实数据。</div>';area.appendChild(pane)}if(head)head.insertAdjacentElement('afterend',bar);else view.prepend(bar);bar.insertAdjacentElement('afterend',area);bar.addEventListener('click',e=>{const b=e.target.closest('[data-fv2-tab]');if(b)openTab(viewId,b.dataset.fv2Tab,{history:'push'})});openTab(viewId,'base')}
+function openTab(viewId,key,options={}){
+ const view=$(`#view-${viewId}`),pane=ensurePane(view,key);if(!pane)return Promise.resolve(false);
+ const spec=`${viewId}:${key}`;
+ const previous=view.querySelector(':scope > .fv2-panes > .fv2-pane.active');
+ if(previous&&previous!==pane)rememberPane(previous);
+ savedTabs[viewId]=key;
+ view.querySelectorAll(':scope > .fv2-tabs .fv2-tab').forEach(b=>{const selected=b.dataset.fv2Tab===key;b.classList.toggle('active',selected);b.setAttribute('role','tab');b.setAttribute('aria-selected',String(selected));b.tabIndex=selected?0:-1});
+ view.querySelectorAll(':scope > .fv2-panes > .fv2-pane').forEach(p=>{p.classList.toggle('active',p===pane);p.setAttribute('role','tabpanel')});
+ if(view.classList.contains('active')){
+  const url=new URL(location.href);if(key==='base')url.searchParams.delete('tab');else url.searchParams.set('tab',key);
+  if(url.href!==location.href)history[options.history==='push'?'pushState':'replaceState'](null,'',url);
+ }
+ if(!view.classList.contains('active'))return Promise.resolve(false);
+ if(activeRequest?.spec===spec&&!options.force)return activeRequest.promise;
+ const root=sharedRoot(viewId,key),stillMounted=!root||Boolean(pane.querySelector(root));
+ if(paneStates.get(pane)==='ready'&&stillMounted&&!options.force)return Promise.resolve(true);
+ const epoch=++paneEpoch;
+ const job=async()=>{
+  if(epoch!==paneEpoch)return false;
+  pane.setAttribute('aria-busy','true');
+  try{
+   if(options.force)rememberPane(pane);
+   const custom=paneLoaders.get(spec);
+   if(custom)await custom(pane);else await loadPane(viewId,key,pane);
+   restorePane(pane);paneStates.set(pane,'ready');
+   window.dispatchEvent(new CustomEvent('HUIDI:fusion-pane-rendered',{detail:{view:viewId,key}}));
+   return true;
+  }catch(error){
+   paneStates.delete(pane);pane.replaceChildren();
+   const message=document.createElement('div');message.className='fv2-note warn';message.setAttribute('role','status');message.textContent=error.message||String(error);
+   const retry=document.createElement('button');retry.className='fv2-btn';retry.textContent='重新加载';retry.onclick=()=>openTab(viewId,key,{force:true});pane.append(message,retry);return false;
+  }finally{pane.removeAttribute('aria-busy');if(activeRequest?.promise===promise)activeRequest=null}
+ };
+ const promise=paneSerial.then(job,job);paneSerial=promise.catch(()=>{});activeRequest={spec,promise};return promise;
+}
+async function loadPane(view,key,pane){if(key==='base')return;if(view==='online-find'){if(key==='pool')return renderLeadPool(pane);if(key==='followups')return renderFollowups(pane);if(key==='notifications')return mountNavigation(pane,'notifications');if(key==='map')return mountService(pane,'map');if(key==='contacts')return mountNavigation(pane,'contacts');if(key==='company')return mountService(pane,'company');if(key==='smart')return renderSmartDevelopment(pane)}if(view==='mail'){if(key==='inbox')return mountService(pane,'mail','inbox');if(key==='sent')return mountService(pane,'mail','sent');if(key==='mailbox')return mountService(pane,'mail','settings');if(key==='queue')return mountService(pane,'queue');if(key==='sequences')return mountSequence(pane)}if(view==='online-intel'){if(key==='live')return mountService(pane,'intel');if(['trade','tariff','fx','shipping'].includes(key))return mountService(pane,key)}if(view==='online-admin'){if(key==='team')return renderTeam(pane);if(key==='company')return renderCompanySettings(pane);if(key==='sources')return renderSources(pane);if(key==='notifications')return renderNotificationRoutes(pane);if(key==='audit')return mountAudit(pane);if(key==='safety')return renderSafety(pane)}}
+async function mountNavigation(pane,view){
+ await loadModule('plain').catch(()=>null);const nav=await loadModule('nav');
+ detachModule('HUIDIDailyNavigation','#huidiNavBack');pane.replaceChildren();pane.classList.add('fv2-mounted');await nav.mount(pane,view);
+}
+async function mountService(pane,view,detail=''){
+ await loadModule('plain').catch(()=>null);
+ const services=await loadModule('services');
+ if(view==='mail')await Promise.all([loadModule('mailbox'),loadModule('mailPaging'),loadModule('mailThreads')]);
+ if(view==='queue')await loadModule('mailPaging');
+ detachModule('HUIDIDailyServices','#huidiServiceBack');pane.replaceChildren();pane.classList.add('fv2-mounted');await services.mount(pane,view,detail);
+}
+async function mountSequence(pane){
+ await loadModule('plain').catch(()=>null);const seq=await loadModule('sequence');await loadModule('sequencePaging');
+ detachModule('HUIDISequenceUI','#sqBack');pane.replaceChildren();pane.classList.add('fv2-mounted');await seq.mount(pane);
+}
+async function mountAudit(pane){
+ await loadModule('plain').catch(()=>null);const audit=await loadModule('audit');
+ audit.unmount?.();pane.replaceChildren();pane.classList.add('fv2-mounted');await audit.mount(pane);
+}
 function leadRows(out){return Array.isArray(out)?out:(out?.items||[])}
 function poolRow(x){return `<tr data-fv2-lead="${esc(x.id)}"><td><b>${esc(x.company_name||'未命名公司')}</b><small>${esc(x.domain||x.website||'')}</small></td><td>${esc(x.country||'—')}<small>${esc(x.market_keyword||'')}</small></td><td><span class="fv2-badge info">${esc(x.priority||'—')}级 · ${Math.round(Number(x.score||0))}分</span><small>${esc(x.reason||'')}</small></td><td>${esc(x.contact_name||'—')}<small>${esc([x.contact_role,x.contact_email].filter(Boolean).join(' · '))}</small></td><td><span class="fv2-badge ${x.status==='converted'?'ok':''}">${esc(statusName(x.status))}</span></td><td><div class="fv2-actions">${button('查联系人',`data-fv2-contact="${esc(x.id)}"`)}${button('背调',`data-fv2-assess="${esc(x.id)}"`)}${button('联网资料',`data-fv2-history="${esc(x.id)}"`)}${x.status!=='converted'?button('加入客户/询盘',`data-fv2-adopt="${esc(x.id)}"`,'primary'):''}</div></td></tr>`}
-async function renderLeadPool(pane){pane.innerHTML=`<div class="fv2-section-title"><div><h4>潜在客户池</h4><p>搜索发现、联系人、背调和联网资料集中在这里；确认后才进入正式客户与询盘。</p></div><div class="fv2-actions">${button('刷新','data-fv2-pool-refresh','')}</div></div><div class="fv2-toolbar"><input class="fv2-input" id="fv2PoolQ" placeholder="搜索公司、域名、产品、邮箱"><select class="fv2-select" id="fv2PoolStatus"><option value="">全部状态</option><option value="new">新客户</option><option value="qualified">已筛选</option><option value="contacted">已联系</option><option value="replied">已回复</option><option value="converted">已转询盘</option></select>${button('搜索','data-fv2-pool-search','primary')}</div><div id="fv2PoolTable">${empty('正在读取真实潜在客户…')}</div><div id="fv2LeadHistory" style="margin-top:9px"></div>`;const load=async()=>{const q=encodeURIComponent(clean($('#fv2PoolQ')?.value)),st=encodeURIComponent(clean($('#fv2PoolStatus')?.value));const out=await api(`/api/leads?paged=true&page=1&page_size=100&q=${q}&status=${st}`);const rows=leadRows(out);$('#fv2PoolTable').innerHTML=rows.length?`<div class="fv2-table-wrap"><table class="fv2-table"><thead><tr><th>公司</th><th>市场 / 产品</th><th>匹配</th><th>联系人</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(poolRow).join('')}</tbody></table></div>`:empty('当前没有匹配潜在客户。')};pane.onclick=async e=>{const c=e.target.closest('[data-fv2-contact]'),a=e.target.closest('[data-fv2-assess]'),h=e.target.closest('[data-fv2-history]'),ad=e.target.closest('[data-fv2-adopt]');if(e.target.closest('[data-fv2-pool-refresh],[data-fv2-pool-search]')){await load();return}try{if(c){const out=await api(`/api/leads/${c.dataset.fv2Contact}/find-contact`,{method:'POST',body:'{}'});if(out?.mode==='demo')throw new Error('当前没有连接真实联系人搜索服务');toast('联系人搜索完成');await load();return}if(a){await api(`/api/leads/${a.dataset.fv2Assess}/assess`,{method:'POST',body:'{}'});toast('客户背调完成');await load();return}if(h){await renderLeadHistory(h.dataset.fv2History);return}if(ad){const fusion=window.HUIDICommunityOnlineFusion;if(!fusion?.adoptLead)throw new Error('Community 客户/询盘融合 Owner 尚未就绪');await fusion.adoptLead(ad.dataset.fv2Adopt);await load();return}}catch(err){toast(err.message||String(err),'error')}};$('#fv2PoolQ').onkeydown=e=>{if(e.key==='Enter')load()};await load()}
+async function renderLeadPool(pane){
+ // UI paging only: the existing Lead API remains the sole source and mutation owner.
+ const saved=pane._poolState||{page:1,size:50,q:'',status:''};pane._poolState=saved;
+ pane.innerHTML=`<div class="fv2-section-title"><div><h4>潜在客户池</h4></div>${button('刷新','data-fv2-pool-refresh')}</div>
+ <form class="fv2-toolbar" data-fv2-pool-form><input class="fv2-input" id="fv2PoolQ" aria-label="搜索潜在客户" placeholder="公司、域名、产品、邮箱" value="${esc(saved.q)}"><select class="fv2-select" id="fv2PoolStatus" aria-label="潜客状态"><option value="">全部状态</option><option value="new">新客户</option><option value="qualified">已筛选</option><option value="contacted">已联系</option><option value="replied">已回复</option><option value="converted">已转询盘</option></select>${button('搜索','type="submit"','primary')}${button('清除','type="button" data-fv2-pool-clear')}</form>
+ <div id="fv2PoolTable"></div><div class="fv2-pager" data-fv2-pool-pager></div><div id="fv2LeadHistory"></div>`;
+ pane.querySelector('#fv2PoolStatus').value=saved.status;
+ let ticket=0;
+ const load=async()=>{
+  const turn=++ticket,table=pane.querySelector('#fv2PoolTable'),pager=pane.querySelector('[data-fv2-pool-pager]');
+  table.setAttribute('aria-busy','true');pager.querySelectorAll('button').forEach(b=>b.disabled=true);
+  try{
+   const params=new URLSearchParams({paged:'true',page:String(saved.page),page_size:String(saved.size),q:saved.q,status:saved.status});
+   const out=await api('/api/leads?'+params);if(turn!==ticket||!pane.isConnected)return;
+   const rows=leadRows(out),pages=Math.max(1,Number(out.pages)||Math.ceil((Number(out.total)||rows.length)/saved.size));
+   if(saved.page>pages){saved.page=pages;return await load()}
+   table.dataset.page=String(saved.page);
+   table.innerHTML=rows.length?`<div class="fv2-table-wrap"><table class="fv2-table"><thead><tr><th>公司</th><th>市场 / 产品</th><th>匹配</th><th>联系人</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(poolRow).join('')}</tbody></table></div>`:empty('没有符合条件的潜在客户。');
+   pager.innerHTML=`<span>共 ${Number(out.total)||0} 条</span><label>每页 <select data-fv2-pool-size>${[20,50,100].map(n=>`<option ${n===saved.size?'selected':''}>${n}</option>`).join('')}</select></label><div>${button('上一页',`data-fv2-pool-prev ${saved.page<=1?'disabled':''}`)}<span>${saved.page} / ${pages}</span>${button('下一页',`data-fv2-pool-next ${saved.page>=pages?'disabled':''}`)}</div>`;
+   window.HUIDICommunityDevelopmentRouting?.enhancePool?.(pane);
+  }catch(error){if(turn!==ticket)return;table.innerHTML=note(error.message||'读取失败','warn');pager.innerHTML=button('重试','data-fv2-pool-refresh')}
+  finally{if(turn===ticket)table.removeAttribute('aria-busy')}
+ };
+ const search=()=>{saved.q=clean(pane.querySelector('#fv2PoolQ').value);saved.status=pane.querySelector('#fv2PoolStatus').value;saved.page=1;return load()};
+ pane.querySelector('[data-fv2-pool-form]').onsubmit=e=>{e.preventDefault();search()};
+ pane.onchange=e=>{if(e.target.matches('#fv2PoolStatus'))search();if(e.target.matches('[data-fv2-pool-size]')){saved.size=Number(e.target.value);saved.page=1;load()}};
+ pane.onclick=async e=>{
+  const b=e.target.closest('button');if(!b)return;
+  if(b.hasAttribute('data-fv2-pool-prev')){saved.page=Math.max(1,saved.page-1);return load()}
+  if(b.hasAttribute('data-fv2-pool-next')){saved.page++;return load()}
+  if(b.hasAttribute('data-fv2-pool-refresh'))return load();
+  if(b.hasAttribute('data-fv2-pool-clear')){pane.querySelector('#fv2PoolQ').value='';pane.querySelector('#fv2PoolStatus').value='';return search()}
+  try{
+   if(b.dataset.fv2Contact){b.disabled=true;const out=await api(`/api/leads/${b.dataset.fv2Contact}/find-contact`,{method:'POST',body:'{}'});if(out?.mode==='demo')throw new Error('当前没有连接真实联系人搜索服务');toast('联系人搜索完成');return await load()}
+   if(b.dataset.fv2Assess){b.disabled=true;await api(`/api/leads/${b.dataset.fv2Assess}/assess`,{method:'POST',body:'{}'});toast('客户背调完成');return await load()}
+   if(b.dataset.fv2History)return await renderLeadHistory(b.dataset.fv2History);
+   if(b.dataset.fv2Adopt){b.disabled=true;await window.HUIDICommunityOnlineFusion.adoptLead(b.dataset.fv2Adopt);return await load()}
+  }catch(error){toast(error.message||String(error),'error')}finally{if(b.isConnected)b.disabled=false}
+ };
+ await load();
+}
 async function renderLeadHistory(id){const host=$('#fv2LeadHistory');if(!host)return;host.innerHTML=empty('正在读取联网资料…');try{const out=await api(`/api/intelligence/summary/${encodeURIComponent(id)}`),rows=out.items||[];const names={company:'企业核验',trade:'贸易记录',tariff:'关税资料',fx:'汇率记录',shipping:'船期 / 物流',market_news:'市场动态'};host.innerHTML=`<div class="fv2-panel"><div class="fv2-section-title"><div><h4>联网资料 · 潜客 #${esc(id)}</h4><p>这些是已经查询保存过的真实联网资料，不会覆盖客户或正式单据。</p></div></div><div class="fv2-list">${rows.length?rows.map(x=>`<div class="fv2-item"><b>${esc(names[x.kind]||x.kind||'联网资料')}${x.title?` · ${esc(x.title)}`:''}</b><span>${esc(JSON.stringify(x.normalized||{}).slice(0,460))}</span><small>${esc(when(x.checked_at))}</small></div>`).join(''):empty('这个潜在客户还没有联网资料。')}</div></div>`}catch(e){host.innerHTML=note(e.message||String(e),'warn')}}
 async function renderFollowups(pane){pane.innerHTML=empty('正在整理待跟进和客户回复…');const out=await api('/api/workbench/today'),follow=[...(out.followups||[]),...(out.deal_tasks||[])],replies=out.replies||[];pane.innerHTML=`<div class="fv2-grid">${[['待推进',follow.length,'潜在客户 + 询盘'],['客户待回复',replies.length,'真实邮箱回复'],['今天已发送',out.mail?.sent_today||0,'真实发送记录']].map(x=>`<div class="fv2-stat"><small>${x[0]}</small><b>${x[1]}</b><span>${x[2]}</span></div>`).join('')}</div><div class="fv2-split" style="margin-top:9px"><div class="fv2-panel"><h4>待跟进</h4><div class="fv2-list" style="margin-top:8px">${follow.length?follow.map(x=>`<div class="fv2-item"><b>${x.due_state==='overdue'?'已逾期 · ':''}${esc(x.company_name||x.title||'待推进')}</b><span>${esc(x.detail||x.next_action||'继续推进')}</span><small>${esc(when(x.due_at||x.created_at))}</small></div>`).join(''):empty('没有到期待跟进事项。')}</div></div><div class="fv2-panel"><h4>客户回复</h4><div class="fv2-list" style="margin-top:8px">${replies.length?replies.map(x=>`<div class="fv2-item"><b>${esc(x.company_name||x.sender||'客户回复')}</b><span>${esc(x.subject||x.snippet||'收到新回复')}</span><small>${esc(when(x.received_at))}</small></div>`).join(''):empty('当前没有待回复客户邮件。')}</div></div></div>`}
 async function renderSmartDevelopment(pane){pane.innerHTML=empty('正在读取 Product Brain、行业打法和真实开发漏斗…');const [pRes,iRes,gRes]=await Promise.allSettled([api('/api/product-brains'),api('/api/industries?include_overview=true&q='),api('/api/growth/funnel')]);const products=pRes.status==='fulfilled'?(Array.isArray(pRes.value)?pRes.value:(pRes.value?.items||[])):[],industries=iRes.status==='fulfilled'?(iRes.value?.items||[]):[],growth=gRes.status==='fulfilled'?gRes.value:{};const stages=growth.stages||[];pane.innerHTML=`<div class="fv2-note ok">少填模式：产品、潜客、客户回复和下一步可以自动复用；正式报价价格、成交金额仍必须由你确认，Product Brain 价格只作参考。</div><div class="fv2-grid" style="margin-top:9px">${stages.slice(0,7).map(x=>`<div class="fv2-stat"><small>${esc(x.name)}</small><b>${Number(x.count||0)}</b><span>${Number(x.rate||0).toFixed(1)}%</span></div>`).join('')||'<div class="fv2-stat"><small>开发漏斗</small><b>—</b><span>暂无统计</span></div>'}</div><div class="fv2-grid two" style="margin-top:9px"><div class="fv2-panel"><div class="fv2-section-title"><div><h4>Product Brain</h4><p>产品事实、规格、MOQ、交期与参考价供开发/目录/报价核对复用。</p></div></div><div class="fv2-list" id="fv2ProductBrains">${products.length?products.slice(0,30).map(x=>`<div class="fv2-item"><b>${esc(x.name||x.title||'产品')}</b><span>${esc([x.sku,x.spec,x.moq?`MOQ ${x.moq}`:'',x.lead_time?`交期 ${x.lead_time}`:''].filter(Boolean).join(' · '))}</span><small>${x.price_range?`参考价 ${esc(x.currency||'USD')} ${esc(x.price_range)} · 仅参考`:''}</small></div>`).join(''):empty('还没有 Product Brain 产品资料。')}</div></div><div class="fv2-panel"><div class="fv2-section-title"><div><h4>行业打法库</h4><p>联网版已经融合的行业 Playbook，按专业行业复用客户角色、风险和邮件场景。</p></div></div><input class="fv2-input" id="fv2IndustryQ" placeholder="搜索行业 / 产品" style="width:100%;margin-bottom:8px"><div class="fv2-list" id="fv2Industries">${renderIndustryRows(industries)}</div></div></div><div class="fv2-panel"><h4>真实开发漏斗</h4><div class="fv2-kv" style="margin-top:8px"><span>回复率</span><b>${Number(growth.summary?.reply_rate||0).toFixed(1)}%</b><span>发出后转询盘</span><b>${Number(growth.summary?.inquiry_rate_from_sent||0).toFixed(1)}%</b><span>主要市场</span><b>${esc((growth.top_countries||[]).slice(0,5).map(x=>`${x.name} ${x.count}`).join(' · ')||'—')}</b><span>主要行业</span><b>${esc((growth.top_industries||[]).slice(0,5).map(x=>`${x.name} ${x.count}`).join(' · ')||'—')}</b></div></div>`;const q=$('#fv2IndustryQ');if(q)q.oninput=async()=>{try{const out=await api('/api/industries?include_overview=true&q='+encodeURIComponent(q.value));$('#fv2Industries').innerHTML=renderIndustryRows(out.items||[])}catch(e){$('#fv2Industries').innerHTML=note(e.message||String(e),'warn')}}}
@@ -49,8 +188,28 @@ function sizeText(n){n=Number(n||0);if(n<1024)return`${n} B`;if(n<1048576)return
 async function renderSafety(pane){pane.innerHTML=empty('正在检查使用状态与备份…');const [ready,b]=await Promise.all([api('/api/production/readiness'),api('/api/backups')]),s=ready.summary||{},backups=b.items||[];pane.innerHTML=`<div class="fv2-grid"><div class="fv2-stat"><small>正常</small><b>${s.ready||0}</b><span>无需处理</span></div><div class="fv2-stat"><small>需要处理</small><b>${s.action||0}</b><span>建议优先处理</span></div><div class="fv2-stat"><small>按需开启</small><b>${s.optional||0}</b><span>可选能力</span></div></div><div class="fv2-panel" style="margin-top:9px"><h4>使用检查</h4><div class="fv2-list" style="margin-top:8px">${(ready.items||[]).map(x=>`<div class="fv2-source"><div><b>${esc(x.group)} · ${esc(x.name)}</b><span>${esc(x.message)}${x.action?`<br>下一步：${esc(x.action)}`:''}</span></div><span class="fv2-badge ${x.state==='ready'?'ok':x.state==='action'?'warn':''}">${x.state==='ready'?'正常':x.state==='action'?'需要处理':'按需开启'}</span></div>`).join('')||empty('没有检查结果。')}</div></div><div class="fv2-panel"><div class="fv2-section-title"><div><h4>云端公司备份</h4><p>恢复前会自动保留当前数据；本地完整 JSON 备份仍建议保留。</p></div>${button('立即备份','data-fv2-backup-create','primary')}</div><div class="fv2-table-wrap">${backups.length?`<table class="fv2-table" style="min-width:620px"><thead><tr><th>时间</th><th>类型</th><th>数据量</th><th>大小</th><th>状态</th><th>操作</th></tr></thead><tbody>${backups.map(x=>`<tr><td>${esc(when(x.created_at))}</td><td>${x.reason==='before_restore'?'恢复前自动保留':'手动备份'}</td><td>${Number(x.rows||0)} 条</td><td>${sizeText(x.size)}</td><td>${x.verified?'可用':'待检查'}</td><td><div class="fv2-actions">${button('检查',`data-fv2-backup-verify="${esc(x.id)}"`)}<a class="fv2-btn" href="/api/backups/${encodeURIComponent(x.id)}/download">下载</a>${button('恢复',`data-fv2-backup-restore="${esc(x.id)}"`,'danger')}</div></td></tr>`).join('')}</tbody></table>`:empty('还没有云端公司备份。')}</div></div>`;pane.onclick=async e=>{const create=e.target.closest('[data-fv2-backup-create]'),verify=e.target.closest('[data-fv2-backup-verify]'),restore=e.target.closest('[data-fv2-backup-restore]');try{if(create){await api('/api/backups',{method:'POST',body:'{}'});toast('备份已创建并检查完成');await renderSafety(pane);return}if(verify){await api(`/api/backups/${encodeURIComponent(verify.dataset.fv2BackupVerify)}/verify`,{method:'POST',body:'{}'});toast('备份检查通过');await renderSafety(pane);return}if(restore){if(!confirm('确认恢复这份公司业务备份吗？系统会先自动保留当前数据。'))return;const typed=prompt('为避免误操作，请输入“恢复”');if(typed!=='恢复')return;await api(`/api/backups/${encodeURIComponent(restore.dataset.fv2BackupRestore)}/restore`,{method:'POST',body:JSON.stringify({confirmation:'RESTORE'})});toast('业务数据已恢复');await renderSafety(pane)}}catch(err){toast(err.message||String(err),'error')}}}
 function installAll(){installTabs('online-find',[{key:'base',label:'找客户'},{key:'pool',label:'潜在客户'},{key:'followups',label:'待跟进'},{key:'notifications',label:'提醒'},{key:'map',label:'地图找客户'},{key:'contacts',label:'联系人'},{key:'company',label:'客户背调'},{key:'smart',label:'智能开发'}],'客户开发','找客户、地图开发、潜客池、背调、联系人、行业打法和少填开发集中在一页。');installTabs('mail',[{key:'base',label:'邮件草稿'},{key:'inbox',label:'收件箱'},{key:'sent',label:'已发送'},{key:'mailbox',label:'邮箱设置'},{key:'queue',label:'待发送'},{key:'sequences',label:'自动跟进'}],'邮件与跟进','本地草稿、真实邮箱、客户回复、待发送和自动跟进使用同一个业务上下文。');installTabs('online-intel',[{key:'base',label:'全球市场'},{key:'live',label:'市场动态'},{key:'trade',label:'贸易记录'},{key:'tariff',label:'HS / 关税'},{key:'fx',label:'汇率'},{key:'shipping',label:'船期 / 物流'}],'市场情报','全球市场、实时动态、贸易、关税、汇率与物流资料统一服务客户开发和订单判断。');installTabs('online-admin',[{key:'base',label:'工作区概览'},{key:'team',label:'团队与权限'},{key:'company',label:'公司资料'},{key:'sources',label:'数据来源'},{key:'notifications',label:'提醒方式'},{key:'audit',label:'操作记录'},{key:'safety',label:'检查与备份'}],'团队与设置','团队、公司资料、数据来源、提醒、操作记录和备份统一在当前工作区管理。')}
 function renameNav(){const map={'online-find':['客户开发','找客户、地图、背调、联系人'],'online-intel':['市场情报','全球市场、贸易、关税、汇率、物流'],'online-admin':['团队与设置','团队、公司、来源、提醒、备份']};for(const [view,[label,sub]] of Object.entries(map)){const b=$(`.nav-btn[data-view="${view}"]`);if(!b)continue;const x=b.querySelector('.nav-copy b'),y=b.querySelector('.nav-copy small');if(x)x.textContent=label;if(y)y.textContent=sub}}
-function bindView(){window.addEventListener('HUIDI:community-online-view',e=>{const view=e.detail?.view;if(view&&savedTabs[view])openTab(view,savedTabs[view])});document.addEventListener('click',e=>{const b=e.target.closest('.nav-btn[data-view]');if(!b)return;setTimeout(()=>{renameNav();const key=savedTabs[b.dataset.view]||'base';if($(`#view-${b.dataset.view}`)?.dataset.fv2Installed==='1')openTab(b.dataset.view,key)},0)},true)}
+function bindView(){
+ const selectCurrent=view=>{
+  if(!$(`#view-${view}`)?.classList.contains('active'))return;
+  const urlTab=new URL(location.href).searchParams.get('tab');
+  const key=(urlTab&&ensurePane($(`#view-${view}`),urlTab)?urlTab:null)||savedTabs[view]||'base';
+  if($(`#view-${view}`)?.dataset.fv2Installed==='1')openTab(view,key);
+ };
+ window.addEventListener('HUIDI:community-online-view',e=>selectCurrent(e.detail?.view));
+ document.addEventListener('click',e=>{const b=e.target.closest('.nav-btn[data-view]');if(b)queueMicrotask(()=>{renameNav();selectCurrent(b.dataset.view)})});
+ document.addEventListener('keydown',e=>{
+  const tab=e.target.closest('.fv2-tab');if(!tab||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;
+  const tabs=[...tab.closest('.fv2-tabs').querySelectorAll('.fv2-tab')].filter(b=>b.getClientRects().length);
+  let i=tabs.indexOf(tab);i=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
+  e.preventDefault();tabs[i]?.focus();tabs[i]?.click();
+ });
+ window.addEventListener('HUIDI:mail-accounts-changed',()=>{if($('#view-mail')?.classList.contains('active')&&savedTabs.mail==='mailbox')openTab('mail','mailbox',{force:true})});
+ window.addEventListener('popstate',()=>{
+  const view=location.hash.slice(1),b=$(`.nav-btn[data-view="${CSS.escape(view)}"]`);
+  if(b){b.click();selectCurrent(view)}
+ });
+}
 function boot(){installAll();renameNav();bindView();document.body.dataset.huidiFullFusion='v2';setTimeout(()=>{installAll();renameNav()},180)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDICommunityOnlineFullV2=Object.freeze({version:'2.0.0',openTab,renderLeadPool,renderSmartDevelopment,renderTeam,renderCompanySettings,renderSources,renderNotificationRoutes,renderSafety});
+window.HUIDICommunityOnlineFullV2=Object.freeze({version:'2.1.0',openTab,registerPane,loadModule,invalidate,renderLeadPool,renderSmartDevelopment,renderTeam,renderCompanySettings,renderSources,renderNotificationRoutes,renderSafety});
 })();

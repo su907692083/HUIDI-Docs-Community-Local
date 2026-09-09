@@ -67,8 +67,10 @@ function installCloudDocumentReadGate(){
     };
     window.addEventListener('HUIDI:community-cloud-ready',finish,{once:true});
     setTimeout(probe,0);
-    Object.defineProperty(db,'__huidiCommunityCloudReadGate',{value:true,configurable:false});
-    db.getDocument=async function(...args){await ready;return nativeGet(...args)};
+    // The DB API is frozen. Preserve its storage owner and gate only the public read.
+    window.HUIDILocalDB=Object.freeze({...db,__huidiCommunityCloudReadGate:true,
+      getDocument:async function(...args){await ready;return nativeGet(...args)}
+    });
     window.HUIDI_COMMUNITY_DOCUMENT_READ_READY=ready;
   };
   install();

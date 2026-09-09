@@ -46,7 +46,9 @@ class CommunityCloudAdapterContractTests(unittest.TestCase):
     def test_direct_document_reads_wait_for_current_tenant_cloud_hydration(self):
         self.assertIn("installCloudDocumentReadGate", self.mode)
         self.assertIn("HUIDI:community-cloud-ready", self.mode)
-        self.assertIn("db.getDocument=async function", self.mode)
+        self.assertIn("window.HUIDILocalDB=Object.freeze({...db", self.mode)
+        self.assertIn("getDocument:async function(...args){await ready;return nativeGet(...args)}", self.mode)
+        self.assertNotIn("Object.defineProperty(db,", self.mode)
         self.assertIn("HUIDI_COMMUNITY_DOCUMENT_READ_READY", self.mode)
         self.assertIn("if(ONLINE)loadCloudAdapter();", self.mode)
         # The Local editor remains the restore owner; this layer only delays its

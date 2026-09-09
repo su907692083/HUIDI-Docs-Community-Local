@@ -67,6 +67,7 @@ def run_browser(base, output, strict):
             response = context.request.post(base + '/api/leads/manual', data={'company_name': f'QA Buyer {i:03d}', 'website': f'https://qa-{i:03d}.example', 'country': 'Germany', 'product_keyword': 'stainless steel hinge', 'contact_name': f'Buyer {i}', 'contact_email': f'buyer@qa-{i:03d}.example', 'create_inquiry': False})
             assert response.status == 200, response.text()
         page = context.new_page()
+        page.set_default_timeout(8000)
         page.on('pageerror', lambda error: report['page_errors'].append(str(error)))
         page.on('response', lambda r: report['http_errors'].append({'url': r.url.replace(base, ''), 'status': r.status}) if r.status >= 400 else None)
         page.on('dialog', lambda d: (report['dialogs'].append(d.message), d.dismiss()))
@@ -116,7 +117,8 @@ def run_browser(base, output, strict):
                 page.locator(f'#view-{view} .huidi-tab-more > summary').click()
             target.click(timeout=5000)
             page.wait_for_function('([v,t])=>Boolean(document.querySelector(`#view-${v} [data-fv2-pane="${t}"].active`))', arg=[view, tab])
-            page.wait_for_timeout(700)
+            page.wait_for_function('([v,t])=>!document.querySelector(`#view-${v} [data-fv2-pane="${t}"]`)?.hasAttribute("aria-busy")', arg=[view,tab])
+            page.wait_for_timeout(500)
 
         snapshot('home')
         navs = page.locator('.sidebar .nav-btn').evaluate_all('(xs)=>xs.map(x=>x.dataset.view)')
@@ -161,8 +163,39 @@ def run_browser(base, output, strict):
             page.wait_for_selector('#mgModalBack.open', state='visible', timeout=6000)
             report['checks'].append({'name':'other-mailbox-opens','ok':True})
             page.keyboard.press('Escape')
+            page.wait_for_selector('#mgModalBack',state='detached')
+            report['checks'].append({'name':'other-mailbox-escape-closes','ok':True})
         except Exception as error:
             report['checks'].append({'name':'functional-actions','ok':False,'detail':str(error)})
+        try:
+            click_nav('online-find'); click_tab('online-find','pool')
+            page.locator('#fv2PoolQ').fill('QA Buyer 000')
+            page.locator('[data-fv2-pool-form] button[type="submit"]').click()
+            page.wait_for_function("document.querySelectorAll('#fv2PoolTable tbody tr[data-fv2-lead]').length===1")
+            row=page.locator('#fv2PoolTable tbody tr[data-fv2-lead]').first
+            lead_id=row.get_attribute('data-fv2-lead')
+            row.locator('[data-hdw-route-action="develop"]').click()
+            page.wait_for_function('(id)=>document.querySelector("#hdwLead")?.value===id',arg=lead_id)
+            report['checks'].append({'name':'off-page-lead-opens-exact-record','ok':True,'lead_id':lead_id})
+            page.locator('#hdwBody').fill('Unsent review text preserved by tab return')
+            click_tab('online-find','pool'); click_tab('online-find','develop')
+            assert page.locator('#hdwBody').input_value()=='Unsent review text preserved by tab return'
+            report['checks'].append({'name':'development-unsaved-text-retained','ok':True})
+            click_tab('online-find','map')
+            page.locator('#hsMapKeyword').fill('hinges for QA region')
+            click_tab('online-find','company'); click_tab('online-find','map')
+            assert page.locator('#hsMapKeyword').input_value()=='hinges for QA region'
+            report['checks'].append({'name':'shared-service-search-context-retained','ok':True})
+            click_nav('mail'); click_tab('mail','mailbox')
+            assert page.locator('#huidiServiceMain .hs-head h3').inner_text()=='邮箱设置'
+            report['checks'].append({'name':'mailbox-distinct-from-inbox','ok':True})
+            for width,height in [(1366,768),(2048,1118)]:
+                page.set_viewport_size({'width':width,'height':height})
+                click_nav('online-find');click_tab('online-find','pool')
+                snapshot(f'viewport-{width}x{height}')
+            page.set_viewport_size({'width':1640,'height':920})
+        except Exception as error:
+            report['checks'].append({'name':'expanded-navigation-forms','ok':False,'detail':str(error)})
         (output / 'REPORT.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
         print(json.dumps({'screens':len(report['screens']),'failures':report['failures'],'page_errors':report['page_errors'],'checks':report['checks']}, ensure_ascii=False), flush=True)
         browser.close()

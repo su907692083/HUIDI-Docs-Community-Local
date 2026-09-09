@@ -18,7 +18,26 @@ async function saveConnection(id){const n=connectionNode(id);if(!n)return;const 
 async function testConnection(id){try{await api(`/api/mail/accounts/${id}/test`,{method:'POST',body:'{}'});alert('邮箱连接正常');await renderAccounts();await refresh()}catch(e){alert('连接失败：'+friendly(e))}}
 async function addAccount(){try{const payload={display_name:clean($('#mgName').value),email:clean($('#mgEmail').value),provider:'smtp',auth_mode:'smtp',daily_limit:Number($('#mgDaily').value||40),min_interval_seconds:Number($('#mgInterval').value||120),timezone:clean($('#mgTz').value)||'Asia/Shanghai'};await api('/api/mail/accounts',{method:'POST',body:JSON.stringify(payload)});$('#mgEmail').value='';await renderAccounts();await refresh()}catch(e){alert('添加失败：'+friendly(e))}}
 async function addSuppression(){try{const email=clean($('#mgSuppressEmail').value),reason=clean($('#mgSuppressReason').value)||'manual';await api('/api/mail/suppressions',{method:'POST',body:JSON.stringify({email,reason,source:'manual',active:true})});$('#mgSuppressEmail').value='';$('#mgSuppressReason').value='';alert('已加入不再发送');await refresh()}catch(e){alert('设置失败：'+friendly(e))}}
-async function openManager(){if($('#mgModalBack'))return;document.body.insertAdjacentHTML('beforeend',managerHtml());$('#mgClose').onclick=()=>$('#mgModalBack').remove();$('#mgModalBack').onclick=e=>{if(e.target.id==='mgModalBack')e.currentTarget.remove()};$('#mgAddAccount').onclick=addAccount;$('#mgSuppressBtn').onclick=addSuppression;await renderAccounts()}
+async function openManager(){
+ if($('#mgModalBack'))return;
+ const previous=document.activeElement;
+ document.body.insertAdjacentHTML('beforeend',managerHtml());
+ const back=$('#mgModalBack'),modal=back.querySelector('.mg-modal');back.classList.add('open');
+ modal.setAttribute('role','dialog');modal.setAttribute('aria-modal','true');modal.setAttribute('aria-label','连接其他邮箱');
+ const close=()=>{back.remove();previous?.focus?.();window.dispatchEvent(new CustomEvent('HUIDI:mail-accounts-changed'))};
+ $('#mgClose').onclick=close;back.onclick=e=>{if(e.target===back)close()};
+ back.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();return}
+  if(e.key!=='Tab')return;
+  const fields=[...modal.querySelectorAll('button,input,select,textarea,a[href]')].filter(x=>!x.disabled&&x.getClientRects().length);
+  if(!fields.length)return;const first=fields[0],last=fields.at(-1);
+  if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}
+  else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}
+ });
+ $('#mgAddAccount').onclick=addAccount;$('#mgSuppressBtn').onclick=addSuppression;
+ $('#mgName').focus();
+ try{await renderAccounts()}catch(error){const box=$('#mgAccounts');if(box)box.textContent=friendly(error)}
+}
 function bindLeadTracking(){document.addEventListener('click',e=>{const open=e.target.closest('[data-open]');if(open){leadId=String(open.dataset.open||'');setTimeout(async()=>{try{await loadAccounts();await refresh()}catch(_){}},160);return}if(leadId&&e.target.closest('#approveDraft,#rejectDraft,#makeDraft,#findContact,#saveLead,#syncLocal'))setTimeout(refresh,650)},true)}
 async function boot(){install();bindLeadTracking();try{await loadAccounts()}catch(_){} }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();

@@ -52,7 +52,7 @@ function buildNav(){
 }
 function navCounts(d){
   const counts={home:'',deals:d.deals.filter(activeDeal).length,customers:d.customers.length,products:d.products.length,catalog:d.products.length,documents:d.docs.length,brands:d.brands.length,templates:d.templates.length,mail:d.mail.length,recycle:d.recycle.length,backup:'',help:''};
-  $$('.nav-btn').forEach(b=>{let x=$('.workspace-nav-count',b);if(!x){x=document.createElement('span');x.className='workspace-nav-count';b.appendChild(x)}const v=counts[b.dataset.view];x.textContent=v===''?'':String(v);x.hidden=v===''});
+  $$('.nav-btn').forEach(b=>{let x=$('.workspace-nav-count',b);if(!x){x=document.createElement('span');x.className='workspace-nav-count';b.appendChild(x)}const v=counts[b.dataset.view],known=Object.prototype.hasOwnProperty.call(counts,b.dataset.view)&&v!==''&&Number.isFinite(Number(v));x.textContent=known?String(v):'';x.hidden=!known;});
 }
 function ensureHome(){const home=$('#view-home');if(!home)return null;let box=$('.workspace-r1-home',home);if(!box){box=document.createElement('div');box.className='workspace-r1-home';home.insertBefore(box,$('.home-grid',home)||home.firstChild)}return box}
 function stageRows(ds){const defs=[['待确认需求',d=>['new_inquiry','qualified'].includes(d.stage)],['待报价/谈判',quoteDeal],['订单执行中',executionDeal],['已出运/完成',d=>['shipped','completed'].includes(d.stage)]];const max=Math.max(1,...defs.map(([,f])=>ds.filter(f).length));return defs.map(([label,f])=>{const n=ds.filter(f).length;return `<div class="workspace-r1-stage-row"><span>${label}</span><div class="workspace-r1-stage-track"><div class="workspace-r1-stage-fill" style="width:${Math.round(n/max*100)}%"></div></div><strong>${n}</strong></div>`}).join('')}

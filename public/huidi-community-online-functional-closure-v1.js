@@ -55,7 +55,7 @@ async function capabilities(force=false){
     const services=svc.status==='fulfilled'?(svc.value.services||{}):{};
     const acquisition=acq.status==='fulfilled'?acq.value:{};
     const mailboxes=boxes.status==='fulfilled'&&Array.isArray(boxes.value)?boxes.value:[];
-    return {services,acquisition,mailboxes};
+    return {services,acquisition,mailboxes,errors:[svc,acq,boxes].filter(x=>x.status==='rejected').map(x=>String(x.reason?.message||'连接状态读取失败'))};
   })();
   return capabilityPromise;
 }
@@ -66,11 +66,11 @@ function ensureCapHost(view,title,desc){
   const root=$(`#view-${view}`);if(!root)return null;
   let host=$(`.hfc-capability[data-hfc-view="${view}"]`,root);
   if(!host){
-    host=document.createElement('section');host.className='hfc-capability';host.dataset.hfcView=view;
+    host=document.createElement('details');host.className='hfc-capability';host.dataset.hfcView=view;
     const tabs=$(':scope > .fv2-tabs',root),head=$(':scope > .section-head',root);
     if(tabs)root.insertBefore(host,tabs);else if(head)head.insertAdjacentElement('afterend',host);else root.prepend(host);
   }
-  host.innerHTML=`<div class="hfc-cap-head"><div><strong>${esc(title)}</strong><span>${esc(desc)}</span></div><button type="button" data-hfc-refresh>刷新状态</button></div><div class="hfc-cap-grid"><div class="hfc-cap-loading">正在读取真实连接状态…</div></div>`;
+  host.innerHTML=`<summary class="hfc-cap-head"><strong>${esc(title)}</strong><span>连接状态 / 展开查看</span></summary><div class="hfc-cap-tools"><span>${esc(desc)}</span><button type="button" data-hfc-refresh>刷新状态</button></div><div class="hfc-cap-grid"><div class="hfc-cap-loading">正在读取真实连接状态…</div></div>`;
   return host;
 }
 async function renderCapabilities(force=false){
@@ -103,7 +103,7 @@ async function renderCapabilities(force=false){
       capCard('企业核验',!!s.company_check,s.company_check?'企业数据源已连接':'企业核验数据源待连接','online-find:company'),
       capCard('贸易记录',!!s.trade_data,s.trade_data?'贸易数据源已连接':'贸易数据源待连接','online-intel:trade'),
       capCard('HS / 关税',!!s.tariff,s.tariff?'关税数据源已连接':'关税数据源待连接','online-intel:tariff'),
-      capCard('汇率',s.fx!==false,'内置实时汇率服务','online-intel:fx'),
+      capCard('汇率',s.fx===true,'内置实时汇率服务','online-intel:fx'),
       capCard('船期 / 物流',!!s.shipping,s.shipping?'物流数据源已连接':'物流数据源待连接','online-intel:shipping')
     ].join('');
   }
@@ -112,7 +112,7 @@ async function renderCapabilities(force=false){
     const ready=[
       !!a.live_company_search,!!a.live_contact_search,!!s.map_search,
       mailReady,
-      !!s.company_check,!!s.trade_data,!!s.tariff,s.fx!==false,!!s.shipping
+      !!s.company_check,!!s.trade_data,!!s.tariff,s.fx===true,!!s.shipping
     ].filter(Boolean).length;
     $('.hfc-cap-grid',admin).innerHTML=[
       `<div class="hfc-cap hfc-summary ready"><div><b>当前可用能力</b><span>按真实后端状态统计，不用演示数据冒充。</span></div><strong>${ready}/9</strong></div>`,
@@ -122,6 +122,7 @@ async function renderCapabilities(force=false){
     ].join('');
   }
   normalizePageCopy();
+  if(data.errors?.length){$$('.hfc-capability').forEach(host=>{const note=document.createElement('div');note.className='hfc-inline-state';note.setAttribute('role','status');note.textContent='部分连接状态未能读取，请刷新后核对。';host.appendChild(note)})}
   document.body.dataset.huidiFunctionalClosure='v1';
 }
 function scheduleCapabilities(ms=80,force=false){clearTimeout(renderTimer);renderTimer=setTimeout(()=>renderCapabilities(force).catch(()=>{}),ms)}
@@ -158,15 +159,15 @@ async function handleMailSync(btn){
     await api('/api/mail/sync-all',{method:'POST',body:'{}'});
     inlineState(btn,'邮箱已刷新','已完成本次收取。','ok');
     const active=$('#view-mail .fv2-tab.active')?.dataset.fv2Tab||'inbox';
-    if(['inbox','sent','mailbox'].includes(active))setTimeout(()=>window.HUIDICommunityOnlineFullV2?.openTab?.('mail',active),50);
+    if(['inbox','sent','mailbox'].includes(active))setTimeout(()=>window.HUIDICommunityOnlineFullV2?.openTab?.('mail',active,{force:true}),50);
   }catch(e){
     inlineState(btn,'暂时无法收取邮件',clean(e.message||e),'warn',
       '<button type="button" data-hfc-tab="mail:mailbox">检查邮箱连接</button>');
   }finally{btn.disabled=false;btn.textContent=old}
 }
-function number(v){const n=Number(v);return Number.isFinite(n)?n:null}
+function number(v){if(v===null||v===undefined||String(v).trim()==='')return null;const n=Number(v);return Number.isFinite(n)?n:null}
 function osmUrl(row){
-  const lat=number(row?.lat),lng=number(row?.lng);if(lat===null||lng===null)return'';
+  const lat=number(row?.lat),lng=number(row?.lng);if(lat===null||lng===null||Math.abs(lat)>90||Math.abs(lng)>180)return'';
   const d=.035,bbox=[lng-d,lat-d,lng+d,lat+d].map(x=>x.toFixed(6)).join('%2C');
   return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat.toFixed(6)}%2C${lng.toFixed(6)}`;
 }
@@ -244,7 +245,8 @@ function bind(){
 }
 function boot(){
   bind();normalizeCounts();renderCapabilities().catch(()=>{});
-  [120,360,900,1800].forEach(ms=>setTimeout(()=>{normalizeCounts();renderCapabilities().catch(()=>{})},ms));
+  window.addEventListener('HUIDI:mail-accounts-changed',()=>renderCapabilities(true).catch(()=>{}));
+  window.addEventListener('HUIDI:fusion-pane-rendered',()=>{normalizeCounts();normalizePageCopy()});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.HUIDICommunityOnlineFunctionalClosure=Object.freeze({version:'1.0.1',normalizeCounts,normalizePageCopy,renderCapabilities,runMap});

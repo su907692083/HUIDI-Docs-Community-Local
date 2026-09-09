@@ -59,7 +59,12 @@ jobs:
           python -m playwright install --with-deps chromium
       - name: Exercise actual Community navigation and retained owners
         if: hashFiles('tools/community_fullsite_browser_audit.py') != ''
-        run: python tools/community_fullsite_browser_audit.py --output /tmp/huidi-fullsite-audit/browser
+        run: |
+          if test -f docs/FULLSITE-CLOSURE-R1.md; then
+            python tools/community_fullsite_browser_audit.py --strict --output /tmp/huidi-fullsite-audit/browser
+          else
+            python tools/community_fullsite_browser_audit.py --output /tmp/huidi-fullsite-audit/browser
+          fi
       - name: Upload exact source and audit evidence
         if: always()
         uses: actions/upload-artifact@v4
