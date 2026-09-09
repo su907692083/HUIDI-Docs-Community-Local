@@ -42,6 +42,9 @@ def main() -> None:
     def phase(name: str) -> None:
         print(f"WORLD-MARKET PHASE: {name}", flush=True)
 
+    def view_box(svg) -> str:
+        return str(driver.execute_script("return arguments[0].getAttribute('viewBox') || ''", svg) or "")
+
     def selected_code() -> str:
         return driver.execute_script(
             "const p=document.querySelector(arguments[0]);return p?.querySelector('.wi-country-market.selected')?.dataset.marketId || p?.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';",
@@ -185,7 +188,8 @@ def main() -> None:
         phase("zoom")
         driver.execute_script("window.HUIDIWorldCountryInteraction?.resetView?.()")
         svg = driver.find_element(By.CSS_SELECTOR, f"{ACTIVE_MAP} .wi-country-svg")
-        before = svg.get_attribute("viewBox")
+        before = view_box(svg)
+        assert before, "active world SVG is missing its viewBox"
         point = visible_svg_point(svg)
         assert point["x"] is not None, f"no visible SVG wheel target: {point}"
         print("wheel-target", point, "before", before, flush=True)
@@ -194,11 +198,11 @@ def main() -> None:
             "Input.dispatchMouseEvent",
             {"type": "mouseWheel", "x": point["x"], "y": point["y"], "deltaX": 0, "deltaY": -180},
         )
-        wait.until(lambda _d: svg.get_attribute("viewBox") != before)
-        print("wheel-after", svg.get_attribute("viewBox"), flush=True)
+        wait.until(lambda _d: view_box(svg) != before)
+        print("wheel-after", view_box(svg), flush=True)
 
         phase("drag")
-        zoomed = svg.get_attribute("viewBox")
+        zoomed = view_box(svg)
         ocean = driver.execute_script(
             """
             const svg=arguments[0],r=svg.getBoundingClientRect(),vw=window.innerWidth,vh=window.innerHeight;
@@ -215,7 +219,7 @@ def main() -> None:
         driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mousePressed", "x": x, "y": y, "button": "left", "buttons": 1, "clickCount": 1})
         driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseMoved", "x": x + 70, "y": y - 28, "button": "left", "buttons": 1})
         driver.execute_cdp_cmd("Input.dispatchMouseEvent", {"type": "mouseReleased", "x": x + 70, "y": y - 28, "button": "left", "buttons": 0, "clickCount": 1})
-        wait.until(lambda _d: svg.get_attribute("viewBox") != zoomed)
+        wait.until(lambda _d: view_box(svg) != zoomed)
 
         search_market("Germany", "DE")
         phase("product-context")
