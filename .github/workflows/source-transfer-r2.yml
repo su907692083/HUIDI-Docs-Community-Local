@@ -8,51 +8,30 @@ permissions:
 jobs:
   recover:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 3
     steps:
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: |
-          pip install playwright
-          python -m playwright install --with-deps chromium
-      - name: Recover only the explicitly uploaded source plan
+      - name: Derive exact QA locator repair from archived source plan
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
-          import base64, hashlib, io, json, os, re, urllib.request, zipfile, zlib
+          import base64, hashlib, json, os, urllib.request, zlib
           from pathlib import Path
-          from playwright.sync_api import sync_playwright
           out=Path('/tmp/r2-source-transfer');out.mkdir()
-          expected='786631a52a7c549596e1b0b5517a8df15e9d1b193c7b5ae98b845bac616a256f'
-          with sync_playwright() as pw:
-              browser=pw.chromium.launch(headless=True,args=['--no-sandbox'])
-              page=browser.new_page(accept_downloads=True)
-              page.goto('https://firestorage.ai/ja/f/3PU2GzdjGvWZ',wait_until='networkidle',timeout=60000)
-              page.screenshot(path=str(out/'share.png'))
-              (out/'PAGE.html').write_text(page.content())
-              (out/'TEXT.txt').write_text(page.locator('body').inner_text())
-              (out/'LINKS.json').write_text(json.dumps(page.locator('a').evaluate_all('(els)=>els.map(e=>({text:e.textContent,href:e.href}))'),ensure_ascii=False))
-              buttons=page.get_by_role('button',name=re.compile('ダウンロード|Download',re.I))
-              links=page.get_by_role('link',name=re.compile('ダウンロード|Download',re.I))
-              control=buttons.first if buttons.count() else links.first
-              with page.expect_download(timeout=45000) as info:
-                  control.click(timeout=15000)
-              download=info.value
-              download.save_as(str(out/'download.bin'))
-              browser.close()
-          raw=(out/'download.bin').read_bytes()
-          if raw.startswith(b'PK'):
-              archive=zipfile.ZipFile(io.BytesIO(raw))
-              targets=[n for n in archive.namelist() if n.endswith('PLAN-PUBLIC-SOURCE-ONLY.txt')]
-              assert len(targets)==1
-              raw=archive.read(targets[0])
-          assert len(raw)<2000000 and hashlib.sha256(raw).hexdigest()==expected, 'Exact source mismatch'
+          def api(path,payload=None):
+              assert path.startswith('git/blobs')
+              req=urllib.request.Request('https://api.github.com/repos/su907692083/HUIDI-Docs-Community-Local/'+path,data=json.dumps(payload).encode() if payload is not None else None,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'})
+              with urllib.request.urlopen(req,timeout=45) as response:return json.load(response)
+          source=api('git/blobs/b224067d3d6e6e9e00e2a616e22529376d1c4177')
+          raw=zlib.decompress(base64.b64decode(source['content']))
+          assert hashlib.sha256(raw).hexdigest()=='786631a52a7c549596e1b0b5517a8df15e9d1b193c7b5ae98b845bac616a256f'
+          text=raw.decode();old='#view-feishu [data-feishu-action=config]'
+          assert text.count(old)==2
+          raw=text.replace(old,old+':visible').encode()
+          expected='76117e95b2986d16c336581d4281a80aecf173c0281cb82f8083925741039638'
+          assert hashlib.sha256(raw).hexdigest()==expected
           plan=json.loads(raw);assert plan['schema']=='huidi.source-candidate/v1'
-          payload=base64.b64encode(zlib.compress(raw,9)).decode()
-          req=urllib.request.Request('https://api.github.com/repos/su907692083/HUIDI-Docs-Community-Local/git/blobs',data=json.dumps({'content':payload,'encoding':'base64'}).encode(),headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'})
-          with urllib.request.urlopen(req,timeout=45) as r:blob=json.load(r)
+          blob=api('git/blobs',{'content':base64.b64encode(zlib.compress(raw,9)).decode(),'encoding':'base64'})
           result={'sha256':expected,'payload_blobs':[blob['sha']],'promoted':False,'application_modified':False}
           (out/'PLAN-BLOB.json').write_text(json.dumps(result,indent=2))
           print(json.dumps(result))
