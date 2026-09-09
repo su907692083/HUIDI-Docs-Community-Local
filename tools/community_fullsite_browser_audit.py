@@ -210,7 +210,7 @@ def run_browser(base, output, strict):
                 templates:n=>({id:'scale-t-'+pad(n),name:'Scale Terms '+pad(n),trade_terms:'FOB'}),
                 recycle:n=>({id:'scale-r-'+pad(n),type:'product',source_key:'huidi_local_products_v1',original_id:'removed-'+pad(n),payload:{id:'removed-'+pad(n),name:'Removed Product '+pad(n)},deleted_at:'2026-09-09T00:00:00Z'})
               };
-              for(const [key,fn] of Object.entries(fixture))r[key].replaceAll([...r[key].list(),...Array.from({length:55},(_,n)=>fn(n))]);
+              for(const [key,fn] of Object.entries(fixture)){const extra=Array.from({length:55},(_,n)=>fn(n));if(r[key])r[key].replaceAll([...r[key].list(),...extra]);else{const storageKey=HUIDILocalCore.keys[key];if(!storageKey)throw new Error('Unknown fixture collection '+key);const current=JSON.parse(localStorage.getItem(storageKey)||'[]');localStorage.setItem(storageKey,JSON.stringify([...current,...extra]));}}
               for(let n=0;n<55;n++)await HUIDILocalDB.putDocument({id:'scale-doc-'+pad(n),document_type:'quotation',document_no:'QA-Q-'+pad(n),customer_name:'QA Customer',customer_id:'qa-customer',product_ids:['qa-product'],updated_at:'2026-09-09T00:00:00Z',payload:{documentType:'quotation',state:{documentType:'quotation',fields:{documentType:'quotation',documentNo:'QA-Q-'+pad(n),customerName:'QA Customer'},items:[]}}});
               return true;
             }""")
@@ -245,13 +245,23 @@ def run_browser(base, output, strict):
             assert page.locator('#huidiQuickBackdrop.open').count()==0
             page.keyboard.press('Escape')
             report['checks'].append({'name':'quick-detail-to-native-edit-and-return','ok':True})
+            click_nav('products')
+            row=page.locator('#productRows tr[data-quick-id]').first
+            assert row.locator('[data-action="product-delete"]').count()==1
+            assert row.locator('[data-action="catalog-one"]').count()==1
+            row.click()
+            page.locator('#huidiQuickBackdrop [data-context-find-product]').click()
+            page.wait_for_function('() => document.querySelector(".view.active")?.id === "view-online-find"')
+            assert 'Scale Product' in page.locator('#hfKeyword').input_value()
+            assert '/community/workspace.html' in page.url
+            report['checks'].append({'name':'secondary-product-actions-and-same-workspace-acquisition','ok':True})
             # Discard no data: opening and cancelling the permanent-delete dialog must preserve the row.
             click_nav('recycle')
-            before=page.evaluate('() => HUIDILocalCore.repositories.recycle.list().length')
+            before=page.evaluate('() => JSON.parse(localStorage.getItem(HUIDILocalCore.keys.recycle)||"[]").length')
             page.locator('#recycleRows [data-action="recycle-empty"]').first.click()
             page.wait_for_selector('#appDialog[open] [data-trash-cancel]')
             page.locator('[data-trash-cancel]').click()
-            assert page.evaluate('() => HUIDILocalCore.repositories.recycle.list().length')==before
+            assert page.evaluate('() => JSON.parse(localStorage.getItem(HUIDILocalCore.keys.recycle)||"[]").length')==before
             report['checks'].append({'name':'permanent-delete-cancel-preserves-data','ok':True})
             click_nav('documents')
             with page.expect_navigation(wait_until='domcontentloaded'):
