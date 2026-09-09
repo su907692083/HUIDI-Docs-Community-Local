@@ -10,27 +10,37 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
-      - name: Derive exact QA locator repair from archived source plan
+      - name: Derive exact observed interaction repair from archived source plan
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python - <<'PY'
-          import base64, hashlib, json, os, urllib.request, zlib
+          import base64, hashlib, json, os, re, urllib.request, zlib
           from pathlib import Path
           out=Path('/tmp/r2-source-transfer');out.mkdir()
           def api(path,payload=None):
               assert path.startswith('git/blobs')
               req=urllib.request.Request('https://api.github.com/repos/su907692083/HUIDI-Docs-Community-Local/'+path,data=json.dumps(payload).encode() if payload is not None else None,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'})
               with urllib.request.urlopen(req,timeout=45) as response:return json.load(response)
-          source=api('git/blobs/b224067d3d6e6e9e00e2a616e22529376d1c4177')
+          source=api('git/blobs/2585a4d40057d18d755a34e6877104fd70d2479d')
           raw=zlib.decompress(base64.b64decode(source['content']))
-          assert hashlib.sha256(raw).hexdigest()=='786631a52a7c549596e1b0b5517a8df15e9d1b193c7b5ae98b845bac616a256f'
-          text=raw.decode();old='#view-feishu [data-feishu-action=config]'
-          assert text.count(old)==2
-          raw=text.replace(old,old+':visible').encode()
-          expected='76117e95b2986d16c336581d4281a80aecf173c0281cb82f8083925741039638'
-          assert hashlib.sha256(raw).hexdigest()==expected
+          assert hashlib.sha256(raw).hexdigest()=='76117e95b2986d16c336581d4281a80aecf173c0281cb82f8083925741039638'
           plan=json.loads(raw);assert plan['schema']=='huidi.source-candidate/v1'
+          old="dialog.addEventListener('close',()=>{const n=$('#feishuAppSecret');if(n)n.value='';},{once:true});"
+          new="const secret=$('#feishuAppSecret');const clearSecret=()=>{if(secret)secret.value='';};dialog.addEventListener('cancel',clearSecret,{once:true});dialog.addEventListener('close',()=>{clearSecret();dialog.removeEventListener('cancel',clearSecret);},{once:true});"
+          edits=plan['files']['public/huidi-feishu-sync-rc166.js']['replacements'];assert sum(x['new'].count(old) for x in edits)==1
+          for x in edits:x['new']=x['new'].replace(old,new)
+          for x in plan['files']['public/huidi-feishu-data-rc1624.css']['replacements']:
+              text=re.sub(r'font-size:([0-9.]+)px',lambda m:'font-size:'+('12' if float(m[1])<12 else m[1])+'px',x['new'])
+              x['new']=text.replace('min-height:28px','min-height:32px').replace('min-height:30px','min-height:32px').replace('grid-template-columns:64px minmax','grid-template-columns:76px minmax').replace('grid-template-columns:58px 1fr','grid-template-columns:76px 1fr')
+          key='tools/source_reuse_browser_audit.py'
+          old="check('overwrite existing records off by default',not p.locator('#feishuUpdateExisting').is_checked())"
+          new=old+"\n                    check('mapping and table text remains readable',p.locator('#feishuPreview td').first.evaluate('(e)=>parseFloat(getComputedStyle(e).fontSize)')>=12 and p.locator('[data-feishu-map=company]').evaluate('(e)=>parseFloat(getComputedStyle(e).fontSize)')>=12)"
+          assert plan['files'][key]['content'].count(old)==1
+          plan['files'][key]['content']=plan['files'][key]['content'].replace(old,new)
+          raw=json.dumps(plan,ensure_ascii=False,separators=(',',':')).encode()
+          expected='35f6ffc84d9269dfee7a4e403d598f3bb6aaf059c9dfb14d4f9a85363de21dcb'
+          assert hashlib.sha256(raw).hexdigest()==expected
           blob=api('git/blobs',{'content':base64.b64encode(zlib.compress(raw,9)).decode(),'encoding':'base64'})
           result={'sha256':expected,'payload_blobs':[blob['sha']],'promoted':False,'application_modified':False}
           (out/'PLAN-BLOB.json').write_text(json.dumps(result,indent=2))
