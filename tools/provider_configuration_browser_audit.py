@@ -40,7 +40,7 @@ try:
   tav.locator('[data-ss-test]').click()
   tav.locator('[data-ss-result]').filter(has_text='尚未配置').wait_for()
   tav.locator('[data-ss-edit]').click()
-  tav.locator('summary').click()
+  tav.locator('.ss-paste > summary').click()
   tav.locator('[data-ss-paste]').fill('TAVILY_API_KEY=fixture-browser-private-value')
   tav.locator('[data-ss-apply]').click()
   assert tav.locator('[data-ss-field="token"]').input_value()=='fixture-browser-private-value'

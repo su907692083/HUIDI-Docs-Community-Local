@@ -112,6 +112,7 @@ from . import notification_categories  # noqa: F401,E402
 from . import intelligence_records  # noqa: F401,E402
 from . import deal_reference  # noqa: F401,E402
 from . import service_connections  # noqa: F401,E402
+from . import feishu_documents  # noqa: F401,E402
 from . import service_adapters  # noqa: F401,E402
 from . import service_hub  # noqa: F401,E402
 from . import service_hub_adapter_patch  # noqa: F401,E402
