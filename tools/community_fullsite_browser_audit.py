@@ -68,7 +68,7 @@ def run_browser(base, output, strict):
             assert response.status == 200, response.text()
         page = context.new_page()
         page.set_default_timeout(8000)
-        page.on('pageerror', lambda error: report['page_errors'].append(str(error)))
+        page.on('pageerror', lambda error: report['page_errors'].append(getattr(error,'stack',None) or str(error)))
         page.on('response', lambda r: report['http_errors'].append({'url': r.url.replace(base, ''), 'status': r.status}) if r.status >= 400 else None)
         page.on('dialog', lambda d: (report['dialogs'].append(d.message), d.dismiss()))
         page.goto(base + '/', wait_until='domcontentloaded')
@@ -211,7 +211,8 @@ def run_browser(base, output, strict):
                 recycle:n=>({id:'scale-r-'+pad(n),type:'product',source_key:'huidi_local_products_v1',original_id:'removed-'+pad(n),payload:{id:'removed-'+pad(n),name:'Removed Product '+pad(n)},deleted_at:'2026-09-09T00:00:00Z'})
               };
               for(const [key,fn] of Object.entries(fixture)){const extra=Array.from({length:55},(_,n)=>fn(n));if(r[key])r[key].replaceAll([...r[key].list(),...extra]);else{const storageKey=HUIDILocalCore.keys[key];if(!storageKey)throw new Error('Unknown fixture collection '+key);const current=JSON.parse(localStorage.getItem(storageKey)||'[]');localStorage.setItem(storageKey,JSON.stringify([...current,...extra]));}}
-              for(let n=0;n<55;n++)await HUIDILocalDB.putDocument({id:'scale-doc-'+pad(n),document_type:'quotation',document_no:'QA-Q-'+pad(n),customer_name:'QA Customer',customer_id:'qa-customer',product_ids:['qa-product'],updated_at:'2026-09-09T00:00:00Z',payload:{documentType:'quotation',state:{documentType:'quotation',fields:{documentType:'quotation',documentNo:'QA-Q-'+pad(n),customerName:'QA Customer'},items:[]}}});
+              await HUIDICommunityCloudAdapter.syncState();const persisted=await (await fetch('/api/business/deals?page=1&page_size=100')).json();const deal=(persisted.items||persisted).find(x=>x.title==='QA inquiry connectivity');if(!deal?.id)throw new Error('Fixture inquiry did not persist');
+              for(let n=0;n<55;n++)await HUIDILocalDB.putDocument({id:'scale-doc-'+pad(n),deal_id:String(deal.id),document_type:'quotation',document_no:'QA-Q-'+pad(n),customer_name:'QA Customer',customer_id:'qa-customer',product_ids:['qa-product'],updated_at:'2026-09-09T00:00:00Z',payload:{documentType:'quotation',dealId:String(deal.id),state:{documentType:'quotation',fields:{documentType:'quotation',documentNo:'QA-Q-'+pad(n),customerName:'QA Customer'},items:[]}}});
               return true;
             }""")
             assert awaitables
