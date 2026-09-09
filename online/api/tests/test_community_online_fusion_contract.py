@@ -116,8 +116,8 @@ class CommunityOnlineFusionContractTests(unittest.TestCase):
         for module in ("customer-intelligence.js", "world-intelligence-map.js", "world-country-interaction.js"):
             self.assertIn(module, self.intel_v2)
         self.assertIn("intel.mount(pane)", self.intel_v2)
+        self.assertIn("await load('worldCountry')", self.intel_v2)
         self.assertIn("map.open()", self.intel_v2)
-        self.assertIn("country.enhance", self.intel_v2)
         self.assertNotIn("MutationObserver", self.full_v2)
         self.assertNotIn("MutationObserver", self.intel_v2)
         self.assertNotIn("MutationObserver", self.development)
