@@ -36,10 +36,11 @@ async function capabilities(force=false){
   if(force)capabilityPromise=null;
   if(capabilityPromise)return capabilityPromise;
   capabilityPromise=(async()=>{
-    const [svc,acq]=await Promise.allSettled([api('/api/services/status'),api('/api/acquisition/status')]);
+    const [svc,acq,boxes]=await Promise.allSettled([api('/api/services/status'),api('/api/acquisition/status'),api('/api/mail/accounts')]);
     const services=svc.status==='fulfilled'?(svc.value.services||{}):{};
     const acquisition=acq.status==='fulfilled'?acq.value:{};
-    return {services,acquisition};
+    const mailboxes=boxes.status==='fulfilled'&&Array.isArray(boxes.value)?boxes.value:[];
+    return {services,acquisition,mailboxes};
   })();
   return capabilityPromise;
 }
@@ -58,14 +59,16 @@ function ensureCapHost(view,title,desc){
   return host;
 }
 async function renderCapabilities(force=false){
-  const data=await capabilities(force),s=data.services||{},a=data.acquisition||{};
+  const data=await capabilities(force),s=data.services||{},a=data.acquisition||{},mailboxes=data.mailboxes||[];
+  const connectedMail=mailboxes.filter(x=>x?.enabled&&x?.connection_state==='connected');
+  const mailReady=connectedMail.length>0;
   const find=ensureCapHost('online-find','客户开发引擎','搜索、联系人、地图和邮件必须明确告诉你当前能不能真实使用。');
   if(find){
     const cards=[
       capCard('企业搜索',!!a.live_company_search,`来源：${providers(a.company_search_order)}`,'online-find:base'),
       capCard('联系人搜索',!!a.live_contact_search,`来源：${providers(a.contact_search_order)}`,'online-find:contacts'),
       capCard('地图线索',!!s.map_search,s.map_search?'在线地点搜索已连接':'在线地图搜索服务尚未配置','online-find:map'),
-      capCard('邮件触达',!!(s.mail?.gmail||s.mail?.outlook||s.mail?.company_mail),`Gmail ${s.mail?.gmail?'可用':'未配'} · Outlook ${s.mail?.outlook?'可用':'未配'} · 其他邮箱 ${s.mail?.company_mail?'可用':'未配'}`,'mail:mailbox')
+      capCard('邮件触达',mailReady,mailReady?`${connectedMail.length} 个发送邮箱已连接`:`尚无已连接发送邮箱 · SMTP / IMAP ${s.mail?.company_mail?'可配置':'未启用'}`,'mail:mailbox')
     ];
     $('.hfc-cap-grid',find).innerHTML=cards.join('');
   }
@@ -75,7 +78,7 @@ async function renderCapabilities(force=false){
       capCard('Gmail OAuth',!!s.mail?.gmail,s.mail?.gmail?'平台 OAuth 已配置':'平台尚未配置 Gmail OAuth','mail:inbox'),
       capCard('Outlook OAuth',!!s.mail?.outlook,s.mail?.outlook?'平台 OAuth 已配置':'平台尚未配置 Outlook OAuth','mail:inbox'),
       capCard('其他邮箱',!!s.mail?.company_mail,'可使用 SMTP / IMAP 连接','mail:mailbox'),
-      capCard('自动跟进',!!s.mail?.company_mail,'连接发送邮箱后按确认的序列执行','mail:sequences')
+      capCard('自动跟进',mailReady,mailReady?'已有发送邮箱，可按确认序列执行':'先连接至少一个发送邮箱','mail:sequences')
     ].join('');
   }
   const intel=ensureCapHost('online-intel','外贸数据与判断引擎','把市场、企业、贸易、关税、汇率和物流能力放回各自业务位置。');
@@ -93,13 +96,13 @@ async function renderCapabilities(force=false){
   if(admin){
     const ready=[
       !!a.live_company_search,!!a.live_contact_search,!!s.map_search,
-      !!(s.mail?.gmail||s.mail?.outlook||s.mail?.company_mail),
+      mailReady,
       !!s.company_check,!!s.trade_data,!!s.tariff,s.fx!==false,!!s.shipping
     ].filter(Boolean).length;
     $('.hfc-cap-grid',admin).innerHTML=[
       `<div class="hfc-cap hfc-summary ready"><div><b>当前可用能力</b><span>按真实后端状态统计，不用演示数据冒充。</span></div><strong>${ready}/9</strong></div>`,
       capCard('搜索与获客',!!a.live_company_search,`企业：${providers(a.company_search_order)} · 联系人：${providers(a.contact_search_order)}`,'online-find:base'),
-      capCard('邮箱与触达',!!(s.mail?.gmail||s.mail?.outlook||s.mail?.company_mail),'Gmail / Outlook / SMTP-IMAP','mail:mailbox'),
+      capCard('邮箱与触达',mailReady,mailReady?`${connectedMail.length} 个邮箱已连接`:'尚无已连接邮箱 · 可使用 Gmail / Outlook / SMTP-IMAP','mail:mailbox'),
       capCard('外贸数据源',!!(s.company_check||s.trade_data||s.tariff||s.shipping),'企业、贸易、关税、物流统一在“数据来源”管理','online-admin:sources')
     ].join('');
   }
