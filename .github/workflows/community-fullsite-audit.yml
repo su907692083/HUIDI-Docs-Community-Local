@@ -55,6 +55,8 @@ jobs:
       - name: Install isolated browser audit dependencies
         if: hashFiles('tools/community_fullsite_browser_audit.py') != ''
         run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
           python -m pip install -r online/api/requirements.txt playwright
           python -m playwright install --with-deps chromium
       - name: Exercise actual Community navigation and retained owners
