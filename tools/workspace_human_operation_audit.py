@@ -96,7 +96,11 @@ def exercise(base: str, output: Path) -> None:
             page.locator('#hfAdminGrid [data-hf-admin-tab="company"]').click()
             page.wait_for_selector('#view-online-admin [data-fv2-pane=company].active:not([hidden])')
             check('overview action reaches existing company form',only_one_pane('online-admin'))
-            nav('online-intel')
+            # The interactive world map is now the primary market entry. Let that default settle,
+            # then explicitly open the retained market-list tab to verify alias filtering there.
+            nav('online-intel','world-map')
+            page.locator('#view-online-intel [data-fv2-tab="base"]').click()
+            page.wait_for_selector('#view-online-intel [data-fv2-pane="base"].active:not([hidden])')
             page.locator('#hfMarkets [data-hf-market]').first.wait_for()
             page.locator('#hfMarketQ').fill('Deutschland')
             check('market filter matches country alias',page.locator('#hfMarkets [data-hf-market]').count()==1)
