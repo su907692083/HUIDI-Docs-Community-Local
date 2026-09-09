@@ -2,9 +2,9 @@ name: HUIDI Provider Configuration Audit
 on:
   push:
     branches: ['online/v0.1-lead-workbench']
-    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', 'tools/source_reuse_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
+    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', 'tools/source_reuse_browser_audit.py', 'tools/task_flow_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
   pull_request:
-    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', 'tools/source_reuse_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
+    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', 'tools/source_reuse_browser_audit.py', 'tools/task_flow_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -14,7 +14,7 @@ concurrency:
 jobs:
   provider_configuration:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,6 +44,8 @@ jobs:
         run: python tools/workspace_human_operation_audit.py --output /tmp/huidi-provider-evidence/human
       - name: Exercise source filters and Feishu table reuse with isolated upstream
         run: python tools/source_reuse_browser_audit.py --output /tmp/huidi-provider-evidence/reuse
+      - name: Exercise low-input foreign-trade task flow through existing owners
+        run: python tools/task_flow_browser_audit.py --output /tmp/huidi-provider-evidence/task-flow
       - uses: actions/upload-artifact@v4
         if: always()
         with:
