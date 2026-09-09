@@ -70,7 +70,18 @@ def main() -> None:
         driver.execute_script("window.HUIDIWorldCountryInteraction?.resetView?.()")
         time.sleep(0.12)
         marker = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, f'.wi-country-marker[data-market-id="{code}"]'))
-        driver.execute_script("arguments[0].scrollIntoView({block:'center',inline:'center'});arguments[0].click()", marker)
+        point = driver.execute_script(
+            "const r=arguments[0].getBoundingClientRect();return{x:r.left+r.width/2,y:r.top+r.height/2};",
+            marker,
+        )
+        driver.execute_cdp_cmd(
+            "Input.dispatchMouseEvent",
+            {"type": "mousePressed", "x": point["x"], "y": point["y"], "button": "left", "buttons": 1, "clickCount": 1},
+        )
+        driver.execute_cdp_cmd(
+            "Input.dispatchMouseEvent",
+            {"type": "mouseReleased", "x": point["x"], "y": point["y"], "button": "left", "buttons": 0, "clickCount": 1},
+        )
         wait_selected(code)
 
     def assert_layout(width: int, height: int) -> None:
