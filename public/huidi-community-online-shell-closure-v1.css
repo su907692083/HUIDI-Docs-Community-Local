@@ -1,0 +1,37 @@
+/* HUIDI Community × Online shell closure V1
+   Final Online-only density/navigation layer. No business owner or storage changes. */
+body.huidi-community-online.workspace-r1 .sidebar{height:100vh;max-height:100vh;overflow:hidden}
+body.huidi-community-online.workspace-r1 .workspace-nav-groups.huidi-online-domain-nav{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-right:2px;scrollbar-width:thin}
+body.huidi-community-online.workspace-r1 .workspace-nav-groups.huidi-online-domain-nav .workspace-nav-group{gap:1px}
+body.huidi-community-online.workspace-r1 .workspace-nav-groups.huidi-online-domain-nav .workspace-nav-group-title{padding-top:4px;padding-bottom:1px}
+body.huidi-community-online.workspace-r1 .workspace-nav-count[hidden]{display:none!important}
+body.huidi-community-online.workspace-r1 .sidebar-foot{flex:0 0 auto;margin-top:auto;padding-top:4px;position:relative;z-index:3;background:var(--sidebar,var(--panel))}
+body.huidi-community-online.workspace-r1 .theme-card{margin:0}
+.huidi-online-more{border-top:1px solid rgba(255,255,255,.08);margin-top:3px;padding-top:3px}
+.huidi-online-more>summary{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 6px;align-items:center;padding:6px 8px;border-radius:9px;cursor:pointer;color:#aebed3;font-size:9px;font-weight:850}
+.huidi-online-more>summary::-webkit-details-marker{display:none}.huidi-online-more>summary span{color:#d4deea;font-size:9.5px}.huidi-online-more>summary small{grid-column:1/2;color:#71849c;font-size:7.8px;font-weight:650}.huidi-online-more>summary i{grid-column:2;grid-row:1/3;font-style:normal;transition:transform .16s}.huidi-online-more[open]>summary i{transform:rotate(180deg)}
+.huidi-online-more-body{display:grid;gap:3px;padding-top:3px}.huidi-online-more-body .workspace-nav-group-title{font-size:8px!important;opacity:.78}.huidi-online-more-body .nav-btn{min-height:34px!important}.huidi-online-more-body .icon-tile{width:25px!important;height:25px!important}
+.huidi-community-online .huidi-fusion-nav .nav-btn::after{display:none!important;content:none!important}
+.huidi-community-online .status-dot.fusion-cloud{display:none!important}
+body.huidi-community-online.workspace-r1 #view-online-find>.section-head,body.huidi-community-online.workspace-r1 #view-online-admin>.section-head{margin-bottom:3px;min-height:34px}
+body.huidi-community-online.workspace-r1 #view-online-find>.section-head p,body.huidi-community-online.workspace-r1 #view-online-admin>.section-head p{max-width:680px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.huidi-community-online.workspace-r1 #hfFindStatus[hidden]{display:none!important}
+body.huidi-community-online.workspace-r1 #hfFindRefresh,body.huidi-community-online.workspace-r1 #hfAdminRefresh{min-height:28px;padding:0 8px}
+body.huidi-community-online .fv2-tabs{padding:4px 0 6px;margin:0 0 6px;gap:4px;flex-wrap:nowrap;overflow:visible}
+body.huidi-community-online .fv2-tab{padding:6px 8px;border-radius:7px}
+.huidi-tab-more{position:relative;margin-left:auto;flex:0 0 auto}
+.huidi-tab-more>summary{list-style:none;border:1px solid #d9e2ec;background:#fff;color:#50647b;border-radius:7px;padding:6px 9px;font-size:9px;font-weight:850;cursor:pointer;white-space:nowrap}
+.huidi-tab-more>summary::-webkit-details-marker{display:none}.huidi-tab-more[open]>summary{background:#eef4ff;border-color:#c3d4ef;color:#255da8}
+.huidi-tab-more-menu{position:absolute;right:0;top:calc(100% + 5px);z-index:30;display:grid;gap:2px;width:max-content;min-width:150px;padding:5px;border:1px solid #dce4ed;border-radius:9px;background:#fff;box-shadow:0 12px 28px rgba(25,45,72,.16)}
+.huidi-tab-more:not([open]) .huidi-tab-more-menu{display:none}.huidi-tab-more-menu .fv2-tab{width:100%;text-align:left;border:0;background:transparent;padding:7px 8px}.huidi-tab-more-menu .fv2-tab:hover,.huidi-tab-more-menu .fv2-tab.active{background:#eef4ff}
+#view-online-admin [data-fv2-pane="sources"]>.fv2-panel{padding:0;overflow:hidden}
+#view-online-admin [data-fv2-pane="sources"]>.fv2-panel>.fv2-section-title{margin:0;padding:9px 10px 7px}
+#view-online-admin [data-fv2-pane="sources"] .fv2-list{gap:0}
+#view-online-admin [data-fv2-pane="sources"] .fv2-item[data-fv2-source]{border:0;border-top:1px solid #edf1f5;border-radius:0;padding:0;background:#fff}
+.huidi-source-header,.huidi-source-row{display:grid!important;grid-template-columns:minmax(170px,1.25fr) minmax(82px,.45fr) minmax(120px,.65fr) auto;gap:8px;align-items:center}
+.huidi-source-header{padding:6px 10px;border-top:1px solid #e8edf3;background:#f8fafc;color:#76869a;font-size:7.8px;font-weight:850}
+#view-online-admin .huidi-source-row{border:0;border-radius:0;padding:7px 10px;min-height:44px}
+#view-online-admin .huidi-source-row>div:first-child b{display:block;font-size:9.3px}#view-online-admin .huidi-source-row>div:first-child span{display:block;margin-top:2px;line-height:1.3}
+.huidi-source-state{display:flex;align-items:center}.huidi-source-purpose{color:#60748b;font-size:8.2px;line-height:1.35}.huidi-source-row>.fv2-actions{justify-content:flex-end;flex-wrap:nowrap}.huidi-source-row>.fv2-actions .fv2-btn{padding:6px 8px}
+#view-online-admin [data-fv2-source-form]{margin:0!important;padding:0 10px 9px;border-top:1px dashed #edf1f5;background:#fbfcfe}
+@media(max-width:900px){.huidi-source-header{display:none!important}.huidi-source-row{grid-template-columns:minmax(0,1fr) auto!important}.huidi-source-state,.huidi-source-purpose{grid-column:1}.huidi-source-row>.fv2-actions{grid-column:2;grid-row:1/3}.huidi-tab-more-menu{max-width:min(240px,70vw)}}
