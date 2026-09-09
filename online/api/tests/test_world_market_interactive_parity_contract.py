@@ -62,9 +62,19 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
             self.assertIn(tab, self.command)
         self.assertIn("HUIDICommunityOnlineFullV2", self.command)
         self.assertIn("online-find", self.command)
-        self.assertIn("#wiProductContext", self.command)
-        self.assertIn("#hsTradeKeyword", self.command)
-        self.assertIn("#hufKeyword", self.command)
+        for marker in (
+            "#wiProductContext",
+            "#hsIntelCountry",
+            "#hsIntelKeyword",
+            "#hsTradeCountry",
+            "#hsTradeProduct",
+            "#hsTariffDest",
+            "#hsTariffProduct",
+            "#hsShipDest",
+        ):
+            self.assertIn(marker, self.command)
+        for stale in ("#hsTradeKeyword", "#hufCountry", "#hufKeyword"):
+            self.assertNotIn(stale, self.command)
         self.assertNotIn("repositories.customers", self.command)
         self.assertNotIn("repositories.deals", self.command)
         self.assertNotIn("MutationObserver", self.command)
