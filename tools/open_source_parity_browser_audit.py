@@ -28,8 +28,9 @@ def exercise(base:str,output:Path)->None:
   ids=[str(one.json()['lead']['id']),str(two.json()['lead']['id'])]
   seeded=[one.json()['lead'],two.json()['lead'],three.json()['lead']]
   page=context.new_page();page.on('pageerror',lambda e:report['page_errors'].append(str(e)))
-  dangerous=[]
+  dangerous=[];contact_posts=[]
   page.on('request',lambda r:dangerous.append(r.url) if r.method=='POST' and any(x in r.url for x in ('/send','/queue')) else None)
+  page.on('request',lambda r:contact_posts.append(r.url) if r.method=='POST' and '/find-contact' in r.url else None)
   def check(name,ok=True):report['checks'].append({'name':name,'ok':bool(ok)});assert ok,name
   def shot(name):page.screenshot(path=str(output/(name+'.png')),full_page=True)
   try:
@@ -48,6 +49,7 @@ def exercise(base:str,output:Path)->None:
    page.locator('.hosp-acq-batch > summary').click()
    page.locator('#hfKeyword').fill('Garden Tool Set');page.locator('#hfCountry').fill('Germany')
    page.wait_for_function("() => !document.querySelector('[data-hosp-acq-run]')?.disabled")
+   page.wait_for_function("() => {const t=document.querySelector('[data-hosp-acq-provider]')?.innerText||'';return t.includes('真实企业搜索')||t.includes('不会生成模拟客户')}",timeout=5000)
    provider_text=page.locator('[data-hosp-acq-provider]').inner_text()
    check('batch acquisition exposes real-provider availability instead of demo fallback','不会生成模拟客户' in provider_text or '真实企业搜索' in provider_text)
    page.locator('[data-hosp-acq-run]').click()
@@ -120,8 +122,29 @@ def exercise(base:str,output:Path)->None:
 
    page.wait_for_function("() => Boolean(window.HUIDIOpenSourceBatchMailParity)",timeout=8000)
    page.wait_for_selector('#hospBatchDialog [data-hosp-prepare-sequences]')
+   page.wait_for_function("() => document.querySelectorAll('#hospBatchDialog [data-hosp-contact-state]').length===2",timeout=8000)
+   check('opening batch review never auto-runs contact lookup',not contact_posts)
+   first_row=page.locator(f'#hospBatchDialog [data-hosp-batch-lead="{ids[0]}"]')
+   second_row=page.locator(f'#hospBatchDialog [data-hosp-batch-lead="{ids[1]}"]')
+   check('existing confirmed email is visible as ready in the same batch row','已有邮箱' in first_row.locator('[data-hosp-contact-state]').inner_text())
+   check('missing email exposes an explicit per-buyer contact action',second_row.locator('[data-hosp-find-contact-row]').count()==1 and '业务邮箱待确认' in second_row.locator('[data-hosp-contact-state]').inner_text())
+   second_row.locator('[data-hosp-find-contact-row]').click()
+   page.wait_for_function("id => {const row=document.querySelector(`#hospBatchDialog [data-hosp-batch-lead=\"${id}\"]`);return (row?.querySelector('[data-hosp-contact-state]')?.innerText||'').includes('未完成')}",ids[1],timeout=10000)
+   unavailable=second_row.locator('[data-hosp-contact-state]').inner_text()
+   check('missing contact provider stays unavailable instead of fabricating a contact','演示联系人' in unavailable and len(contact_posts)==1)
+   unchanged=context.request.get(base+f'/api/leads/{ids[1]}');assert unchanged.status==200,unchanged.text()
+   check('failed contact lookup leaves original Lead email empty',not str(unchanged.json().get('contact_email') or '').strip())
+   patched=context.request.patch(base+f'/api/leads/{ids[1]}',data={'contact_name':'Max Buyer','contact_role':'Category Buyer','contact_email':'max@berlin-retail.example'})
+   assert patched.status==200,patched.text()
+   page.evaluate("() => window.HUIDIOpenSourceBatchMailParity.refreshBatchContacts(true)")
+   page.wait_for_function("id => {const row=document.querySelector(`#hospBatchDialog [data-hosp-batch-lead=\"${id}\"]`);return (row?.querySelector('[data-hosp-contact-state]')?.innerText||'').includes('已有邮箱')}",ids[1],timeout=8000)
+   check('confirmed contact written by existing Lead owner immediately becomes batch-ready','max@berlin-retail.example' in second_row.locator('[data-hosp-contact-state]').inner_text() and second_row.locator('[data-hosp-find-contact-row]').count()==0)
+   check('contact readiness refresh itself performs no additional contact lookup',len(contact_posts)==1)
+   shot('04-batch-contact-readiness')
+
    batch=page.locator('#hospBatchDialog').inner_text()
    check('batch follow-up reuses original Mail Owner template variables',all(x in batch for x in ['{{company}}','{{contact}}','{{product}}','{{country}}']))
+   check('batch copy makes manual contact lookup explicit','不会自动查联系人' in batch)
    before_enroll=context.request.get(base+'/api/mail/sequence-enrollments')
    assert before_enroll.status==200,before_enroll.text()
    check('batch follow-up starts with no sequence enrollment',before_enroll.json()==[])
@@ -139,7 +162,7 @@ def exercise(base:str,output:Path)->None:
    enrollments=context.request.get(base+'/api/mail/sequence-enrollments');assert enrollments.status==200,enrollments.text()
    check('batch preparation creates no sequence enrollment',enrollments.json()==[])
    check('batch follow-up preparation sends and queues nothing',not dangerous)
-   shot('04-original-mail-owner-prepared-review')
+   shot('05-original-mail-owner-prepared-review')
 
    page.evaluate("id=>window.HUIDIOpenSourceParity.openDevelopment(id)",ids[0])
    page.wait_for_selector('#view-online-find.active [data-fv2-pane="develop"].active:not([hidden])')
@@ -153,14 +176,14 @@ def exercise(base:str,output:Path)->None:
    check('no formal price write path introduced',report['formal_price_writes']==0)
    check('no horizontal overflow',page.evaluate('() => document.documentElement.scrollWidth<=innerWidth+2'))
    check('no uncaught page errors',not report['page_errors'])
-   report['status']='PASS';shot('05-existing-development-owner-review')
+   report['status']='PASS';shot('06-existing-development-owner-review')
   except Exception as exc:
    report['status']='FAIL';report['error']=str(exc)
    try:shot('failure');(output/'failure.html').write_text(page.content(),encoding='utf-8')
    except Exception:pass
    raise
   finally:
-   report['real_emails_sent']=len(dangerous);(output/'OPEN-SOURCE-PARITY-REPORT.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False),flush=True);browser.close()
+   report['real_emails_sent']=len(dangerous);report['contact_lookup_posts']=len(contact_posts);(output/'OPEN-SOURCE-PARITY-REPORT.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False),flush=True);browser.close()
 
 def main():
  p=argparse.ArgumentParser();p.add_argument('--output',default='/tmp/huidi-open-source-parity');output=Path(p.parse_args().output).resolve();output.mkdir(parents=True,exist_ok=True)
