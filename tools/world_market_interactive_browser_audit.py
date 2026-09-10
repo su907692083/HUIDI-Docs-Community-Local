@@ -74,12 +74,15 @@ def main() -> None:
         metrics = driver.execute_script("""
           const view=document.querySelector('#view-online-intel'),map=document.querySelector('.wi-map-card'),side=document.querySelector('.wi-side');
           const ar=map?.getBoundingClientRect(),sr=side?.getBoundingClientRect();
-          return {innerWidth:innerWidth,rootWidth:document.documentElement.scrollWidth,viewClient:view?.clientWidth||0,viewScroll:view?.scrollWidth||0,mapWidth:ar?.width||0,sideWidth:sr?.width||0,overlap:ar&&sr?Math.max(0,ar.right-sr.left):999};
+          return {innerWidth:innerWidth,rootWidth:document.documentElement.scrollWidth,viewClient:view?.clientWidth||0,viewScroll:view?.scrollWidth||0,
+            mapWidth:ar?.width||0,mapTop:ar?.top||0,mapBottom:ar?.bottom||0,
+            sideWidth:sr?.width||0,sideTop:sr?.top||0,sideBottom:sr?.bottom||0};
         """)
         assert metrics['rootWidth'] <= metrics['innerWidth'] + 4, metrics
         assert metrics['viewScroll'] <= metrics['viewClient'] + 4, metrics
-        assert metrics['mapWidth'] > 250 and metrics['sideWidth'] > 250, metrics
-        assert metrics['overlap'] <= 1, metrics
+        assert metrics['mapWidth'] >= metrics['viewClient'] * .90, metrics
+        assert metrics['sideWidth'] >= metrics['viewClient'] * .90, metrics
+        assert metrics['sideTop'] >= metrics['mapBottom'] - 2, metrics
         print('layout-pass', width, height, metrics, flush=True)
 
     def visible_svg_point(svg):
@@ -106,16 +109,6 @@ def main() -> None:
         wait.until(lambda d: d.execute_script('return Boolean(window.HUIDICommunityOnlineIntelligenceV2)'))
         wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('.nav-btn[data-view=\"online-intel\"]'))"))
 
-        phase('install-offline-geometry-fixture')
-        driver.execute_script("""
-          const fixture={type:'FeatureCollection',features:[
-            {type:'Feature',properties:{ISO_A2_EH:'US',NAME:'United States'},geometry:{type:'Polygon',coordinates:[[[-125,24],[-66,24],[-66,49],[-125,49],[-125,24]]]}},
-            {type:'Feature',properties:{ISO_A2_EH:'DE',NAME:'Germany'},geometry:{type:'Polygon',coordinates:[[[5.5,47],[15.5,47],[15.5,55],[5.5,55],[5.5,47]]]}},
-            {type:'Feature',properties:{ISO_A2_EH:'JP',NAME:'Japan'},geometry:{type:'Polygon',coordinates:[[[129,31],[146,31],[146,46],[129,46],[129,31]]]}}
-          ]};
-          const original=window.fetch.bind(window);window.fetch=(input,init)=>{const url=typeof input==='string'?input:(input?.url||'');if(url.includes('natural-earth-vector'))return Promise.resolve(new Response(JSON.stringify(fixture),{status:200,headers:{'Content-Type':'application/json'}}));return original(input,init)};window.__HUIDI_WORLD_GEOMETRY_FIXTURE__=true;
-        """)
-
         phase('open-world-map')
         driver.execute_script("document.querySelector('.nav-btn[data-view=\"online-intel\"]')?.click()")
         wait.until(lambda d: d.execute_script("return document.querySelector('.view.active')?.id") == 'view-online-intel')
@@ -123,6 +116,23 @@ def main() -> None:
         assert driver.execute_script("return document.querySelector('#view-online-intel > .fv2-tabs > .fv2-tab')?.dataset.fv2Tab || ''") == 'world-map'
         wait.until(lambda d: d.execute_script("return Boolean(window.HUIDIWorldIntelligenceMap && document.querySelector('#wiMap'))"))
         wait.until(lambda d: d.execute_script("return Boolean(document.querySelector(arguments[0]+' .wi-country-stage .wi-country-svg'))", ACTIVE_MAP))
+
+        phase('country-level-basemap')
+        map_state = driver.execute_script("""
+          const map=document.querySelector('#wiMap'),land=map?.querySelector('.wi-basemap-land');
+          return {geometry:map?.dataset.wiCountryGeometry||'',countryCount:window.HUIDI_WORLD_BASEMAP?.countryCount||0,
+            pathLength:(land?.getAttribute('d')||'').length,
+            modes:[...document.querySelectorAll('[data-wic-mode]')].map(x=>x.textContent.trim()),
+            external:performance.getEntriesByType('resource').map(x=>x.name).filter(n=>n.includes('cdn.jsdelivr.net')||n.includes('natural-earth-vector'))};
+        """)
+        assert map_state['geometry'] == 'natural-earth-country-boundaries-v2', map_state
+        assert map_state['countryCount'] == 177, map_state
+        assert map_state['pathLength'] > 10000, map_state
+        assert map_state['modes'] == ['地图分析','热力图','数据分析'], map_state
+        assert map_state['external'] == [], map_state
+        for mode_key in ('heat','data','map'):
+            driver.execute_script("document.querySelector('[data-wic-mode=\"%s\"]')?.click()" % mode_key)
+            wait.until(lambda d, k=mode_key: d.execute_script("return document.querySelector('.wi-country-stage')?.dataset.mapMode || ''") == k)
 
         assert_layout(1280, 720); assert_layout(1640, 920)
         driver.set_window_size(1440, 1000); time.sleep(.2)
@@ -169,7 +179,7 @@ def main() -> None:
             "return (document.querySelector('#hsTradeCountry')?.value||'')===arguments[0] && (document.querySelector('#hsTradeProduct')?.value||'')===arguments[1]", country, PRODUCT
         ))
         assert len(driver.window_handles) == 1, driver.window_handles
-        print('HUIDI interactive world-market parity Chrome PASS', flush=True)
+        print('HUIDI country-level source-parity world-market Chrome PASS', flush=True)
     finally:
         driver.quit(); client.close()
 
