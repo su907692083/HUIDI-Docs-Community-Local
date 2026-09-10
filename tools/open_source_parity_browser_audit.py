@@ -23,8 +23,10 @@ def exercise(base:str,output:Path)->None:
   assert auth.status==200,auth.text()
   one=context.request.post(base+'/api/leads/manual',data={'company_name':'Nordwerk Import GmbH','product_keyword':'Garden Tool Set','country':'Germany','website':'https://nordwerk.example','contact_name':'Anna Weber','contact_role':'Purchasing Manager','contact_email':'anna@nordwerk.example','requirements':'Importer looking for garden tool sets','create_inquiry':True})
   two=context.request.post(base+'/api/leads/manual',data={'company_name':'Berlin Retail Group','product_keyword':'Garden Tool Set','country':'Germany','website':'https://berlin-retail.example','contact_name':'Max Buyer','contact_role':'Category Buyer','contact_email':'','requirements':'Retail buyer evaluating seasonal garden tools','create_inquiry':False})
-  assert one.status==200,one.text();assert two.status==200,two.text()
+  three=context.request.post(base+'/api/leads/manual',data={'company_name':'Osaka Garden Supply','product_keyword':'Pruning Shears','country':'Japan','website':'https://osaka-garden.example','contact_name':'Yuki Sato','contact_role':'Buyer','contact_email':'yuki@osaka-garden.example','requirements':'Distributor reviewing pruning shears','create_inquiry':False})
+  assert one.status==200,one.text();assert two.status==200,two.text();assert three.status==200,three.text()
   ids=[str(one.json()['lead']['id']),str(two.json()['lead']['id'])]
+  seeded=[one.json()['lead'],two.json()['lead'],three.json()['lead']]
   page=context.new_page();page.on('pageerror',lambda e:report['page_errors'].append(str(e)))
   dangerous=[]
   page.on('request',lambda r:dangerous.append(r.url) if r.method=='POST' and any(x in r.url for x in ('/send','/queue')) else None)
@@ -37,6 +39,51 @@ def exercise(base:str,output:Path)->None:
    page.locator('.sidebar .nav-btn[data-view="online-intel"]').click()
    page.wait_for_selector('#view-online-intel.active [data-fv2-pane="world-map"].active:not([hidden])')
    page.wait_for_function("() => Boolean(window.HUIDIOpenSourceParity && document.querySelector('.wi-country-stage .wi-country-svg'))",timeout=20000)
+
+   # P1 acquisition matrix: current fused Find Customer surface, no extra owner/API.
+   page.locator('.sidebar .nav-btn[data-view="online-find"]').click()
+   page.evaluate("() => window.HUIDICommunityOnlineFullV2.openTab('online-find','base',{history:'push'})")
+   page.wait_for_selector('#view-online-find.active [data-fv2-pane="base"].active:not([hidden])')
+   page.wait_for_selector('.hosp-acq-batch',timeout=8000)
+   page.locator('.hosp-acq-batch > summary').click()
+   page.locator('#hfKeyword').fill('Garden Tool Set');page.locator('#hfCountry').fill('Germany')
+   page.wait_for_function("() => !document.querySelector('[data-hosp-acq-run]')?.disabled")
+   provider_text=page.locator('[data-hosp-acq-provider]').inner_text()
+   check('batch acquisition exposes real-provider availability instead of demo fallback','不会生成模拟客户' in provider_text or '真实企业搜索' in provider_text)
+   page.locator('[data-hosp-acq-run]').click()
+   page.wait_for_function("() => document.querySelector('[data-hosp-acq-progress]')?.classList.contains('error')",timeout=10000)
+   check('missing provider produces an explicit failed matrix row',page.locator('[data-hosp-acq-combo]').count()==1 and '未完成' in page.locator('[data-hosp-acq-matrix]').inner_text())
+   check('missing provider creates no fabricated matrix buyer',page.locator('[data-hosp-acq-buyer]').count()==0)
+
+   outcomes=[
+    {'product_keyword':'Garden Tool Set','country':'Germany','provider':'已保存 Lead Owner','items':seeded[:2]},
+    {'product_keyword':'Pruning Shears','country':'Japan','provider':'已保存 Lead Owner','items':[seeded[2]]},
+   ]
+   page.evaluate("rows=>window.HUIDIOpenSourceParity.showBatchReview(rows)",outcomes)
+   page.wait_for_function("() => document.querySelectorAll('[data-hosp-acq-combo]').length===2 && document.querySelectorAll('[data-hosp-acq-buyer]').length===3")
+   matrix=page.locator('[data-hosp-acq-results]').inner_text()
+   check('multi-product multi-market results render as two combination rows','Garden Tool Set' in matrix and 'Germany' in matrix and 'Pruning Shears' in matrix and 'Japan' in matrix)
+   check('cross-combination buyer review reuses exact Lead score priority and reason fields',all(x in matrix for x in ['Nordwerk Import GmbH','Berlin Retail Group','Osaka Garden Supply']))
+   buyer_rows=page.locator('[data-hosp-acq-buyer]')
+   check('buyer ranking does not label a fabricated intent score',all('意向' not in buyer_rows.nth(i).inner_text() for i in range(buyer_rows.count())))
+   buyer_rows.nth(0).locator('[data-hosp-acq-select]').check();buyer_rows.nth(1).locator('[data-hosp-acq-select]').check()
+   add_review=page.locator('[data-hosp-acq-add-review]')
+   check('matrix requires explicit human selection before review queue',add_review.is_enabled() and '(2)' in add_review.inner_text())
+   chosen=[buyer_rows.nth(0).locator('.hosp-acq-buyer-main b').inner_text().split(' · ')[-1],buyer_rows.nth(1).locator('.hosp-acq-buyer-main b').inner_text().split(' · ')[-1]]
+   shot('01-multi-market-acquisition-matrix')
+   add_review.click();page.wait_for_selector('#hospBatchDialog[open]')
+   page.wait_for_function("() => document.querySelectorAll('#hospBatchDialog [data-hosp-batch-lead]').length===2",timeout=8000)
+   review_queue=page.locator('#hospBatchDialog').inner_text()
+   check('matrix hands selected real Lead IDs to the existing human review queue',all(name in review_queue for name in chosen))
+   check('matrix handoff still sends and queues nothing',not dangerous)
+   page.locator('#hospBatchDialog [data-hosp-close]').click()
+   page.evaluate("() => window.HUIDIOpenSourceParity.setSelected([],{replace:true})")
+
+   # Return to the existing world-market → evidence → human-development chain.
+   page.locator('.sidebar .nav-btn[data-view="online-intel"]').click()
+   page.evaluate("() => window.HUIDICommunityOnlineFullV2.openTab('online-intel','world-map',{history:'push'})")
+   page.wait_for_selector('#view-online-intel.active [data-fv2-pane="world-map"].active:not([hidden])')
+   page.wait_for_selector('.wi-country-stage .wi-country-svg')
    page.locator('#wiProductContext').fill('Garden Tool Set')
    marker=page.locator('.wi-country-marker[data-market-id="DE"]').first
    marker.wait_for();rect=marker.bounding_box();assert rect,'Germany business marker has no visible bounds'
@@ -52,7 +99,7 @@ def exercise(base:str,output:Path)->None:
    for lead_id in ids:page.locator(f'[data-hosp-lead="{lead_id}"] [data-hosp-lead-select]').check()
    batch_button=page.locator('.hosp-cockpit [data-hosp-batch]')
    check('two prospects can be selected for batch review',batch_button.is_enabled() and '2' in batch_button.inner_text())
-   shot('01-germany-business-cockpit')
+   shot('02-germany-business-cockpit')
 
    page.locator(f'[data-hosp-lead="{ids[0]}"] [data-hosp-evidence]').click()
    page.wait_for_selector('#hospEvidenceDialog[open] [data-hosp-evidence-body]')
@@ -62,7 +109,7 @@ def exercise(base:str,output:Path)->None:
    check('six evidence dimensions are visible',all(x in ev for x in ['基础身份','公司线索','人员关联','数字资产','贸易记录','业务匹配']))
    check('unverified official and customs facts stay explicit',('工商' in ev or '官方' in ev) and ('海关' in ev or '采购' in ev))
    check('background disclaimer rejects fake official due diligence','不等同于信用报告' in ev or '不等同于' in ev)
-   shot('02-evidence-background-panel');page.locator('#hospEvidenceDialog [data-hosp-close]').click()
+   shot('03-evidence-background-panel');page.locator('#hospEvidenceDialog [data-hosp-close]').click()
 
    batch_button.click();page.wait_for_selector('#hospBatchDialog[open]')
    page.wait_for_function("() => document.querySelectorAll('#hospBatchDialog [data-hosp-batch-lead]').length===2",timeout=8000)
@@ -92,7 +139,7 @@ def exercise(base:str,output:Path)->None:
    enrollments=context.request.get(base+'/api/mail/sequence-enrollments');assert enrollments.status==200,enrollments.text()
    check('batch preparation creates no sequence enrollment',enrollments.json()==[])
    check('batch follow-up preparation sends and queues nothing',not dangerous)
-   shot('03-original-mail-owner-prepared-review')
+   shot('04-original-mail-owner-prepared-review')
 
    page.evaluate("id=>window.HUIDIOpenSourceParity.openDevelopment(id)",ids[0])
    page.wait_for_selector('#view-online-find.active [data-fv2-pane="develop"].active:not([hidden])')
@@ -106,7 +153,7 @@ def exercise(base:str,output:Path)->None:
    check('no formal price write path introduced',report['formal_price_writes']==0)
    check('no horizontal overflow',page.evaluate('() => document.documentElement.scrollWidth<=innerWidth+2'))
    check('no uncaught page errors',not report['page_errors'])
-   report['status']='PASS';shot('04-existing-development-owner-review')
+   report['status']='PASS';shot('05-existing-development-owner-review')
   except Exception as exc:
    report['status']='FAIL';report['error']=str(exc)
    try:shot('failure');(output/'failure.html').write_text(page.content(),encoding='utf-8')
