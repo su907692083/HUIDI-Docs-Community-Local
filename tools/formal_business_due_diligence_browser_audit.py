@@ -1,9 +1,10 @@
-"""Browser acceptance for Customer / Inquiry -> exact source Lead evidence reuse.
+"""Browser acceptance for formal Customer / Inquiry -> exact source Lead evidence reuse.
 
 The test creates one isolated real Lead -> Customer -> Deal chain, renames the
-formal Customer, and proves both formal surfaces still open the same existing
-six-dimension Lead evidence owner by persisted source_lead_id. It never uses
-company-name, email, website, or domain matching to recover the source Lead.
+formal Customer, then uses the actual Community fused Customer/Inquiry lists and
+Quick Detail owner. The evidence action is exposed only after an exact formal
+record GET returns a persisted source_lead_id. No company/email/domain matching
+is used to recover the source Lead.
 """
 from __future__ import annotations
 
@@ -34,6 +35,7 @@ def exercise(base: str, output: Path) -> None:
         "checks": [],
         "page_errors": [],
         "dangerous_requests": [],
+        "formal_lookup_requests": [],
         "evidence_requests": [],
         "source_identity": {},
         "external_providers": "NOT TESTED; isolated real Lead/Customer/Deal records only",
@@ -101,6 +103,11 @@ def exercise(base: str, output: Path) -> None:
 
         def record_request(request) -> None:
             url = request.url
+            if request.method == "GET" and (
+                f"/api/business/customers/{customer_id}" in url
+                or f"/api/business/deals/{deal_id}" in url
+            ):
+                report["formal_lookup_requests"].append({"method": request.method, "url": url})
             if f"/api/leads/{lead_id}" in url or f"/api/intel/customer/{lead_id}" in url:
                 report["evidence_requests"].append({"method": request.method, "url": url})
             if request.method != "POST":
@@ -137,23 +144,28 @@ def exercise(base: str, output: Path) -> None:
 
             page.goto(base + "/", wait_until="domcontentloaded")
             page.wait_for_function(
-                "() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDIWorkspacePages)",
+                "() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDIWorkspaceClosure) && Boolean(window.HUIDICommunityDevelopmentRouting)",
                 timeout=35000,
             )
-            business_nav = page.locator('.nav-btn[data-view="deals"]').first
-            business_nav.wait_for(state="visible", timeout=15000)
-            business_nav.click()
-            page.wait_for_function("() => Boolean(window.HUIDIBusinessCenter)", timeout=15000)
-            page.wait_for_selector("#huidiBusinessBack.open.hb-page-surface", timeout=15000)
 
-            deal_row = page.locator(f'#huidiBusinessMain [data-deal="{deal_id}"]')
+            # Actual Community Inquiry list -> existing Quick Detail owner.
+            deals_nav = page.locator('.nav-btn[data-view="deals"]').first
+            deals_nav.wait_for(state="visible", timeout=15000)
+            deals_nav.click()
+            page.wait_for_function("() => document.body.dataset.huidiView==='deals'", timeout=10000)
+            deal_row = page.locator(f'#dealRows tr[data-quick-kind="deal"][data-quick-id="{deal_id}"]')
             deal_row.wait_for(state="visible", timeout=12000)
             deal_row.click()
-            inquiry_evidence = page.locator('#huidiBusinessMain [data-open-evidence]')
+            page.wait_for_selector(
+                f'#huidiQuickBackdrop.open[data-kind="deal"][data-id="{deal_id}"]',
+                timeout=10000,
+            )
+            inquiry_evidence = page.locator('#huidiQuickBackdrop [data-hdw-formal-evidence]')
             inquiry_evidence.wait_for(state="visible", timeout=12000)
-            check("Inquiry exposes first-class due-diligence evidence action", inquiry_evidence.inner_text().strip() == "背调证据")
-            check("Inquiry keeps existing development-record action", page.locator('#huidiBusinessMain [data-open-lead]').count() == 1)
-            shot("01-inquiry-evidence-entry")
+            check("Inquiry Quick Detail exposes due-diligence evidence only after exact record lookup", inquiry_evidence.inner_text().strip() == "背调证据")
+            check("Inquiry evidence button carries persisted exact source Lead id", inquiry_evidence.get_attribute("data-hdw-route-lead") == lead_id)
+            check("Inquiry exact metadata lookup uses formal Deal id", any(f"/api/business/deals/{deal_id}" in x["url"] for x in report["formal_lookup_requests"]))
+            shot("01-community-inquiry-evidence-entry")
 
             inquiry_evidence.click()
             page.wait_for_selector("#hospEvidenceDialog[open]", timeout=12000)
@@ -165,17 +177,28 @@ def exercise(base: str, output: Path) -> None:
             check("Inquiry opens existing six-dimension evidence owner", all(label in inquiry_text for label in ["基础身份", "公司线索", "人员关联", "数字资产", "贸易记录", "业务匹配"]))
             check("Inquiry evidence resolves the exact original Lead", lead_company in inquiry_text)
             check("Evidence remains explicitly not a credit score", "不是信用分" in inquiry_text and "不等同于信用报告" in inquiry_text)
-            shot("02-inquiry-existing-lead-evidence")
+            shot("02-community-inquiry-existing-lead-evidence")
             page.locator("#hospEvidenceDialog [data-hosp-close]").click()
+            page.locator("#huidiQuickBackdrop [data-quick-close]").click()
 
-            page.locator('#huidiBusinessMain [data-open-customer]').click()
-            page.locator('#hbCustomerCompany').wait_for(state="visible", timeout=12000)
-            check("Renamed formal Customer is the current business record", page.locator('#hbCustomerCompany').input_value() == renamed_customer)
-            customer_evidence = page.locator('#huidiBusinessMain [data-source-evidence]')
+            # Actual Community Customer list -> same Quick Detail owner after company rename.
+            customers_nav = page.locator('.nav-btn[data-view="customers"]').first
+            customers_nav.click()
+            page.wait_for_function("() => document.body.dataset.huidiView==='customers'", timeout=10000)
+            customer_row = page.locator(f'#customerRows tr[data-quick-kind="customer"][data-quick-id="{customer_id}"]')
+            customer_row.wait_for(state="visible", timeout=12000)
+            check("Renamed formal Customer is rendered by Community owner", renamed_customer in customer_row.inner_text())
+            customer_row.click()
+            page.wait_for_selector(
+                f'#huidiQuickBackdrop.open[data-kind="customer"][data-id="{customer_id}"]',
+                timeout=10000,
+            )
+            customer_evidence = page.locator('#huidiQuickBackdrop [data-hdw-formal-evidence]')
             customer_evidence.wait_for(state="visible", timeout=12000)
-            check("Customer exposes first-class due-diligence evidence action", customer_evidence.inner_text().strip() == "背调证据")
-            check("Customer keeps existing development-record action", page.locator('#huidiBusinessMain [data-source-lead]').count() == 1)
-            shot("03-customer-evidence-entry-after-rename")
+            check("Customer Quick Detail exposes due-diligence evidence only after exact record lookup", customer_evidence.inner_text().strip() == "背调证据")
+            check("Customer evidence button carries persisted exact source Lead id", customer_evidence.get_attribute("data-hdw-route-lead") == lead_id)
+            check("Customer exact metadata lookup uses formal Customer id", any(f"/api/business/customers/{customer_id}" in x["url"] for x in report["formal_lookup_requests"]))
+            shot("03-community-customer-evidence-entry-after-rename")
 
             customer_evidence.click()
             page.wait_for_selector("#hospEvidenceDialog[open]", timeout=12000)
@@ -187,13 +210,12 @@ def exercise(base: str, output: Path) -> None:
             check("Customer evidence still resolves original Lead after formal name changes", lead_company in customer_text)
             check("Customer evidence does not replace Lead identity with renamed Customer name", renamed_customer not in customer_text)
             check("Customer and Inquiry reuse the same six-dimension evidence owner", all(label in customer_text for label in ["基础身份", "公司线索", "人员关联", "数字资产", "贸易记录", "业务匹配"]))
-            check("Evidence uses exact Lead endpoints", any(f"/api/leads/{lead_id}" in x["url"] for x in report["evidence_requests"]))
             check("Evidence navigation creates no formal business/send/contact side effects", not report["dangerous_requests"])
             check("No uncaught page errors", not report["page_errors"])
             check("No horizontal overflow", page.evaluate("() => document.documentElement.scrollWidth<=innerWidth+2"))
             check("Evidence navigation stays in one browser page", len(context.pages) == 1)
             report["status"] = "PASS"
-            shot("04-customer-same-existing-lead-evidence")
+            shot("04-community-customer-same-existing-lead-evidence")
         except Exception as exc:
             report["status"] = "FAIL"
             report["error"] = str(exc)
