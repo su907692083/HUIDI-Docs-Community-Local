@@ -11,6 +11,7 @@ on:
       - 'public/huidi-community-online-development-workbench-v1.js'
       - 'public/huidi-community-online-development-routing-v1.js'
       - 'online/api/tests/test_due_diligence_navigation_contract.py'
+      - 'online/api/web/business-center-ui.js'
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/app/main.py'
@@ -21,6 +22,7 @@ on:
       - 'online/api/app/provider_guard.py'
       - 'tools/open_source_parity_browser_audit.py'
       - 'tools/due_diligence_navigation_browser_audit.py'
+      - 'tools/formal_business_due_diligence_browser_audit.py'
       - '.github/workflows/open-source-parity-audit.yml'
   pull_request:
     paths:
@@ -31,6 +33,7 @@ on:
       - 'public/huidi-community-online-development-workbench-v1.js'
       - 'public/huidi-community-online-development-routing-v1.js'
       - 'online/api/tests/test_due_diligence_navigation_contract.py'
+      - 'online/api/web/business-center-ui.js'
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/app/main.py'
@@ -41,6 +44,7 @@ on:
       - 'online/api/app/provider_guard.py'
       - 'tools/open_source_parity_browser_audit.py'
       - 'tools/due_diligence_navigation_browser_audit.py'
+      - 'tools/formal_business_due_diligence_browser_audit.py'
       - '.github/workflows/open-source-parity-audit.yml'
   workflow_dispatch:
 
@@ -71,6 +75,7 @@ jobs:
           node --check public/huidi-open-source-parity-mail-batch-v1.js
           node --check public/huidi-world-market-command-center-v1.js
           node --check public/huidi-community-online-development-routing-v1.js
+          node --check online/api/web/business-center-ui.js
           grep -F "不等同于信用报告" public/huidi-open-source-parity-v1.js
           grep -F "不会批量发送" public/huidi-open-source-parity-v1.js
           grep -F "MAX_BATCH_COMBINATIONS=12" public/huidi-open-source-parity-v1.js
@@ -87,7 +92,11 @@ jobs:
           grep -F "背调证据" public/huidi-community-online-development-routing-v1.js
           grep -F "重新评估" public/huidi-community-online-development-routing-v1.js
           grep -F "HUIDIOpenSourceParity.openEvidence" public/huidi-community-online-development-routing-v1.js
+          grep -F "data-source-evidence>背调证据</button>" online/api/web/business-center-ui.js
+          grep -F "data-open-evidence>背调证据</button>" online/api/web/business-center-ui.js
+          grep -F "HUIDICommunityDevelopmentRouting.openEvidence" online/api/web/business-center-ui.js
           test "$(grep -o "MutationObserver" public/huidi-community-online-development-routing-v1.js | wc -l | tr -d ' ')" -eq 3
+          test "$(grep -o "MutationObserver" online/api/web/business-center-ui.js | wc -l | tr -d ' ')" -eq 0
           ! grep -E "repositories\.(customers|deals)\.(upsert|delete)|/api/.*/send" public/huidi-open-source-parity-v1.js
           ! grep -E "/send|sequence-enrollments|/api/leads/.*/sequence" public/huidi-open-source-parity-mail-batch-v1.js
           ! grep -E "/send|/queue|find-contact|native-document|unit_price|total_price" public/huidi-community-online-development-routing-v1.js
@@ -106,6 +115,9 @@ jobs:
       - name: Exercise Lead pool to existing six-dimension evidence owner
         run: |
           python tools/due_diligence_navigation_browser_audit.py --output /tmp/huidi-due-diligence-navigation
+      - name: Exercise formal Customer and Inquiry source-evidence continuity
+        run: |
+          python tools/formal_business_due_diligence_browser_audit.py --output /tmp/huidi-formal-business-due-diligence
       - name: Upload exact parity evidence
         if: always()
         uses: actions/upload-artifact@v4
@@ -114,5 +126,6 @@ jobs:
           path: |
             /tmp/huidi-open-source-parity/
             /tmp/huidi-due-diligence-navigation/
+            /tmp/huidi-formal-business-due-diligence/
           if-no-files-found: error
           retention-days: 14
