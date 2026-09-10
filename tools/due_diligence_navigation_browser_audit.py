@@ -30,6 +30,7 @@ def exercise(base: str, output: Path) -> None:
         "checks": [],
         "page_errors": [],
         "dangerous_requests": [],
+        "navigation_trace": [],
         "external_providers": "NOT TESTED; isolated real Lead record only",
     }
     with sync_playwright() as pw:
@@ -81,14 +82,64 @@ def exercise(base: str, output: Path) -> None:
         def shot(name: str) -> None:
             page.screenshot(path=str(output / f"{name}.png"), full_page=True)
 
+        def snapshot(label: str) -> dict:
+            state = page.evaluate(
+                """label => ({
+                    label,
+                    t: Math.round(performance.now()),
+                    href: location.href,
+                    bodyView: document.body?.dataset?.huidiView || '',
+                    activeViews: Array.from(document.querySelectorAll('.view.active')).map(x => x.id),
+                    activeTabs: Array.from(document.querySelectorAll('#view-online-find .fv2-tab.active')).map(x => x.dataset.fv2Tab || x.textContent.trim()),
+                    activePanes: Array.from(document.querySelectorAll('#view-online-find .fv2-pane.active')).map(x => ({key:x.dataset.fv2Pane || '', hidden:x.hidden})),
+                    pool: (() => { const x=document.querySelector('#view-online-find [data-fv2-pane="pool"]'); return x ? {active:x.classList.contains('active'),hidden:x.hidden,busy:x.getAttribute('aria-busy')||'',rows:x.querySelectorAll('tr[data-fv2-lead]').length} : null; })(),
+                    trace: Array.isArray(window.__huidiDdNavTrace) ? window.__huidiDdNavTrace.slice(-80) : []
+                })""",
+                label,
+            )
+            report["navigation_trace"].append(state)
+            return state
+
         try:
             page.goto(base + "/", wait_until="domcontentloaded")
             page.wait_for_function(
                 "() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDICommunityOnlineFullV2)",
                 timeout=35000,
             )
+            page.evaluate(
+                """() => {
+                    const snap=(kind,extra={})=>{
+                        const view=document.querySelector('.view.active');
+                        const tab=document.querySelector('#view-online-find .fv2-tab.active');
+                        const pane=document.querySelector('#view-online-find .fv2-pane.active');
+                        (window.__huidiDdNavTrace ||= []).push({
+                            kind,
+                            t:Math.round(performance.now()),
+                            href:location.href,
+                            bodyView:document.body?.dataset?.huidiView||'',
+                            view:view?.id||'',
+                            tab:tab?.dataset?.fv2Tab||'',
+                            pane:pane?.dataset?.fv2Pane||'',
+                            paneHidden:Boolean(pane?.hidden),
+                            ...extra
+                        });
+                    };
+                    snap('trace-installed');
+                    window.addEventListener('HUIDI:community-online-view',e=>snap('community-online-view',{eventView:e.detail?.view||''}));
+                    window.addEventListener('HUIDI:fusion-pane-rendered',e=>snap('fusion-pane-rendered',{eventView:e.detail?.view||'',eventKey:e.detail?.key||''}));
+                    const root=document.querySelector('.workspace')||document.body;
+                    const observer=new MutationObserver(records=>{
+                        if(!records.some(r=>r.type==='attributes'&&(r.attributeName==='class'||r.attributeName==='hidden'))) return;
+                        snap('dom-state-change');
+                    });
+                    observer.observe(root,{subtree:true,attributes:true,attributeFilter:['class','hidden']});
+                    window.__huidiDdNavObserver=observer;
+                }"""
+            )
+            snapshot("before-online-find-click")
             page.locator('.sidebar .nav-btn[data-view="online-find"]').click()
             page.wait_for_selector('#view-online-find.active [data-fv2-tab="pool"]')
+            snapshot("after-online-find-click")
             opened = page.evaluate(
                 """async () => {
                     const owner = window.HUIDICommunityOnlineFullV2;
@@ -97,7 +148,15 @@ def exercise(base: str, output: Path) -> None:
                 }"""
             )
             check("existing Lead Pool owner completes its async render", opened is True)
-            page.wait_for_selector('#view-online-find [data-fv2-pane="pool"].active:not([hidden])')
+            snapshot("after-pool-open-resolved")
+
+            # Keep the original stability requirement, but capture the exact state race first.
+            stable_samples = []
+            for idx in range(30):
+                time.sleep(0.1)
+                state = snapshot(f"pool-stability-{idx + 1}")
+                stable_samples.append(bool(state.get("pool") and state["pool"].get("active") and not state["pool"].get("hidden") and "view-online-find" in state.get("activeViews", [])))
+            check("Lead Pool remains the active visible pane after its owner resolves", all(stable_samples))
 
             lead_page = context.request.get(base + "/api/leads?paged=true&page=1&page_size=50")
             assert lead_page.status == 200, lead_page.text()
@@ -150,6 +209,7 @@ def exercise(base: str, output: Path) -> None:
             report["status"] = "FAIL"
             report["error"] = str(exc)
             try:
+                snapshot("failure")
                 shot("failure")
                 (output / "failure.html").write_text(page.content(), encoding="utf-8")
             except Exception:
