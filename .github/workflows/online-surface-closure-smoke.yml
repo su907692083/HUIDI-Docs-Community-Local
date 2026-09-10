@@ -64,15 +64,28 @@ jobs:
 
           def labels():
               return driver.execute_script('''
+                const visible = x => {
+                  const style=getComputedStyle(x);
+                  return !x.hidden && x.getAttribute('aria-hidden') !== 'true' &&
+                    style.display !== 'none' && style.visibility !== 'hidden' &&
+                    x.getClientRects().length > 0;
+                };
                 return [...document.querySelectorAll('.side .nav a')]
+                  .filter(visible)
                   .map(x => (x.textContent || '').trim())
                   .filter(Boolean);
               ''')
 
           def click_nav(text):
               return bool(driver.execute_script('''
+                const visible = x => {
+                  const style=getComputedStyle(x);
+                  return !x.hidden && x.getAttribute('aria-hidden') !== 'true' &&
+                    style.display !== 'none' && style.visibility !== 'hidden' &&
+                    x.getClientRects().length > 0;
+                };
                 const item=[...document.querySelectorAll('.side .nav a')]
-                  .find(x => (x.textContent || '').trim() === arguments[0]);
+                  .find(x => visible(x) && (x.textContent || '').trim() === arguments[0]);
                 if (!item) return false;
                 item.click();
                 return true;
