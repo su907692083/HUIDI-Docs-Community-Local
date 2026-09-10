@@ -29,6 +29,24 @@ SESSION_COOKIE = "huidi_team_session"
 SESSION_DAYS = 14
 PBKDF2_ROUNDS = 390_000
 SLUG_RX = re.compile(r"[^a-z0-9-]+")
+COMMUNITY_STATIC_SUFFIXES = (
+    ".css",
+    ".js",
+    ".mjs",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".gif",
+    ".webp",
+    ".avif",
+    ".svg",
+    ".ico",
+    ".webmanifest",
+    ".woff",
+    ".woff2",
+    ".ttf",
+    ".otf",
+)
 
 
 class Organization(ControlBase):
@@ -244,7 +262,10 @@ def _session_member(db: Session, token: str) -> TeamMember | None:
 def _is_public_path(path: str) -> bool:
     if path in {"/", "/api/health", "/api/team/status", "/api/team/login"}:
         return True
-    return path.startswith("/assets/") or path.startswith("/docs") or path.startswith("/openapi")
+    if path.startswith("/assets/") or path.startswith("/docs") or path.startswith("/openapi"):
+        return True
+    normalized = str(path or "").lower()
+    return normalized.startswith("/community/") and normalized.endswith(COMMUNITY_STATIC_SUFFIXES)
 
 
 def _admin_only_path(path: str) -> bool:
@@ -276,7 +297,6 @@ async def team_access_middleware(request: Request, call_next):
         return await call_next(request)
 
     db = ControlSessionLocal()
-    tenant_token = None
     try:
         _bootstrap_owner(db)
         member = _session_member(db, request.cookies.get(SESSION_COOKIE, ""))
@@ -289,14 +309,20 @@ async def team_access_middleware(request: Request, call_next):
             from fastapi.responses import JSONResponse
 
             return JSONResponse({"detail": error}, status_code=403)
-        tenant_token = set_current_organization(member.organization_id)
-        request.state.team_member = _member_dict(member, db)
-        request.state.organization_id = member.organization_id
+        organization_id = member.organization_id
+        member_data = _member_dict(member, db)
+    finally:
+        # Authentication must never keep a control-plane DB connection checked
+        # out while downstream routes/static responses are being rendered.
+        db.close()
+
+    tenant_token = set_current_organization(organization_id)
+    request.state.team_member = member_data
+    request.state.organization_id = organization_id
+    try:
         return await call_next(request)
     finally:
-        if tenant_token is not None:
-            reset_current_organization(tenant_token)
-        db.close()
+        reset_current_organization(tenant_token)
 
 
 @app.get("/api/team/status")
