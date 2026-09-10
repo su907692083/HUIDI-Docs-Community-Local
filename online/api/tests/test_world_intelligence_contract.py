@@ -68,31 +68,38 @@ class WorldIntelligenceContractTests(unittest.TestCase):
     def test_country_shapes_hover_and_click_reuse_existing_detail_owner(self):
         source = self.text("web/world-country-interaction.js")
         for marker in [
-            "natural-earth-vector",
-            "ISO_A2_EH",
+            "Natural Earth-derived",
+            "bundled-v1",
+            "wi-country-market",
             "pointerenter",
             "pointermove",
             "wi-country-bubble",
             "HUIDIWorldIntelligenceMap?.selectMarket",
             "点击进入该市场业务面板",
-            "潜在客户",
+            "潜客",
             "联系人",
             "正式客户",
             "询盘",
             "role','button",
             "Enter",
+            "/api/intel/world",
         ]:
             self.assertIn(marker, source)
+        self.assertNotIn("cdn.jsdelivr.net", source)
+        self.assertNotIn("natural-earth-vector@master", source)
         self.assertNotIn("/api/intel/world/country", source)
         self.assertNotIn("severity", source.lower())
         self.assertNotIn("risk_level", source.lower())
 
-    def test_country_geometry_failure_keeps_original_world_map_fallback(self):
+    def test_country_geometry_is_bundled_before_world_map_fallback_can_run(self):
         source = self.text("web/world-country-interaction.js")
-        load_pos = source.index("await loadData(")
-        replace_pos = source.index("box.replaceWith(replacement)")
-        self.assertLess(load_pos, replace_pos)
-        self.assertIn("catch(_){return}", source)
+        self.assertIn("const BASE=[", source)
+        self.assertIn("replacement.dataset.wiCountryReady='1'", source)
+        self.assertIn("replacement.dataset.wiCountryGeometry='bundled-v1'", source)
+        self.assertIn("box.replaceWith(replacement)", source)
+        self.assertIn("if(sourceOverview)overview=sourceOverview", source)
+        self.assertNotIn("cdn.jsdelivr.net", source)
+        self.assertNotIn("natural-earth-vector@master", source)
 
     def test_secondary_pages_have_consistent_back_and_escape_behavior(self):
         source = self.text("web/secondary-page-closure.js")
