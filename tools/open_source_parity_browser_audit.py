@@ -39,7 +39,7 @@ def exercise(base:str,output:Path)->None:
    page.wait_for_function("() => Boolean(window.HUIDIOpenSourceParity && document.querySelector('.wi-country-stage .wi-country-svg'))",timeout=20000)
    page.locator('#wiProductContext').fill('Garden Tool Set')
    marker=page.locator('.wi-country-marker[data-market-id="DE"]').first
-   marker.wait_for();rect=marker.bounding_box();assert rect, 'Germany business marker has no visible bounds'
+   marker.wait_for();rect=marker.bounding_box();assert rect,'Germany business marker has no visible bounds'
    page.mouse.click(rect['x']+rect['width']/2,rect['y']+rect['height']/2)
    page.wait_for_function("() => document.querySelector('.wi-country-marker[data-market-id=\"DE\"]')?.classList.contains('selected')")
    page.wait_for_selector('.hosp-cockpit')
@@ -49,7 +49,7 @@ def exercise(base:str,output:Path)->None:
    check('cockpit exposes existing customer and inquiry counts','正式客户' in text and '询盘 / 业务' in text)
    check('LinkedIn action is explicitly company search',page.locator('.hosp-cockpit a').filter(has_text='LinkedIn 搜公司').count()>=2)
    check('no fabricated WhatsApp shortcut without a real phone field',page.locator('.hosp-cockpit').get_by_text('WhatsApp',exact=True).count()==0)
-   for lead_id in ids: page.locator(f'[data-hosp-lead="{lead_id}"] [data-hosp-lead-select]').check()
+   for lead_id in ids:page.locator(f'[data-hosp-lead="{lead_id}"] [data-hosp-lead-select]').check()
    batch_button=page.locator('.hosp-cockpit [data-hosp-batch]')
    check('two prospects can be selected for batch review',batch_button.is_enabled() and '2' in batch_button.inner_text())
    shot('01-germany-business-cockpit')
@@ -65,6 +65,7 @@ def exercise(base:str,output:Path)->None:
    shot('02-evidence-background-panel');page.locator('#hospEvidenceDialog [data-hosp-close]').click()
 
    batch_button.click();page.wait_for_selector('#hospBatchDialog[open]')
+   page.wait_for_function("() => document.querySelectorAll('#hospBatchDialog [data-hosp-batch-lead]').length===2",timeout=8000)
    batch=page.locator('#hospBatchDialog').inner_text()
    check('batch development creates review queue for both prospects','Nordwerk Import GmbH' in batch and 'Berlin Retail Group' in batch)
    check('batch UI explicitly forbids automatic sending','不会批量发送' in batch and '逐个核对' in batch)
