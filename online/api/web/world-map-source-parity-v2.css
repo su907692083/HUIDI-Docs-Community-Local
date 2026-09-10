@@ -1,0 +1,23 @@
+/* Source-parity presentation for the existing HUIDI World Market owner.
+   Keeps the real HUIDI business/data owners; only restores the map-first interaction hierarchy. */
+#ciMain .wi-main{height:auto!important;min-height:0!important;display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:12px!important}
+#ciMain .wi-map-card{grid-template-rows:auto auto minmax(500px,1fr) auto!important;border-radius:12px!important;box-shadow:0 6px 22px rgba(37,67,98,.06)!important}
+#ciMain .wi-commandbar{padding:11px 12px!important;grid-template-columns:minmax(280px,1.15fr) minmax(220px,.75fr) auto!important}
+#ciMain .wi-toolbar{padding:9px 12px!important}
+#ciMain .wi-map{min-height:500px!important;background:#eef5fa!important}
+#ciMain .wi-side{display:grid!important;grid-template-rows:auto auto!important;max-height:none!important;min-height:0!important;border-radius:12px!important;overflow:visible!important;box-shadow:0 6px 22px rgba(37,67,98,.05)!important}
+#ciMain .wi-side-head{padding:12px 14px!important}
+#ciMain .wi-scroll{overflow:visible!important;padding:12px 13px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;align-items:start!important}
+#ciMain .wi-stats,#ciMain .wi-quick-strip,#ciMain .hosp-cockpit,#ciMain .wmcc,#ciMain .wi-foot{grid-column:1/-1!important}
+#ciMain .wi-stats{gap:8px!important;margin:0!important}
+#ciMain .wi-stat{padding:10px!important;border-radius:10px!important;background:linear-gradient(180deg,#fbfdff,#f4f8fc)!important}
+#ciMain .wi-stat b{font-size:18px!important}
+#ciMain .wi-stat span{font-size:9px!important}
+#ciMain .wi-quick-strip{margin:0!important;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr)!important}
+#ciMain .wi-section{margin:0!important;min-width:0!important;border:1px solid #e4ebf2!important;border-radius:10px!important;padding:10px!important;background:#fff!important}
+#ciMain .wi-section-head{margin-bottom:8px!important}
+#ciMain .wi-list{max-height:330px!important;overflow:auto!important;padding-right:2px!important}
+#ciMain .wi-item{box-shadow:none!important}
+#ciMain .wi-legend{justify-content:space-between!important}
+@media(max-width:900px){#ciMain .wi-map-card{grid-template-rows:auto auto 440px auto!important}#ciMain .wi-map{min-height:440px!important}#ciMain .wi-scroll{grid-template-columns:1fr!important}#ciMain .wi-stats,#ciMain .wi-quick-strip,#ciMain .hosp-cockpit,#ciMain .wmcc,#ciMain .wi-foot{grid-column:1!important}}
+@media(max-width:640px){#ciMain .wi-commandbar{grid-template-columns:1fr!important}#ciMain .wi-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}}
