@@ -62,6 +62,14 @@ class DueDiligenceNavigationContractTest(unittest.TestCase):
         self.assertIn("new MutationObserver(()=>enhancePool(pool))", self.routing)
         self.assertEqual(self.routing.count("data-hdw-route-action=\"evidence\""), 1)
 
+    def test_pool_enhancement_is_idempotent_under_its_scoped_observer(self) -> None:
+        # The pool observer watches childList/subtree. Reassigning textContent on
+        # every callback would create another childList mutation and self-trigger
+        # indefinitely, starving the UI event loop. Only mutate when needed.
+        self.assertIn("if(assess.textContent!==label)assess.textContent=label", self.routing)
+        self.assertIn("if(assess.title!==title)assess.title=title", self.routing)
+        self.assertNotIn("if(assess){assess.textContent='重新评估'", self.routing)
+
 
 if __name__ == "__main__":
     unittest.main()
