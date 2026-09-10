@@ -5,6 +5,7 @@ on:
     branches: ['online/v0.1-lead-workbench']
     paths:
       - 'public/huidi-open-source-parity-v1.js'
+      - 'public/huidi-open-source-parity-mail-batch-v1.js'
       - 'public/huidi-world-market-command-center-v1.js'
       - 'public/huidi-community-online-intelligence-v2.js'
       - 'public/huidi-community-online-development-workbench-v1.js'
@@ -12,11 +13,14 @@ on:
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/app/main.py'
       - 'online/api/app/world_intelligence.py'
+      - 'online/api/app/industry_playbooks.py'
+      - 'online/api/app/mail_sequences.py'
       - 'tools/open_source_parity_browser_audit.py'
       - '.github/workflows/open-source-parity-audit.yml'
   pull_request:
     paths:
       - 'public/huidi-open-source-parity-v1.js'
+      - 'public/huidi-open-source-parity-mail-batch-v1.js'
       - 'public/huidi-world-market-command-center-v1.js'
       - 'public/huidi-community-online-intelligence-v2.js'
       - 'public/huidi-community-online-development-workbench-v1.js'
@@ -24,6 +28,8 @@ on:
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/app/main.py'
       - 'online/api/app/world_intelligence.py'
+      - 'online/api/app/industry_playbooks.py'
+      - 'online/api/app/mail_sequences.py'
       - 'tools/open_source_parity_browser_audit.py'
       - '.github/workflows/open-source-parity-audit.yml'
   workflow_dispatch:
@@ -52,10 +58,14 @@ jobs:
           set -euo pipefail
           git rev-parse HEAD
           node --check public/huidi-open-source-parity-v1.js
+          node --check public/huidi-open-source-parity-mail-batch-v1.js
           node --check public/huidi-world-market-command-center-v1.js
           grep -F "不等同于信用报告" public/huidi-open-source-parity-v1.js
           grep -F "不会批量发送" public/huidi-open-source-parity-v1.js
+          grep -F "不会启用、不会 enroll、不会加入发送队列" public/huidi-open-source-parity-mail-batch-v1.js
+          grep -F "/industry-sequence" public/huidi-open-source-parity-mail-batch-v1.js
           ! grep -E "repositories\.(customers|deals)\.(upsert|delete)|/api/.*/send" public/huidi-open-source-parity-v1.js
+          ! grep -E "/send|sequence-enrollments|/api/leads/.*/sequence" public/huidi-open-source-parity-mail-batch-v1.js
       - name: Install isolated browser dependencies
         run: |
           set -euo pipefail
