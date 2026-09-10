@@ -1,0 +1,75 @@
+name: HUIDI Open Source Interaction Parity
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/huidi-open-source-parity-v1.js'
+      - 'public/huidi-world-market-command-center-v1.js'
+      - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'online/api/web/world-intelligence-map.js'
+      - 'online/api/web/world-country-interaction.js'
+      - 'online/api/app/main.py'
+      - 'online/api/app/world_intelligence.py'
+      - 'tools/open_source_parity_browser_audit.py'
+      - '.github/workflows/open-source-parity-audit.yml'
+  pull_request:
+    paths:
+      - 'public/huidi-open-source-parity-v1.js'
+      - 'public/huidi-world-market-command-center-v1.js'
+      - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'online/api/web/world-intelligence-map.js'
+      - 'online/api/web/world-country-interaction.js'
+      - 'online/api/app/main.py'
+      - 'online/api/app/world_intelligence.py'
+      - 'tools/open_source_parity_browser_audit.py'
+      - '.github/workflows/open-source-parity-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huidi-open-source-parity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and JavaScript syntax
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          node --check public/huidi-open-source-parity-v1.js
+          node --check public/huidi-world-market-command-center-v1.js
+          grep -F "不等同于信用报告" public/huidi-open-source-parity-v1.js
+          grep -F "不会批量发送" public/huidi-open-source-parity-v1.js
+          ! grep -E "repositories\.(customers|deals)\.(upsert|delete)|/api/.*/send" public/huidi-open-source-parity-v1.js
+      - name: Install isolated browser dependencies
+        run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
+          python -m pip install -r online/api/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Exercise world market to evidence and batch human review
+        run: |
+          python tools/open_source_parity_browser_audit.py --output /tmp/huidi-open-source-parity
+      - name: Upload exact parity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUIDI-OPEN-SOURCE-PARITY-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/huidi-open-source-parity/
+          if-no-files-found: error
+          retention-days: 14
