@@ -137,11 +137,13 @@ def exercise(base: str, output: Path) -> None:
 
             page.goto(base + "/", wait_until="domcontentloaded")
             page.wait_for_function(
-                "() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDIBusinessCenter)",
+                "() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDIWorkspacePages)",
                 timeout=35000,
             )
-            page.locator('[data-huidi-business="deals"]').first.wait_for(state="visible", timeout=15000)
-            page.locator('[data-huidi-business="deals"]').first.click()
+            business_nav = page.locator('.nav-btn[data-view="deals"]').first
+            business_nav.wait_for(state="visible", timeout=15000)
+            business_nav.click()
+            page.wait_for_function("() => Boolean(window.HUIDIBusinessCenter)", timeout=15000)
             page.wait_for_selector("#huidiBusinessBack.open.hb-page-surface", timeout=15000)
 
             deal_row = page.locator(f'#huidiBusinessMain [data-deal="{deal_id}"]')
