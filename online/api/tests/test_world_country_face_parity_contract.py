@@ -11,13 +11,16 @@ if str(ROOT) not in sys.path:
 class WorldCountryFaceParityContractTests(unittest.TestCase):
     def test_country_face_layer_is_local_factual_and_reuses_market_owner(self):
         source = (ROOT / 'web/world-country-face-parity-v1.js').read_text(encoding='utf-8')
+        owner = (ROOT / 'web/world-country-interaction.js').read_text(encoding='utf-8')
         for marker in [
             'HUIDI_WORLD_BASEMAP', 'PARTS=289', 'wi-country-land', 'wiCountryFaces',
-            '全球客户地图分布', '地图分析', '热力图', '数据分析',
+            '全球客户地图分布', '.wi-map-modes',
             'HUIDIWorldCountryInteraction?.select', '/api/intel/world',
             '仅显示真实国家边界，不生成客户、询盘或热度数据',
         ]:
             self.assertIn(marker, source)
+        for mode_label in ['地图分析', '热力图', '数据分析']:
+            self.assertIn(mode_label, owner)
         self.assertIn("countryFaces:177", source)
         self.assertNotIn('cdn.jsdelivr.net', source)
         self.assertNotIn('natural-earth-vector@master', source)
