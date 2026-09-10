@@ -41,6 +41,7 @@ class WorldIntelligenceContractTests(unittest.TestCase):
     def test_world_browser_and_secondary_closure_are_loaded_and_parse(self):
         index = self.text("web/index.html")
         for file in [
+            "web/world-basemap-v2.js",
             "web/world-intelligence-map.js",
             "web/world-country-interaction.js",
             "web/secondary-page-closure.js",
@@ -49,6 +50,9 @@ class WorldIntelligenceContractTests(unittest.TestCase):
             self.assertIn(f'/assets/{name}', index)
             result = subprocess.run(["node", "--check", str(ROOT / file)], capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertLess(index.index("/assets/world-basemap-v2.js"), index.index("/assets/world-intelligence-map.js"))
+        self.assertLess(index.index("/assets/world-intelligence-map.js"), index.index("/assets/world-country-interaction.js"))
+        self.assertIn("world-map-source-parity-v2.css", index)
 
     def test_world_browser_has_live_news_real_clues_and_fallback(self):
         source = self.text("web/world-intelligence-map.js")
@@ -65,12 +69,16 @@ class WorldIntelligenceContractTests(unittest.TestCase):
             self.assertIn(marker, source)
         self.assertNotIn("conflict severity", source.lower())
 
-    def test_country_shapes_hover_and_click_reuse_existing_detail_owner(self):
+    def test_country_level_map_reuses_existing_detail_owner(self):
         source = self.text("web/world-country-interaction.js")
         for marker in [
-            "Natural Earth-derived",
-            "bundled-v1",
+            "natural-earth-country-boundaries-v2",
+            "HUIDI_WORLD_BASEMAP",
+            "wi-basemap-land",
             "wi-country-market",
+            "地图分析",
+            "热力图",
+            "数据分析",
             "pointerenter",
             "pointermove",
             "wi-country-bubble",
@@ -91,15 +99,22 @@ class WorldIntelligenceContractTests(unittest.TestCase):
         self.assertNotIn("severity", source.lower())
         self.assertNotIn("risk_level", source.lower())
 
-    def test_country_geometry_is_bundled_before_world_map_fallback_can_run(self):
+    def test_country_geometry_is_local_country_level_not_schematic_continents(self):
         source = self.text("web/world-country-interaction.js")
-        self.assertIn("const BASE=[", source)
+        basemap = self.text("web/world-basemap-v2.js")
+        layout = self.text("web/world-map-source-parity-v2.css")
+        self.assertIn("countryCount:177", basemap)
+        self.assertIn("natural-earth-country-boundaries-v2", basemap)
+        self.assertGreater(len(basemap), 10000)
+        self.assertIn("Number(base.countryCount)<150", source)
+        self.assertIn("replacement.dataset.wiCountryGeometry='natural-earth-country-boundaries-v2'", source)
         self.assertIn("replacement.dataset.wiCountryReady='1'", source)
-        self.assertIn("replacement.dataset.wiCountryGeometry='bundled-v1'", source)
-        self.assertIn("box.replaceWith(replacement)", source)
-        self.assertIn("if(sourceOverview)overview=sourceOverview", source)
-        self.assertNotIn("cdn.jsdelivr.net", source)
-        self.assertNotIn("natural-earth-vector@master", source)
+        self.assertNotIn("const BASE=[", source)
+        self.assertNotIn("['Africa'", source)
+        self.assertNotIn("cdn.jsdelivr.net", basemap + source)
+        self.assertNotIn("natural-earth-vector@master", basemap + source)
+        self.assertIn("grid-template-columns:minmax(0,1fr)!important", layout)
+        self.assertIn("minmax(500px,1fr)", layout)
 
     def test_secondary_pages_have_consistent_back_and_escape_behavior(self):
         source = self.text("web/secondary-page-closure.js")
