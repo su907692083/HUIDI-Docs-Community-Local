@@ -6,6 +6,19 @@
 >
 > This document is stricter than the older capability-absorption summary. A source project is not considered fully absorbed merely because HUIDI has a similarly named API or page.
 
+## Latest closure checkpoint — P1 acquisition matrix
+
+- Construction HEAD: `b50b659885182a7923ff6292789d76a489c6c5f1`.
+- Product implementation commit: `60bbee66a09afac1699e25c1bda6c144b66f68ff` (`feat: add multi-market acquisition review matrix`).
+- Browser/safety gate commits: `2279fd8e53489977fdf2d3046f2a679064b63d68` and `b50b659885182a7923ff6292789d76a489c6c5f1`.
+- Exact-head PR workflows: **16 / 16 SUCCESS**, including Open Source Interaction Parity #51, World Market Interactive Parity #95, Provider Configuration Audit #165, Community Fullsite Audit #225 and the existing owner/browser/large-data regressions.
+- Proven interaction: current fused Find Customer surface → multi-product × multi-market combinations → real-result matrix → cross-combination ranking using the existing Lead `score / priority / reason` → explicit buyer checkbox selection → existing human batch-development review queue.
+- Proven unavailable-provider behavior: when real acquisition providers are absent, the browser gate observes an explicit failed combination row and **zero fabricated buyers**.
+- Browser evidence for the matrix uses isolated records written through the real existing Lead owner; it does not claim Serper/Tavily/Hunter production credentials were tested.
+- No new Customer / Deal / Mail persistence owner, no automatic contact lookup, no sequence enrollment, no queue/send action and no formal-price write were introduced.
+- Railway deployment is **PENDING**, because the only available exact-commit Railway agent path hit its usage limit. The ordinary redeploy and staged-patch acceptance paths are intentionally not used because they cannot prove deployment of this exact GitHub SHA without risking the protected staged patch.
+- Current Railway live safety baseline therefore remains `28567807710e8fcdf861a226f8526a7beb67f40a`; staged patch `ad0f7d76-5733-4fae-b298-d407e24d79c0` remains untouched / STAGED.
+
 ## 1. Closure rule
 
 Every referenced project is evaluated on four independent layers:
@@ -39,8 +52,8 @@ Price safety remains unchanged: Product/reference price never auto-writes Deal a
 
 | # | Reference project | High-value capability / interaction to preserve | HUIDI target owner | Current disposition | Evidence already present | Remaining closure work |
 |---:|---|---|---|---|---|---|
-| 1 | `1099271/smart-lead-agent` | buyer discovery, contact enrichment, personalized outreach, batch lead workbench, direct next actions | Lead Workbench + Contact Search + Mail Owner | `PARTIAL` + `CREDENTIAL-BOUND` | real Lead owner, batch review, contact/mail routes, human review gates | prove source-level batch ergonomics and contact→outreach continuity with real provider credentials; no duplicate lead store |
-| 2 | `Tommy-old/b2b-buyer-discovery` | multi-product × multi-market discovery, ranking, compact batch selection/result review | Acquisition Fusion + Product Brain + Lead Engine | `PARTIAL` + `CREDENTIAL-BOUND` | multi-product/market search path, ranking/lead reuse, real-provider gate | close compact matrix/batch UX and verify real provider result review at scale |
+| 1 | `1099271/smart-lead-agent` | buyer discovery, contact enrichment, personalized outreach, batch lead workbench, direct next actions | Lead Workbench + Contact Search + Mail Owner | `PARTIAL` + `CREDENTIAL-BOUND` | real Lead owner; multi-market batch matrix; cross-combination buyer selection; existing human review queue; contact/mail routes and human approval gates; browser proves no-provider/no-fake behavior | close per-buyer contact enrichment → outreach continuity inside the same batch review without automatic contact lookup; then validate real contact/search and mail providers |
+| 2 | `Tommy-old/b2b-buyer-discovery` | multi-product × multi-market discovery, ranking, compact batch selection/result review | Acquisition Fusion + Product Brain + Lead Engine | `PARTIAL` + `CREDENTIAL-BOUND` | construction `b50b659...` browser-proves compact product×market matrix, exact Lead score/priority/reason reuse, cross-combination dedupe/ranking, explicit max-8 buyer review selection and handoff to existing batch owner | deploy exact SHA when a safe Railway exact-commit path is available; validate real Serper/Tavily result review and larger real-provider result sets before runtime closure |
 | 3 | `kakacells/Customer_background_check_version1.2` | evidence-oriented due diligence, visible evidence gaps, company/contact/digital/trade/fit review | Customer Intelligence + Lead Assessment | `PARTIAL` + `CREDENTIAL-BOUND` | six-dimensional evidence panel, unknowns shown as pending, no fake official/credit claims | validate real company/trade providers and ensure evidence navigation remains first-class from Lead/Customer |
 | 4 | `uyoufu/UZonMail` | multi-mailbox, inbox/sent/queue, variables, sequences, tracking, thread continuity | Mail Owner V3 | `PARTIAL` + `CREDENTIAL-BOUND` | Inbox/Sent/Queue/Automatic Follow-up over one Mail owner; replies stop cold outreach | real Gmail/Outlook OAuth and SMTP/IMAP acceptance; scale/send-governance/opt-out behavior; thread continuity evidence |
 | 5 | `chnjames/tradehot-skill` | actionable market/trade/tariff intelligence, changes/risks and next actions | Intelligence + Trade + Tariff/HS + Today | `PARTIAL` + `CREDENTIAL-BOUND` | market/trade/HS/FX/logistics owner routing and no-fake-data policy | production validation against real commercial/public providers; alert freshness and market-context reuse |
@@ -83,7 +96,7 @@ Keep `28567807710e8fcdf861a226f8526a7beb67f40a` as the current live safety basel
 
 ### P1 — Map / acquisition / lead / due-diligence / mail chain
 
-Close projects 1–7 first because they directly affect daily foreign-trade acquisition and follow-up. `ai-tungke` per-country face interaction must be reintroduced only after a load/concurrency gate proves it does not regress P0.
+Close projects 1–7 first because they directly affect daily foreign-trade acquisition and follow-up. The acquisition-matrix interaction slice for projects 1–2 is browser-closed on construction `b50b659...` but remains deployment/provider-bound. Next closure should strengthen per-buyer evidence/contact → existing Mail Owner continuity without introducing automatic enrichment or outbound actions. `ai-tungke` per-country face interaction must be reintroduced only after a load/concurrency gate proves it does not regress P0.
 
 ### P2 — Knowledge and AI workspace
 
