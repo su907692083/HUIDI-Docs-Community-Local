@@ -5,9 +5,13 @@ on:
     paths:
       - 'public/huidi-community-online-intelligence-v2.js'
       - 'public/huidi-world-market-command-center-v1.js'
+      - 'online/api/web/index.html'
+      - 'online/api/web/world-basemap-v2.js'
+      - 'online/api/web/world-map-source-parity-v2.css'
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/tests/test_world_market_interactive_parity_contract.py'
+      - 'online/api/tests/test_world_intelligence_contract.py'
       - 'tools/world_market_interactive_browser_audit.py'
       - 'docs/OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md'
       - '.github/workflows/world-market-interactive-parity.yml'
@@ -16,9 +20,13 @@ on:
     paths:
       - 'public/huidi-community-online-intelligence-v2.js'
       - 'public/huidi-world-market-command-center-v1.js'
+      - 'online/api/web/index.html'
+      - 'online/api/web/world-basemap-v2.js'
+      - 'online/api/web/world-map-source-parity-v2.css'
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/tests/test_world_market_interactive_parity_contract.py'
+      - 'online/api/tests/test_world_intelligence_contract.py'
       - 'tools/world_market_interactive_browser_audit.py'
       - 'docs/OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md'
       - '.github/workflows/world-market-interactive-parity.yml'
@@ -49,6 +57,9 @@ jobs:
       - name: Verify interactive parity contract and JavaScript
         run: |
           python -m unittest online.api.tests.test_world_market_interactive_parity_contract -v
+          python -m unittest online.api.tests.test_world_intelligence_contract -v
+          node --check online/api/web/world-basemap-v2.js
+          node --check online/api/web/world-country-interaction.js
           node --check public/huidi-community-online-intelligence-v2.js
           node --check public/huidi-world-market-command-center-v1.js
       - name: Start fused HUIDI workspace
