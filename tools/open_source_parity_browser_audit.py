@@ -35,8 +35,6 @@ def exercise(base: str, output: Path) -> None:
                 {'type':'Feature','properties':{'ISO_A2_EH':'JP','NAME':'Japan'},'geometry':{'type':'Polygon','coordinates':[[[129,31],[146,31],[146,46],[129,46],[129,31]]]}}
             ]
         }
-        def geo(route): route.fulfill(status=200,content_type='application/json',body=json.dumps(fixture))
-        context.route('**/natural-earth-vector**',geo)
         auth=context.request.post(base+'/api/auth/register',data={
             'account_type':'individual','display_name':'Parity QA',
             'email':f'parity-{uuid.uuid4().hex[:12]}@example.test','password':uuid.uuid4().hex})
@@ -66,9 +64,20 @@ def exercise(base: str, output: Path) -> None:
         try:
             page.goto(base+'/',wait_until='domcontentloaded')
             page.wait_for_function("() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDICommunityOnlineFullV2)",timeout=35000)
+            # Use the same proven in-page fetch seam as the existing World Market
+            # audit. Browser routing alone can lose the race to the lazy map module.
+            page.evaluate("""fixture => {
+              const original=window.fetch.bind(window);
+              window.fetch=(input,init)=>{
+                const url=typeof input==='string'?input:(input?.url||'');
+                if(url.includes('natural-earth-vector')) return Promise.resolve(new Response(JSON.stringify(fixture),{status:200,headers:{'Content-Type':'application/json'}}));
+                return original(input,init);
+              };
+              window.__HUIDI_WORLD_GEOMETRY_FIXTURE__=true;
+            }""",fixture)
             page.locator('.sidebar .nav-btn[data-view="online-intel"]').click()
             page.wait_for_selector('#view-online-intel.active [data-fv2-pane="world-map"].active:not([hidden])')
-            page.wait_for_function("() => Boolean(window.HUIDIOpenSourceParity && document.querySelector('.wi-country-svg'))",timeout=20000)
+            page.wait_for_function("() => Boolean(window.HUIDIOpenSourceParity && document.querySelector('.wi-country-stage .wi-country-svg'))",timeout=20000)
             page.locator('#wiProductContext').fill('Garden Tool Set')
             page.locator('.wi-country-market[data-market-id="DE"],.wi-country-marker[data-market-id="DE"]').first.click()
             page.wait_for_selector('.hosp-cockpit')
