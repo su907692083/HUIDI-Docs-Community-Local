@@ -12,6 +12,7 @@ on:
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/app/main.py'
+      - 'online/api/app/acquisition_provider_fusion.py'
       - 'online/api/app/world_intelligence.py'
       - 'online/api/app/industry_playbooks.py'
       - 'online/api/app/mail_sequences.py'
@@ -27,6 +28,7 @@ on:
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
       - 'online/api/app/main.py'
+      - 'online/api/app/acquisition_provider_fusion.py'
       - 'online/api/app/world_intelligence.py'
       - 'online/api/app/industry_playbooks.py'
       - 'online/api/app/mail_sequences.py'
@@ -62,6 +64,11 @@ jobs:
           node --check public/huidi-world-market-command-center-v1.js
           grep -F "不等同于信用报告" public/huidi-open-source-parity-v1.js
           grep -F "不会批量发送" public/huidi-open-source-parity-v1.js
+          grep -F "MAX_BATCH_COMBINATIONS=12" public/huidi-open-source-parity-v1.js
+          grep -F "/api/leads/search" public/huidi-open-source-parity-v1.js
+          grep -F "data-hosp-acq-matrix" public/huidi-open-source-parity-v1.js
+          grep -F "data-hosp-acq-add-review" public/huidi-open-source-parity-v1.js
+          grep -F "不生成意向分" public/huidi-open-source-parity-v1.js
           grep -F "不会启用、不会 enroll、不会加入发送队列" public/huidi-open-source-parity-mail-batch-v1.js
           grep -F "/industry-sequence" public/huidi-open-source-parity-mail-batch-v1.js
           ! grep -E "repositories\.(customers|deals)\.(upsert|delete)|/api/.*/send" public/huidi-open-source-parity-v1.js
@@ -72,7 +79,7 @@ jobs:
           sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
           python -m pip install -r online/api/requirements.txt playwright
           python -m playwright install --with-deps chromium
-      - name: Exercise world market to evidence and batch human review
+      - name: Exercise acquisition matrix, world market, evidence, and human review
         run: |
           python tools/open_source_parity_browser_audit.py --output /tmp/huidi-open-source-parity
       - name: Upload exact parity evidence
