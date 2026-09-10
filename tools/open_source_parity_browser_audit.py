@@ -122,7 +122,7 @@ def exercise(base:str,output:Path)->None:
 
    page.wait_for_function("() => Boolean(window.HUIDIOpenSourceBatchMailParity)",timeout=8000)
    page.wait_for_selector('#hospBatchDialog [data-hosp-prepare-sequences]')
-   page.wait_for_function("() => document.querySelectorAll('#hospBatchDialog [data-hosp-contact-state]').length===2",timeout=8000)
+   page.wait_for_function("() => document.querySelectorAll('#hospBatchDialog [data-hosp-contact-loaded=\"1\"]').length===2",timeout=8000)
    check('opening batch review never auto-runs contact lookup',not contact_posts)
    first_row=page.locator(f'#hospBatchDialog [data-hosp-batch-lead="{ids[0]}"]')
    second_row=page.locator(f'#hospBatchDialog [data-hosp-batch-lead="{ids[1]}"]')
