@@ -11,6 +11,7 @@ ROUTING = REPO_ROOT / "public" / "huidi-community-online-development-routing-v1.
 PARITY = REPO_ROOT / "public" / "huidi-open-source-parity-v1.js"
 BUSINESS_UI = API_ROOT / "web" / "business-center-ui.js"
 BUSINESS_BACKEND = API_ROOT / "app" / "business_center.py"
+WORKSPACE_CLOSURE = REPO_ROOT / "public" / "huidi-workspace-closure-v1.js"
 
 
 class DueDiligenceNavigationContractTest(unittest.TestCase):
@@ -20,11 +21,13 @@ class DueDiligenceNavigationContractTest(unittest.TestCase):
         cls.parity = PARITY.read_text(encoding="utf-8")
         cls.business_ui = BUSINESS_UI.read_text(encoding="utf-8")
         cls.business_backend = BUSINESS_BACKEND.read_text(encoding="utf-8")
+        cls.workspace_closure = WORKSPACE_CLOSURE.read_text(encoding="utf-8")
 
     def test_javascript_syntax(self) -> None:
         subprocess.run(["node", "--check", str(ROUTING)], check=True)
         subprocess.run(["node", "--check", str(PARITY)], check=True)
         subprocess.run(["node", "--check", str(BUSINESS_UI)], check=True)
+        subprocess.run(["node", "--check", str(WORKSPACE_CLOSURE)], check=True)
 
     def test_lead_pool_exposes_evidence_separately_from_reassessment(self) -> None:
         self.assertIn("背调证据", self.routing)
@@ -56,7 +59,39 @@ class DueDiligenceNavigationContractTest(unittest.TestCase):
         self.assertIn('OnlineCustomer(source_lead_id=lead.id', self.business_backend)
         self.assertIn('source_lead_id=lead.id', self.business_backend)
 
-    def test_formal_customer_and_inquiry_reuse_same_evidence_owner(self) -> None:
+    def test_canonical_community_quick_detail_resolves_source_by_exact_record_id(self) -> None:
+        self.assertIn("async function enhanceFormalQuick()", self.routing)
+        self.assertIn("['customer','deal'].includes(kind)", self.routing)
+        self.assertIn("!/^[0-9]+$/.test(id)", self.routing)
+        self.assertIn("/api/business/customers/${encodeURIComponent(id)}", self.routing)
+        self.assertIn("/api/business/deals/${encodeURIComponent(id)}", self.routing)
+        self.assertIn("record?.source_lead_id", self.routing)
+        self.assertIn("evidence.dataset.hdwFormalEvidence='1'", self.routing)
+        self.assertIn("evidence.dataset.hdwRouteLead=leadId", self.routing)
+        self.assertIn("evidence.dataset.hdwRouteAction='evidence'", self.routing)
+        self.assertIn("tr[data-quick-kind][data-quick-id]", self.routing)
+        self.assertIn("tr[data-quick-kind=\"customer\"][data-quick-id]", self.routing)
+        self.assertIn("tr[data-quick-kind=\"deal\"][data-quick-id]", self.routing)
+        self.assertIn("data-quick-kind=\"customer\"", self.workspace_closure)
+        self.assertIn("data-quick-kind=\"deal\"", self.workspace_closure)
+        self.assertIn("huidi-quick-actions", self.workspace_closure)
+
+    def test_canonical_community_evidence_lookup_never_guesses_source_identity(self) -> None:
+        bridge = self.routing.split("async function enhanceFormalQuick", 1)[1].split("async function enhanceToday", 1)[0]
+        self.assertNotIn("company_name", bridge)
+        self.assertNotIn("contact_email", bridge)
+        self.assertNotIn("website", bridge)
+        self.assertNotIn("domain", bridge)
+        self.assertNotIn("/api/leads?", bridge)
+        self.assertNotIn("page_size", bridge)
+        self.assertNotIn("find-contact", bridge)
+        self.assertNotIn("/send", bridge)
+        self.assertNotIn("/queue", bridge)
+        self.assertNotIn("native-document", bridge)
+        self.assertNotIn("unit_price", bridge)
+        self.assertNotIn("total_price", bridge)
+
+    def test_direct_online_business_page_also_reuses_same_evidence_owner(self) -> None:
         self.assertIn('data-source-evidence>背调证据</button>', self.business_ui)
         self.assertIn('data-open-evidence>背调证据</button>', self.business_ui)
         self.assertIn("openEvidence(x.source_lead_id)", self.business_ui)
@@ -65,7 +100,7 @@ class DueDiligenceNavigationContractTest(unittest.TestCase):
         self.assertIn("data-source-lead>查看开发记录</button>", self.business_ui)
         self.assertIn("data-open-lead>查看开发记录</button>", self.business_ui)
 
-    def test_formal_evidence_bridge_never_guesses_source_identity(self) -> None:
+    def test_direct_online_evidence_bridge_never_guesses_source_identity(self) -> None:
         bridge = self.business_ui.split("function openEvidence", 1)[1].split("async function openCustomer", 1)[0]
         self.assertNotIn("/api/", bridge)
         self.assertNotIn("company_name", bridge)
@@ -88,11 +123,13 @@ class DueDiligenceNavigationContractTest(unittest.TestCase):
         self.assertNotIn("total_price", self.routing)
 
     def test_no_new_observer_plane_is_added(self) -> None:
-        # The pre-existing routing layer has exactly three scoped observers:
-        # pool, followups, and development. Evidence must reuse the pool one.
+        # The pre-existing routing layer keeps exactly three scoped observers:
+        # pool, followups, and development. Formal business evidence is attached
+        # from the existing Quick Detail click/keyboard path instead of a fourth observer.
         self.assertEqual(self.routing.count("MutationObserver"), 3)
         self.assertIn("new MutationObserver(()=>enhancePool(pool))", self.routing)
         self.assertEqual(self.routing.count("data-hdw-route-action=\"evidence\""), 1)
+        self.assertIn("setTimeout(enhanceFormalQuick,0)", self.routing)
 
     def test_pool_enhancement_is_idempotent_under_its_scoped_observer(self) -> None:
         # The pool observer watches childList/subtree. Reassigning textContent on
