@@ -89,10 +89,30 @@ def exercise(base: str, output: Path) -> None:
             )
             page.locator('.sidebar .nav-btn[data-view="online-find"]').click()
             page.wait_for_selector('#view-online-find.active [data-fv2-tab="pool"]')
-            page.locator('#view-online-find [data-fv2-tab="pool"]').click()
+            opened = page.evaluate(
+                """async () => {
+                    const owner = window.HUIDICommunityOnlineFullV2;
+                    if (!owner?.openTab) return false;
+                    return await owner.openTab('online-find', 'pool', {force: true});
+                }"""
+            )
+            check("existing Lead Pool owner completes its async render", opened is True)
             page.wait_for_selector('#view-online-find [data-fv2-pane="pool"].active:not([hidden])')
+
+            lead_page = context.request.get(base + "/api/leads?paged=true&page=1&page_size=50")
+            assert lead_page.status == 200, lead_page.text()
+            lead_payload = lead_page.json()
+            lead_items = lead_payload if isinstance(lead_payload, list) else lead_payload.get("items", [])
+            check(
+                "seeded Lead is visible through existing Lead Owner API",
+                any(str(item.get("id")) == lead_id for item in lead_items),
+            )
+
             row = page.locator(f'#view-online-find [data-fv2-pane="pool"] tr[data-fv2-lead="{lead_id}"]')
-            row.wait_for(timeout=12000)
+            row.wait_for(state="attached", timeout=12000)
+            check("seeded Lead is rendered in existing Lead Pool", row.count() == 1)
+            row.scroll_into_view_if_needed()
+            check("seeded Lead row is visible", row.is_visible())
             page.wait_for_function(
                 "id => Boolean(document.querySelector(`#view-online-find [data-fv2-pane=\"pool\"] tr[data-fv2-lead=\"${id}\"] [data-hdw-route-action=\"evidence\"]`))",
                 arg=lead_id,
