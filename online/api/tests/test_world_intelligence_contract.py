@@ -1,11 +1,14 @@
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from app.daily_app import app
 from app.world_intelligence import WORLD_MARKETS, _market_for
-
-ROOT = Path(__file__).resolve().parents[1]
 
 
 class WorldIntelligenceContractTests(unittest.TestCase):
