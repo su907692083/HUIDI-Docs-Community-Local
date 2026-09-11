@@ -7,6 +7,7 @@ import os
 import threading
 from datetime import datetime, timedelta, timezone
 from typing import Any
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 
 import httpx
@@ -33,7 +34,10 @@ CATEGORY_NAMES = {
     "followup": "客户跟进",
     "mail": "邮件异常",
     "deal": "询盘 / 业务",
+    "system": "系统检查 / 备份",
 }
+# Keep the historical four business categories as the default. System events are
+# available explicitly but are not silently added to every existing/new rule.
 DEFAULT_CATEGORIES = ["reply", "followup", "mail", "deal"]
 
 
@@ -123,10 +127,12 @@ def _validate_destination(value: str) -> str:
     destination = str(value or "").strip()
     if not destination:
         raise HTTPException(400, "提醒接收地址不能为空")
-    # Reuse the same network guard as external data-service adapters. This blocks
-    # localhost/private/link-local/reserved/multicast targets by default and also
-    # rejects embedded credentials/fragments. CI or explicitly trusted private
-    # deployments can opt in through HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS.
+    # Notification/webhook destinations are execution targets, not data-source
+    # lookups. Require HTTPS even when private-service endpoints are explicitly
+    # allowed elsewhere, then reuse the shared SSRF/network guard as a second
+    # layer against localhost/private/link-local/reserved/multicast addresses.
+    if urlparse(destination).scheme.lower() != "https":
+        raise HTTPException(400, "业务自动化接收地址必须使用 HTTPS")
     _validate_endpoint(destination)
     return destination
 
