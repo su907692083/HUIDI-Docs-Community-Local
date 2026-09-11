@@ -22,7 +22,14 @@ class KnowledgeContextContractTests(unittest.TestCase):
         self.assertIn('/api/knowledge/search', self.backend)
         for owner in ("ProductBrainRecord", "Lead", "OnlineCustomer", "OnlineDeal", "OnlineIntelligenceRecord"):
             self.assertIn(owner, self.backend)
-        for forbidden in ("class Knowledge", "__tablename__", "create_all", "vector", "embedding", "httpx"):
+        # Comments/docstrings explicitly state that embeddings/vector storage are
+        # absent. Reject actual implementation hooks rather than those safety
+        # words themselves.
+        for forbidden in (
+            "class Knowledge", "__tablename__", "create_all", "httpx",
+            "pgvector", "sentence_transformers", "OpenAIEmbeddings", "embedding_function=",
+            "vector_store", "vectorstore", "faiss", "chromadb",
+        ):
             self.assertNotIn(forbidden, self.backend)
         self.assertIn('mode": "authoritative_lexical', self.backend)
         self.assertIn('network_requests": 0', self.backend)
