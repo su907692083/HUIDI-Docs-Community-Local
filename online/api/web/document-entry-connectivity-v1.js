@@ -1,6 +1,6 @@
 (()=>{'use strict';
 if(window.HUIDIDocumentEntryConnectivity)return;
-const $=s=>document.querySelector(s),clean=v=>String(v??'').trim(),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s),clean=v=>String(v??'').trim(),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const docNames={quotation:'报价单',proforma_invoice:'形式发票 PI',sales_contract:'销售合同',commercial_invoice:'商业发票 CI',packing_list:'装箱单'};
 let activeDealId='',dealSnapshot=null,items=[],cache=new Map(),selected=new Set(),serverSelected=new Set(),dirty=false,autoMatched=false,productQuery='',seq=0,busy=false,searchTimer=0,dealLoadPromise=null;
 async function api(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});if(!r.ok){let text=await r.text();try{text=JSON.parse(text).detail||text}catch(_){}throw new Error(text||r.statusText)}return r.json()}
