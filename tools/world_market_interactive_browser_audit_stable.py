@@ -10,20 +10,34 @@ _ORIGINAL_SET_WINDOW_SIZE = WebDriver.set_window_size
 
 
 def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHandle: str = "current"):
-    result = _ORIGINAL_SET_WINDOW_SIZE(self, width, height, windowHandle)
     try:
-        mounted = self.execute_script(
-            "return Boolean(document.querySelector('#view-online-intel [data-fv2-pane=\"world-map\"].active .wi-map-card'))"
-        )
-        if not mounted:
-            return result
-        for _ in range(100):
+        had_world_map = bool(self.execute_script("""
+          return Boolean(
+            document.querySelector('#view-online-intel [data-fv2-pane="world-map"] .wi-country-stage') &&
+            document.querySelector('#wiCountrySearch') &&
+            window.HUIDIWorldCountryInteraction
+          );
+        """))
+    except Exception:
+        had_world_map = False
+
+    result = _ORIGINAL_SET_WINDOW_SIZE(self, width, height, windowHandle)
+    if not had_world_map:
+        return result
+
+    try:
+        for _ in range(150):
             ready = self.execute_script("""
               const pane=document.querySelector('#view-online-intel [data-fv2-pane="world-map"].active');
               const view=document.querySelector('#view-online-intel');
               const map=pane?.querySelector('.wi-map-card'),side=pane?.querySelector('.wi-side');
+              const svg=pane?.querySelector('.wi-country-svg');
+              const search=document.querySelector('#wiCountrySearch');
               const ar=map?.getBoundingClientRect(),sr=side?.getBoundingClientRect(),vc=view?.clientWidth||0;
-              return Boolean(pane&&ar&&sr&&vc>0&&ar.width>=vc*.90&&sr.width>=vc*.90);
+              return Boolean(
+                pane && ar && sr && svg && search && window.HUIDIWorldCountryInteraction &&
+                vc>0 && ar.width>=vc*.90 && sr.width>=vc*.90
+              );
             """)
             if ready:
                 return result
