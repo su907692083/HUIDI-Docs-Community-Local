@@ -1,0 +1,65 @@
+name: HUIDI Customer Inquiry Evidence Navigation
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/huidi-community-online-development-routing-v1.js'
+      - 'online/api/app/business_center.py'
+      - 'online/api/web/business-center-ui.js'
+      - 'online/api/tests/test_due_diligence_navigation_contract.py'
+      - 'tools/business_evidence_navigation_browser_audit.py'
+      - '.github/workflows/business-evidence-navigation.yml'
+  pull_request:
+    paths:
+      - 'public/huidi-community-online-development-routing-v1.js'
+      - 'online/api/app/business_center.py'
+      - 'online/api/web/business-center-ui.js'
+      - 'online/api/tests/test_due_diligence_navigation_contract.py'
+      - 'tools/business_evidence_navigation_browser_audit.py'
+      - '.github/workflows/business-evidence-navigation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huidi-business-evidence-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  navigation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and owner contract
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          node --check public/huidi-community-online-development-routing-v1.js
+          node --check online/api/web/business-center-ui.js
+          python -m unittest online.api.tests.test_due_diligence_navigation_contract -v
+      - name: Install isolated browser dependencies
+        run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
+          python -m pip install -r online/api/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Exercise Customer and Inquiry to existing evidence owner
+        run: |
+          python tools/business_evidence_navigation_browser_audit.py --output /tmp/huidi-business-evidence-navigation
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUIDI-BUSINESS-EVIDENCE-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/huidi-business-evidence-navigation/
+          if-no-files-found: error
+          retention-days: 14
