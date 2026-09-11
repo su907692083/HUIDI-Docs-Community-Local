@@ -33,6 +33,8 @@ class NativeDocumentHeaderGuardTests(unittest.TestCase):
         self.assertIn("beforeunload", decorated)
         self.assertIn("stopImmediatePropagation", decorated)
         self.assertIn("window.print()", decorated)
+        self.assertIn("window.top.location.href=destination", decorated)
+        self.assertIn("['quotation','proforma_invoice','sales_contract','commercial_invoice','packing_list'].includes(page)", decorated)
         self.assertIn("flex-wrap:wrap", decorated)
         self.assertNotIn("window.open(", decorated)
         self.assertEqual(decorate_native_document_header(decorated), decorated)
