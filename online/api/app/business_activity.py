@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import Depends, HTTPException, Query
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from .business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef
@@ -58,6 +58,46 @@ def _event(
         "at": _iso(at),
         "route": route or {},
     }
+
+
+def _resolve_customer(db: Session, key: str) -> OnlineCustomer | None:
+    value = str(key or "").strip()[:160]
+    if not value:
+        return None
+    try:
+        row = db.get(OnlineCustomer, int(value))
+    except (TypeError, ValueError):
+        row = None
+    if row:
+        return row
+    # Community can temporarily keep its stable local string ID even though the
+    # cloud Customer owner uses an integer primary key. Resolve the mapping that
+    # community_sync already persists; do not create another identity table.
+    try:
+        row_id = db.execute(
+            text("SELECT id FROM online_customers WHERE local_customer_id=:key ORDER BY id ASC LIMIT 1"),
+            {"key": value},
+        ).scalar_one_or_none()
+    except Exception:
+        row_id = None
+    return db.get(OnlineCustomer, int(row_id)) if row_id else None
+
+
+def _resolve_deal(db: Session, key: str) -> OnlineDeal | None:
+    value = str(key or "").strip()[:160]
+    if not value:
+        return None
+    try:
+        row = db.get(OnlineDeal, int(value))
+    except (TypeError, ValueError):
+        row = None
+    if row:
+        return row
+    return db.scalar(
+        select(OnlineDeal)
+        .where(OnlineDeal.local_deal_id == value)
+        .order_by(OnlineDeal.id.asc())
+    )
 
 
 def _timeline(
@@ -198,11 +238,11 @@ def _lead_ids(customer: OnlineCustomer | None, deals: list[OnlineDeal]) -> set[i
 
 @app.get("/api/business/customers/{customer_id}/activity")
 def customer_activity(
-    customer_id: int,
+    customer_id: str,
     limit: int = Query(default=40, ge=5, le=100),
     db: Session = Depends(get_db),
 ):
-    customer = db.get(OnlineCustomer, customer_id)
+    customer = _resolve_customer(db, customer_id)
     if not customer:
         raise HTTPException(404, "客户不存在")
     deals = db.scalars(
@@ -211,11 +251,12 @@ def customer_activity(
         .order_by(OnlineDeal.updated_at.desc(), OnlineDeal.id.desc())
         .limit(120)
     ).all()
-    items = _timeline(db, customer=customer, deals=list(deals), lead_ids=_lead_ids(customer, list(deals)), limit=limit)
+    deal_rows = list(deals)
+    items = _timeline(db, customer=customer, deals=deal_rows, lead_ids=_lead_ids(customer, deal_rows), limit=limit)
     return {
         "ok": True,
         "owner": "existing_business_projection",
-        "entity": {"kind": "customer", "id": customer.id, "name": customer.company_name},
+        "entity": {"kind": "customer", "id": customer.id, "requested_id": customer_id, "name": customer.company_name},
         "items": items,
         "guardrails": {"read_only": True, "new_activity_storage": False, "formal_price_projection": False},
     }
@@ -223,11 +264,11 @@ def customer_activity(
 
 @app.get("/api/business/deals/{deal_id}/activity")
 def deal_activity(
-    deal_id: int,
+    deal_id: str,
     limit: int = Query(default=40, ge=5, le=100),
     db: Session = Depends(get_db),
 ):
-    deal = db.get(OnlineDeal, deal_id)
+    deal = _resolve_deal(db, deal_id)
     if not deal:
         raise HTTPException(404, "询盘不存在")
     customer = db.get(OnlineCustomer, deal.customer_id)
@@ -235,7 +276,7 @@ def deal_activity(
     return {
         "ok": True,
         "owner": "existing_business_projection",
-        "entity": {"kind": "deal", "id": deal.id, "name": deal.title},
+        "entity": {"kind": "deal", "id": deal.id, "requested_id": deal_id, "name": deal.title},
         "items": items,
         "guardrails": {"read_only": True, "new_activity_storage": False, "formal_price_projection": False},
     }
