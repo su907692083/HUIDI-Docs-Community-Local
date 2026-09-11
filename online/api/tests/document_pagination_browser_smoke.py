@@ -160,6 +160,11 @@ def get_json(driver: webdriver.Chrome, path: str) -> dict:
     return json.loads(result["body"] or "{}")
 
 
+def checkbox_selected(driver: webdriver.Chrome, product_id: str) -> bool:
+    nodes = driver.find_elements(By.CSS_SELECTOR, f'[data-hdec-product="{product_id}"]')
+    return bool(nodes and nodes[0].is_selected())
+
+
 def main() -> None:
     driver = webdriver.Chrome(options=options())
     driver.set_page_load_timeout(20)
@@ -225,17 +230,16 @@ def main() -> None:
             in dom_attr(d, f'[data-hdw-deal="{target_id}"]', "class").split()
         )
 
-        product_card = wait.until(EC.visibility_of_element_located((By.ID, "huidiDocumentEntryProducts")))
+        wait.until(EC.visibility_of_element_located((By.ID, "huidiDocumentEntryProducts")))
         wait.until(
             lambda d: len(d.find_elements(By.CSS_SELECTOR, "#huidiDocumentEntryProducts [data-hdec-product]")) >= 2
         )
-        base_box = driver.find_element(By.CSS_SELECTOR, f'[data-hdec-product="{base_product_id}"]')
+        wait.until(lambda d: checkbox_selected(d, base_product_id))
+        assert not checkbox_selected(driver, variant_product_id)
         variant_box = driver.find_element(By.CSS_SELECTOR, f'[data-hdec-product="{variant_product_id}"]')
-        wait.until(lambda _d: base_box.is_selected())
-        assert not variant_box.is_selected()
         pointer_click(driver, variant_box)
-        assert variant_box.is_selected()
-        assert "已选 2 项" in product_card.text, product_card.text
+        wait.until(lambda d: checkbox_selected(d, variant_product_id))
+        wait.until(lambda d: "已选 2 项" in dom_text(d, "#huidiDocumentEntryProducts"))
 
         quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hdw-doc="quotation"]')))
         pointer_click(driver, quote)
