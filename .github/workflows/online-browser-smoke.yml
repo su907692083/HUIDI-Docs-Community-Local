@@ -124,6 +124,8 @@ jobs:
         run: python tests/detail_continuity_browser_smoke.py
       - name: Verify document workbench paginates more than 50 real inquiries
         run: python tests/document_pagination_browser_smoke.py
+      - name: Verify all native document table and PDF layouts
+        run: python tests/native_document_pdf_browser_smoke.py
       - name: Verify standalone customer inquiry and native quotation without blocking alerts
         run: |
           python - <<'PY'
