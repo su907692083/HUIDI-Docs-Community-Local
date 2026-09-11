@@ -54,6 +54,24 @@ def selected_ids(driver: webdriver.Chrome) -> list[str]:
     return [str(value) for value in driver.execute_script("return window.HUIDIOnlineCatalog.selectedProductIds();")]
 
 
+def click_visible(driver: webdriver.Chrome, wait: WebDriverWait, element) -> None:
+    driver.execute_script(
+        "arguments[0].scrollIntoView({block:'center',inline:'nearest',behavior:'instant'});",
+        element,
+    )
+    wait.until(
+        lambda d: d.execute_script(
+            """
+            const r=arguments[0].getBoundingClientRect();
+            const point=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);
+            return Boolean(r.width&&r.height&&r.top>=0&&r.bottom<=innerHeight&&(point===arguments[0]||arguments[0].contains(point)));
+            """,
+            element,
+        )
+    )
+    element.click()
+
+
 def main() -> None:
     stamp = str(int(time.time() * 1000))[-8:]
     items = []
@@ -179,7 +197,7 @@ def main() -> None:
         assert set(selected_ids(driver)) == {first_id, second_id}, selected_ids(driver)
 
         sync_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-sync-deal]")
-        sync_button.click()
+        click_visible(driver, wait, sync_button)
         confirmation = wait.until(EC.alert_is_present())
         assert "产品关联与目录选择一致" in confirmation.text, confirmation.text
         confirmation.accept()
@@ -188,9 +206,11 @@ def main() -> None:
         linked = http_json(f"/api/business/deals/{deal_id}/products?limit=100")
         assert set(linked.get("selected") or []) == {first_id, second_id}, linked
 
-        driver.find_element(By.CSS_SELECTOR, "[data-hoc-none]").click()
+        none_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-none]")
+        click_visible(driver, wait, none_button)
         wait.until(lambda d: len(selected_ids(d)) == 0)
-        driver.find_element(By.CSS_SELECTOR, "[data-hoc-load-deal]").click()
+        load_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-load-deal]")
+        click_visible(driver, wait, load_button)
         wait.until(lambda d: set(selected_ids(d)) == {first_id, second_id})
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "#hocPreview .hoc-card")) == 2)
 
@@ -217,7 +237,8 @@ def main() -> None:
         assert any("ids=" in url for url in final_urls if url.startswith("/api/product-brains?")), final_urls
         assert any(f"/api/business/deals/{deal_id}/products" in url for url in final_urls), final_urls
 
-        driver.find_element(By.CSS_SELECTOR, "[data-hoc-documents]").click()
+        docs_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-documents]")
+        click_visible(driver, wait, docs_button)
         wait.until(lambda d: "page=documents" in d.current_url)
         wait.until(lambda d: str(d.execute_script("return window.HUIDIDocumentEntryConnectivity?.dealId?.() || '';")) == str(deal_id))
 
