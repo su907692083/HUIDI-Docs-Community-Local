@@ -62,3 +62,7 @@ def _readiness():
 
 service_hub._provider_status = _provider_status
 production_readiness.build_production_readiness = _readiness
+
+# Read-only reuse memory stays inside the existing Acquisition integration plane.
+# It derives tenant-scoped hints from already-persisted real Lead history only.
+from . import acquisition_memory  # noqa: F401,E402
