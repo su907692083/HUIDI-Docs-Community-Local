@@ -19,6 +19,7 @@ from sqlalchemy.orm import Mapped, Session, mapped_column
 from .main import Base, SessionLocal, engine, get_db
 from .online_notifications import build_notifications
 from .online_app import app
+from .service_adapters import _validate_endpoint
 
 
 CHANNELS = {
@@ -118,6 +119,18 @@ def _decrypt(value: str) -> str:
         raise HTTPException(503, "这个提醒方式无法读取，请管理员重新连接")
 
 
+def _validate_destination(value: str) -> str:
+    destination = str(value or "").strip()
+    if not destination:
+        raise HTTPException(400, "提醒接收地址不能为空")
+    # Reuse the same network guard as external data-service adapters. This blocks
+    # localhost/private/link-local/reserved/multicast targets by default and also
+    # rejects embedded credentials/fragments. CI or explicitly trusted private
+    # deployments can opt in through HUIDI_ALLOW_PRIVATE_SERVICE_ENDPOINTS.
+    _validate_endpoint(destination)
+    return destination
+
+
 def _member(request: Request) -> dict[str, Any]:
     member = getattr(request.state, "team_member", None)
     return member if isinstance(member, dict) else {}
@@ -198,6 +211,7 @@ def _message_text(event: dict[str, Any], test: bool = False) -> str:
 
 
 def _post_destination(channel: str, destination: str, text: str, event: dict[str, Any]) -> None:
+    destination = _validate_destination(destination)
     if channel == "feishu":
         payload = {"msg_type": "text", "content": {"text": text}}
     elif channel in {"wecom", "dingtalk"}:
@@ -211,7 +225,7 @@ def _post_destination(channel: str, destination: str, text: str, event: dict[str
             "text": text,
         }
     try:
-        with httpx.Client(timeout=15) as client:
+        with httpx.Client(timeout=15, follow_redirects=False) as client:
             response = client.post(destination, json=payload, headers={"Content-Type": "application/json"})
     except httpx.RequestError as exc:
         raise RuntimeError("暂时连接不到提醒服务") from exc
@@ -323,10 +337,11 @@ def create_route(req: RouteCreate, request: Request, db: Session = Depends(get_d
         ZoneInfo(req.timezone_name)
     except Exception:
         raise HTTPException(400, "公司时区填写不正确")
+    destination = _validate_destination(req.destination)
     row = NotificationRoute(
         name=req.name.strip() or CHANNELS[req.channel],
         channel=req.channel,
-        encrypted_destination=_encrypt(req.destination.strip()),
+        encrypted_destination=_encrypt(destination),
         categories_json=json.dumps(_validate_categories(req.categories), ensure_ascii=False),
         high_only=1 if req.high_only else 0,
         timezone_name=req.timezone_name.strip(),
@@ -365,7 +380,7 @@ def patch_route(route_id: int, req: RoutePatch, request: Request, db: Session = 
     if req.clear_destination:
         row.encrypted_destination = ""
     elif req.destination is not None and req.destination.strip():
-        row.encrypted_destination = _encrypt(req.destination.strip())
+        row.encrypted_destination = _encrypt(_validate_destination(req.destination))
     row.updated_by = str(current.get("display_name") or current.get("email") or "管理员")[:160]
     row.updated_at = datetime.now(timezone.utc)
     db.commit()
