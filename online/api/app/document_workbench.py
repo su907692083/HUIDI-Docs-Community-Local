@@ -7,9 +7,17 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from . import standalone_business
 from .business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef
 from .main import Lead, LeadActivity, get_db, safe_json
+from .native_document_header_guard import install_native_document_header_guard
 from .online_app import app
+
+
+# Install last in the native-document presentation stack. It keeps the canonical
+# OnlineDocumentRef draft owner but makes the editor toolbar save/return/print
+# behavior deterministic across direct workbench and customer/inquiry entry.
+install_native_document_header_guard(standalone_business)
 
 
 DOC_ORDER = (
