@@ -10,9 +10,13 @@ on:
       - 'online/api/web/world-map-source-parity-v2.css'
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
+      - 'online/api/web/world-country-face-parity-v1.js'
       - 'online/api/tests/test_world_market_interactive_parity_contract.py'
       - 'online/api/tests/test_world_intelligence_contract.py'
+      - 'online/api/tests/test_world_country_face_parity_contract.py'
       - 'tools/world_market_interactive_browser_audit.py'
+      - 'tools/world_country_face_browser_audit.py'
+      - 'tools/world_map_static_load_browser_audit.py'
       - 'docs/OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md'
       - '.github/workflows/world-market-interactive-parity.yml'
   push:
@@ -25,16 +29,28 @@ on:
       - 'online/api/web/world-map-source-parity-v2.css'
       - 'online/api/web/world-intelligence-map.js'
       - 'online/api/web/world-country-interaction.js'
+      - 'online/api/web/world-country-face-parity-v1.js'
       - 'online/api/tests/test_world_market_interactive_parity_contract.py'
       - 'online/api/tests/test_world_intelligence_contract.py'
+      - 'online/api/tests/test_world_country_face_parity_contract.py'
       - 'tools/world_market_interactive_browser_audit.py'
+      - 'tools/world_country_face_browser_audit.py'
+      - 'tools/world_map_static_load_browser_audit.py'
       - 'docs/OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md'
       - '.github/workflows/world-market-interactive-parity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huidi-world-market-parity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   interactive_world_market:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 15
     env:
       HUIDI_SECRET_KEY: ci-world-market-parity-secret
       HUIDI_DISABLE_BACKGROUND_JOBS: '1'
@@ -44,6 +60,9 @@ jobs:
       DATABASE_URL: sqlite:////tmp/huidi-world-market-parity.db
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -56,10 +75,14 @@ jobs:
           pip install 'selenium>=4.20,<5'
       - name: Verify interactive parity contract and JavaScript
         run: |
+          set -euo pipefail
+          git rev-parse HEAD
           python -m unittest online.api.tests.test_world_market_interactive_parity_contract -v
           python -m unittest online.api.tests.test_world_intelligence_contract -v
+          python -m unittest online.api.tests.test_world_country_face_parity_contract -v
           node --check online/api/web/world-basemap-v2.js
           node --check online/api/web/world-country-interaction.js
+          node --check online/api/web/world-country-face-parity-v1.js
           node --check public/huidi-community-online-intelligence-v2.js
           node --check public/huidi-world-market-command-center-v1.js
       - name: Start fused HUIDI workspace
@@ -76,8 +99,20 @@ jobs:
           done
           cat /tmp/huidi-world-market.log
           exit 1
+      - name: Verify Team Access static-load stability
+        run: python tools/world_map_static_load_browser_audit.py
       - name: Verify real country interactions and downstream context in Chrome
         run: python tools/world_market_interactive_browser_audit.py
+      - name: Verify per-country map faces and source-parity header in Chrome
+        run: python tools/world_country_face_browser_audit.py
+      - name: Verify no static-request DB pool exhaustion
+        run: |
+          set -euo pipefail
+          if grep -E 'QueuePool limit|connection timed out|TimeoutError: QueuePool' /tmp/huidi-world-market.log; then
+            echo 'Static/map loading exhausted the Team Access DB pool.'
+            tail -300 /tmp/huidi-world-market.log
+            exit 1
+          fi
       - name: Stop HUIDI
         if: always()
         run: |
