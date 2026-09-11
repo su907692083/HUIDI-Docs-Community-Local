@@ -15,11 +15,13 @@ APP = ROOT / "app"
 class WorkspaceFoundationContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.js = (WEB / "workspace-foundation.js").read_text(encoding="utf-8")
+        self.guidance = (WEB / "open-box-guidance-closure-v1.js").read_text(encoding="utf-8")
         self.documents = (WEB / "document-workbench-closure.js").read_text(encoding="utf-8")
         self.guard = (APP / "frontend_runtime_guard.py").read_text(encoding="utf-8")
 
     def test_root_surface_loads_foundation_through_versioned_runtime_guard(self) -> None:
         self.assertIn('/assets/workspace-foundation.js', self.guard)
+        self.assertIn('/assets/open-box-guidance-closure-v1.js', self.guard)
         self.assertIn('inject_workspace_foundation', self.guard)
         self.assertIn('html = inject_workspace_foundation', self.guard)
         self.assertLess(
@@ -54,6 +56,18 @@ class WorkspaceFoundationContractTests(unittest.TestCase):
         self.assertIn('其他企业邮箱（高级）', self.js)
         self.assertIn('普通用户不需要理解 SMTP', self.js)
         self.assertIn('普通业务员不需要配置 Serper / Tavily / Hunter', self.js)
+
+    def test_open_box_guidance_keeps_one_next_action_without_new_owner(self) -> None:
+        self.assertIn('HUIDIWorkspaceFoundation?.status', self.guidance)
+        self.assertIn('HUIDIBeginnerFlow?.data', self.guidance)
+        self.assertIn("needsReply>0||late>0", self.guidance)
+        self.assertIn("if(!status?.company)", self.guidance)
+        self.assertIn("if(!status?.product)", self.guidance)
+        self.assertIn("if(!status?.mail)", self.guidance)
+        self.assertIn("home.querySelector('.huf-actions')?.remove()", self.guidance)
+        self.assertIn('完成开箱设置', self.guidance)
+        for forbidden in ["fetch(", "indexedDB", "localStorage", "MutationObserver", "/api/"]:
+            self.assertNotIn(forbidden, self.guidance)
 
     def test_communication_is_one_work_domain_over_existing_mail_owners(self) -> None:
         self.assertIn("mount?.('communication','客户沟通'", self.js)
@@ -132,7 +146,7 @@ class WorkspaceFoundationContractTests(unittest.TestCase):
         node = shutil.which("node")
         if not node:
             self.skipTest("node is not installed")
-        for source in (self.js, self.documents):
+        for source in (self.js, self.guidance, self.documents):
             with tempfile.NamedTemporaryFile("w", suffix=".js", encoding="utf-8", delete=False) as tmp:
                 tmp.write(source)
                 path = Path(tmp.name)
