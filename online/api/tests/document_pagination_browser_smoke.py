@@ -161,8 +161,12 @@ def get_json(driver: webdriver.Chrome, path: str) -> dict:
 
 
 def checkbox_selected(driver: webdriver.Chrome, product_id: str) -> bool:
-    nodes = driver.find_elements(By.CSS_SELECTOR, f'[data-hdec-product="{product_id}"]')
-    return bool(nodes and nodes[0].is_selected())
+    return bool(
+        driver.execute_script(
+            "return Boolean(document.querySelector(arguments[0])?.checked);",
+            f'[data-hdec-product="{product_id}"]',
+        )
+    )
 
 
 def main() -> None:
