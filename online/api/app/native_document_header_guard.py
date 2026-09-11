@@ -95,6 +95,8 @@ _HEADER_SCRIPT = r"""
       const url=new URL(String(raw||''),location.origin);
       if(url.origin!==location.origin)return'';
       if(url.pathname==='/login'||url.pathname.startsWith('/documents/online/'))return'';
+      const page=url.searchParams.get('page')||'';
+      if(['quotation','proforma_invoice','sales_contract','commercial_invoice','packing_list'].includes(page))return'';
       return url.pathname+url.search+url.hash;
     }catch(_){return'';}
   }
@@ -133,7 +135,11 @@ _HEADER_SCRIPT = r"""
       sessionStorage.removeItem(returnKey);
     }catch(_){}
     if(!target)target=safeReturn(document.referrer);
-    location.href=target||'/';
+    const destination=target||'/';
+    try{
+      if(window.top&&window.top!==window&&window.top.location.origin===location.origin){window.top.location.href=destination;return;}
+    }catch(_){}
+    location.href=destination;
   },true);
   document.addEventListener('input',event=>{
     if(event.target?.matches?.('[data-k],[data-item-k]'))markDirty();
