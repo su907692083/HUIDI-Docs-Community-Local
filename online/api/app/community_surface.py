@@ -128,6 +128,8 @@ def _workspace_html() -> str:
     # events into the existing Customer/Deal quick drawer without a second CRM.
     # HUIDI Knowledge Context adds read-only cited retrieval over the same
     # authoritative Product / Lead / Customer / Deal / Intelligence records.
+    # P3 closure surfaces existing safe automation + read-only analytics directly
+    # inside the fused Today/Admin surfaces; it does not create another owner.
     # Shell closure compacts the DOM; functional closure runs last and connects
     # the visible pages to existing status, mail, map and sequence capabilities.
     if "huidi-community-online-nav-v1.js" not in html:
@@ -139,6 +141,7 @@ def _workspace_html() -> str:
             f'<script src="/community/huidi-community-online-development-routing-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-business-activity-timeline-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-knowledge-context-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+            f'<script src="/community/huidi-fused-p3-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-shell-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-functional-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
         )
