@@ -22,10 +22,24 @@ SOURCE_LABELS = {
     "deal": "询盘",
     "intelligence": "联网情报",
 }
+_PRICE_WITH_CURRENCY = re.compile(
+    r"(?i)(?:\b\d+(?:[.,]\d+)?\s*(?:USD|EUR|GBP|CNY|RMB|JPY|AUD|CAD|HKD)\b|(?:USD|EUR|GBP|CNY|RMB|JPY|AUD|CAD|HKD)\s*\d+(?:[.,]\d+)?|[$€£¥]\s*\d+(?:[.,]\d+)?)"
+)
+_PRICE_SEGMENT = re.compile(
+    r"(?i)(?:unit\s*price|reference\s*price|price\s*range|quotation|quote\s*price|价格|单价|参考价|报价)[^·。;；\n]{0,90}"
+)
 
 
 def _clean(value: Any, limit: int = 2000) -> str:
     return re.sub(r"\s+", " ", str(value or "")).strip()[:limit]
+
+
+def _strip_price_text(value: Any, limit: int = 520) -> str:
+    text = _clean(value, max(limit * 2, 800))
+    text = _PRICE_SEGMENT.sub("[价格已隔离]", text)
+    text = _PRICE_WITH_CURRENCY.sub("[价格已隔离]", text)
+    text = re.sub(r"(?:\[价格已隔离\]\s*[·,，;；]?\s*){2,}", "[价格已隔离] · ", text)
+    return _clean(text, limit)
 
 
 def _tokens(query: str) -> list[str]:
@@ -34,7 +48,7 @@ def _tokens(query: str) -> list[str]:
 
 
 def _snippet(parts: list[Any], limit: int = 460) -> str:
-    return _clean(" · ".join(_clean(x, 180) for x in parts if _clean(x, 180)), limit)
+    return _strip_price_text(" · ".join(_clean(x, 180) for x in parts if _clean(x, 180)), limit)
 
 
 def _product_snippet(row: ProductBrainRecord) -> str:
@@ -79,7 +93,7 @@ def _result(source: str, record_id: Any, title: Any, snippet: Any, *, updated_at
         "record_id": str(record_id or ""),
         "citation": f"{SOURCE_LABELS[source]} #{record_id}",
         "title": _clean(title, 300),
-        "snippet": _clean(snippet, 520),
+        "snippet": _strip_price_text(snippet, 520),
         "updated_at": updated_at.isoformat() if hasattr(updated_at, "isoformat") else _clean(updated_at, 80),
         "route": route or {},
     }
@@ -100,7 +114,8 @@ def search_business_knowledge(
 
     This is the retrieval/citation layer used before any future AI answer. It has
     no knowledge table, embeddings, external network calls or write path. Formal
-    prices are deliberately excluded from reusable Product/Deal context.
+    and reference price fragments are deliberately excluded from reusable context,
+    including price-like text embedded in notes or inquiry requirements.
     """
     query = _clean(q, 240)
     tokens = _tokens(query)
@@ -190,9 +205,10 @@ def search_business_knowledge(
         data = intelligence_dict(row, db)
         normalized = data.get("normalized") or {}
         context = normalized.get("context") or {}
+        safe_context = {k: v for k, v in context.items() if k not in {"amount"}}
         items.append(_result(
             "intelligence", row.id, row.title or row.kind,
-            _snippet([row.kind, normalized.get("summary"), json.dumps(context, ensure_ascii=False)]),
+            _snippet([row.kind, normalized.get("summary"), json.dumps(safe_context, ensure_ascii=False)]),
             updated_at=row.checked_at,
             route={"kind": "intelligence", "id": row.id, "lead_id": row.lead_id, "deal_id": row.deal_id},
         ))
