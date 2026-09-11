@@ -66,3 +66,7 @@ production_readiness.build_production_readiness = _readiness
 # Read-only reuse memory stays inside the existing Acquisition integration plane.
 # It derives tenant-scoped hints from already-persisted real Lead history only.
 from . import acquisition_memory  # noqa: F401,E402
+
+# Late fusion only decorates the already-loaded Development/Mail owners.
+# It adds no new route, storage table, mail owner, or automatic-send path.
+from . import development_outreach_fusion  # noqa: F401,E402
