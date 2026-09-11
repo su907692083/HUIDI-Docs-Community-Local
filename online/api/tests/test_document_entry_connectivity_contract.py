@@ -27,6 +27,8 @@ class DocumentEntryConnectivityContractTests(unittest.TestCase):
         self.assertIn("HUIDIBusinessLowInputFusion?.setDealId", source)
         self.assertIn("HUIDIBusinessDocumentReuseFusion?.setDealId", source)
         self.assertIn("HUIDIBusinessLowInputFusion?.selectedProducts", source)
+        self.assertIn("#huidiBusinessLowInputProducts [data-hbli-product]", source)
+        self.assertIn("if(!boxes.length)return true", source)
         self.assertIn("stopImmediatePropagation", source)
         self.assertIn("sessionStorage.setItem('huidi-native-document-return-v1'", source)
         self.assertIn("exactMatches", source)
