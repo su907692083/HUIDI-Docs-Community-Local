@@ -130,10 +130,13 @@ _HEADER_SCRIPT = r"""
       if(!ok)dirty=false;
     }
     let target='';
-    try{
-      target=safeReturn(sessionStorage.getItem(returnKey));
-      sessionStorage.removeItem(returnKey);
-    }catch(_){}
+    try{target=safeReturn(new URL(location.href).searchParams.get('huidi_return'));}catch(_){}
+    if(!target){
+      try{
+        target=safeReturn(sessionStorage.getItem(returnKey));
+        sessionStorage.removeItem(returnKey);
+      }catch(_){}
+    }
     if(!target)target=safeReturn(document.referrer);
     const destination=target||'/';
     try{
