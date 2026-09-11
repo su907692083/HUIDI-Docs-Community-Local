@@ -12,15 +12,18 @@ from .business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef
 from .document_product_match_guard import install_safe_document_product_match
 from .main import Lead, LeadActivity, get_db, safe_json
 from .native_document_header_guard import install_native_document_header_guard
+from .native_document_print_guard import install_native_document_print_guard
 from .online_app import app
 
 
 # Install last in the native-document/document-context presentation stack. The
-# existing owners remain canonical; these guards only make product resolution
-# and toolbar behavior deterministic before a formal document is opened.
+# existing owners remain canonical; these guards only make product resolution,
+# toolbar behavior, and formal print/PDF output deterministic before a document
+# is opened or exported.
 install_safe_document_product_match(document_context)
 install_safe_document_product_match(standalone_business)
 install_native_document_header_guard(standalone_business)
+install_native_document_print_guard(standalone_business)
 
 
 DOC_ORDER = (
