@@ -13,9 +13,8 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
     try:
         had_world_map = bool(self.execute_script("""
           return Boolean(
-            document.querySelector('#view-online-intel [data-fv2-pane="world-map"] .wi-country-stage') &&
-            document.querySelector('#wiCountrySearch') &&
-            window.HUIDIWorldCountryInteraction
+            document.querySelector('#view-online-intel [data-fv2-pane="world-map"].active') &&
+            document.querySelector('#wiMap')
           );
         """))
     except Exception:
@@ -31,12 +30,15 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
               const pane=document.querySelector('#view-online-intel [data-fv2-pane="world-map"].active');
               const view=document.querySelector('#view-online-intel');
               const map=pane?.querySelector('.wi-map-card'),side=pane?.querySelector('.wi-side');
+              const stage=pane?.querySelector('.wi-country-stage');
               const svg=pane?.querySelector('.wi-country-svg');
               const search=document.querySelector('#wiCountrySearch');
+              const owner=window.HUIDIWorldCountryInteraction;
               const ar=map?.getBoundingClientRect(),sr=side?.getBoundingClientRect(),vc=view?.clientWidth||0;
               return Boolean(
-                pane && ar && sr && svg && search && window.HUIDIWorldCountryInteraction &&
-                vc>0 && ar.width>=vc*.90 && sr.width>=vc*.90
+                pane && map && side && stage && svg && search && owner &&
+                vc>0 && ar && sr && ar.width>=vc*.90 && sr.width>=vc*.90 &&
+                ar.height>0 && sr.height>0
               );
             """)
             if ready:
