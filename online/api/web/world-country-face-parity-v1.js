@@ -7,7 +7,11 @@ function css(){
   if(document.querySelector('#huidiWorldFaceInteractionSyncCss'))return;
   const s=document.createElement('style');
   s.id='huidiWorldFaceInteractionSyncCss';
-  s.textContent='.wi-country-land{pointer-events:none!important}';
+  // The full 177-country layer owns the visible country faces. Keep those paths
+  // pointer-active so hover works for every country and market countries can use
+  // the click/keyboard handlers already registered by the canonical face owner.
+  // Countries without a HUIDI market remain view-only and never fabricate Leads.
+  s.textContent='.wi-country-land{pointer-events:visiblePainted!important}';
   document.head.appendChild(s);
 }
 function syncSelected(){
@@ -48,5 +52,5 @@ function loadCore(){
   document.head.appendChild(tag);
 }
 css();bind();loadCore();
-window.HUIDIWorldCountryFaceSelectionSync=Object.freeze({version:'1.0.1',sync:syncSelected,refresh:syncBurst});
+window.HUIDIWorldCountryFaceSelectionSync=Object.freeze({version:'1.0.2',sync:syncSelected,refresh:syncBurst});
 })();
