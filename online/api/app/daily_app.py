@@ -24,6 +24,9 @@ from . import industry_playbooks  # noqa: F401,E402
 from . import industry_scenario_actions  # noqa: F401,E402
 from . import product_memory  # noqa: F401,E402
 from . import business_center  # noqa: F401,E402
+# Read-only CRM timeline projection over the existing Lead/Mail/Customer/Deal/
+# Document owners. It creates no activity table and never writes formal prices.
+from . import business_activity  # noqa: F401,E402
 # Standalone closure keeps the same Lead / Customer / Deal / DocumentRef owners,
 # but makes the Windows review package usable without Community Local running:
 # manual real-data entry + native Online quotation / PI / contract / CI / packing.
