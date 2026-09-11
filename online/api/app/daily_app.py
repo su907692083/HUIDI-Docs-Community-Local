@@ -109,6 +109,10 @@ from . import backup_automation  # noqa: F401,E402
 from . import online_notifications  # noqa: F401,E402
 from . import notification_delivery  # noqa: F401,E402
 from . import notification_categories  # noqa: F401,E402
+# Safe n8n-style projection over the existing notification route/delivery owner:
+# business event -> bounded conditions -> notification action -> run/retry result.
+# It creates no workflow table or arbitrary-code/business-mutation execution path.
+from . import automation_overview  # noqa: F401,E402
 from . import intelligence_records  # noqa: F401,E402
 from . import deal_reference  # noqa: F401,E402
 from . import service_connections  # noqa: F401,E402
