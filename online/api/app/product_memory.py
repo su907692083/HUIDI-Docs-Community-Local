@@ -135,31 +135,57 @@ def _upsert(db: Session, raw: dict[str, Any]) -> ProductBrainRecord:
     return row
 
 
+def _requested_ids(raw: str) -> list[str]:
+    values: list[str] = []
+    seen: set[str] = set()
+    for value in str(raw or "").split(","):
+        item = value.strip()[:160]
+        if not item or item in seen:
+            continue
+        seen.add(item)
+        values.append(item)
+        if len(values) >= 100:
+            break
+    return values
+
+
 @app.get("/api/product-brains")
 def list_product_brains(
     paged: bool = False,
     page: int = 1,
     page_size: int = 50,
     q: str = "",
+    ids: str = "",
     db: Session = Depends(get_db),
 ):
     term = str(q or "").strip()
-    condition = None
+    requested = _requested_ids(ids)
+    conditions = []
     if term:
         pattern = f"%{term}%"
-        condition = or_(
-            ProductBrainRecord.name.ilike(pattern),
-            ProductBrainRecord.sku.ilike(pattern),
-            ProductBrainRecord.local_product_id.ilike(pattern),
-            ProductBrainRecord.payload_json.ilike(pattern),
+        conditions.append(
+            or_(
+                ProductBrainRecord.name.ilike(pattern),
+                ProductBrainRecord.sku.ilike(pattern),
+                ProductBrainRecord.local_product_id.ilike(pattern),
+                ProductBrainRecord.payload_json.ilike(pattern),
+            )
+        )
+    if requested:
+        conditions.append(
+            or_(
+                ProductBrainRecord.brain_id.in_(requested),
+                ProductBrainRecord.local_product_id.in_(requested),
+            )
         )
 
     stmt = select(ProductBrainRecord)
-    if condition is not None:
-        stmt = stmt.where(condition)
+    if conditions:
+        stmt = stmt.where(*conditions)
 
     # Preserve the existing list contract for Product Brain synchronization and
-    # older callers. Pagination is opt-in so this endpoint keeps one business owner.
+    # older callers. Pagination and identity hydration are opt-in so all product
+    # consumers continue to share this one canonical owner.
     if not paged:
         rows = db.scalars(
             stmt.order_by(ProductBrainRecord.updated_at.desc(), ProductBrainRecord.id.desc()).limit(500)
@@ -168,8 +194,8 @@ def list_product_brains(
 
     safe_size = max(1, min(int(page_size or 50), 100))
     count_stmt = select(func.count(ProductBrainRecord.id))
-    if condition is not None:
-        count_stmt = count_stmt.where(condition)
+    if conditions:
+        count_stmt = count_stmt.where(*conditions)
     total = int(db.scalar(count_stmt) or 0)
     pages = max(1, (total + safe_size - 1) // safe_size)
     current_page = max(1, min(int(page or 1), pages))
@@ -185,6 +211,7 @@ def list_product_brains(
         "page_size": safe_size,
         "total": total,
         "q": term,
+        "ids": requested,
     }
 
 

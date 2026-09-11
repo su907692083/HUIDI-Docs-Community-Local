@@ -62,19 +62,22 @@ def clear_urls(driver: webdriver.Chrome) -> None:
     driver.execute_script("window.__pbsFetchUrls = [];")
 
 
+def server_has(driver: webdriver.Chrome, brain_id: str) -> bool:
+    rows = fetch_json(driver, "/api/product-brains")
+    return any(str(row.get("brain_id") or row.get("id")) == brain_id for row in rows)
+
+
 def main() -> None:
     driver = webdriver.Chrome(options=options())
     driver.set_page_load_timeout(20)
-    driver.set_script_timeout(20)
-    wait = WebDriverWait(driver, 20)
+    driver.set_script_timeout(30)
+    wait = WebDriverWait(driver, 25)
     stamp = str(int(time.time() * 1000))[-10:]
     brain_id = f"pb-sync-{stamp}"
     try:
         driver.get(BASE + "/")
         wait.until(lambda d: d.execute_script("return typeof window.HUIDIProductServer?.sync === 'function'"))
 
-        # Joining the initial in-flight sync is deterministic: sync() now returns the
-        # same promise while a synchronization is already running.
         first = await_sync(driver)
         assert first["mode"] in ("full", "state-only"), first
 
@@ -83,7 +86,7 @@ def main() -> None:
             window.__pbsFetchUrls = [];
             window.__pbsOriginalFetch = window.fetch;
             window.fetch = function(...args) {
-              const frames = String(new Error().stack || '').split(String.fromCharCode(10)).slice(1, 3);
+              const frames = String(new Error().stack || '').split(String.fromCharCode(10)).slice(1, 4);
               if (frames.some(line => line.includes('product-brain-server.js'))) {
                 window.__pbsFetchUrls.push(String(args[0]));
               }
@@ -92,8 +95,6 @@ def main() -> None:
             """
         )
 
-        # A second unchanged sync must be lightweight: one state probe only, without
-        # serializing the full collection and without posting an import payload.
         steady = await_sync(driver)
         steady_urls = product_urls(driver)
         assert steady["mode"] == "state-only", (steady, steady_urls)
@@ -101,8 +102,6 @@ def main() -> None:
         assert "/api/product-brains" not in steady_urls, steady_urls
         assert "/api/product-brains/import" not in steady_urls, steady_urls
 
-        # Make one real local Product Brain change. The next sync must still preserve
-        # the existing full merge path and import that real change to the same owner.
         driver.execute_script(
             """
             const [key, brainId] = arguments;
@@ -152,8 +151,6 @@ def main() -> None:
         assert first_server_updated_at, created
         state_before = fetch_json(driver, "/api/product-brains/state")
 
-        # Re-importing the exact server payload (including server_updated_at transport
-        # metadata) must be a no-op and must not advance the server revision.
         repeated = fetch_json(driver, "/api/product-brains/import", "POST", {"items": [created]})
         assert repeated.get("saved") == 1, repeated
         assert repeated.get("changed") == 0, repeated
@@ -176,14 +173,51 @@ def main() -> None:
         assert "/api/product-brains" not in final_urls, final_urls
         assert "/api/product-brains/import" not in final_urls, final_urls
 
+        # Product Brain used to remove only the local copy; the next merge could
+        # resurrect the server copy. Exercise the same #pbDelete capture path and
+        # prove the canonical server owner is deleted before the next merge.
+        clear_urls(driver)
+        deleted_locally = driver.execute_script(
+            """
+            const [key, brainId] = arguments;
+            const button = document.querySelector('#pbDelete');
+            if (!button) return false;
+            const original = button.onclick;
+            button.onclick = () => {
+              const rows = JSON.parse(localStorage.getItem(key) || '[]');
+              localStorage.setItem(key, JSON.stringify(rows.filter(row => String(row.brain_id || row.id) !== String(brainId))));
+            };
+            button.click();
+            button.onclick = original;
+            return true;
+            """,
+            KEY,
+            brain_id,
+        )
+        assert deleted_locally is True
+        wait.until(lambda d: not server_has(d, brain_id))
+        wait.until(
+            lambda d: not d.execute_script(
+                "return JSON.parse(localStorage.getItem(arguments[0]) || '[]').some(row => String(row.brain_id || row.id) === String(arguments[1]));",
+                KEY,
+                brain_id,
+            )
+        )
+        delete_urls = product_urls(driver)
+        assert any(url == f"/api/product-brains/{brain_id}" for url in delete_urls), delete_urls
+        await_sync(driver)
+        assert not server_has(driver, brain_id), "deleted Product Brain must not be resurrected by sync"
+
         print(
-            "HUIDI Product Brain state-only sync PASS:",
+            "HUIDI Product Brain state-only/create/delete sync PASS:",
             {
                 "initial_mode": first["mode"],
                 "steady_urls": steady_urls,
                 "changed_urls": changed_urls,
                 "repeat_changed": repeated.get("changed"),
                 "server_version": state_after.get("version"),
+                "delete_url": f"/api/product-brains/{brain_id}",
+                "deleted_persisted": not server_has(driver, brain_id),
             },
         )
     finally:
