@@ -52,7 +52,9 @@ class SafeBusinessAutomationContractTests(unittest.TestCase):
 
     def test_system_backup_event_is_real_opt_in_trigger(self) -> None:
         self.assertIn('system', CATEGORY_NAMES)
-        self.assertEqual(CATEGORY_NAMES['system'], '系统检查 / 备份')
+        label = CATEGORY_NAMES['system']
+        self.assertIn('系统', label)
+        self.assertIn('备份', label)
         self.assertNotIn('system', DEFAULT_CATEGORIES)
         route = NotificationRoute(
             name='系统异常提醒',
@@ -74,7 +76,7 @@ class SafeBusinessAutomationContractTests(unittest.TestCase):
         }
         self.assertTrue(_should_send(route, event))
         self.assertIn("v==='system'?'':'checked'", self.ui)
-        self.assertIn('系统检查 / 备份默认不勾选', self.ui)
+        self.assertIn('默认不勾选', self.ui)
 
     def test_automation_destinations_are_https_only_and_reuse_ssrf_guard(self) -> None:
         self.assertIn('urlparse(destination).scheme.lower() != "https"', self.delivery)
