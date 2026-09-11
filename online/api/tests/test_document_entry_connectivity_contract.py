@@ -15,6 +15,8 @@ class DocumentEntryConnectivityContractTests(unittest.TestCase):
         self.assertIn("document-entry-connectivity-v1.js?v=HUIDI-DOCUMENT-ENTRY-1", context)
         self.assertIn("loadDocumentEntryConnectivity", context)
         self.assertIn("HUIDIDocumentEntryConnectivity", context)
+        self.assertIn("HUIDIDocumentEntryConnectivity?.setDeal?.(id,data)", context)
+        self.assertIn("HUIDIDocumentEntryConnectivity?.setDeal?.(dealId,dealSnapshot)", context)
 
     def test_document_entry_reuses_existing_deal_product_and_document_owners(self) -> None:
         source = (WEB / "document-entry-connectivity-v1.js").read_text(encoding="utf-8")
