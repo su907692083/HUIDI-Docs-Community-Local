@@ -10,22 +10,10 @@ _ORIGINAL_SET_WINDOW_SIZE = WebDriver.set_window_size
 
 
 def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHandle: str = "current"):
-    try:
-        had_world_map = bool(self.execute_script("""
-          return Boolean(
-            document.querySelector('#view-online-intel [data-fv2-pane="world-map"].active') &&
-            document.querySelector('#wiMap')
-          );
-        """))
-    except Exception:
-        had_world_map = False
-
     result = _ORIGINAL_SET_WINDOW_SIZE(self, width, height, windowHandle)
-    if not had_world_map:
-        return result
 
-    try:
-        for _ in range(150):
+    for _ in range(150):
+        try:
             stable = self.execute_script("""
               const pane=document.querySelector('#view-online-intel [data-fv2-pane="world-map"].active');
               const view=document.querySelector('#view-online-intel');
@@ -53,13 +41,13 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
                 window.__huidiAuditStableStage=stage;
                 window.__huidiAuditStableTicks=1;
               }
-              return window.__huidiAuditStableTicks>=5;
+              return window.__huidiAuditStableTicks>=6;
             """)
             if stable:
                 return result
-            time.sleep(0.04)
-    except Exception:
-        return result
+        except Exception:
+            pass
+        time.sleep(0.04)
     return result
 
 
