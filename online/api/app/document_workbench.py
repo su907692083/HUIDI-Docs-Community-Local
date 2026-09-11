@@ -19,6 +19,7 @@ from .online_app import app
 # existing owners remain canonical; these guards only make product resolution
 # and toolbar behavior deterministic before a formal document is opened.
 install_safe_document_product_match(document_context)
+install_safe_document_product_match(standalone_business)
 install_native_document_header_guard(standalone_business)
 
 
