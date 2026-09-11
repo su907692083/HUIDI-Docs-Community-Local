@@ -26,7 +26,7 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
 
     try:
         for _ in range(150):
-            ready = self.execute_script("""
+            stable = self.execute_script("""
               const pane=document.querySelector('#view-online-intel [data-fv2-pane="world-map"].active');
               const view=document.querySelector('#view-online-intel');
               const map=pane?.querySelector('.wi-map-card'),side=pane?.querySelector('.wi-side');
@@ -35,13 +35,27 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
               const search=document.querySelector('#wiCountrySearch');
               const owner=window.HUIDIWorldCountryInteraction;
               const ar=map?.getBoundingClientRect(),sr=side?.getBoundingClientRect(),vc=view?.clientWidth||0;
-              return Boolean(
+              const ready=Boolean(
                 pane && map && side && stage && svg && search && owner &&
                 vc>0 && ar && sr && ar.width>=vc*.90 && sr.width>=vc*.90 &&
                 ar.height>0 && sr.height>0
               );
+              if(!ready){
+                window.__huidiAuditStableSearch=null;
+                window.__huidiAuditStableStage=null;
+                window.__huidiAuditStableTicks=0;
+                return false;
+              }
+              if(window.__huidiAuditStableSearch===search && window.__huidiAuditStableStage===stage){
+                window.__huidiAuditStableTicks=(window.__huidiAuditStableTicks||0)+1;
+              }else{
+                window.__huidiAuditStableSearch=search;
+                window.__huidiAuditStableStage=stage;
+                window.__huidiAuditStableTicks=1;
+              }
+              return window.__huidiAuditStableTicks>=5;
             """)
-            if ready:
+            if stable:
                 return result
             time.sleep(0.04)
     except Exception:
