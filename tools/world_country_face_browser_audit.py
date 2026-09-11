@@ -37,8 +37,12 @@ def main() -> None:
         driver.get(BASE + '/')
         wait.until(lambda d: '/community/workspace.html' in d.current_url)
         wait.until(lambda d: d.execute_script('return Boolean(window.HUIDICommunityOnlineIntelligenceV2)'))
+        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('.nav-btn[data-view=\"online-intel\"]'))"))
         driver.execute_script("document.querySelector('.nav-btn[data-view=\"online-intel\"]')?.click()")
-        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#view-online-intel [data-fv2-pane=\"world-map\"].active .wi-country-svg'))"))
+        wait.until(lambda d: d.execute_script("return document.querySelector('.view.active')?.id") == 'view-online-intel')
+        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#view-online-intel [data-fv2-pane=\"world-map\"].active'))"))
+        wait.until(lambda d: d.execute_script("return Boolean(window.HUIDIWorldIntelligenceMap && document.querySelector('#wiMap'))"))
+        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#view-online-intel [data-fv2-pane=\"world-map\"].active .wi-country-stage .wi-country-svg'))"))
         wait.until(lambda d: d.execute_script("return document.querySelectorAll('.wi-country-land[data-country-code]').length===177"))
 
         state = driver.execute_script("""
