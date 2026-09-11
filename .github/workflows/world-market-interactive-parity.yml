@@ -15,6 +15,7 @@ on:
       - 'online/api/tests/test_world_intelligence_contract.py'
       - 'online/api/tests/test_world_country_face_parity_contract.py'
       - 'tools/world_market_interactive_browser_audit.py'
+      - 'tools/world_market_interactive_browser_audit_stable.py'
       - 'tools/world_country_face_browser_audit.py'
       - 'tools/world_map_static_load_browser_audit.py'
       - 'docs/OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md'
@@ -34,6 +35,7 @@ on:
       - 'online/api/tests/test_world_intelligence_contract.py'
       - 'online/api/tests/test_world_country_face_parity_contract.py'
       - 'tools/world_market_interactive_browser_audit.py'
+      - 'tools/world_market_interactive_browser_audit_stable.py'
       - 'tools/world_country_face_browser_audit.py'
       - 'tools/world_map_static_load_browser_audit.py'
       - 'docs/OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md'
@@ -102,7 +104,7 @@ jobs:
       - name: Verify Team Access static-load stability
         run: python tools/world_map_static_load_browser_audit.py
       - name: Verify real country interactions and downstream context in Chrome
-        run: python tools/world_market_interactive_browser_audit.py
+        run: python tools/world_market_interactive_browser_audit_stable.py
       - name: Verify per-country map faces and source-parity header in Chrome
         run: python tools/world_country_face_browser_audit.py
       - name: Verify no static-request DB pool exhaustion
