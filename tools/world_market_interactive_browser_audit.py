@@ -77,19 +77,30 @@ def main() -> None:
           const fallbackFace=root?.querySelector(`.wi-country-face[data-market-id="${code}"]`);
           const fullFace=root?.querySelector(`.wi-country-land[data-market-id="${code}"]`);
           const marker=root?.querySelector(`.wi-country-marker[data-market-id="${code}"]`);
-          const face=fallbackFace||fullFace;
-          if(!face||!marker)return null;
+          const canonicalD=fallbackFace?.getAttribute('d')||'';
+          const face=fullFace||fallbackFace;
+          if(!face||!marker||canonicalD.length<20)return null;
           marker.dataset.testPointerEvents=marker.style.pointerEvents||'';
           marker.style.pointerEvents='none';
-          const svg=face.ownerSVGElement,b=face.getBBox(),ctm=face.getScreenCTM();
-          if(!svg||!b||!ctm)return null;
-          const point=svg.createSVGPoint(),fractions=[.5,.4,.6,.3,.7,.2,.8,.1,.9,.05,.95];
-          let best=null,lastHit=null;
+          const svg=face.ownerSVGElement,ctm=svg?.getScreenCTM?.();
+          if(!svg||!ctm)return null;
+          const points=[];
+          for(const m of canonicalD.matchAll(/[ML](-?\d+(?:\.\d+)?),(-?\d+(?:\.\d+)?)/g))points.push([Number(m[1]),Number(m[2])]);
+          if(points.length<3)return null;
+          let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+          for(const [x,y] of points){minX=Math.min(minX,x);minY=Math.min(minY,y);maxX=Math.max(maxX,x);maxY=Math.max(maxY,y)}
+          const inside=(x,y)=>{let yes=false;for(let i=0,j=points.length-1;i<points.length;j=i++){
+            const [xi,yi]=points[i],[xj,yj]=points[j];
+            if(((yi>y)!==(yj>y)) && x < (xj-xi)*(y-yi)/((yj-yi)||1e-9)+xi)yes=!yes;
+          }return yes};
+          const fractions=[.5,.45,.55,.4,.6,.35,.65,.3,.7,.25,.75,.2,.8,.15,.85,.1,.9,.05,.95];
+          const p=svg.createSVGPoint();let best=null,lastHit=null;
           for(const fy of fractions){
             for(const fx of fractions){
-              point.x=b.x+b.width*fx;point.y=b.y+b.height*fy;
-              if(typeof face.isPointInFill==='function'&&!face.isPointInFill(point))continue;
-              const screen=point.matrixTransform(ctm),x=screen.x,y=screen.y;
+              const ux=minX+(maxX-minX)*fx,uy=minY+(maxY-minY)*fy;
+              if(!inside(ux,uy))continue;
+              p.x=ux;p.y=uy;
+              const screen=p.matrixTransform(ctm),x=screen.x,y=screen.y;
               if(x<1||y<1||x>=innerWidth-1||y>=innerHeight-1)continue;
               const hit=document.elementFromPoint(x,y),hitFace=hit?.closest?.('.wi-country-land[data-market-id],.wi-country-face[data-market-id]');
               lastHit={x,y,hitCode:hitFace?.dataset.marketId||'',hitClass:hit?.getAttribute?.('class')||''};
@@ -98,7 +109,7 @@ def main() -> None:
             if(best)break;
           }
           const chosen=best||lastHit||{};
-          return {x:chosen.x??null,y:chosen.y??null,d:(fullFace||fallbackFace)?.getAttribute('d')||'',canonicalD:fallbackFace?.getAttribute('d')||'',hitCode:chosen.hitCode||'',hitClass:chosen.hitClass||''};
+          return {x:chosen.x??null,y:chosen.y??null,d:face.getAttribute('d')||'',canonicalD,hitCode:chosen.hitCode||'',hitClass:chosen.hitClass||''};
         """, ACTIVE_MAP, code))
         try:
             assert len(payload['d']) > 20, payload
