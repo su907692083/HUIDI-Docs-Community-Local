@@ -18,7 +18,7 @@ concurrency:
 jobs:
   fullsite:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 18
     steps:
       - uses: actions/checkout@v4
         with:
@@ -67,6 +67,10 @@ jobs:
           else
             python tools/community_fullsite_browser_audit.py --output /tmp/huidi-fullsite-audit/browser
           fi
+      - name: Exercise fused open-source capability closure
+        if: hashFiles('tools/open_source_fusion_browser_audit.py') != ''
+        run: |
+          python tools/open_source_fusion_browser_audit.py --output /tmp/huidi-fullsite-audit/open-source-fusion
       - name: Upload exact source and audit evidence
         if: always()
         uses: actions/upload-artifact@v4
