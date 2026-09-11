@@ -40,7 +40,7 @@ def main() -> None:
 
     def selected_code() -> str:
         return driver.execute_script(
-            "const p=document.querySelector(arguments[0]);return p?.querySelector('.wi-country-face.selected')?.dataset.marketId || p?.querySelector('.wi-country-market.selected')?.dataset.marketId || p?.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';",
+            "const p=document.querySelector(arguments[0]);return p?.querySelector('.wi-country-land.selected')?.dataset.marketId || p?.querySelector('.wi-country-face.selected')?.dataset.marketId || p?.querySelector('.wi-country-market.selected')?.dataset.marketId || p?.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';",
             ACTIVE_MAP,
         )
 
@@ -74,15 +74,18 @@ def main() -> None:
         time.sleep(.12)
         payload = wait.until(lambda d: d.execute_script("""
           const root=document.querySelector(arguments[0]),code=arguments[1];
-          const face=root?.querySelector(`.wi-country-face[data-market-id="${code}"]`);
+          const fallbackFace=root?.querySelector(`.wi-country-face[data-market-id="${code}"]`);
+          const fullFace=root?.querySelector(`.wi-country-land[data-market-id="${code}"]`);
           const marker=root?.querySelector(`.wi-country-marker[data-market-id="${code}"]`);
           const node=marker?.querySelector('.wi-node');
+          const face=fullFace||fallbackFace;
           if(!face||!marker||!node)return null;
           marker.dataset.testPointerEvents=marker.style.pointerEvents||'';
           marker.style.pointerEvents='none';
           const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
           const hit=document.elementFromPoint(x,y);
-          return {x,y,d:face.getAttribute('d')||'',hitCode:hit?.closest?.('.wi-country-face')?.dataset.marketId||'',hitClass:hit?.getAttribute?.('class')||''};
+          const hitFace=hit?.closest?.('.wi-country-land[data-market-id],.wi-country-face[data-market-id]');
+          return {x,y,d:face.getAttribute('d')||'',hitCode:hitFace?.dataset.marketId||'',hitClass:hit?.getAttribute?.('class')||''};
         """, ACTIVE_MAP, code))
         try:
             assert len(payload['d']) > 20, payload
