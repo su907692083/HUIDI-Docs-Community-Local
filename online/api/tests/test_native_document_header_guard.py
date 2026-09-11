@@ -29,6 +29,8 @@ class NativeDocumentHeaderGuardTests(unittest.TestCase):
         self.assertNotIn("onclick='window.print()'", decorated)
         self.assertIn("/api/business/documents/${encodeURIComponent(refId)}/draft", decorated)
         self.assertIn("huidi-native-document-return-v1", decorated)
+        self.assertIn("searchParams.get('huidi_return')", decorated)
+        self.assertIn("sessionStorage.getItem(returnKey)", decorated)
         self.assertIn("localStorage.setItem(`huidi-native-doc-${refId}`", decorated)
         self.assertIn("beforeunload", decorated)
         self.assertIn("stopImmediatePropagation", decorated)
