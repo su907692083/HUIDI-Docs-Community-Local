@@ -77,18 +77,33 @@ def main() -> None:
           const fallbackFace=root?.querySelector(`.wi-country-face[data-market-id="${code}"]`);
           const fullFace=root?.querySelector(`.wi-country-land[data-market-id="${code}"]`);
           const marker=root?.querySelector(`.wi-country-marker[data-market-id="${code}"]`);
-          const node=marker?.querySelector('.wi-node');
-          const face=fullFace||fallbackFace;
-          if(!face||!marker||!node)return null;
+          const face=fallbackFace||fullFace;
+          if(!face||!marker)return null;
           marker.dataset.testPointerEvents=marker.style.pointerEvents||'';
           marker.style.pointerEvents='none';
-          const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
-          const hit=document.elementFromPoint(x,y);
-          const hitFace=hit?.closest?.('.wi-country-land[data-market-id],.wi-country-face[data-market-id]');
-          return {x,y,d:face.getAttribute('d')||'',hitCode:hitFace?.dataset.marketId||'',hitClass:hit?.getAttribute?.('class')||''};
+          const svg=face.ownerSVGElement,b=face.getBBox(),ctm=face.getScreenCTM();
+          if(!svg||!b||!ctm)return null;
+          const point=svg.createSVGPoint(),fractions=[.5,.4,.6,.3,.7,.2,.8,.1,.9,.05,.95];
+          let best=null,lastHit=null;
+          for(const fy of fractions){
+            for(const fx of fractions){
+              point.x=b.x+b.width*fx;point.y=b.y+b.height*fy;
+              if(typeof face.isPointInFill==='function'&&!face.isPointInFill(point))continue;
+              const screen=point.matrixTransform(ctm),x=screen.x,y=screen.y;
+              if(x<1||y<1||x>=innerWidth-1||y>=innerHeight-1)continue;
+              const hit=document.elementFromPoint(x,y),hitFace=hit?.closest?.('.wi-country-land[data-market-id],.wi-country-face[data-market-id]');
+              lastHit={x,y,hitCode:hitFace?.dataset.marketId||'',hitClass:hit?.getAttribute?.('class')||''};
+              if(hitFace?.dataset.marketId===code){best=lastHit;break}
+            }
+            if(best)break;
+          }
+          const chosen=best||lastHit||{};
+          return {x:chosen.x??null,y:chosen.y??null,d:(fullFace||fallbackFace)?.getAttribute('d')||'',canonicalD:fallbackFace?.getAttribute('d')||'',hitCode:chosen.hitCode||'',hitClass:chosen.hitClass||''};
         """, ACTIVE_MAP, code))
         try:
             assert len(payload['d']) > 20, payload
+            assert len(payload['canonicalD']) > 20, payload
+            assert payload['x'] is not None and payload['y'] is not None, payload
             assert payload['hitCode'] == code, payload
             driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseMoved','x':payload['x'],'y':payload['y'],'button':'none','buttons':0})
             wait.until(lambda d: d.execute_script(
