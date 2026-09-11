@@ -121,6 +121,10 @@ from . import customer_intelligence  # noqa: F401,E402
 from . import world_intelligence  # noqa: F401,E402
 from . import intelligence_source_bridge  # noqa: F401,E402
 from . import today_intelligence  # noqa: F401,E402
+# Read-only cited retrieval over Product / Lead / Customer / Deal / Intelligence
+# owners. It creates no knowledge table/vector store and excludes formal/reference
+# prices from reusable AI context.
+from . import knowledge_context  # noqa: F401,E402
 from . import provider_guard  # noqa: F401,E402
 # Imported after the guard so the acquisition middleware is the outer owner:
 # Serper remains primary, Tavily is real-company failover, Hunter is contact
