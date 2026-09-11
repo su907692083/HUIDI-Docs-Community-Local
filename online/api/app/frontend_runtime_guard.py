@@ -11,6 +11,8 @@ from .main import WEB_DIR, app
 _ASSET_RX = re.compile(r'(?P<prefix>(?:src|href)="/assets/[^"?]+)(?P<tail>")')
 _FOUNDATION_ASSET = "/assets/workspace-foundation.js"
 _FOUNDATION_TAG = f'<script src="{_FOUNDATION_ASSET}"></script>'
+_GUIDANCE_ASSET = "/assets/open-box-guidance-closure-v1.js"
+_GUIDANCE_TAG = f'<script src="{_GUIDANCE_ASSET}"></script>'
 
 
 def _asset_version() -> str:
@@ -42,15 +44,23 @@ def _headers(response_headers: dict[str, str] | None = None, *, clear_cache: boo
 
 
 def inject_workspace_foundation(html: str) -> str:
-    """Load the open-box information-architecture layer on the root workbench.
+    """Load the open-box IA and its presentation-only guidance closure.
 
-    The layer only reorders/combines existing owners and reuses their APIs. It
-    does not replace Customer/Product/Deal/Document/Mail owners or create a
-    second persistence route.
+    Both layers only reorder/combine existing owners and reuse their APIs. They
+    do not replace Customer/Product/Deal/Document/Mail owners or create another
+    persistence route. The guidance layer removes duplicated next-step prompts
+    and reads the existing Foundation/BeginnerFlow state only.
     """
-    if _FOUNDATION_ASSET in html or "</body>" not in html:
+    if "</body>" not in html:
         return html
-    return html.replace("</body>", _FOUNDATION_TAG + "</body>", 1)
+    if _FOUNDATION_ASSET not in html:
+        html = html.replace("</body>", _FOUNDATION_TAG + "</body>", 1)
+    if _GUIDANCE_ASSET not in html:
+        if _FOUNDATION_TAG in html:
+            html = html.replace(_FOUNDATION_TAG, _FOUNDATION_TAG + _GUIDANCE_TAG, 1)
+        else:
+            html = html.replace("</body>", _GUIDANCE_TAG + "</body>", 1)
+    return html
 
 
 def version_asset_refs(html: str) -> str:
