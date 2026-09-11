@@ -125,6 +125,9 @@ from . import today_intelligence  # noqa: F401,E402
 # owners. It creates no knowledge table/vector store and excludes formal/reference
 # prices from reusable AI context.
 from . import knowledge_context  # noqa: F401,E402
+# Optional LLM suggestion layer over cited retrieval. It uses the existing LLM
+# provider only, writes no business data and exposes no arbitrary tool execution.
+from . import knowledge_ai  # noqa: F401,E402
 from . import provider_guard  # noqa: F401,E402
 # Imported after the guard so the acquisition middleware is the outer owner:
 # Serper remains primary, Tavily is real-company failover, Hunter is contact
