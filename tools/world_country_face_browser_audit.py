@@ -42,6 +42,8 @@ def main() -> None:
         wait.until(lambda d: d.execute_script("return document.querySelector('.view.active')?.id") == 'view-online-intel')
         wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#view-online-intel [data-fv2-pane=\"world-map\"].active'))"))
         wait.until(lambda d: d.execute_script("return Boolean(window.HUIDIWorldIntelligenceMap && document.querySelector('#wiMap'))"))
+        wait.until(lambda d: d.execute_script("return Boolean(window.HUIDIWorldCountryInteraction)"))
+        driver.execute_script("window.HUIDIWorldCountryInteraction?.refresh?.()")
         wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#view-online-intel [data-fv2-pane=\"world-map\"].active .wi-country-stage .wi-country-svg'))"))
         wait.until(lambda d: d.execute_script("return document.querySelectorAll('.wi-country-land[data-country-code]').length===177"))
 
@@ -68,22 +70,50 @@ def main() -> None:
         assert state['faceFlag'] == '177', state
         assert state['external'] == [], state
 
-        # Click the Germany country face itself, not the market dot. Germany's
-        # bounding-box centre is safely inside the low-resolution polygon.
-        point = driver.execute_script("""
-          const el=document.querySelector('.wi-country-land[data-country-code="DE"]');
-          if(!el)return null;
-          el.scrollIntoView({block:'center',inline:'center'});
-          const r=el.getBoundingClientRect();
-          return {x:r.left+r.width/2,y:r.top+r.height/2};
+        # The 177-country layer is the factual visual layer. Mouse/keyboard input
+        # stays with the existing canonical Market Owner (`.wi-country-face`).
+        # Hit Germany through the canonical face, then verify the full visual
+        # Germany face mirrors the selected state instead of becoming a second
+        # interaction owner.
+        payload = driver.execute_script("""
+          window.HUIDIWorldCountryInteraction?.resetView?.();
+          const visual=document.querySelector('.wi-country-land[data-country-code="DE"]');
+          const face=document.querySelector('.wi-country-face[data-market-id="DE"]');
+          const marker=document.querySelector('.wi-country-marker[data-market-id="DE"]');
+          const node=marker?.querySelector('.wi-node');
+          if(!visual||!face||!marker||!node)return null;
+          marker.dataset.testPointerEvents=marker.style.pointerEvents||'';
+          marker.style.pointerEvents='none';
+          const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+          const hit=document.elementFromPoint(x,y);
+          return {
+            x,y,
+            visualCode:visual.dataset.countryCode||'',
+            visualMarket:visual.dataset.marketId||'',
+            canonicalMarket:face.dataset.marketId||'',
+            hitMarket:hit?.closest?.('.wi-country-face[data-market-id]')?.dataset.marketId||'',
+            visualPointer:getComputedStyle(visual).pointerEvents||''
+          };
         """)
-        assert point and point['x'] is not None, point
-        driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseMoved','x':point['x'],'y':point['y'],'button':'none','buttons':0})
-        wait.until(lambda d: '德国' in (d.execute_script("return document.querySelector('.wi-country-bubble.open b')?.textContent || ''") or ''))
-        driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mousePressed','x':point['x'],'y':point['y'],'button':'left','buttons':1,'clickCount':1})
-        driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseReleased','x':point['x'],'y':point['y'],'button':'left','buttons':0,'clickCount':1})
-        wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('.wi-country-land[data-country-code=\"DE\"].selected'))"))
-        wait.until(lambda d: '德国' in (d.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''") or ''))
+        assert payload, payload
+        assert payload['visualCode'] == 'DE', payload
+        assert payload['visualMarket'] == 'DE', payload
+        assert payload['canonicalMarket'] == 'DE', payload
+        assert payload['hitMarket'] == 'DE', payload
+        assert payload['visualPointer'] == 'none', payload
+        try:
+            driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseMoved','x':payload['x'],'y':payload['y'],'button':'none','buttons':0})
+            wait.until(lambda d: '德国' in (d.execute_script("return document.querySelector('.wi-country-bubble.open b')?.textContent || ''") or ''))
+            driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mousePressed','x':payload['x'],'y':payload['y'],'button':'left','buttons':1,'clickCount':1})
+            driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseReleased','x':payload['x'],'y':payload['y'],'button':'left','buttons':0,'clickCount':1})
+            wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('.wi-country-face[data-market-id=\"DE\"].selected'))"))
+            wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('.wi-country-land[data-country-code=\"DE\"].selected'))"))
+            wait.until(lambda d: '德国' in (d.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''") or ''))
+        finally:
+            driver.execute_script("""
+              const marker=document.querySelector('.wi-country-marker[data-market-id="DE"]');
+              if(marker){marker.style.pointerEvents=marker.dataset.testPointerEvents||'';delete marker.dataset.testPointerEvents}
+            """)
 
         # Country faces with no HUIDI market stay factual and do not synthesize
         # buyer/customer/deal counts. Antarctica is a stable non-market fixture.
@@ -93,7 +123,7 @@ def main() -> None:
         """)
         assert antarctica and antarctica['market'] == '', antarctica
         assert '暂无你的业务记录' in antarctica['label'], antarctica
-        print('HUIDI per-country face Chrome parity PASS')
+        print('HUIDI per-country visual/source-parity Chrome PASS')
     finally:
         driver.quit(); client.close()
 
