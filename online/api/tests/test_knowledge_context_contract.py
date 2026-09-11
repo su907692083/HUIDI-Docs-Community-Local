@@ -13,6 +13,7 @@ REPO = ROOT.parents[1]
 class KnowledgeContextContractTests(unittest.TestCase):
     def setUp(self) -> None:
         self.backend = (ROOT / "app" / "knowledge_context.py").read_text(encoding="utf-8")
+        self.ai = (ROOT / "app" / "knowledge_ai.py").read_text(encoding="utf-8")
         self.daily = (ROOT / "app" / "daily_app.py").read_text(encoding="utf-8")
         self.surface = (ROOT / "app" / "community_surface.py").read_text(encoding="utf-8")
         self.ui = (REPO / "public" / "huidi-knowledge-context-v1.js").read_text(encoding="utf-8")
@@ -28,9 +29,13 @@ class KnowledgeContextContractTests(unittest.TestCase):
         self.assertIn('citations_required', self.backend)
         self.assertIn('read_only', self.backend)
 
-    def test_reusable_ai_context_excludes_product_and_formal_prices(self) -> None:
+    def test_reusable_ai_context_excludes_structured_and_free_text_prices(self) -> None:
         self.assertIn("formal_price_excluded", self.backend)
         self.assertIn("Reference/product prices are intentionally excluded", self.backend)
+        self.assertIn("_strip_price_text", self.backend)
+        self.assertIn("_PRICE_WITH_CURRENCY", self.backend)
+        self.assertIn("_PRICE_SEGMENT", self.backend)
+        self.assertIn("[价格已隔离]", self.backend)
         for forbidden in (
             'payload.get("price")', 'payload.get("price_range")', 'payload.get("reference_price")',
             'row.amount', 'row.currency',
@@ -39,6 +44,7 @@ class KnowledgeContextContractTests(unittest.TestCase):
 
     def test_fused_workspace_loads_retrieval_next_to_existing_development_owner(self) -> None:
         self.assertIn('from . import knowledge_context', self.daily)
+        self.assertIn('from . import knowledge_ai', self.daily)
         self.assertIn('huidi-knowledge-context-v1.js', self.surface)
         self.assertLess(
             self.surface.index('huidi-community-online-development-routing-v1.js'),
@@ -49,10 +55,37 @@ class KnowledgeContextContractTests(unittest.TestCase):
         self.assertIn('HUIDICommunityDevelopmentRouting?.openLead?.', self.ui)
         self.assertIn("HUIDICommunityOnlineFullV2?.openTab?.('online-find','smart'", self.ui)
 
-    def test_ui_is_retrieval_only_not_a_shadow_ai_or_storage_owner(self) -> None:
-        for marker in ("每条带来源引用", "0 外部网络请求", "没有命中就保持为空"):
+    def test_grounded_ai_uses_existing_llm_provider_and_cannot_write_business_data(self) -> None:
+        self.assertIn('/api/knowledge/suggest', self.ai)
+        self.assertIn('search_business_knowledge', self.ai)
+        self.assertIn('resolve_provider("llm", db)', self.ai)
+        self.assertIn('/chat/completions', self.ai)
+        self.assertIn('used_citations', self.ai)
+        self.assertIn('human_review_required', self.ai)
+        self.assertIn('writes_business_data', self.ai)
+        self.assertIn('tool_execution', self.ai)
+        self.assertIn('provider_unavailable', self.ai)
+        self.assertIn('no_context', self.ai)
+        self.assertIn('formal_price_excluded', self.ai)
+        self.assertIn('没有 HUIDI 来源', self.ai.replace('没有足够的 HUIDI 来源', '没有 HUIDI 来源'))
+        for forbidden in (
+            'db.add(', 'db.commit(', 'db.delete(',
+            '/api/business/', '/api/mail/', '/api/leads/{lead_id}/convert',
+            'window.open(', 'subprocess', 'eval(', 'exec(',
+        ):
+            self.assertNotIn(forbidden, self.ai)
+
+    def test_ai_ui_is_explicit_copy_only_not_auto_apply_or_send(self) -> None:
+        for marker in (
+            "基于引用给建议", "/api/knowledge/suggest", "复制建议",
+            "AI 建议不自动写回业务", "没有写入客户、询盘、单据或邮件",
+        ):
             self.assertIn(marker, self.ui)
-        for forbidden in ("localStorage", "indexedDB", "MutationObserver", "OpenAI", "completion", "chat/completions", "method:'POST'", 'method:"POST"'):
+        self.assertIn("method:'POST'", self.ui)
+        for forbidden in (
+            "localStorage", "indexedDB", "MutationObserver", "OpenAI", "chat/completions",
+            "data-hdw-save", "data-hdw-approve", "data-hdw-send",
+        ):
             self.assertNotIn(forbidden, self.ui)
 
     def test_knowledge_ui_javascript_parses(self) -> None:
