@@ -15,6 +15,13 @@ from .online_app import app
 
 ACTIVE_LEAD_STATES = {"new", "qualified", "contacted", "replied", "converted"}
 ACTIVE_DEAL_STATES = {"new_inquiry", "qualified", "quoting", "negotiating", "confirmed", "production", "shipping"}
+BRIEF_LANES = (
+    ("chat", "客户可聊"),
+    ("market", "市场机会"),
+    ("policy", "政策关税"),
+    ("logistics", "物流交付"),
+    ("risk", "风险提醒"),
+)
 
 
 def _context_for_record(db: Session, row: OnlineIntelligenceRecord) -> tuple[Lead | None, OnlineDeal | None, str, str, str]:
@@ -66,6 +73,83 @@ def _action_row(kind: str, row: OnlineIntelligenceRecord, lead: Lead | None, dea
     }
 
 
+def _brief_row(row: OnlineIntelligenceRecord, lead: Lead | None, deal: OnlineDeal | None, item: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": str(item.get("id") or ""),
+        "title": str(item.get("title") or "").strip(),
+        "category": str(item.get("category") or "general").strip(),
+        "category_name": str(item.get("category_name") or "当地动态").strip(),
+        "relevance": int(item.get("relevance") or 0),
+        "freshness": item.get("freshness") or {},
+        "source_profile": item.get("source_profile") or {},
+        "chat": item.get("chat") or {},
+        "needs_source_check": bool(item.get("needs_source_check")),
+        "link": str(item.get("link") or "").strip(),
+        "lead_id": lead.id if lead else row.lead_id,
+        "deal_id": deal.id if deal else row.deal_id,
+        "company_name": lead.company_name if lead else "",
+        "deal_title": deal.title if deal else "",
+        "record_id": row.id,
+        "checked_at": row.checked_at.isoformat() if row.checked_at else None,
+    }
+
+
+def _brief_lane(item: dict[str, Any], lane: str) -> bool:
+    category = item.get("category") or "general"
+    freshness = item.get("freshness") or {}
+    status = freshness.get("status")
+    if status not in {"fresh", "aging"}:
+        return False
+    if lane == "chat":
+        chat = item.get("chat") or {}
+        return bool(freshness.get("chat_allowed") and str(chat.get("en") or "").strip() and chat.get("level") != "谨慎")
+    if lane == "market":
+        return category in {"industry", "company", "general"}
+    if lane == "policy":
+        return category == "policy"
+    if lane == "logistics":
+        return category == "shipping"
+    if lane == "risk":
+        return category in {"geopolitics", "weather"}
+    return False
+
+
+def _build_brief(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    deduped: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for item in rows:
+        title = str(item.get("title") or "").strip()
+        if not title:
+            continue
+        marker = str(item.get("id") or item.get("link") or title).strip().lower()
+        if marker in seen:
+            continue
+        seen.add(marker)
+        deduped.append(item)
+
+    def rank(item: dict[str, Any]) -> tuple[int, int, int]:
+        freshness = item.get("freshness") or {}
+        source = item.get("source_profile") or {}
+        return (
+            2 if freshness.get("status") == "fresh" else 1,
+            2 if source.get("type") == "official" else 1 if source.get("type") == "association" else 0,
+            int(item.get("relevance") or 0),
+        )
+
+    sections: list[dict[str, Any]] = []
+    for key, label in BRIEF_LANES:
+        matching = [x for x in deduped if _brief_lane(x, key) and int(x.get("relevance") or 0) >= (30 if key in {"chat", "market"} else 36)]
+        matching.sort(key=rank, reverse=True)
+        sections.append({"key": key, "label": label, "count": len(matching), "items": matching[:2]})
+    return {
+        "mode": "cached_only",
+        "network_requests": 0,
+        "sections": sections,
+        "source_items": len(deduped),
+        "message": "日报摘要只归纳已经查过且仍有时效的真实情报；不会因为打开首页而额外抓取新闻。",
+    }
+
+
 @app.get("/api/intel/today-actions")
 def today_intelligence_actions(
     limit: int = Query(default=4, ge=1, le=8),
@@ -76,7 +160,8 @@ def today_intelligence_actions(
     Home should stay fast even with many customers. This endpoint only reuses the
     most recent intelligence already collected while a customer or inquiry was
     being worked on. Opening a customer/inquiry remains the place that can refresh
-    external sources explicitly.
+    external sources explicitly. The brief is a cached-only presentation layer
+    inspired by trade/news/risk dashboards; it does not create another news owner.
     """
     records = db.scalars(
         select(OnlineIntelligenceRecord)
@@ -102,6 +187,7 @@ def today_intelligence_actions(
             break
 
     actions: list[dict[str, Any]] = []
+    brief_rows: list[dict[str, Any]] = []
     used_items: set[str] = set()
     for row, lead, deal, country, product, company in latest:
         payload = _decorate_cached(
@@ -111,6 +197,8 @@ def today_intelligence_actions(
             company=company,
         )
         items = payload.get("items") or []
+        for item in items[:18]:
+            brief_rows.append(_brief_row(row, lead, deal, item))
         safe = _safe_chat_item(items)
         if safe and safe.get("id") not in used_items:
             actions.append(_action_row("chat", row, lead, deal, safe))
@@ -119,7 +207,7 @@ def today_intelligence_actions(
         if watch and watch.get("id") not in used_items:
             actions.append(_action_row("watch", row, lead, deal, watch))
             used_items.add(str(watch.get("id") or ""))
-        if len(actions) >= limit * 2:
+        if len(actions) >= limit * 2 and len(brief_rows) >= 60:
             break
 
     actions.sort(
@@ -135,5 +223,6 @@ def today_intelligence_actions(
         "mode": "cached_only",
         "network_requests": 0,
         "items": actions,
+        "brief": _build_brief(brief_rows),
         "message": "这里只复用已经查过的客户 / 询盘动态，不会因为打开首页而批量请求外部新闻。",
     }
