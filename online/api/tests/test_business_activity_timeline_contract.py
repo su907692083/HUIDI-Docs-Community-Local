@@ -39,6 +39,18 @@ class BusinessActivityTimelineContractTests(unittest.TestCase):
         self.assertIn('from . import business_activity', self.daily)
         self.assertIn('existing_business_projection', self.backend)
 
+    def test_timeline_resolves_both_online_and_community_local_ids(self) -> None:
+        self.assertIn('def _resolve_customer', self.backend)
+        self.assertIn('def _resolve_deal', self.backend)
+        self.assertIn('local_customer_id', self.backend)
+        self.assertIn('OnlineDeal.local_deal_id', self.backend)
+        self.assertIn('customer_id: str', self.backend)
+        self.assertIn('deal_id: str', self.backend)
+        self.assertIn('requested_id', self.backend)
+        self.assertIn("if(!['customer','deal'].includes(kind)||!id)return false", self.ui)
+        self.assertNotIn("/^[0-9]+$/.test(id)", self.ui)
+        self.assertIn('encodeURIComponent(id)', self.ui)
+
     def test_timeline_uses_real_mail_and_documents_but_not_formal_amounts(self) -> None:
         self.assertIn('MailboxMessage.direction == "incoming"', self.backend)
         self.assertIn('MailDeliveryLog', self.backend)
