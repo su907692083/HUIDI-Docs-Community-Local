@@ -5,6 +5,7 @@
 #ciMain .wi-commandbar{padding:11px 12px!important;grid-template-columns:minmax(280px,1.15fr) minmax(220px,.75fr) auto!important}
 #ciMain .wi-toolbar{padding:9px 12px!important}
 #ciMain .wi-map{min-height:500px!important;background:#eef5fa!important}
+#ciMain #wiMap[data-wi-country-faces="177"] .wi-country-face{display:none!important}
 #ciMain .wi-side{display:grid!important;grid-template-rows:auto auto!important;max-height:none!important;min-height:0!important;border-radius:12px!important;overflow:visible!important;box-shadow:0 6px 22px rgba(37,67,98,.05)!important}
 #ciMain .wi-side-head{padding:12px 14px!important}
 #ciMain .wi-scroll{overflow:visible!important;padding:12px 13px!important;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;align-items:start!important}
