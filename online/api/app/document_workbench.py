@@ -7,16 +7,18 @@ from fastapi import Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from . import standalone_business
+from . import document_context, standalone_business
 from .business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef
+from .document_product_match_guard import install_safe_document_product_match
 from .main import Lead, LeadActivity, get_db, safe_json
 from .native_document_header_guard import install_native_document_header_guard
 from .online_app import app
 
 
-# Install last in the native-document presentation stack. It keeps the canonical
-# OnlineDocumentRef draft owner but makes the editor toolbar save/return/print
-# behavior deterministic across direct workbench and customer/inquiry entry.
+# Install last in the native-document/document-context presentation stack. The
+# existing owners remain canonical; these guards only make product resolution
+# and toolbar behavior deterministic before a formal document is opened.
+install_safe_document_product_match(document_context)
 install_native_document_header_guard(standalone_business)
 
 
