@@ -17,6 +17,9 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
     def setUp(self):
         self.intel = (PUBLIC / "huidi-community-online-intelligence-v2.js").read_text(encoding="utf-8")
         self.command = (PUBLIC / "huidi-world-market-command-center-v1.js").read_text(encoding="utf-8")
+        self.buyer_priority = (PUBLIC / "huidi-open-source-buyer-priority-v1.js").read_text(encoding="utf-8")
+        self.face_loader = (WEB / "world-country-face-parity-v1.js").read_text(encoding="utf-8")
+        self.face_core = (WEB / "world-country-face-parity-core-v1.js").read_text(encoding="utf-8")
         self.map = (WEB / "world-intelligence-map.js").read_text(encoding="utf-8")
         self.country = (WEB / "world-country-interaction.js").read_text(encoding="utf-8")
         self.gate = (DOCS / "OPEN-SOURCE-INTERACTIVE-PARITY-GATE.md").read_text(encoding="utf-8")
@@ -46,6 +49,15 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
         self.assertIn("找这个市场的客户", self.map)
         self.assertIn("你的客户线索", self.map)
         self.assertIn("正在推进的询盘", self.map)
+
+    def test_full_177_country_layer_is_pointer_active_without_fabricating_business(self):
+        self.assertIn("pointer-events:visiblePainted", self.face_loader)
+        self.assertNotIn("pointer-events:none!important", self.face_loader)
+        self.assertIn("countryFaces:177", self.face_core)
+        self.assertIn("p.addEventListener('pointerenter'", self.face_core)
+        self.assertIn("window.HUIDIWorldCountryInteraction?.select?.(m.id)", self.face_core)
+        self.assertIn("暂无你的业务记录", self.face_core)
+        self.assertIn("不生成客户、询盘或热度数据", self.face_core)
 
     def test_country_context_routes_to_existing_foreign_trade_owners(self):
         for label in (
@@ -80,6 +92,16 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
         self.assertNotIn("MutationObserver", self.command)
         self.assertNotIn("iframe", self.command.lower())
 
+    def test_buyer_priority_parity_reuses_existing_lead_score_reason_read_only(self):
+        self.assertIn("huidi-open-source-buyer-priority-v1.js", self.command)
+        self.assertIn("/api/leads/${encodeURIComponent(id)}", self.buyer_priority)
+        self.assertIn("lead?.priority", self.buyer_priority)
+        self.assertIn("lead?.score", self.buyer_priority)
+        self.assertIn("lead?.reason", self.buyer_priority)
+        self.assertIn("匹配依据", self.buyer_priority)
+        for forbidden in ("method:'POST'", 'method:"POST"', "method:'PUT'", 'method:"PUT"', "indexedDB", "localStorage", "MutationObserver"):
+            self.assertNotIn(forbidden, self.buyer_priority)
+
     def test_open_source_parity_gate_does_not_claim_fake_completeness(self):
         for project in (
             "1099271/smart-lead-agent",
@@ -106,6 +128,8 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
         for path in (
             PUBLIC / "huidi-community-online-intelligence-v2.js",
             PUBLIC / "huidi-world-market-command-center-v1.js",
+            PUBLIC / "huidi-open-source-buyer-priority-v1.js",
+            WEB / "world-country-face-parity-v1.js",
         ):
             result = subprocess.run([node, "--check", str(path)], capture_output=True, text=True, check=False)
             self.assertEqual(result.returncode, 0, f"{path.name}: {result.stderr or result.stdout}")
