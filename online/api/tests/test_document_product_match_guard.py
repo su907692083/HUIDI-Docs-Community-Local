@@ -4,6 +4,8 @@ import json
 import os
 import unittest
 import uuid
+from types import SimpleNamespace
+from pathlib import Path
 
 from sqlalchemy import select
 
@@ -18,6 +20,9 @@ from app.document_product_match_guard import (  # noqa: E402
 )
 from app.main import SessionLocal  # noqa: E402
 from app.product_memory import ProductBrainRecord  # noqa: E402
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 class DocumentProductMatchGuardTests(unittest.TestCase):
@@ -108,6 +113,22 @@ class DocumentProductMatchGuardTests(unittest.TestCase):
             self.assertEqual(row.brain_id, self.base.brain_id)
         finally:
             document_context._match_product = original
+
+    def test_installer_is_generic_for_native_renderer_matcher(self) -> None:
+        module = SimpleNamespace(_match_product=lambda _db, _keyword: (self.heavy, {}))
+        install_safe_document_product_match(module)
+        row, payload = module._match_product(self.db, self.base.name)
+        self.assertEqual(row.brain_id, self.base.brain_id)
+        self.assertEqual(payload.get("specification"), "SUS304 4 inch")
+
+    def test_document_workbench_guards_context_and_native_renderer(self) -> None:
+        source = (ROOT / "app" / "document_workbench.py").read_text(encoding="utf-8")
+        self.assertIn("install_safe_document_product_match(document_context)", source)
+        self.assertIn("install_safe_document_product_match(standalone_business)", source)
+        self.assertLess(
+            source.index("install_safe_document_product_match(standalone_business)"),
+            source.index("install_native_document_header_guard(standalone_business)"),
+        )
 
 
 if __name__ == "__main__":
