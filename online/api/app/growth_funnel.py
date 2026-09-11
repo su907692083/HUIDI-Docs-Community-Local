@@ -4,15 +4,18 @@ from collections import Counter
 from typing import Any
 
 from fastapi import Depends
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
-from .business_center import OnlineDeal, OnlineDocumentRef
+from .business_center import OnlineCustomer, OnlineDeal, OnlineDocumentRef
 from .industry_playbooks import match_industry
 from .mail_delivery import MailDeliveryLog
 from .mail_sync import MailboxMessage
 from .main import Lead, LeadActivity, get_db, safe_json
 from .online_app import app
+
+
+ACTIVE_DEAL_STAGES = {"new_inquiry", "qualified", "quoting", "negotiating", "confirmed", "production", "shipping"}
 
 
 def _distinct_count(db: Session, column, *conditions) -> int:
@@ -35,6 +38,17 @@ def _top_countries(db: Session, limit: int = 8) -> list[dict[str, Any]]:
         .limit(limit)
     ).all()
     return [{"name": str(name or "未填写"), "count": int(count or 0)} for name, count in rows]
+
+
+def _customer_countries(db: Session, limit: int = 8) -> list[dict[str, Any]]:
+    rows = db.execute(
+        select(OnlineCustomer.country, func.count(OnlineCustomer.id))
+        .where(OnlineCustomer.country != "")
+        .group_by(OnlineCustomer.country)
+        .order_by(func.count(OnlineCustomer.id).desc())
+        .limit(limit)
+    ).all()
+    return [{"name": str(name or "未填写"), "count": int(count or 0), "route": "business"} for name, count in rows]
 
 
 def _top_industries(db: Session, limit: int = 8) -> list[dict[str, Any]]:
@@ -113,6 +127,58 @@ def _scenario_metrics(db: Session, limit: int = 8) -> list[dict[str, Any]]:
     ]
 
 
+def _lead_priorities(db: Session) -> list[dict[str, Any]]:
+    priority = case(
+        (Lead.score >= 78, "A"),
+        (Lead.score >= 62, "B"),
+        (Lead.score >= 46, "C"),
+        else_="D",
+    ).label("priority")
+    rows = db.execute(
+        select(priority, func.count(Lead.id)).group_by(priority).order_by(priority.asc())
+    ).all()
+    return [{"name": str(name), "count": int(count or 0), "route": "leads"} for name, count in rows]
+
+
+def _deal_stages(db: Session) -> list[dict[str, Any]]:
+    rows = db.execute(
+        select(OnlineDeal.stage, func.count(OnlineDeal.id))
+        .group_by(OnlineDeal.stage)
+        .order_by(func.count(OnlineDeal.id).desc())
+    ).all()
+    return [{"name": str(name or "未设置"), "count": int(count or 0), "route": "business"} for name, count in rows]
+
+
+def _document_types(db: Session) -> list[dict[str, Any]]:
+    rows = db.execute(
+        select(OnlineDocumentRef.document_type, func.count(OnlineDocumentRef.id))
+        .group_by(OnlineDocumentRef.document_type)
+        .order_by(func.count(OnlineDocumentRef.id).desc())
+    ).all()
+    return [{"name": str(name or "未设置"), "count": int(count or 0), "route": "documents"} for name, count in rows]
+
+
+def _pipeline_by_currency(db: Session) -> list[dict[str, Any]]:
+    # Never add unlike currencies together. Each currency is its own analytical
+    # bucket and remains informational; this path never writes Deal/formal prices.
+    rows = db.execute(
+        select(OnlineDeal.currency, func.count(OnlineDeal.id), func.sum(OnlineDeal.amount))
+        .where(OnlineDeal.stage.in_(ACTIVE_DEAL_STAGES))
+        .group_by(OnlineDeal.currency)
+        .order_by(func.sum(OnlineDeal.amount).desc())
+        .limit(8)
+    ).all()
+    return [
+        {
+            "currency": str(currency or "未设置"),
+            "deals": int(count or 0),
+            "amount": round(float(amount or 0), 2),
+            "route": "business",
+        }
+        for currency, count, amount in rows
+    ]
+
+
 @app.get("/api/growth/funnel")
 def growth_funnel(db: Session = Depends(get_db)):
     found = _distinct_count(db, Lead.id)
@@ -136,16 +202,17 @@ def growth_funnel(db: Session = Depends(get_db)):
         OnlineDeal.source_lead_id.is_not(None), OnlineDeal.stage == "completed",
     )
     stages = [
-        {"key": "found", "name": "找到客户", "count": found, "rate": 100.0 if found else 0.0},
-        {"key": "contactable", "name": "有联系人", "count": contactable, "rate": _rate(contactable, found)},
-        {"key": "sent", "name": "实际发送", "count": sent, "rate": _rate(sent, contactable)},
-        {"key": "replied", "name": "收到回复", "count": replied, "rate": _rate(replied, sent)},
-        {"key": "inquiry", "name": "进入询盘", "count": inquiry, "rate": _rate(inquiry, replied)},
-        {"key": "quoted", "name": "已经报价", "count": quoted, "rate": _rate(quoted, inquiry)},
-        {"key": "won", "name": "已完成", "count": won, "rate": _rate(won, quoted)},
+        {"key": "found", "name": "找到客户", "count": found, "rate": 100.0 if found else 0.0, "route": "leads"},
+        {"key": "contactable", "name": "有联系人", "count": contactable, "rate": _rate(contactable, found), "route": "leads"},
+        {"key": "sent", "name": "实际发送", "count": sent, "rate": _rate(sent, contactable), "route": "communication"},
+        {"key": "replied", "name": "收到回复", "count": replied, "rate": _rate(replied, sent), "route": "communication"},
+        {"key": "inquiry", "name": "进入询盘", "count": inquiry, "rate": _rate(inquiry, replied), "route": "business"},
+        {"key": "quoted", "name": "已经报价", "count": quoted, "rate": _rate(quoted, inquiry), "route": "documents"},
+        {"key": "won", "name": "已完成", "count": won, "rate": _rate(won, quoted), "route": "business"},
     ]
     return {
         "ok": True,
+        "mode": "authoritative_operational_analytics",
         "stages": stages,
         "summary": {
             "reply_rate": _rate(replied, sent),
@@ -155,5 +222,25 @@ def growth_funnel(db: Session = Depends(get_db)):
         "top_countries": _top_countries(db),
         "top_industries": _top_industries(db),
         "scenario_performance": _scenario_metrics(db),
-        "note": "统计只使用真实已保存客户、真实发送记录、真实收件回复和真实询盘/单据引用，不使用演示数据。",
+        "analysis": {
+            "lead_priorities": _lead_priorities(db),
+            "customer_countries": _customer_countries(db),
+            "deal_stages": _deal_stages(db),
+            "document_types": _document_types(db),
+            "pipeline_by_currency": _pipeline_by_currency(db),
+        },
+        "drilldown_targets": {
+            "leads": "existing Lead / Potential Customer owner",
+            "communication": "existing Mail / Communication owner",
+            "business": "existing Customer / Deal owner",
+            "documents": "existing Document Workbench owner",
+        },
+        "guardrails": {
+            "read_only": True,
+            "new_analytics_storage": False,
+            "raw_sql_console": False,
+            "mixed_currency_totals": False,
+            "formal_price_write": False,
+        },
+        "note": "统计只使用真实已保存客户、真实发送记录、真实收件回复和真实询盘/单据引用；分析仅回跳现有 Owner，不创建 BI 数据副本。",
     }
