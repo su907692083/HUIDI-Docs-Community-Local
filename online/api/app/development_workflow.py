@@ -14,6 +14,7 @@ from .low_input_workflow import _context, _product_payload, _product_summary
 from .mail_delivery import MailDeliveryLog, delivery_to_dict
 from .main import Lead, LeadActivity, activity_to_dict, add_activity, get_db, lead_to_dict
 from .online_app import MailboxAccount, _draft_review_state, app, mailbox_to_dict
+from .product_fact_projection import project_non_price_product_facts
 from .product_memory import ProductBrainRecord
 
 
@@ -39,6 +40,7 @@ def _selected_product_payload(row: ProductBrainRecord) -> dict[str, Any]:
         "moq": str(payload.get("moq") or "").strip(),
         "lead_time": str(payload.get("lead_time") or payload.get("delivery_time") or "").strip(),
         "summary": _product_summary(payload),
+        "non_price_facts": project_non_price_product_facts(payload),
     }
 
 
@@ -60,8 +62,20 @@ def _latest_product_context_id(db: Session, lead_id: int) -> str:
     return str(payload.get("product_brain_id") or "").strip()
 
 
+def _development_product_facts(db: Session, lead_id: int, low_input: dict[str, Any]) -> dict[str, Any] | None:
+    preferred = low_input.get("product") if isinstance(low_input, dict) else None
+    brain_id = str((preferred or {}).get("brain_id") or _latest_product_context_id(db, lead_id) or "").strip()
+    if not brain_id:
+        return None
+    row = db.scalar(select(ProductBrainRecord).where(ProductBrainRecord.brain_id == brain_id))
+    return project_non_price_product_facts(row) if row else None
+
+
 def development_context(db: Session, lead: Lead) -> dict[str, Any]:
     low_input = _context(db, lead)
+    product_facts = _development_product_facts(db, lead.id, low_input)
+    if product_facts:
+        low_input = {**low_input, "product_non_price_facts": product_facts}
     resolved = resolve_lead_industry(db, lead)
     company = setting_payload(db)
     mailboxes = db.scalars(select(MailboxAccount).order_by(MailboxAccount.id.asc())).all()
@@ -93,7 +107,7 @@ def development_context(db: Session, lead: Lead) -> dict[str, Any]:
         "review_state": _draft_review_state(db, lead.id),
         "activities": [activity_to_dict(x) for x in activities],
         "deliveries": [delivery_to_dict(x) for x in deliveries],
-        "note": "产品与行业资料只用于开发上下文和草稿辅助；正式业务字段仍由原 Community 业务流程确认。",
+        "note": "产品与行业资料只用于开发上下文和草稿辅助；规格/认证/HS/包装等非价格事实可复用，正式业务字段和价格仍由原 Community 业务流程确认。",
     }
 
 
@@ -130,7 +144,7 @@ def set_product_context(lead_id: int, req: ProductContextRequest, db: Session = 
         "ok": True,
         "lead_id": lead.id,
         "product": product,
-        "note": "开发信可复用产品事实，但不会把产品参考价格写入正式业务字段。",
+        "note": "开发信可复用规格、认证、HS、包装等非价格产品事实；不会把产品参考价格写入正式业务字段。",
     }
 
 
