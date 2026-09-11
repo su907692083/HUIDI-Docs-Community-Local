@@ -13,6 +13,7 @@ from .business_center import OnlineDeal
 from .community_sync import CommunityDealProductLink
 from .main import get_db
 from .online_app import app
+from .product_fact_projection import project_non_price_product_facts
 from .product_memory import ProductBrainRecord
 
 
@@ -45,6 +46,13 @@ def _product_dict(row: ProductBrainRecord) -> dict[str, Any]:
         "sku": row.sku or _clean(payload.get("sku"), 160),
         "spec": _clean(payload.get("spec") or payload.get("specification"), 500),
         "unit": _clean(payload.get("unit"), 40),
+        "non_price_facts": project_non_price_product_facts({
+            **payload,
+            "brain_id": row.brain_id,
+            "local_product_id": row.local_product_id,
+            "name": row.name or payload.get("name"),
+            "sku": row.sku or payload.get("sku"),
+        }),
     }
 
 
@@ -107,7 +115,7 @@ def _selection_payload(
         "items": [_product_dict(row) for row in items],
         "product_keyword": deal.product_keyword,
         "selected_count": len(selected_brain_ids),
-        "note": "这里只维护现有 Deal 与 Product Brain 的关联；产品参考价不会写入询盘金额或正式单据价格。",
+        "note": "这里只维护现有 Deal 与 Product Brain 的关联；规格、认证、HS、包装等非价格事实可供核对，产品参考价不会写入询盘金额或正式单据价格。",
     }
 
 
