@@ -32,7 +32,18 @@ class FrontendCacheRuntimeTests(unittest.TestCase):
         self.assertEqual(response.headers.get("x-huidi-asset-version"), ASSET_VERSION)
 
         runtime_refs = re.findall(r'(?:src|href)="(/assets/[^"?]+\?v=[a-f0-9]{16})"', response.text)
-        self.assertEqual(len(runtime_refs), len(raw_refs))
+        runtime_paths = [ref.split("?v=", 1)[0] for ref in runtime_refs]
+        # The runtime guard may inject a bounded presentation-only asset after
+        # index.html is read. Every raw asset must remain present and versioned;
+        # any additional asset must be one of the explicitly owned runtime
+        # closure layers rather than an untracked/duplicate script.
+        self.assertTrue(set(raw_refs).issubset(set(runtime_paths)))
+        allowed_runtime_injections = {
+            "/assets/workspace-foundation.js",
+            "/assets/open-box-guidance-closure-v1.js",
+        }
+        self.assertTrue(set(runtime_paths) - set(raw_refs) <= allowed_runtime_injections)
+        self.assertIn("/assets/open-box-guidance-closure-v1.js", runtime_paths)
         self.assertTrue(all(ref.endswith(f"?v={ASSET_VERSION}") for ref in runtime_refs))
 
         asset = client.get(runtime_refs[-1])
