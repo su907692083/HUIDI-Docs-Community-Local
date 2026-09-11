@@ -40,7 +40,7 @@ def main() -> None:
 
     def selected_code() -> str:
         return driver.execute_script(
-            "const p=document.querySelector(arguments[0]);return p?.querySelector('.wi-country-market.selected')?.dataset.marketId || p?.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';",
+            "const p=document.querySelector(arguments[0]);return p?.querySelector('.wi-country-face.selected')?.dataset.marketId || p?.querySelector('.wi-country-market.selected')?.dataset.marketId || p?.querySelector('.wi-country-marker.selected')?.dataset.marketId || '';",
             ACTIVE_MAP,
         )
 
@@ -59,7 +59,7 @@ def main() -> None:
         wait_selected(code)
 
     def click_market(code: str) -> None:
-        phase(f'click-{code}')
+        phase(f'click-marker-{code}')
         driver.execute_script('window.HUIDIWorldCountryInteraction?.resetView?.()')
         time.sleep(.12)
         marker = wait.until(lambda d: d.find_element(By.CSS_SELECTOR, f'{ACTIVE_MAP} .wi-country-marker[data-market-id="{code}"]'))
@@ -67,6 +67,39 @@ def main() -> None:
         driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mousePressed','x':point['x'],'y':point['y'],'button':'left','buttons':1,'clickCount':1})
         driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseReleased','x':point['x'],'y':point['y'],'button':'left','buttons':0,'clickCount':1})
         wait_selected(code)
+
+    def click_country_face(code: str, expected_name: str) -> None:
+        phase(f'hover-click-face-{code}')
+        driver.execute_script('window.HUIDIWorldCountryInteraction?.resetView?.()')
+        time.sleep(.12)
+        payload = wait.until(lambda d: d.execute_script("""
+          const root=document.querySelector(arguments[0]),code=arguments[1];
+          const face=root?.querySelector(`.wi-country-face[data-market-id="${code}"]`);
+          const marker=root?.querySelector(`.wi-country-marker[data-market-id="${code}"]`);
+          const node=marker?.querySelector('.wi-node');
+          if(!face||!marker||!node)return null;
+          marker.dataset.testPointerEvents=marker.style.pointerEvents||'';
+          marker.style.pointerEvents='none';
+          const r=node.getBoundingClientRect(),x=r.left+r.width/2,y=r.top+r.height/2;
+          const hit=document.elementFromPoint(x,y);
+          return {x,y,d:face.getAttribute('d')||'',hitCode:hit?.closest?.('.wi-country-face')?.dataset.marketId||'',hitClass:hit?.getAttribute?.('class')||''};
+        """, ACTIVE_MAP, code))
+        try:
+            assert len(payload['d']) > 20, payload
+            assert payload['hitCode'] == code, payload
+            driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseMoved','x':payload['x'],'y':payload['y'],'button':'none','buttons':0})
+            wait.until(lambda d: d.execute_script(
+                "const b=document.querySelector('.wi-country-bubble.open');return Boolean(b && b.textContent.includes(arguments[0]));",
+                expected_name,
+            ))
+            driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mousePressed','x':payload['x'],'y':payload['y'],'button':'left','buttons':1,'clickCount':1})
+            driver.execute_cdp_cmd('Input.dispatchMouseEvent', {'type':'mouseReleased','x':payload['x'],'y':payload['y'],'button':'left','buttons':0,'clickCount':1})
+            wait_selected(code)
+        finally:
+            driver.execute_script("""
+              const root=document.querySelector(arguments[0]),marker=root?.querySelector(`.wi-country-marker[data-market-id="${arguments[1]}"]`);
+              if(marker){marker.style.pointerEvents=marker.dataset.testPointerEvents||'';delete marker.dataset.testPointerEvents}
+            """, ACTIVE_MAP, code)
 
     def assert_layout(width: int, height: int) -> None:
         phase(f'layout-{width}x{height}')
@@ -122,12 +155,18 @@ def main() -> None:
           const map=document.querySelector('#wiMap'),land=map?.querySelector('.wi-basemap-land');
           return {geometry:map?.dataset.wiCountryGeometry||'',countryCount:window.HUIDI_WORLD_BASEMAP?.countryCount||0,
             pathLength:(land?.getAttribute('d')||'').length,
+            faceCount:Number(map?.dataset.wiCountryFaces||0),
+            usFace:(map?.querySelector('.wi-country-face[data-market-id="US"]')?.getAttribute('d')||'').length,
+            deFace:(map?.querySelector('.wi-country-face[data-market-id="DE"]')?.getAttribute('d')||'').length,
+            jpFace:(map?.querySelector('.wi-country-face[data-market-id="JP"]')?.getAttribute('d')||'').length,
             modes:[...document.querySelectorAll('[data-wic-mode]')].map(x=>x.textContent.trim()),
             external:performance.getEntriesByType('resource').map(x=>x.name).filter(n=>n.includes('cdn.jsdelivr.net')||n.includes('natural-earth-vector'))};
         """)
         assert map_state['geometry'] == 'natural-earth-country-boundaries-v2', map_state
         assert map_state['countryCount'] == 177, map_state
         assert map_state['pathLength'] > 10000, map_state
+        assert map_state['faceCount'] >= 3, map_state
+        assert map_state['usFace'] > 20 and map_state['deFace'] > 20 and map_state['jpFace'] > 20, map_state
         assert map_state['modes'] == ['地图分析','热力图','数据分析'], map_state
         assert map_state['external'] == [], map_state
         for mode_key in ('heat','data','map'):
@@ -137,8 +176,9 @@ def main() -> None:
         assert_layout(1280, 720); assert_layout(1640, 920)
         driver.set_window_size(1440, 1000); time.sleep(.2)
         search_market('德国', 'DE'); assert '德国' in driver.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''")
-        click_market('US'); assert '美国' in driver.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''")
-        click_market('JP'); assert '日本' in driver.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''")
+        click_country_face('US', '美国'); assert '美国' in driver.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''")
+        click_country_face('JP', '日本'); assert '日本' in driver.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''")
+        click_market('DE'); assert '德国' in driver.execute_script("return document.querySelector('#wiSideHead h3')?.textContent || ''")
 
         phase('zoom')
         driver.execute_script('window.HUIDIWorldCountryInteraction?.resetView?.()')
@@ -179,7 +219,7 @@ def main() -> None:
             "return (document.querySelector('#hsTradeCountry')?.value||'')===arguments[0] && (document.querySelector('#hsTradeProduct')?.value||'')===arguments[1]", country, PRODUCT
         ))
         assert len(driver.window_handles) == 1, driver.window_handles
-        print('HUIDI country-level source-parity world-market Chrome PASS', flush=True)
+        print('HUIDI local country-face source-parity world-market Chrome PASS', flush=True)
     finally:
         driver.quit(); client.close()
 
