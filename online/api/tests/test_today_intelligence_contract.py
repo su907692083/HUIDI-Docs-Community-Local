@@ -31,6 +31,19 @@ class TodayIntelligenceContractTests(unittest.TestCase):
         self.assertIn("company_name", backend)
         self.assertIn("deal_title", backend)
 
+    def test_cached_daily_brief_preserves_trade_intelligence_lanes_without_new_owner(self):
+        backend = self.text("app/today_intelligence.py")
+        ui = self.text("web/today-intelligence.js")
+        self.assertIn("BRIEF_LANES", backend)
+        self.assertIn("_build_brief", backend)
+        self.assertIn('"brief": _build_brief(brief_rows)', backend)
+        for label in ("客户可聊", "市场机会", "政策关税", "物流交付", "风险提醒"):
+            self.assertIn(label, backend)
+            self.assertIn(label, ui)
+        self.assertIn("日报摘要只归纳已经查过", backend)
+        self.assertIn("全部来自已有缓存与原始来源", ui)
+        self.assertNotIn("@app.get(\"/api/intel/today-brief\")", backend)
+
     def test_today_ui_returns_to_existing_customer_and_intelligence_owners(self):
         index = self.text("web/index.html")
         ui = self.text("web/today-intelligence.js")
