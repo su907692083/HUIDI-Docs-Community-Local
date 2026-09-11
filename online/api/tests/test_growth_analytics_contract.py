@@ -26,7 +26,13 @@ class GrowthAnalyticsContractTests(unittest.TestCase):
             '_pipeline_by_currency(db)',
         ):
             self.assertIn(marker, self.backend)
-        for forbidden in ('__tablename__', 'mapped_column(', 'Base.metadata.create_all', 'CREATE TABLE', 'raw_sql'):
+        # Guardrail names such as raw_sql_console=False are expected. Reject
+        # actual alternate SQL/storage execution mechanisms rather than the
+        # string that documents their absence.
+        for forbidden in (
+            '__tablename__', 'mapped_column(', 'Base.metadata.create_all',
+            'CREATE TABLE', 'exec_driver_sql(', 'sqlalchemy.text(', 'from sqlalchemy import text',
+        ):
             self.assertNotIn(forbidden, self.backend)
         self.assertIn('new_analytics_storage', self.backend)
         self.assertIn('raw_sql_console', self.backend)
