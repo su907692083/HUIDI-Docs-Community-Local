@@ -124,6 +124,8 @@ def _workspace_html() -> str:
     # completed the mature sidebar and page owners. The development workbench is
     # loaded after the capability tabs. A scoped routing bridge connects
     # potential-customer / follow-up / reply rows into that same workbench.
+    # HUIDI Knowledge Context then adds read-only cited retrieval over the same
+    # authoritative Product / Lead / Customer / Deal / Intelligence records.
     # Shell closure compacts the DOM; functional closure runs last and connects
     # the visible pages to existing status, mail, map and sequence capabilities.
     if "huidi-community-online-nav-v1.js" not in html:
@@ -133,6 +135,7 @@ def _workspace_html() -> str:
             f'<script src="/community/huidi-community-online-intelligence-v2.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-development-workbench-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-development-routing-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+            f'<script src="/community/huidi-knowledge-context-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-shell-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-functional-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
         )
