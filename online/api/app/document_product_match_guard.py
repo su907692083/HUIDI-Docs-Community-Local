@@ -63,7 +63,7 @@ def safe_match_product(
     Resolution order:
     1. unique exact stable identifier / SKU;
     2. unique exact product name;
-    3. one and only one fuzzy name/SKU candidate;
+    3. one and only one candidate containing the inquiry keyword;
     4. otherwise return no product and let the Deal's free-text keyword pass
        through unchanged rather than guessing a specification or variant.
     """
@@ -100,7 +100,7 @@ def safe_match_product(
     for item in candidates:
         _, _, identifiers, names = item
         searchable = identifiers | names
-        if any(needle in value or value in needle for value in searchable):
+        if any(needle in value for value in searchable):
             fuzzy.append(item)
     if len(fuzzy) == 1:
         row, payload, _, _ = fuzzy[0]
