@@ -70,7 +70,7 @@ def seed_deals(driver: webdriver.Chrome, stamp: str) -> list[int]:
                 website: '',
                 contact_name: 'Buyer',
                 contact_email: '',
-                requirements: 'Quantity 1000 pcs',
+                requirements: 'Quantity 1000 pcs, FOB Ningbo',
                 create_inquiry: true
               })
             });
@@ -98,11 +98,59 @@ def seed_deals(driver: webdriver.Chrome, stamp: str) -> list[int]:
     return ids
 
 
+def seed_products(driver: webdriver.Chrome, stamp: str) -> tuple[str, str]:
+    base_id = f"doc-multi-{stamp}-base"
+    variant_id = f"doc-multi-{stamp}-heavy"
+    result = driver.execute_async_script(
+        """
+        const [baseId, variantId, done] = arguments;
+        fetch('/api/product-brains/import', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({items: [
+            {
+              brain_id: baseId,
+              payload: {
+                id: baseId,
+                local_product_id: baseId,
+                name: 'stainless steel hinge',
+                sku: 'SSH-BASE',
+                spec: 'SUS304 4 inch',
+                unit: 'pcs',
+                reference_price: '1.25'
+              }
+            },
+            {
+              brain_id: variantId,
+              payload: {
+                id: variantId,
+                local_product_id: variantId,
+                name: 'stainless steel hinge heavy duty',
+                sku: 'SSH-HD',
+                spec: 'SUS316 5 inch heavy duty',
+                unit: 'pcs',
+                reference_price: '2.40'
+              }
+            }
+          ]})
+        }).then(async response => done({status: response.status, body: await response.text()}))
+          .catch(error => done({status: 0, body: String(error)}));
+        """,
+        base_id,
+        variant_id,
+    )
+    assert 200 <= int(result["status"]) < 300, result
+    payload = json.loads(result["body"] or "{}")
+    assert int(payload.get("saved") or 0) == 2, payload
+    return base_id, variant_id
+
+
 def get_json(driver: webdriver.Chrome, path: str) -> dict:
     result = driver.execute_async_script(
         """
         const [path, done] = arguments;
-        fetch(path, {credentials: 'same-origin'})
+        fetch(path, {credentials:'same-origin'})
           .then(async response => done({status: response.status, body: await response.text()}))
           .catch(error => done({status: 0, body: String(error)}));
         """,
@@ -121,7 +169,9 @@ def main() -> None:
     try:
         driver.get(BASE + "/")
         wait.until(lambda d: d.execute_script("return typeof window.HUIDIDocumentWorkbench?.open") == "function")
+        wait.until(lambda d: d.execute_script("return typeof window.HUIDIDocumentEntryConnectivity?.openForDeal") == "function")
         seeded_ids = seed_deals(driver, stamp)
+        base_product_id, variant_product_id = seed_products(driver, stamp)
         assert len(seeded_ids) > 50
 
         hub = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, ".side [data-huidi-doc-workbench]")))
@@ -175,6 +225,18 @@ def main() -> None:
             in dom_attr(d, f'[data-hdw-deal="{target_id}"]', "class").split()
         )
 
+        product_card = wait.until(EC.visibility_of_element_located((By.ID, "huidiDocumentEntryProducts")))
+        wait.until(
+            lambda d: len(d.find_elements(By.CSS_SELECTOR, "#huidiDocumentEntryProducts [data-hdec-product]")) >= 2
+        )
+        base_box = driver.find_element(By.CSS_SELECTOR, f'[data-hdec-product="{base_product_id}"]')
+        variant_box = driver.find_element(By.CSS_SELECTOR, f'[data-hdec-product="{variant_product_id}"]')
+        wait.until(lambda _d: base_box.is_selected())
+        assert not variant_box.is_selected()
+        pointer_click(driver, variant_box)
+        assert variant_box.is_selected()
+        assert "已选 2 项" in product_card.text, product_card.text
+
         quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hdw-doc="quotation"]')))
         pointer_click(driver, quote)
         wait.until(EC.presence_of_element_located((By.ID, "hwpDocumentFrame")))
@@ -182,25 +244,66 @@ def main() -> None:
         frame_src = dom_attr(driver, "#hwpDocumentFrame", "src")
         assert "8765" not in frame_src, frame_src
 
+        selection = get_json(driver, f"/api/business/deals/{target_id}/products")
+        assert set(selection.get("selected") or []) == {base_product_id, variant_product_id}, selection
         deal = get_json(driver, f"/api/business/deals/{target_id}")
         documents = deal.get("documents") or []
-        assert any(item.get("type") == "quotation" for item in documents), documents
+        quotes = [item for item in documents if item.get("type") == "quotation"]
+        assert len(quotes) == 1, documents
+        first_quote_id = int(quotes[0]["id"])
 
-        driver.execute_script(
+        frame = driver.find_element(By.ID, "hwpDocumentFrame")
+        driver.switch_to.frame(frame)
+        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "[data-item-row]")) == 2)
+        item_rows = driver.find_elements(By.CSS_SELECTOR, "[data-item-row]")
+        row_values = []
+        for row in item_rows:
+            row_values.append(
+                {
+                    "product": row.find_element(By.CSS_SELECTOR, '[data-item-k="product"]').get_attribute("value"),
+                    "sku": row.find_element(By.CSS_SELECTOR, '[data-item-k="sku"]').get_attribute("value"),
+                    "spec": row.find_element(By.CSS_SELECTOR, '[data-item-k="spec"]').get_attribute("value"),
+                    "price": row.find_element(By.CSS_SELECTOR, '[data-item-k="unit_price"]').get_attribute("value"),
+                }
+            )
+        assert {row["sku"] for row in row_values} == {"SSH-BASE", "SSH-HD"}, row_values
+        assert any("SUS304 4 inch" in row["spec"] for row in row_values), row_values
+        assert any("SUS316 5 inch heavy duty" in row["spec"] for row in row_values), row_values
+        assert all(row["price"] == "" for row in row_values), row_values
+        assert driver.find_element(By.CSS_SELECTOR, ".top[data-huidi-native-header]")
+        driver.switch_to.default_content()
+
+        driver.execute_async_script(
             """
-            if (window.__hdwOriginalFetch) window.fetch = window.__hdwOriginalFetch;
-            delete window.__hdwOriginalFetch;
-            delete window.__hdwFetchUrls;
-            """
+            const [dealId, done] = arguments;
+            Promise.resolve(window.HUIDIDocumentEntryConnectivity.openForDeal(dealId, 'quotation'))
+              .then(() => done({ok:true}))
+              .catch(error => done({ok:false,error:String(error)}));
+            """,
+            target_id,
         )
+        wait.until(lambda d: f"/documents/online/{first_quote_id}" in dom_attr(d, "#hwpDocumentFrame", "src"))
+        deal_after_reopen = get_json(driver, f"/api/business/deals/{target_id}")
+        quotes_after_reopen = [item for item in (deal_after_reopen.get("documents") or []) if item.get("type") == "quotation"]
+        assert len(quotes_after_reopen) == 1, deal_after_reopen
+
+        driver.switch_to.frame(driver.find_element(By.ID, "hwpDocumentFrame"))
+        pointer_click(driver, wait.until(EC.element_to_be_clickable((By.ID, "back"))))
+        driver.switch_to.default_content()
+        wait.until(lambda d: "page=documents" in d.current_url)
+        wait.until(EC.visibility_of_element_located((By.ID, "hdwList")))
+
         print(
-            "HUIDI document workbench large-data pagination PASS:",
+            "HUIDI document workbench multi-product pagination PASS:",
             {
                 "seeded": len(seeded_ids),
                 "page1": len(first_ids),
                 "page2": len(second_ids),
                 "selected_off_page_deal": target_id,
+                "selected_products": selection.get("selected"),
                 "quotation": frame_src,
+                "reused_quote_id": first_quote_id,
+                "editor_return": driver.current_url,
             },
         )
     finally:
