@@ -10,10 +10,8 @@ _ORIGINAL_SET_WINDOW_SIZE = WebDriver.set_window_size
 
 
 def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHandle: str = "current"):
-    result = _ORIGINAL_SET_WINDOW_SIZE(self, width, height, windowHandle)
-
-    # Every resize must establish a fresh stability window. Reusing the previous
-    # search/stage tick counter can falsely accept the first pre-resize frame.
+    # Every resize must start from a fresh stability window. Clear the previous
+    # search/stage tick state before the native resize can expose any new frame.
     try:
         self.execute_script("""
           window.__huidiAuditStableSearch=null;
@@ -22,6 +20,8 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
         """)
     except Exception:
         pass
+
+    result = _ORIGINAL_SET_WINDOW_SIZE(self, width, height, windowHandle)
 
     for _ in range(150):
         try:
