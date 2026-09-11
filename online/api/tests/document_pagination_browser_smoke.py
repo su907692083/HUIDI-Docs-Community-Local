@@ -169,6 +169,15 @@ def checkbox_selected(driver: webdriver.Chrome, product_id: str) -> bool:
     )
 
 
+def click_product_checkbox(driver: webdriver.Chrome, product_id: str) -> bool:
+    return bool(
+        driver.execute_script(
+            "const box=document.querySelector(arguments[0]);if(!box)return false;box.click();return true;",
+            f'[data-hdec-product="{product_id}"]',
+        )
+    )
+
+
 def main() -> None:
     driver = webdriver.Chrome(options=options())
     driver.set_page_load_timeout(20)
@@ -240,8 +249,7 @@ def main() -> None:
         )
         wait.until(lambda d: checkbox_selected(d, base_product_id))
         assert not checkbox_selected(driver, variant_product_id)
-        variant_box = driver.find_element(By.CSS_SELECTOR, f'[data-hdec-product="{variant_product_id}"]')
-        pointer_click(driver, variant_box)
+        assert click_product_checkbox(driver, variant_product_id)
         wait.until(lambda d: checkbox_selected(d, variant_product_id))
         wait.until(lambda d: "已选 2 项" in dom_text(d, "#huidiDocumentEntryProducts"))
 
