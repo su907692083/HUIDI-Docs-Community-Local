@@ -49,6 +49,33 @@ class KnowledgeContextContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, self.backend)
 
+    def test_retrieval_diagnostics_are_deterministic_explainable_and_non_vector(self) -> None:
+        for marker in (
+            "SOURCE_WEIGHTS",
+            "_match_reasons",
+            "match_reasons",
+            "field_weighted_lexical_rerank_v1",
+            "candidate_count",
+            "returned_source_counts",
+            "missing_sources",
+            '"vector_search": False',
+            '"explainable": True',
+        ):
+            self.assertIn(marker, self.backend)
+        for marker in (
+            "data-hkc-diagnostics",
+            "检索说明",
+            "为什么命中",
+            "相关度",
+            "本次未命中",
+            "非向量黑箱",
+        ):
+            self.assertIn(marker, self.ui)
+        self.assertIn("renderDiagnostics(box,out)", self.ui)
+        self.assertIn("x.match_reasons", self.ui)
+        self.assertNotIn("Math.random", self.backend)
+        self.assertNotIn("Math.random", self.ui)
+
     def test_fused_workspace_loads_retrieval_next_to_existing_development_owner(self) -> None:
         self.assertIn('from . import knowledge_context', self.daily)
         self.assertIn('from . import knowledge_ai', self.daily)
@@ -100,7 +127,7 @@ class KnowledgeContextContractTests(unittest.TestCase):
         self.assertIn('const {purpose,language}=modeInfo(box)', self.ui)
         self.assertIn('JSON.stringify({query:q,purpose,language,max_sources:6})', self.ui)
         self.assertNotIn("purpose:'outreach_strategy',language:'Chinese'", self.ui)
-        self.assertIn("version:'1.2.0'", self.ui)
+        self.assertIn("version:'1.3.0'", self.ui)
 
     def test_ai_ui_is_explicit_copy_only_not_auto_apply_or_send(self) -> None:
         for marker in (
