@@ -5,7 +5,7 @@ if(!online?.enabled||window.HUIDICommunityOnlineIntelligenceV2)return;
 const $=(s,r=document)=>r.querySelector(s),clean=v=>String(v??'').trim();
 const REV=document.querySelector('meta[name=huidi-asset-revision]')?.content||'world-cockpit-v5';
 const loaders=new Map();
-const defs={plain:['plain-language.js','HUIDIPlainLanguage'],intelligence:['customer-intelligence.js','HUIDICustomerIntelligence'],worldBasemap:['world-basemap-v2.js','HUIDI_WORLD_BASEMAP'],worldMap:['world-intelligence-map.js','HUIDIWorldIntelligenceMap'],worldCountry:['world-country-interaction.js','HUIDIWorldCountryInteraction'],worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceParity']};
+const defs={plain:['plain-language.js','HUIDIPlainLanguage'],intelligence:['customer-intelligence.js','HUIDICustomerIntelligence'],worldBasemap:['world-basemap-v2.js','HUIDI_WORLD_BASEMAP'],worldMap:['world-intelligence-map.js','HUIDIWorldIntelligenceMap'],worldCountry:['world-country-interaction.js','HUIDIWorldCountryInteraction'],worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceSelectionSync']};
 let primaryTimer=0,responsiveTimer=0;
 function taskState(){try{return JSON.parse(sessionStorage.getItem('huidi.task-flow/v1')||'{}')||{}}catch(_){return{}}}
 function load(key){if(loaders.has(key))return loaders.get(key);const [file,global]=defs[key];if(window[global])return Promise.resolve(window[global]);const p=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=`/assets/${file}?v=${encodeURIComponent(REV)}`;s.dataset.fv2IntelModule=file;s.onload=()=>window[global]?resolve(window[global]):reject(new Error(`${file} 未初始化`));s.onerror=()=>reject(new Error(`${file} 加载失败`));document.head.appendChild(s)}).catch(error=>{loaders.delete(key);throw error});loaders.set(key,p);return p}
@@ -32,5 +32,5 @@ function scheduleResponsiveMap(){const view=$('#view-online-intel'),pane=view?.q
 function bindPrimary(){document.addEventListener('click',e=>{const tab=e.target.closest('#view-online-intel [data-fv2-tab]');if(tab&&tab.dataset.fv2Tab!=='world-map'){cancelPrimary();cancelResponsive();return}const nav=e.target.closest('.nav-btn[data-view="online-intel"]');if(nav)schedulePrimary(90)},true);window.addEventListener('HUIDI:community-online-view',e=>{if(e.detail?.view==='online-intel')schedulePrimary(80)});window.addEventListener('HUIDI:fusion-pane-rendered',e=>{if(e.detail?.view==='online-intel'){if(e.detail?.key&&!['base','world-map'].includes(e.detail.key)){cancelPrimary();cancelResponsive()}setTimeout(promote,20)}});window.addEventListener('resize',scheduleResponsiveMap,{passive:true})}
 function boot(){if(!install())setTimeout(install,120);setTimeout(()=>{install();promote()},360);loadCommandCenter();bindPrimary()}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDICommunityOnlineIntelligenceV2=Object.freeze({version:'2.4.5',install,promote,open,mountWorldMap,mountCustomerIntel});
+window.HUIDICommunityOnlineIntelligenceV2=Object.freeze({version:'2.4.6',install,promote,open,mountWorldMap,mountCustomerIntel});
 })();
