@@ -74,6 +74,40 @@ def _stable_set_window_size(self: WebDriver, width: int, height: int, windowHand
         except Exception:
             pass
         time.sleep(0.04)
+
+    # Diagnostic only: do not change timing or recovery behavior. If the gate
+    # expires, record which pane/root actually owns the already-created map DOM.
+    try:
+        diagnostic = self.execute_script("""
+          const view=document.querySelector('#view-online-intel');
+          const active=view?.querySelector(':scope > .fv2-panes > .fv2-pane.active');
+          const world=view?.querySelector(':scope > .fv2-panes > [data-fv2-pane="world-map"]');
+          const root=document.querySelector('#huidiIntelBack');
+          const map=document.querySelector('.wi-map-card'),side=document.querySelector('.wi-side');
+          const ws=world?getComputedStyle(world):null,rs=root?getComputedStyle(root):null;
+          return {
+            href:location.href,
+            bodyView:document.body?.dataset?.huidiView||'',
+            viewActive:Boolean(view?.classList.contains('active')),
+            activePane:active?.dataset?.fv2Pane||'',
+            worldHidden:Boolean(world?.hidden),
+            worldBusy:world?.getAttribute('aria-busy')||'',
+            worldDisplay:ws?.display||'',
+            worldVisibility:ws?.visibility||'',
+            rootParentPane:root?.parentElement?.dataset?.fv2Pane||'',
+            rootParentId:root?.parentElement?.id||'',
+            rootOpen:Boolean(root?.classList.contains('open')),
+            rootDisplay:rs?.display||'',
+            rootVisibility:rs?.visibility||'',
+            mapExists:Boolean(map),
+            sideExists:Boolean(side),
+            mapInWorld:Boolean(world&&map&&world.contains(map)),
+            sideInWorld:Boolean(world&&side&&world.contains(side))
+          };
+        """)
+        print('WORLD-MARKET STABLE TIMEOUT:', diagnostic, flush=True)
+    except Exception as error:
+        print('WORLD-MARKET STABLE TIMEOUT DIAGNOSTIC FAILED:', repr(error), flush=True)
     return result
 
 
