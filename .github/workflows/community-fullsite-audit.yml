@@ -1,0 +1,81 @@
+name: HUIDI Community Fullsite Audit
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths: ['public/**', 'online/**', 'tools/**', '.github/workflows/community-fullsite-audit.yml']
+  pull_request:
+    paths: ['public/**', 'online/**', 'tools/**', '.github/workflows/community-fullsite-audit.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: community-fullsite-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  fullsite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - name: Archive exact tracked source before runtime tests
+        run: |
+          mkdir -p /tmp/huidi-fullsite-audit
+          git rev-parse HEAD > /tmp/huidi-fullsite-audit/SOURCE-COMMIT.txt
+          git archive --format=zip --output=/tmp/huidi-fullsite-audit/SOURCE.zip HEAD
+          sha256sum /tmp/huidi-fullsite-audit/SOURCE.zip > /tmp/huidi-fullsite-audit/SHA256SUMS.txt
+          python - <<'PY'
+          import hashlib, json, re, subprocess
+          from pathlib import Path
+          files = subprocess.check_output(['git', 'ls-files', '-z']).decode().split('\0')
+          inventory = {'commit': subprocess.check_output(['git','rev-parse','HEAD']).decode().strip(), 'files': [], 'html_pages': [], 'view_ids': [], 'api_routes': []}
+          for name in filter(None, files):
+              p = Path(name)
+              if not p.is_file():
+                  continue
+              inventory['files'].append({'path':name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'bytes':p.stat().st_size})
+              if name.startswith(('public/', 'online/')) and p.suffix in ('.html','.js','.py'):
+                  s = p.read_text(encoding='utf-8',errors='replace')
+                  if p.suffix == '.html':
+                      inventory['html_pages'].append(name)
+                  for v in sorted(set(re.findall(r'id=[\"\'](view-[a-zA-Z0-9_-]+)[\"\']', s))):
+                      inventory['view_ids'].append({'path':name,'view':v})
+                  if p.suffix == '.py':
+                      for method, route in re.findall(r'@app\.(get|post|put|patch|delete)\([\"\']([^\"\']+)',s):
+                          inventory['api_routes'].append({'path':name,'method':method.upper(),'route':route})
+          Path('/tmp/huidi-fullsite-audit/INVENTORY.json').write_text(json.dumps(inventory,ensure_ascii=False,indent=2),encoding='utf-8')
+          print('Tracked files:',len(inventory['files']),'HTML pages:',len(inventory['html_pages']),'Declared API routes:',len(inventory['api_routes']))
+          PY
+      - name: Install isolated browser audit dependencies
+        if: hashFiles('tools/community_fullsite_browser_audit.py') != ''
+        run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
+          python -m pip install -r online/api/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Exercise actual Community navigation and retained owners
+        if: hashFiles('tools/community_fullsite_browser_audit.py') != ''
+        run: |
+          if test -f docs/FULLSITE-CLOSURE-R1.md; then
+            python tools/community_fullsite_browser_audit.py --strict --output /tmp/huidi-fullsite-audit/browser
+          else
+            python tools/community_fullsite_browser_audit.py --output /tmp/huidi-fullsite-audit/browser
+          fi
+      - name: Exercise fused open-source capability closure
+        if: hashFiles('tools/open_source_fusion_browser_audit.py') != ''
+        run: |
+          python tools/open_source_fusion_browser_audit.py --output /tmp/huidi-fullsite-audit/open-source-fusion
+      - name: Upload exact source and audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUIDI-COMMUNITY-FULLSITE-AUDIT-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/huidi-fullsite-audit/
+          if-no-files-found: error
+          retention-days: 14

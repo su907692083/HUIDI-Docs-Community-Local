@@ -1,0 +1,204 @@
+name: HUIDI Online Page Router Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-page-router-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-page-router-smoke.yml'
+
+jobs:
+  page_routes:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-page-router-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '0'
+      DATABASE_URL: sqlite:////tmp/huidi-page-router.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Start Online workbench
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18082 > /tmp/huidi-page-router.log 2>&1 &
+          echo $! > /tmp/huidi-page-router.pid
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:18082/ > /dev/null; then exit 0; fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-page-router.log
+          exit 1
+      - name: Seed real product and inquiry
+        run: |
+          curl -fsS -X PUT http://127.0.0.1:18082/api/product-brains/router-hinge \
+            -H 'Content-Type: application/json' \
+            --data '{"brain_id":"router-hinge","name":"Router Hinge","sku":"RH-304","payload":{"brain_id":"router-hinge","name":"Router Hinge","sku":"RH-304","spec":"SUS304 4 inch","moq":"500 pcs","lead_time":"15 days","price_range":"USD 1.00-1.20 / PCS","certifications":["RoHS"]}}' > /tmp/product.json
+          grep -F 'Router Hinge' /tmp/product.json
+          curl -fsS -X POST http://127.0.0.1:18082/api/leads/manual \
+            -H 'Content-Type: application/json' \
+            --data '{"company_name":"Router Smoke Buyer","product_keyword":"Router Hinge","country":"DE","contact_name":"Purchasing","contact_email":"purchasing@router-smoke.example","requirements":"Quantity: 5000 pcs, FOB Ningbo, SUS304 4 inch","create_inquiry":true}' > /tmp/inquiry.json
+          grep -F 'Router Smoke Buyer' /tmp/inquiry.json
+      - name: Verify consolidated workspace routing, retained secondary owners, catalog and native document in Chrome
+        run: |
+          python - <<'PY'
+          import time
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+          from selenium.webdriver.chrome.options import Options
+
+          options=Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1600,1100')
+          driver=webdriver.Chrome(options=options)
+          wait=WebDriverWait(driver,12)
+
+          try:
+              driver.get('http://127.0.0.1:18082/')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-foundation]')))
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huidi-catalog]')))
+
+              # Read only currently rendered navigation entries in one browser-side snapshot.
+              # Individual WebElements may be replaced while navigation enhancement finishes.
+              visible=driver.execute_script("return [...document.querySelectorAll('.side .nav a')].filter(x=>x.getClientRects().length).map(x=>(x.textContent||'').trim()).filter(Boolean)")
+              for expected in ('今天的工作','客户沟通','待跟进','提醒','找客户','潜在客户','客户 / 询盘','产品资料','产品目录','单据工作台','市场 / 关税 / 物流','基础设置'):
+                  assert expected in visible, (expected,visible)
+              for secondary in ('联系人','收件箱','已发送','待发送','自动跟进','市场动态','操作记录'):
+                  assert secondary not in visible, (secondary,visible)
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-catalog]').click()
+              wait.until(lambda d: d.find_element(By.ID,'huidiPageHost').is_displayed())
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品目录'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiPageMount'),'Router Hinge'))
+              assert 'page=catalog' in driver.current_url, driver.current_url
+              assert driver.find_element(By.ID,'hocPaper').is_displayed()
+              assert '打印 / 另存 PDF' in driver.find_element(By.ID,'huidiPageMount').text
+              assert '下载 HTML' in driver.find_element(By.ID,'huidiPageMount').text
+              assert '127.0.0.1:8765' not in driver.current_url
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('contacts')")
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'联系人'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.ID,'hnContactSearch')))
+              contacts_surface = driver.execute_script("""
+                const node=document.querySelector('#huidiNavBack');
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('hn-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
+              """)
+              assert contacts_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, contacts_surface
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-notifications]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'提醒'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiNavBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-note-refresh]')))
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-tool-hub]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'市场与工具'))
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'[data-huf-tool="intelligence"]')))
+              assert '市场动态' in driver.find_element(By.ID,'huidiPageMount').text
+              assert 'HS 编码 / 关税' in driver.find_element(By.ID,'huidiPageMount').text
+              assert '船期 / 物流' in driver.find_element(By.ID,'huidiPageMount').text
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('intelligence')")
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'市场动态'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiIntelBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.ID,'ciKeyword')))
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-communication]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'客户沟通'))
+              for route in ('mail','sent','queue','sequences'):
+                  wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,f'[data-huf-communication="{route}"]')))
+              communication_text=driver.find_element(By.ID,'huidiPageMount').text
+              for label in ('收件箱','已发送','待发送','自动跟进'):
+                  assert label in communication_text, (label, communication_text)
+              driver.find_element(By.CSS_SELECTOR,'[data-huf-communication="mail"]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'收件箱'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#huidiServiceBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'邮箱与回复'))
+              service_surface = driver.execute_script("""
+                const node=document.querySelector('#huidiServiceBack');
+                return {open:node?.classList.contains('open'),nativePage:node?.classList.contains('hs-page-surface'),legacyDock:node?.classList.contains('hpr-docked'),position:node?getComputedStyle(node).position:''};
+              """)
+              assert service_surface == {'open': True, 'nativePage': True, 'legacyDock': False, 'position': 'static'}, service_surface
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('sent')")
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'已发送'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'已发送'))
+              assert 'page=sent' in driver.current_url, driver.current_url
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('queue')")
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'待发送'))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'huidiServiceMain'),'待发送'))
+              assert 'page=queue' in driver.current_url, driver.current_url
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('audit')")
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'操作记录'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#auBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.ID,'auFilters')))
+
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-product]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'产品资料'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#pbBackdrop')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'#pbBackdrop [data-pbf="name"]')))
+
+              driver.execute_script("window.HUIDIWorkspacePages.open('sequences')")
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'自动跟进'))
+              wait.until(lambda d: d.execute_script("return document.querySelector('#sqBack')?.parentElement?.id")=='huidiPageMount')
+              wait.until(EC.text_to_be_present_in_element((By.ID,'sqMain'),'跟进内容'))
+
+              # 只有一个真正能工作的单据工作台：选询盘后直接制作正式单据，不再经过第二个浅层入口页。
+              driver.find_element(By.CSS_SELECTOR,'[data-huidi-doc-workbench]').click()
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'单据工作台'))
+              wait.until(EC.presence_of_element_located((By.ID,'hdwChain')))
+              for route in ('quotation','proforma_invoice','sales_contract','commercial_invoice','packing_list'):
+                  wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,f'[data-hdw-doc="{route}"]')))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hdwList'),'Router Smoke Buyer'))
+              docs_text=driver.find_element(By.ID,'huidiPageMount').text
+              assert '直接打开离线版' not in docs_text
+              assert '带当前业务到离线版' not in docs_text
+              assert '当前正式价格仍由你确认' in docs_text
+              assert 'page=documents' in driver.current_url, driver.current_url
+
+              handles_before=list(driver.window_handles)
+              driver.find_element(By.CSS_SELECTOR,'[data-hdw-doc="quotation"]').click()
+              frame = wait.until(EC.presence_of_element_located((By.ID,'hwpDocumentFrame')))
+              wait.until(EC.text_to_be_present_in_element((By.ID,'hprTitle'),'报价单'))
+              assert driver.window_handles == handles_before, (handles_before, driver.window_handles)
+              assert 'page=quotation' in driver.current_url, driver.current_url
+              frame_src = frame.get_attribute('src')
+              assert '/documents/online/' in frame_src, frame_src
+              assert '8765' not in frame_src, frame_src
+
+              driver.switch_to.frame(frame)
+              wait.until(lambda d: d.find_element(By.CSS_SELECTOR,'[data-k="buyer"]').get_attribute('value') == 'Router Smoke Buyer')
+              assert driver.find_element(By.CSS_SELECTOR,'[data-k="product"]').get_attribute('value') == 'Router Hinge'
+              assert driver.find_element(By.CSS_SELECTOR,'[data-k="unit_price"]').get_attribute('value') == ''
+              assert '打印 / 另存 PDF' in driver.find_element(By.TAG_NAME,'body').text
+              driver.switch_to.default_content()
+
+              print('HUIDI consolidated work domains + single capable document workbench + native document routing PASS')
+          finally:
+              driver.quit()
+          PY
+      - name: Stop Online workbench
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-page-router.pid ]; then kill "$(cat /tmp/huidi-page-router.pid)" 2>/dev/null || true; fi
+          if [ -s /tmp/huidi-page-router.log ]; then tail -160 /tmp/huidi-page-router.log; fi

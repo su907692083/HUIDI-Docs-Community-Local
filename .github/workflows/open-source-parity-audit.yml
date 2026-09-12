@@ -1,0 +1,131 @@
+name: HUIDI Open Source Interaction Parity
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/huidi-open-source-parity-v1.js'
+      - 'public/huidi-open-source-parity-mail-batch-v1.js'
+      - 'public/huidi-world-market-command-center-v1.js'
+      - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'public/huidi-community-online-development-routing-v1.js'
+      - 'online/api/tests/test_due_diligence_navigation_contract.py'
+      - 'online/api/web/business-center-ui.js'
+      - 'online/api/web/world-intelligence-map.js'
+      - 'online/api/web/world-country-interaction.js'
+      - 'online/api/app/main.py'
+      - 'online/api/app/acquisition_provider_fusion.py'
+      - 'online/api/app/world_intelligence.py'
+      - 'online/api/app/industry_playbooks.py'
+      - 'online/api/app/mail_sequences.py'
+      - 'online/api/app/provider_guard.py'
+      - 'tools/open_source_parity_browser_audit.py'
+      - 'tools/due_diligence_navigation_browser_audit.py'
+      - 'tools/formal_business_due_diligence_browser_audit.py'
+      - '.github/workflows/open-source-parity-audit.yml'
+  pull_request:
+    paths:
+      - 'public/huidi-open-source-parity-v1.js'
+      - 'public/huidi-open-source-parity-mail-batch-v1.js'
+      - 'public/huidi-world-market-command-center-v1.js'
+      - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'public/huidi-community-online-development-routing-v1.js'
+      - 'online/api/tests/test_due_diligence_navigation_contract.py'
+      - 'online/api/web/business-center-ui.js'
+      - 'online/api/web/world-intelligence-map.js'
+      - 'online/api/web/world-country-interaction.js'
+      - 'online/api/app/main.py'
+      - 'online/api/app/acquisition_provider_fusion.py'
+      - 'online/api/app/world_intelligence.py'
+      - 'online/api/app/industry_playbooks.py'
+      - 'online/api/app/mail_sequences.py'
+      - 'online/api/app/provider_guard.py'
+      - 'tools/open_source_parity_browser_audit.py'
+      - 'tools/due_diligence_navigation_browser_audit.py'
+      - 'tools/formal_business_due_diligence_browser_audit.py'
+      - '.github/workflows/open-source-parity-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: huidi-open-source-parity-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify exact source and JavaScript syntax
+        run: |
+          set -euo pipefail
+          git rev-parse HEAD
+          node --check public/huidi-open-source-parity-v1.js
+          node --check public/huidi-open-source-parity-mail-batch-v1.js
+          node --check public/huidi-world-market-command-center-v1.js
+          node --check public/huidi-community-online-development-routing-v1.js
+          node --check online/api/web/business-center-ui.js
+          grep -F "不等同于信用报告" public/huidi-open-source-parity-v1.js
+          grep -F "不会批量发送" public/huidi-open-source-parity-v1.js
+          grep -F "MAX_BATCH_COMBINATIONS=12" public/huidi-open-source-parity-v1.js
+          grep -F "/api/leads/search" public/huidi-open-source-parity-v1.js
+          grep -F "data-hosp-acq-matrix" public/huidi-open-source-parity-v1.js
+          grep -F "data-hosp-acq-add-review" public/huidi-open-source-parity-v1.js
+          grep -F "不生成意向分" public/huidi-open-source-parity-v1.js
+          grep -F "不会自动查联系人" public/huidi-open-source-parity-mail-batch-v1.js
+          grep -F "data-hosp-find-contact-row" public/huidi-open-source-parity-mail-batch-v1.js
+          grep -F "/find-contact" public/huidi-open-source-parity-mail-batch-v1.js
+          grep -F "不会用演示联系人代替真实结果" online/api/app/provider_guard.py
+          grep -F "不会启用、不会 enroll、不会加入发送队列" public/huidi-open-source-parity-mail-batch-v1.js
+          grep -F "/industry-sequence" public/huidi-open-source-parity-mail-batch-v1.js
+          grep -F "背调证据" public/huidi-community-online-development-routing-v1.js
+          grep -F "重新评估" public/huidi-community-online-development-routing-v1.js
+          grep -F "HUIDIOpenSourceParity.openEvidence" public/huidi-community-online-development-routing-v1.js
+          grep -F "data-source-evidence>背调证据</button>" online/api/web/business-center-ui.js
+          grep -F "data-open-evidence>背调证据</button>" online/api/web/business-center-ui.js
+          grep -F "HUIDICommunityDevelopmentRouting.openEvidence" online/api/web/business-center-ui.js
+          test "$(grep -o "MutationObserver" public/huidi-community-online-development-routing-v1.js | wc -l | tr -d ' ')" -eq 3
+          test "$(grep -o "MutationObserver" online/api/web/business-center-ui.js | wc -l | tr -d ' ')" -eq 0
+          ! grep -E "repositories\.(customers|deals)\.(upsert|delete)|/api/.*/send" public/huidi-open-source-parity-v1.js
+          ! grep -E "/send|sequence-enrollments|/api/leads/.*/sequence" public/huidi-open-source-parity-mail-batch-v1.js
+          ! grep -E "/send|/queue|find-contact|native-document|unit_price|total_price" public/huidi-community-online-development-routing-v1.js
+      - name: Verify due-diligence navigation owner contract
+        run: |
+          python -m unittest online.api.tests.test_due_diligence_navigation_contract -v
+      - name: Install isolated browser dependencies
+        run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
+          python -m pip install -r online/api/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Exercise acquisition matrix, evidence, contact readiness, and human review
+        run: |
+          python tools/open_source_parity_browser_audit.py --output /tmp/huidi-open-source-parity
+      - name: Exercise Lead pool to existing six-dimension evidence owner
+        run: |
+          python tools/due_diligence_navigation_browser_audit.py --output /tmp/huidi-due-diligence-navigation
+      - name: Exercise formal Customer and Inquiry source-evidence continuity
+        run: |
+          python tools/formal_business_due_diligence_browser_audit.py --output /tmp/huidi-formal-business-due-diligence
+      - name: Upload exact parity evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUIDI-OPEN-SOURCE-PARITY-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            /tmp/huidi-open-source-parity/
+            /tmp/huidi-due-diligence-navigation/
+            /tmp/huidi-formal-business-due-diligence/
+          if-no-files-found: error
+          retention-days: 14

@@ -1,0 +1,147 @@
+/* HUIDI Community × Online Functional Closure V1 */
+body.huidi-community-online .huidi-online-more:not([open])>.huidi-online-more-body{display:none!important}
+body.huidi-community-online .workspace-r2-backup{display:none!important}
+body.huidi-community-online .sidebar-foot .privacy-card{display:none!important}
+body.huidi-community-online .sidebar-foot{padding-top:6px!important}
+body.huidi-community-online .hfc-capability{margin:8px 0 10px;padding:9px 10px;border:1px solid #dfe6ef;border-radius:12px;background:#fff}
+body.huidi-community-online .hfc-cap-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+body.huidi-community-online .hfc-cap-head>div{display:grid;gap:2px}
+body.huidi-community-online .hfc-cap-head strong{font-size:12px;color:#22354c}
+body.huidi-community-online .hfc-cap-head span{font-size:11px;color:#7c8999;line-height:1.4}
+body.huidi-community-online .hfc-cap-head button,
+body.huidi-community-online .hfc-cap button{border:1px solid #d8e2ed;background:#fff;color:#36516f;border-radius:7px;padding:5px 7px;font-size:11px;font-weight:800;cursor:pointer}
+body.huidi-community-online .hfc-cap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+body.huidi-community-online .hfc-cap{min-width:0;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 7px;align-items:center;border:1px solid #e2e8f0;border-radius:9px;padding:8px;background:#fbfcfe}
+body.huidi-community-online .hfc-cap>div{display:grid;gap:2px;min-width:0}
+body.huidi-community-online .hfc-cap b{font-size:12px;color:#314861}
+body.huidi-community-online .hfc-cap span{font-size:11px;color:#7a899a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.huidi-community-online .hfc-cap em{font-style:normal;font-size:11px;font-weight:850;border-radius:999px;padding:3px 6px;background:#f0f2f5;color:#778394}
+body.huidi-community-online .hfc-cap.ready em{background:#eaf7ef;color:#17714e}
+body.huidi-community-online .hfc-cap>button{grid-column:2;grid-row:1/3;align-self:center}
+body.huidi-community-online .hfc-cap.hfc-summary>strong{font-size:18px;color:#1668e8}
+body.huidi-community-online .hfc-cap-loading{grid-column:1/-1;padding:10px;color:#8390a1;font-size:12px;text-align:center}
+body.huidi-community-online .hfc-inline-state{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 0 9px;padding:8px 9px;border:1px solid #f0d9a7;border-radius:9px;background:#fffaf0}
+body.huidi-community-online .hfc-inline-state[data-tone="ok"]{border-color:#cfe8d8;background:#f2fbf5}
+body.huidi-community-online .hfc-inline-state>div:first-child{display:grid;gap:2px}
+body.huidi-community-online .hfc-inline-state b{font-size:12px;color:#3e536d}
+body.huidi-community-online .hfc-inline-state span{font-size:11px;color:#758397}
+body.huidi-community-online .hfc-inline-actions{display:flex!important;gap:6px!important;flex-wrap:wrap!important}
+body.huidi-community-online .hfc-inline-actions button,
+body.huidi-community-online .hfc-engine-missing button{border:1px solid #cfdbeb;background:#fff;color:#2e5f9d;border-radius:7px;padding:6px 8px;font-size:11px;font-weight:800;cursor:pointer}
+body.huidi-community-online .hfc-engine-missing{display:grid;gap:6px;padding:16px;border:1px dashed #d4dfec;border-radius:10px;background:#fbfcfe}
+body.huidi-community-online .hfc-engine-missing b{font-size:12px;color:#304860}
+body.huidi-community-online .hfc-engine-missing span{font-size:12px;line-height:1.55;color:#748397}
+body.huidi-community-online .hfc-engine-missing button{justify-self:start}
+body.huidi-community-online .hfc-map-workbench{display:grid!important;grid-template-columns:minmax(300px,40%) minmax(420px,1fr);gap:10px;margin-top:10px;align-items:stretch}
+body.huidi-community-online .hfc-map-list{border:1px solid #dfe7f0;border-radius:11px;background:#fff;max-height:560px;overflow:auto}
+body.huidi-community-online .hfc-map-list-head{position:sticky;top:0;z-index:2;display:flex;justify-content:space-between;gap:8px;align-items:center;padding:9px 10px;border-bottom:1px solid #e5ebf2;background:rgba(255,255,255,.97)}
+body.huidi-community-online .hfc-map-list-head b{font-size:12px}
+body.huidi-community-online .hfc-map-list-head span{font-size:11px;color:#7a8797}
+body.huidi-community-online .hfc-map-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 10px;border-bottom:1px solid #edf1f5;cursor:pointer}
+body.huidi-community-online .hfc-map-row:last-child{border-bottom:0}
+body.huidi-community-online .hfc-map-row.active{background:#f4f8ff;box-shadow:inset 3px 0 0 #2771e8}
+body.huidi-community-online .hfc-map-row-main{display:grid;gap:2px;min-width:0}
+body.huidi-community-online .hfc-map-row-main b{font-size:12px;color:#2d425a}
+body.huidi-community-online .hfc-map-row-main span,
+body.huidi-community-online .hfc-map-row-main small{font-size:11px;color:#7a8898;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+body.huidi-community-online .hfc-map-actions{display:flex;gap:5px;align-items:center}
+body.huidi-community-online .hfc-map-actions a,
+body.huidi-community-online .hfc-map-actions button{border:1px solid #d8e1eb;background:#fff;color:#36516f;border-radius:7px;padding:5px 6px;font-size:11px;font-weight:800;text-decoration:none;cursor:pointer}
+body.huidi-community-online .hfc-map-actions .primary{background:#1769e8;border-color:#1769e8;color:#fff}
+body.huidi-community-online .hfc-map-canvas{min-height:460px;border:1px solid #dfe7f0;border-radius:11px;background:#f6f8fb;overflow:hidden;position:relative}
+body.huidi-community-online .hfc-map-canvas iframe{width:100%;height:100%;min-height:460px;border:0;display:block}
+body.huidi-community-online .hfc-map-caption{position:absolute;left:10px;right:10px;bottom:10px;display:grid;gap:2px;padding:8px 9px;border:1px solid rgba(221,228,238,.95);border-radius:9px;background:rgba(255,255,255,.94);box-shadow:0 8px 30px rgba(20,39,65,.12)}
+body.huidi-community-online .hfc-map-caption b{font-size:12px}
+body.huidi-community-online .hfc-map-caption span{font-size:11px;color:#738297}
+body.huidi-community-online .hfc-map-empty{min-height:120px;display:grid;place-content:center;gap:4px;padding:18px;text-align:center;color:#8290a0;font-size:12px}
+body.huidi-community-online .hfc-map-empty b{color:#3b516c}
+body.huidi-community-online .sq-page-surface{min-height:0!important}
+body.huidi-community-online .sq-page-surface>.sq-modal{min-height:0!important}
+body.huidi-community-online .sq-page-surface .sq-main{padding:10px 0 0!important}
+body.huidi-community-online .sq-page-surface .sq-grid{grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr)!important;align-items:start}
+body.huidi-community-online .sq-page-surface .sq-card{min-width:0}
+body.huidi-community-online .sq-page-surface #sqTemplates{max-height:calc(100vh - 245px);min-height:360px;overflow:auto;padding-right:4px}
+body.huidi-community-online .sq-page-surface .sq-grid>.sq-card:last-child{position:sticky;top:8px;max-height:calc(100vh - 180px);overflow:auto}
+body.huidi-community-online .sq-page-surface textarea{min-height:58px;resize:vertical}
+@media(max-width:1120px){
+ body.huidi-community-online .hfc-cap-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ body.huidi-community-online .hfc-map-workbench{grid-template-columns:1fr}
+ body.huidi-community-online .hfc-map-list{max-height:360px}
+ body.huidi-community-online .sq-page-surface .sq-grid{grid-template-columns:1fr!important}
+ body.huidi-community-online .sq-page-surface .sq-grid>.sq-card:last-child{position:static;max-height:none}
+}
+@media(max-width:720px){
+ body.huidi-community-online .hfc-cap-grid{grid-template-columns:1fr}
+ body.huidi-community-online .hfc-map-row{grid-template-columns:1fr}
+ body.huidi-community-online .hfc-inline-state{align-items:flex-start;flex-direction:column}
+}
+/* Fullsite R1: one readable, compact working surface. */
+body.huidi-community-online .hfc-capability{padding:0 10px;margin:4px 0 8px;border-radius:8px}
+body.huidi-community-online .hfc-cap-head{min-height:34px;margin:0;cursor:pointer;list-style:none;justify-content:flex-start;gap:12px}
+body.huidi-community-online .hfc-cap-head::-webkit-details-marker{display:none}
+body.huidi-community-online .hfc-cap-head:after{content:'⌄';margin-left:auto}
+body.huidi-community-online .hfc-capability[open] .hfc-cap-head:after{transform:rotate(180deg)}
+body.huidi-community-online .hfc-capability:not([open])>:not(summary){display:none!important}
+body.huidi-community-online .hfc-cap-tools{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:5px 0 9px;font-size:12px;color:#607088}
+body.huidi-community-online .hfc-cap-grid{padding-bottom:10px}
+body.huidi-community-online .hfc-cap span{white-space:normal;overflow:visible}
+body.huidi-community-online .hfc-cap em{width:max-content}
+body.huidi-community-online .hfc-cap>button{grid-row:1/3}
+body.huidi-community-online.workspace-r1 .workspace-nav-groups.huidi-online-domain-nav{display:flex!important;flex-direction:column;justify-content:flex-start;gap:6px}
+body.huidi-community-online.workspace-r1 .huidi-online-domain-nav .workspace-nav-group{display:block;flex:0 0 auto}
+body.huidi-community-online.workspace-r1 .huidi-online-domain-nav .nav{display:flex;flex-direction:column;gap:3px;flex:0 0 auto}
+body.huidi-community-online .huidi-online-more{flex:0 0 auto}
+body.huidi-community-online .theme-card{background:var(--panel,#fff)!important;color:var(--text,#24364a)!important;border:1px solid #dce3eb;border-radius:8px;padding:8px}
+body.huidi-community-online .theme-card b,body.huidi-community-online .theme-btn{color:inherit!important;font-size:12px!important}
+body.huidi-community-online .fv2-tabs{flex-wrap:wrap;gap:6px}
+body.huidi-community-online :is(.fv2-tab,.fv2-btn,.hs-btn,.sq-btn){min-height:30px;font-size:12px;line-height:1.35}
+body.huidi-community-online :is(.fv2-input,.fv2-select,.fv2-textarea,.hs-field input,.hs-field select,.sq-field input,.sq-field select,.sq-field textarea){font-size:13px;line-height:1.5;min-height:34px;box-sizing:border-box;min-width:0}
+body.huidi-community-online :is(.fv2-field label,.hs-field label,.sq-field label){font-size:12px}
+body.huidi-community-online :is(.fv2-note,.fv2-empty,.hs-note,.hs-empty,.sq-note,.sq-empty){font-size:12px;line-height:1.6}
+body.huidi-community-online :is(.fv2-table,.hf-table){font-size:13px}
+body.huidi-community-online :is(.fv2-table,.hf-table) th{font-size:12px;padding:8px 10px}
+body.huidi-community-online :is(.fv2-table,.hf-table) td{padding:9px 10px;line-height:1.5}
+body.huidi-community-online :is(.fv2-table,.hf-table) small{font-size:11px;line-height:1.45}
+body.huidi-community-online .fv2-table-wrap{max-height:calc(100vh - 285px);overflow:auto;overscroll-behavior:contain}
+body.huidi-community-online .fv2-table th{position:sticky;top:0;background:#f5f7fa;z-index:2}
+body.huidi-community-online .fv2-pager{display:flex;align-items:center;gap:16px;flex-wrap:wrap;padding:10px 2px;font-size:12px}
+body.huidi-community-online .fv2-pager>div{margin-left:auto;display:flex;align-items:center;gap:10px}
+body.huidi-community-online .fv2-pager select{min-height:30px;border:1px solid #d8e1ec;border-radius:6px}
+body.huidi-community-online .hs-back.hs-page-surface>.hs-modal{min-height:0!important}
+body.huidi-community-online .hs-back.hs-page-surface .hs-main{padding:0!important}
+body.huidi-community-online .hs-head h3{font-size:17px}
+body.huidi-community-online .hs-head p{font-size:12px}
+body.huidi-community-online .hs-item b,.huidi-community-online .sq-item b{font-size:13px}
+body.huidi-community-online .hs-item span,.huidi-community-online .hs-item small,.huidi-community-online .sq-item span,.huidi-community-online .sq-item small{font-size:12px}
+body.huidi-community-online .sq-card h3{font-size:14px}
+body.huidi-community-online .sq-page-surface #sqTemplates{min-height:0;max-height:calc(100vh - 260px)}
+body.huidi-community-online .mg-modal-back{z-index:220}
+body.huidi-community-online .mg-modal{max-width:min(900px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto}
+body.huidi-community-online .mg-modal :is(input,select,textarea){font-size:13px;min-height:34px}
+body.huidi-community-online button:focus-visible,body.huidi-community-online summary:focus-visible{outline:2px solid #2174dc;outline-offset:2px}
+@media(max-width:900px){body.huidi-community-online .fv2-table-wrap{max-height:none}body.huidi-community-online .fv2-toolbar{flex-wrap:wrap}}
+/* Shared list geometry: preserve original event owners and keep paging below the viewport table. */
+body.huidi-community-online .fv2-table b{font-size:13px;color:var(--text,#304b67)}
+body.huidi-community-online :is(.fv2-section-title h4,.fv2-panel h4){font-size:14px}
+body.huidi-community-online :is(.fv2-section-title p,.fv2-item span,.fv2-item small,.huidi-source-purpose,.huidi-source-header){font-size:12px;line-height:1.5}
+body.huidi-community-online .fv2-table-wrap{max-height:calc(100vh - 325px)}
+body.huidi-community-online .huidi-pagebar{font-size:12px;min-height:42px}
+body.huidi-community-online .view .table-wrap{max-height:calc(100vh - 230px);overflow:auto}
+body.huidi-community-online .view .table-wrap thead th{position:sticky;top:0;z-index:2;background:var(--panel,#fff)}
+body.huidi-community-online .view .table-wrap td{font-size:13px;line-height:1.5}
+body.huidi-community-online .view .table-wrap td b{font-size:13px}
+body.huidi-community-online .sidebar-foot{background:transparent!important}
+body.huidi-community-online .huidi-online-more>summary span{color:var(--muted,#67758b);font-size:12px}
+body.huidi-community-online .huidi-online-more>summary small{font-size:10px}
+body.huidi-community-online :is(.hf-search,.fv2-toolbar){min-width:0;grid-template-columns:minmax(160px,1.3fr) minmax(130px,.8fr) minmax(160px,1fr) auto;gap:8px}
+body.huidi-community-online .hf-search>button{white-space:nowrap;min-width:94px}
+@media(min-width:1000px){
+ body.huidi-community-online .main>.view:not(#view-home)>.section-head{margin-top:-44px;margin-bottom:8px;min-height:36px;padding-left:min(50%,600px)}
+ body.huidi-community-online .main>.view:not(#view-home)>.section-head .section-actions{flex-wrap:nowrap}
+}
+@media(max-width:999px){body.huidi-community-online .hf-search{grid-template-columns:1fr 1fr}body.huidi-community-online .fv2-table-wrap{max-height:calc(100vh - 340px)}}
+html[data-theme="dark"] body.huidi-community-online :is(.fv2-panel,.fv2-table-wrap,.hf-online-block,.hs-card,.sq-card,.sq-item,.hfc-capability,.hfc-cap,.huidi-tab-more-menu){background:var(--panel,#172338);color:var(--text,#e7eef7);border-color:var(--line,#304057)}
+html[data-theme="dark"] body.huidi-community-online :is(.fv2-input,.fv2-select,.fv2-textarea,.hs-field input,.sq-field input,.sq-field textarea){background:var(--bg,#111b2b);color:var(--text,#e7eef7);border-color:var(--line,#304057)}
+html[data-theme="dark"] body.huidi-community-online :is(.fv2-table b,.hs-item b,.sq-item b,.hfc-cap b){color:var(--text,#e7eef7)}
+html[data-theme="dark"] body.huidi-community-online .fv2-table th{background:var(--panel,#172338);color:var(--text,#e7eef7)}
+

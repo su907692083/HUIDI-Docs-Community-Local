@@ -1,0 +1,13 @@
+(()=>{'use strict';
+if(window.HUIDIMailOwnerV3)return;
+const $=s=>document.querySelector(s);let leadId='',polishQueued=false;
+async function api(url,opt={}){const r=await fetch(url,{headers:{'Content-Type':'application/json',...(opt.headers||{})},...opt});if(!r.ok){let m=await r.text();try{m=JSON.parse(m).detail||m}catch(_){}throw new Error(m||r.statusText)}return r.json()}
+function setText(el,text){if(el&&el.textContent!==text)el.textContent=text}
+async function queue(){const mailbox=Number($('#mgMailbox')?.value||0);if(!leadId)return alert('先打开一个客户');if(!mailbox)return alert('请先选择发送邮箱');if(!confirm('确认把这封已审核邮件加入“稍后发送”？'))return;try{const row=await api(`/api/leads/${leadId}/queue`,{method:'POST',body:JSON.stringify({mailbox_id:mailbox,confirm:true,max_attempts:3})});const box=$('#mgPlanState');if(box)box.innerHTML=`<div class="mg-plan">已加入待发送 · #${row.id}</div>`;window.HUIDIDailyWorkbench?.refresh?.()}catch(e){alert(e.message||e)}}
+function polish(){const plan=$('#mgPlan');if(plan&&!plan.dataset.v3){plan.dataset.v3='1';setText(plan,'稍后发送');plan.onclick=queue}document.querySelectorAll('.mg-head small,.mg-note,.mg-modal-head p').forEach(n=>{const next=n.textContent.replace(/SMTP/gi,'邮箱连接').replace(/OAuth2/gi,'账号连接').replace(/OAuth/gi,'账号连接');setText(n,next)});document.querySelectorAll('.mg-smtp label').forEach(l=>{const n=l.firstChild;if(!n)return;const next=n.textContent.replace('SMTP Host','邮箱服务器').replace('SMTP 密码 / 应用专用密码','邮箱密码 / 应用专用密码');if(n.textContent!==next)n.textContent=next})}
+function schedulePolish(){if(polishQueued)return;polishQueued=true;requestAnimationFrame(()=>{polishQueued=false;polish()})}
+function schedulePolishBurst(){schedulePolish();setTimeout(schedulePolish,80);setTimeout(schedulePolish,320)}
+function boot(){document.addEventListener('click',e=>{const open=e.target.closest('[data-open]');if(open)leadId=String(open.dataset.open||'');schedulePolishBurst()},true);polish()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+window.HUIDIMailOwnerV3=Object.freeze({queue,refresh:schedulePolishBurst});
+})();

@@ -1,0 +1,67 @@
+name: Recover R2 Public Source Plan
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths: ['.github/workflows/source-transfer-r2.yml']
+permissions:
+  contents: write
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Complete product reuse acceptance over the same R2 source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, os, urllib.request, zlib
+          from pathlib import Path
+          out=Path('/tmp/r2-source-transfer');out.mkdir()
+          def api(path,payload=None):
+              assert path.startswith('git/blobs')
+              req=urllib.request.Request('https://api.github.com/repos/su907692083/HUIDI-Docs-Community-Local/'+path,data=json.dumps(payload).encode() if payload is not None else None,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json','Content-Type':'application/json'})
+              with urllib.request.urlopen(req,timeout=45) as response:return json.load(response)
+          raw=zlib.decompress(base64.b64decode(api('git/blobs/d9d6bfa66a745acb692216a784aad9b6182045ff')['content']))
+          assert hashlib.sha256(raw).hexdigest()=='a3b9a799c1865c0054676ad1ad7d932dc2d573d71d5615f4bd155ff547665c39'
+          plan=json.loads(raw)
+          css='\n/* Keep action labels intact beside the bounded mapping panel. */\n#view-feishu .feishu-data-map-head>.btn,#view-feishu .feishu-data-import-foot>.btn{flex-shrink:0;white-space:nowrap;min-height:34px;font-size:12px}\n'
+          for e in plan['files']['public/huidi-feishu-data-rc1624.css']['replacements']:
+              if 'feishu-page-tools' in e['new']:
+                  e['new']+=css
+                  break
+          else:raise AssertionError()
+          old="check('Sheets preview through existing read button',p.locator('#feishuPreview tbody tr').count()==2)"
+          lines=[
+            "p.locator('#feishuImportTarget').select_option('products')",
+            "check('product name and SKU auto-mapped',p.locator('[data-feishu-map=name]').input_value()=='产品名称' and p.locator('[data-feishu-map=sku]').input_value()=='SKU')",
+            "p.locator('[data-feishu-action=import]').click();p.wait_for_selector('#view-products.active')",
+            "p.reload(wait_until='domcontentloaded');ready();nav('products')",
+            "p.wait_for_function(\"() => HUIDILocalCore.repoForKey('huidi_local_products_v1').list().length===2\")",
+            "check('two imported products survive reload',p.evaluate(\"HUIDILocalCore.repoForKey('huidi_local_products_v1').list().some(x=>x.sku==='QA-A' && x.name==='Test product A' && x.unit==='PCS')\"))",
+            "check('product import preserves existing customers',p.evaluate(\"HUIDILocalCore.repoForKey('huidi_local_customers_v1').list().length\") == 52)",
+            "p.screenshot(path=str(out/'imported-products-reloaded.png'))",
+            "nav('feishu');read('https://qa.feishu.cn/sheets/sheet_file?sheet=sheet_fixture');p.wait_for_selector('#feishuPreview tbody tr')",
+            "p.locator('[data-feishu-action=import]').click();p.wait_for_selector('#view-products.active')",
+            "p.reload(wait_until='domcontentloaded');ready()",
+            "check('product reimport skips duplicate SKUs',p.evaluate(\"HUIDILocalCore.repoForKey('huidi_local_products_v1').list().length\") == 2)",
+            "nav('feishu');p.locator('#feishuSourceUrl').wait_for()"
+          ]
+          new=old+'\n'+'\n'.join(' '*20+line for line in lines)
+          key='tools/source_reuse_browser_audit.py'
+          assert plan['files'][key]['content'].count(old)==1
+          plan['files'][key]['content']=plan['files'][key]['content'].replace(old,new)
+          raw=json.dumps(plan,ensure_ascii=False,separators=(',',':')).encode()
+          expected='5444ae232821e675649d8f181c0ef2a552e027b813ed83fcb3078fee8b4b6c7f'
+          assert hashlib.sha256(raw).hexdigest()==expected
+          blob=api('git/blobs',{'content':base64.b64encode(zlib.compress(raw,9)).decode(),'encoding':'base64'})
+          result={'sha256':expected,'payload_blobs':[blob['sha']],'promoted':False,'application_modified':False}
+          (out/'PLAN-BLOB.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HUIDI-R2-SOURCE-TRANSFER-${{ github.sha }}
+          path: /tmp/r2-source-transfer/
+          retention-days: 7

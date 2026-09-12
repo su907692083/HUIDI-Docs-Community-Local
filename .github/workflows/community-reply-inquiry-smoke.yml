@@ -1,0 +1,132 @@
+name: HUIDI Community Reply To Inquiry Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'public/huidi-community-online-development-routing-v1.js'
+      - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'public/huidi-community-online-formal-price-guard-v1.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/community-local-mode.js'
+      - 'online/api/app/low_input_workflow.py'
+      - 'online/api/app/mail_sync.py'
+      - 'online/api/app/business_center.py'
+      - 'online/api/app/community_sync.py'
+      - 'online/api/app/community_surface.py'
+      - 'online/api/tests/community_reply_inquiry_browser_smoke.py'
+      - 'online/api/tests/community_formal_price_guard_browser_smoke.py'
+      - '.github/workflows/community-reply-inquiry-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/huidi-community-online-development-routing-v1.js'
+      - 'public/huidi-community-online-development-workbench-v1.js'
+      - 'public/huidi-community-online-formal-price-guard-v1.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/community-local-mode.js'
+      - 'online/api/app/low_input_workflow.py'
+      - 'online/api/app/mail_sync.py'
+      - 'online/api/app/business_center.py'
+      - 'online/api/app/community_sync.py'
+      - 'online/api/app/community_surface.py'
+      - 'online/api/tests/community_reply_inquiry_browser_smoke.py'
+      - 'online/api/tests/community_formal_price_guard_browser_smoke.py'
+      - '.github/workflows/community-reply-inquiry-smoke.yml'
+
+jobs:
+  reply_to_inquiry:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-community-reply-inquiry-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '1'
+      HUIDI_SIGNUP_ENABLED: '1'
+      HUIDI_COMMUNITY_SURFACE: '1'
+      DATABASE_URL: sqlite:////tmp/huidi-community-reply-inquiry.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Check reply routing, cloud barrier and formal price guard JavaScript
+        run: |
+          node --check ../../public/huidi-community-online-development-routing-v1.js
+          node --check ../../public/huidi-community-online-formal-price-guard-v1.js
+          node --check ../../public/huidi-community-cloud-adapter-v1.js
+          node --check ../../public/community-local-mode.js
+          python - <<'PY'
+          from pathlib import Path
+          routing = Path('../../public/huidi-community-online-development-routing-v1.js').read_text(encoding='utf-8')
+          for marker in (
+              '处理回复',
+              '确认回复并转询盘',
+              '/low-input/prepare-inquiry',
+              '客户已回复，冷开发发送已停止',
+              'landInInquiry',
+              'data-view="deals"',
+              '#dealSearch',
+              'dataset.huidiFocusedInquiry',
+          ):
+              assert marker in routing, marker
+          assert 'observe(document.body' not in routing
+          assert 'new MutationObserver' in routing
+
+          guard = Path('../../public/huidi-community-online-formal-price-guard-v1.js').read_text(encoding='utf-8')
+          for marker in (
+              'huidiReferencePrice',
+              'huidiFormalPricePolicy',
+              'manual-required',
+              '不会自动写入正式单价',
+              'sourceDocumentId',
+              'huidi_local_doc_id_v1',
+              'reference-only',
+          ):
+              assert marker in guard, marker
+          assert 'MutationObserver' not in guard
+
+          cloud = Path('../../public/huidi-community-cloud-adapter-v1.js').read_text(encoding='utf-8')
+          for marker in (
+              'stateRunPromise',
+              'stateFollowupPromise',
+              'queueStateBarrier',
+              "version:'1.1'",
+          ):
+              assert marker in cloud, marker
+
+          local_mode = Path('../../public/community-local-mode.js').read_text(encoding='utf-8')
+          assert 'HUIDI-COMMUNITY-ONLINE-2' in local_mode
+          assert 'observe(document.body' not in local_mode
+          PY
+      - name: Start fused HUIDI workspace
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18085 > /tmp/huidi-reply-inquiry-server.log 2>&1 &
+          echo $! > /tmp/huidi-reply-inquiry-server.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:18085/login > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-reply-inquiry-server.log
+          exit 1
+      - name: Verify real reply stop and inquiry conversion in Chrome
+        run: python tests/community_reply_inquiry_browser_smoke.py
+      - name: Verify reference price stays out of formal quote in Chrome
+        run: python tests/community_formal_price_guard_browser_smoke.py
+      - name: Stop HUIDI
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-reply-inquiry-server.pid ]; then
+            kill "$(cat /tmp/huidi-reply-inquiry-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-reply-inquiry-server.log ]; then
+            tail -240 /tmp/huidi-reply-inquiry-server.log
+          fi

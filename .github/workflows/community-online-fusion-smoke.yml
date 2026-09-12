@@ -1,0 +1,337 @@
+name: HUIDI Community Online Fusion Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'public/huidi-community-online-fusion.*'
+      - 'public/huidi-community-online-nav-v1.js'
+      - 'public/huidi-community-online-full-v2.*'
+      - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.*'
+      - 'public/community-local-mode.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/workspace.html'
+      - 'online/api/app/community_surface.py'
+      - 'online/api/app/development_workflow.py'
+      - 'online/api/app/daily_app.py'
+      - 'online/api/tests/test_community_online_fusion_contract.py'
+      - 'online/api/tests/test_development_workflow_contract.py'
+      - '.github/workflows/community-online-fusion-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/huidi-community-online-fusion.*'
+      - 'public/huidi-community-online-nav-v1.js'
+      - 'public/huidi-community-online-full-v2.*'
+      - 'public/huidi-community-online-intelligence-v2.js'
+      - 'public/huidi-community-online-development-workbench-v1.*'
+      - 'public/community-local-mode.js'
+      - 'public/huidi-community-cloud-adapter-v1.js'
+      - 'public/workspace.html'
+      - 'online/api/app/community_surface.py'
+      - 'online/api/app/development_workflow.py'
+      - 'online/api/app/daily_app.py'
+      - 'online/api/tests/test_community_online_fusion_contract.py'
+      - 'online/api/tests/test_development_workflow_contract.py'
+      - '.github/workflows/community-online-fusion-smoke.yml'
+
+jobs:
+  fused_workspace:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-community-fusion-browser-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '1'
+      HUIDI_SIGNUP_ENABLED: '1'
+      HUIDI_COMMUNITY_SURFACE: '1'
+      DATABASE_URL: sqlite:////tmp/huidi-community-fusion-smoke.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Verify fusion contracts and JavaScript
+        run: |
+          python -m unittest tests.test_community_online_fusion_contract tests.test_development_workflow_contract -v
+          node --check ../../public/huidi-community-online-fusion.js
+          node --check ../../public/huidi-community-online-nav-v1.js
+          node --check ../../public/huidi-community-online-full-v2.js
+          node --check ../../public/huidi-community-online-intelligence-v2.js
+          node --check ../../public/huidi-community-online-development-workbench-v1.js
+      - name: Start fused HUIDI workspace
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18083 > /tmp/huidi-fusion-server.log 2>&1 &
+          echo $! > /tmp/huidi-fusion-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:18083/login > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-fusion-server.log
+          exit 1
+      - name: Verify full fused workspace in Chrome
+        run: |
+          python - <<'PY'
+          import uuid
+          import httpx
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.support.ui import WebDriverWait
+
+          BASE = 'http://127.0.0.1:18083'
+          PASSWORD = 'fusion-browser-password-2026'
+          email = f'fusion-{uuid.uuid4().hex[:12]}@example.test'
+
+          client = httpx.Client(base_url=BASE, follow_redirects=False, timeout=20)
+          registered = client.post('/api/auth/register', json={
+              'account_type': 'individual',
+              'display_name': 'Fusion Browser',
+              'organization_name': '',
+              'email': email,
+              'password': PASSWORD,
+          })
+          assert registered.status_code == 200, registered.text
+          org = registered.json()['organization']
+
+          options = Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+          driver = webdriver.Chrome(options=options)
+          wait = WebDriverWait(driver, 35)
+
+          def click_nav(view):
+              ok = driver.execute_script("""
+                const view=arguments[0];
+                const b=document.querySelector(`.nav-btn[data-view="${view}"]`);
+                if(!b)return false;b.click();return true;
+              """, view)
+              assert ok, f'missing nav {view}'
+              wait.until(lambda d: d.execute_script(
+                  "return document.querySelector('.view.active')?.id || ''"
+              ) == f'view-{view}')
+
+          def click_tab(view, tab, selector=None):
+              ok = driver.execute_script("""
+                const view=arguments[0],tab=arguments[1];
+                const b=document.querySelector(`#view-${view} [data-fv2-tab="${tab}"]`);
+                if(!b)return false;b.click();return true;
+              """, view, tab)
+              assert ok, f'missing tab {view}:{tab}'
+              wait.until(lambda d: d.execute_script("""
+                const view=arguments[0],tab=arguments[1];
+                return Boolean(document.querySelector(`#view-${view} [data-fv2-pane="${tab}"].active`));
+              """, view, tab))
+              if selector:
+                  wait.until(lambda d: d.execute_script(
+                      "return Boolean(document.querySelector(arguments[0]))", selector
+                  ))
+              assert len(driver.window_handles) == 1, (view, tab, driver.window_handles)
+
+          try:
+              driver.get(BASE + '/login')
+              login = driver.execute_async_script("""
+                const email=arguments[0],password=arguments[1],done=arguments[arguments.length-1];
+                fetch('/api/auth/login',{
+                  method:'POST',credentials:'same-origin',
+                  headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({email,password})
+                }).then(async r=>done({status:r.status,body:await r.text()}))
+                  .catch(e=>done({status:0,body:String(e)}));
+              """, email, PASSWORD)
+              assert login['status'] == 200, login
+              scope = driver.get_cookie('huidi_workspace_scope')
+              assert scope and scope['value'] == f"org-{org['id']}", (scope, driver.get_cookies())
+
+              seeded = driver.execute_async_script("""
+                const done=arguments[arguments.length-1];
+                (async()=>{
+                  try{
+                    const product=await fetch('/api/product-brains/ci-fusion-hinge',{
+                      method:'PUT',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({
+                        name:'Stainless Steel Hinge',sku:'H-304',
+                        payload:{
+                          id:'ci-fusion-hinge',brain_id:'ci-fusion-hinge',name:'Stainless Steel Hinge',
+                          sku:'H-304',spec:'SUS304 4 inch',moq:'500 pcs',lead_time:'15 days',
+                          price:1.25,currency:'USD',unit:'PCS',
+                          target_keywords:['stainless steel hinge','hinge'],
+                          differentiators:['custom sizes','SUS304']
+                        }
+                      })
+                    });
+                    const productBody=await product.text();
+                    const lead=await fetch('/api/leads/manual',{
+                      method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({
+                        company_name:'Fusion Test Buyer',product_keyword:'stainless steel hinge',country:'Germany',
+                        website:'https://fusion-test-buyer.example',contact_name:'Anna Buyer',
+                        contact_role:'Purchasing Manager',contact_email:'anna@fusion-test-buyer.example',
+                        requirements:'Interested in SUS304 4 inch hinges. Please introduce your factory capability.',
+                        create_inquiry:false
+                      })
+                    });
+                    const leadBody=await lead.text();
+                    done({productStatus:product.status,productBody,leadStatus:lead.status,leadBody});
+                  }catch(e){done({error:String(e)})}
+                })();
+              """)
+              assert not seeded.get('error'), seeded
+              assert seeded['productStatus'] == 200, seeded
+              assert seeded['leadStatus'] == 200, seeded
+
+              driver.get(BASE + '/')
+              wait.until(lambda d: '/community/workspace.html' in d.current_url)
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFusion)"))
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineFullV2)"))
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityOnlineIntelligenceV2)"))
+              wait.until(lambda d: d.execute_script("return Boolean(window.HUIDICommunityDevelopmentWorkbench)"))
+              wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
+              wait.until(lambda d: d.execute_script("return document.body.dataset.huidiFullFusion || ''") == 'v2')
+              wait.until(lambda d: d.execute_script("return document.body.dataset.huidiDevelopmentWorkbench || ''") == 'ready')
+
+              snapshot = driver.execute_script("""
+                return {
+                  title: document.title,
+                  mainCount: document.querySelectorAll('.main').length,
+                  iframeCount: document.querySelectorAll('iframe').length,
+                  find: Boolean(document.querySelector('.nav-btn[data-view="online-find"]')),
+                  intel: Boolean(document.querySelector('.nav-btn[data-view="online-intel"]')),
+                  admin: Boolean(document.querySelector('.nav-btn[data-view="online-admin"]')),
+                  today: Boolean(document.querySelector('#huidiFusionToday')),
+                  mail: Boolean(document.querySelector('#huidiFusionMail')),
+                  fullTabs: document.querySelectorAll('[data-fv2-tab]').length,
+                  developTab: Boolean(document.querySelector('[data-fv2-tab="develop"]')),
+                  mode: document.documentElement.dataset.huidiEdition || '',
+                  scope: document.documentElement.dataset.huidiWorkspaceScope || ''
+                };
+              """)
+              assert snapshot['mainCount'] == 1, snapshot
+              assert snapshot['iframeCount'] == 0, snapshot
+              assert snapshot['find'] and snapshot['intel'] and snapshot['admin'], snapshot
+              assert snapshot['today'] and snapshot['mail'], snapshot
+              assert snapshot['fullTabs'] >= 30, snapshot
+              assert snapshot['developTab'], snapshot
+              assert snapshot['mode'] == 'community-online', snapshot
+              assert snapshot['scope'] == f"org-{org['id']}", snapshot
+
+              # Customer development: all Online acquisition + native development surfaces.
+              click_nav('online-find')
+              click_tab('online-find', 'pool', '#fv2PoolTable')
+              click_tab('online-find', 'followups', '#view-online-find [data-fv2-pane="followups"] .fv2-grid')
+              click_tab('online-find', 'notifications', '#view-online-find [data-fv2-pane="notifications"] #huidiNavBack')
+              click_tab('online-find', 'map', '#view-online-find [data-fv2-pane="map"] #huidiServiceBack')
+              click_tab('online-find', 'contacts', '#view-online-find [data-fv2-pane="contacts"] #huidiNavBack')
+              click_tab('online-find', 'company', '#view-online-find [data-fv2-pane="company"] #huidiServiceBack')
+              click_tab('online-find', 'smart', '#fv2ProductBrains')
+              click_tab('online-find', 'develop', '#hdwWorkbench')
+              wait.until(lambda d: d.execute_script("return Boolean(document.querySelector('#hdwLead'))"))
+              dev = driver.execute_script("""
+                return {
+                  company: document.querySelector('.hdw-lead-meta b')?.textContent || '',
+                  product: document.querySelector('#hdwProduct')?.value || '',
+                  summary: document.querySelector('#hdwProductSummary')?.value || '',
+                  handles: window.length
+                };
+              """)
+              assert dev['company'] == 'Fusion Test Buyer', dev
+              assert dev['product'] == 'ci-fusion-hinge', dev
+              assert 'Stainless Steel Hinge' in dev['summary'], dev
+
+              generated = driver.execute_script("""
+                const b=document.querySelector('[data-hdw-generate]');if(!b)return false;b.click();return true;
+              """)
+              assert generated
+              wait.until(lambda d: d.execute_script(
+                  "return Boolean(document.querySelector('#hdwSubject')?.value && document.querySelector('#hdwBody')?.value)"
+              ))
+              approved = driver.execute_script("""
+                const b=document.querySelector('[data-hdw-approve]');if(!b)return false;b.click();return true;
+              """)
+              assert approved
+              wait.until(lambda d: '已确认' in d.execute_script(
+                  "return document.querySelector('.hdw-card-head .hdw-badge')?.textContent || ''"
+              ))
+
+              edited = driver.execute_script("""
+                const s=document.querySelector('#hdwSubject');
+                if(!s)return false;
+                s.value='Edited development subject';
+                s.dispatchEvent(new Event('input',{bubbles:true}));
+                const b=document.querySelector('[data-hdw-save]');if(!b)return false;b.click();return true;
+              """)
+              assert edited
+              lead_id = driver.execute_script("return document.querySelector('#hdwLead')?.value || ''")
+              wait.until(lambda d: d.execute_async_script("""
+                const id=arguments[0],done=arguments[arguments.length-1];
+                fetch(`/api/leads/${id}/development-context`,{credentials:'same-origin'})
+                  .then(r=>r.json()).then(x=>done(x.review_state||''))
+                  .catch(()=>done(''));
+              """, lead_id) == 'rejected')
+              assert len(driver.window_handles) == 1
+
+              # Mail + automation: Local draft owner plus real Online mail owners.
+              click_nav('mail')
+              click_tab('mail', 'inbox', '#view-mail [data-fv2-pane="inbox"] #huidiServiceBack')
+              click_tab('mail', 'sent', '#view-mail [data-fv2-pane="sent"] #huidiServiceBack')
+              click_tab('mail', 'mailbox', '#view-mail [data-fv2-pane="mailbox"] #huidiServiceBack')
+              click_tab('mail', 'queue', '#view-mail [data-fv2-pane="queue"] #huidiServiceBack')
+              click_tab('mail', 'sequences', '#view-mail [data-fv2-pane="sequences"] #sqBack')
+
+              # Market intelligence tools and fused intelligence projects.
+              click_nav('online-intel')
+              click_tab('online-intel', 'world-map', '#view-online-intel [data-fv2-pane="world-map"] #wiMap')
+              click_tab('online-intel', 'customer-intel', '#view-online-intel [data-fv2-pane="customer-intel"] #huidiIntelBack')
+              for tab in ('live','trade','tariff','fx','shipping'):
+                  click_tab('online-intel', tab, f'#view-online-intel [data-fv2-pane="{tab}"] #huidiServiceBack')
+
+              # Team + settings: native page surfaces, not legacy centered modals.
+              click_nav('online-admin')
+              click_tab('online-admin', 'team', '#view-online-admin [data-fv2-pane="team"] .fv2-panel')
+              click_tab('online-admin', 'company', '#view-online-admin [data-fv2-pane="company"] .fv2-panel')
+              click_tab('online-admin', 'sources', '#view-online-admin [data-fv2-pane="sources"] .fv2-panel')
+              click_tab('online-admin', 'notifications', '#view-online-admin [data-fv2-pane="notifications"] .fv2-panel')
+              click_tab('online-admin', 'audit', '#view-online-admin [data-fv2-pane="audit"] #auBack')
+              click_tab('online-admin', 'safety', '#view-online-admin [data-fv2-pane="safety"] .fv2-grid')
+
+              # Mature Community formal business owners still work after full fusion.
+              for view, selector in (
+                  ('customers', '#customerRows'),
+                  ('deals', '#dealRows'),
+                  ('documents', '#docRows'),
+              ):
+                  click_nav(view)
+                  wait.until(lambda d, s=selector: d.execute_script(
+                      "return Boolean(document.querySelector(arguments[0]))", s
+                  ))
+                  assert len(driver.window_handles) == 1
+
+              source = driver.page_source.lower()
+              assert '<iframe' not in source, 'iframe leaked into fused workspace'
+              assert 'online-bridge.html' not in source, 'legacy Online bridge leaked into fused workspace'
+              assert '127.0.0.1:8765' not in source, 'legacy Local bridge leaked into fused workspace'
+              print('HUIDI Community × Online FULL capability + real lead development Chrome smoke PASS')
+          finally:
+              driver.quit()
+              client.close()
+          PY
+      - name: Stop HUIDI
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-fusion-server.pid ]; then
+            kill "$(cat /tmp/huidi-fusion-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-fusion-server.log ]; then
+            tail -360 /tmp/huidi-fusion-server.log
+          fi

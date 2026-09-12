@@ -1,0 +1,170 @@
+name: HUIDI Workbench Reply Persistence Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/api/app/workbench.py'
+      - 'online/api/app/mail_sync.py'
+      - '.github/workflows/workbench-reply-persistence-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/api/app/workbench.py'
+      - 'online/api/app/mail_sync.py'
+      - '.github/workflows/workbench-reply-persistence-smoke.yml'
+
+jobs:
+  unresolved_reply_queue:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-workbench-reply-persistence-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '1'
+      HUIDI_SIGNUP_ENABLED: '1'
+      DATABASE_URL: sqlite:////tmp/huidi-workbench-reply-persistence.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Start HUIDI
+        run: |
+          set -euo pipefail
+          python -m py_compile app/workbench.py
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18086 > /tmp/huidi-workbench-reply.log 2>&1 &
+          echo $! > /tmp/huidi-workbench-reply.pid
+          for i in $(seq 1 100); do
+            if curl -fsS http://127.0.0.1:18086/login > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-workbench-reply.log
+          exit 1
+      - name: Verify yesterday reply persists until a later response
+        run: |
+          python - <<'PY'
+          import uuid
+          from datetime import datetime, timedelta, timezone
+
+          import httpx
+          from sqlalchemy.orm import Session
+
+          from app.mail_sync import _record_message
+          from app.online_app import MailboxAccount
+          from app.tenant_storage import ensure_tenant_schema
+
+          BASE = 'http://127.0.0.1:18086'
+          PASSWORD = 'reply-persistence-password-2026'
+          email = f'reply-persistence-{uuid.uuid4().hex[:12]}@example.test'
+          client = httpx.Client(base_url=BASE, follow_redirects=False, timeout=20)
+
+          registered = client.post('/api/auth/register', json={
+              'account_type': 'individual',
+              'display_name': 'Reply Persistence',
+              'organization_name': '',
+              'email': email,
+              'password': PASSWORD,
+          })
+          assert registered.status_code == 200, registered.text
+          org_id = int(registered.json()['organization']['id'])
+          assert org_id > 1
+
+          buyer_email = 'yesterday-buyer@example.test'
+          lead_resp = client.post('/api/leads/manual', json={
+              'company_name': 'Yesterday Buyer',
+              'product_keyword': 'stainless steel hinge',
+              'country': 'Germany',
+              'website': 'https://yesterday-buyer.example',
+              'contact_name': 'Yesterday Buyer',
+              'contact_role': 'Purchasing Manager',
+              'contact_email': buyer_email,
+              'requirements': 'Initial inquiry',
+              'create_inquiry': False,
+          })
+          assert lead_resp.status_code == 200, lead_resp.text
+          lead_id = int(lead_resp.json()['lead']['id'])
+
+          mailbox_resp = client.post('/api/mail/accounts', json={
+              'display_name': 'Persistence Mailbox',
+              'email': 'sales.persistence@example.test',
+              'provider': 'smtp',
+              'auth_mode': 'smtp',
+              'daily_limit': 40,
+              'min_interval_seconds': 120,
+              'timezone': 'UTC',
+          })
+          assert mailbox_resp.status_code == 200, mailbox_resp.text
+          mailbox_id = int(mailbox_resp.json()['id'])
+
+          thread_id = 'thread-' + uuid.uuid4().hex
+          old_time = datetime.now(timezone.utc) - timedelta(days=2)
+          engine = ensure_tenant_schema(org_id)
+          with Session(engine) as db:
+              mailbox = db.get(MailboxAccount, mailbox_id)
+              row, created = _record_message(db, mailbox, {
+                  'provider_message_id': 'incoming-' + uuid.uuid4().hex,
+                  'thread_id': thread_id,
+                  'internet_message_id': '<incoming-persistence@example.test>',
+                  'direction': 'incoming',
+                  'folder': 'inbox',
+                  'sender': buyer_email,
+                  'recipients': ['sales.persistence@example.test'],
+                  'subject': 'Re: inquiry',
+                  'snippet': 'This reply is intentionally from two days ago and still needs an answer.',
+                  'received_at': old_time,
+                  'has_unsubscribe': False,
+              })
+              assert created and row.lead_id == lead_id
+
+          today = client.get('/api/workbench/today')
+          assert today.status_code == 200, today.text
+          body = today.json()
+          assert body['mail']['replies_received_today'] == 0, body['mail']
+          assert body['mail']['replies_today'] == 0, body['mail']
+          assert body['mail']['needs_reply'] == 1, body['mail']
+          assert len(body['replies']) == 1, body['replies']
+          assert int(body['replies'][0]['lead_id']) == lead_id, body['replies']
+          assert body['replies'][0]['company_name'] == 'Yesterday Buyer', body['replies'][0]
+
+          with Session(engine) as db:
+              mailbox = db.get(MailboxAccount, mailbox_id)
+              row, created = _record_message(db, mailbox, {
+                  'provider_message_id': 'outgoing-' + uuid.uuid4().hex,
+                  'thread_id': thread_id,
+                  'internet_message_id': '<outgoing-persistence@example.test>',
+                  'direction': 'outgoing',
+                  'folder': 'sent',
+                  'sender': 'sales.persistence@example.test',
+                  'recipients': [buyer_email],
+                  'subject': 'Re: inquiry',
+                  'snippet': 'We replied to the customer.',
+                  'received_at': datetime.now(timezone.utc),
+                  'has_unsubscribe': False,
+              })
+              assert created
+
+          resolved = client.get('/api/workbench/today')
+          assert resolved.status_code == 200, resolved.text
+          resolved_body = resolved.json()
+          assert resolved_body['mail']['needs_reply'] == 0, resolved_body['mail']
+          assert resolved_body['replies'] == [], resolved_body['replies']
+          assert resolved_body['mail']['replies_received_today'] == 0, resolved_body['mail']
+
+          print('Cross-day unresolved reply persists until later outgoing response PASS')
+          client.close()
+          PY
+      - name: Stop HUIDI
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-workbench-reply.pid ]; then
+            kill "$(cat /tmp/huidi-workbench-reply.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-workbench-reply.log ]; then
+            tail -220 /tmp/huidi-workbench-reply.log
+          fi

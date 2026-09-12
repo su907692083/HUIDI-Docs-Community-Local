@@ -1,0 +1,326 @@
+name: HUIDI Community Online Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'public/**'
+      - 'online/api/app/community_*'
+      - 'online/api/app/workspace_scope.py'
+      - 'online/api/app/auth_portal.py'
+      - 'online/api/app/daily_app.py'
+      - 'online/api/tests/test_community_*'
+      - '.github/workflows/community-online-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'public/**'
+      - 'online/api/app/community_*'
+      - 'online/api/app/workspace_scope.py'
+      - 'online/api/app/auth_portal.py'
+      - 'online/api/app/daily_app.py'
+      - 'online/api/tests/test_community_*'
+      - '.github/workflows/community-online-smoke.yml'
+
+jobs:
+  cloud_cache_isolation:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-community-online-browser-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '1'
+      HUIDI_SIGNUP_ENABLED: '1'
+      HUIDI_COMMUNITY_SURFACE: '1'
+      DATABASE_URL: sqlite:////tmp/huidi-community-online-smoke.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Check Community cloud JavaScript
+        run: |
+          node --check ../../public/community-local-mode.js
+          node --check ../../public/huidi-community-cloud-adapter-v1.js
+      - name: Start HUIDI with Community mother surface
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18082 > /tmp/huidi-community-server.log 2>&1 &
+          echo $! > /tmp/huidi-community-server.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:18082/login > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-community-server.log
+          exit 1
+      - name: Verify two-account Community cache isolation and fresh-browser editor restore
+        run: |
+          python - <<'PY'
+          import time
+          import uuid
+
+          import httpx
+          from selenium import webdriver
+          from selenium.webdriver.chrome.options import Options
+          from selenium.webdriver.support.ui import WebDriverWait
+
+          BASE = 'http://127.0.0.1:18082'
+          PASSWORD = 'community-browser-password-2026'
+
+          def register(label):
+              client = httpx.Client(base_url=BASE, follow_redirects=False, timeout=20)
+              email = f'community-smoke-{label}-{uuid.uuid4().hex[:10]}@example.test'
+              response = client.post('/api/auth/register', json={
+                  'account_type': 'individual',
+                  'display_name': label,
+                  'organization_name': '',
+                  'email': email,
+                  'password': PASSWORD,
+              })
+              assert response.status_code == 200, response.text
+              payload = response.json()
+              assert client.cookies.get('huidi_team_session'), client.cookies
+              assert client.cookies.get('huidi_workspace_scope') == f"org-{payload['organization']['id']}", client.cookies
+              return client, email, payload['organization']
+
+          def seed(client, marker):
+              response = client.put('/api/community-sync/state', json={
+                  'customers': [{
+                      'id': f'customer-{marker}',
+                      'company': f'Customer {marker}',
+                      'contact': marker,
+                      'email': f'{marker.lower()}@example.test',
+                      'vat': f'VAT-{marker}',
+                      'consignee_name': f'Consignee {marker}',
+                  }],
+                  'products': [],
+                  'deals': [{
+                      'id': f'deal-{marker}',
+                      'customer_id': f'customer-{marker}',
+                      'title': f'Deal {marker}',
+                      'currency': 'USD',
+                      'estimated_amount': 0,
+                      'incoterm': 'FOB',
+                      'events': [{'type':'note','text':f'Event {marker}'}],
+                      'product_ids': [],
+                  }],
+                  'archived': {},
+              })
+              assert response.status_code == 200, response.text
+              body = response.json()
+              customer = next(x for x in body['customers'] if marker in x.get('company', ''))
+              deal = next(x for x in body['deals'] if marker in x.get('title', ''))
+              assert customer['vat'] == f'VAT-{marker}', customer
+              assert customer['consignee_name'] == f'Consignee {marker}', customer
+              assert deal['incoterm'] == 'FOB', deal
+              assert deal['events'][0]['text'] == f'Event {marker}', deal
+              return body, customer, deal
+
+          def browser_options():
+              options = Options()
+              options.add_argument('--headless=new')
+              options.add_argument('--no-sandbox')
+              options.add_argument('--disable-gpu')
+              options.add_argument('--disable-dev-shm-usage')
+              options.add_argument('--window-size=1440,1000')
+              return options
+
+          def browser_login(driver, email, org):
+              # Preserve local/session/IndexedDB state because this smoke verifies
+              # namespace isolation across account switches. Remove only server
+              # session cookies before loading auth-portal.js; otherwise an old
+              # authenticated /login page can redirect to / while the test is
+              # starting the next login request and destroy its script context.
+              driver.get(BASE + '/api/health')
+              driver.delete_all_cookies()
+              driver.get(BASE + '/login')
+              WebDriverWait(driver, 10).until(
+                  lambda d: d.execute_script("return Boolean(document.querySelector('#emailLoginForm'))")
+              )
+              login = driver.execute_async_script("""
+                const email=arguments[0],password=arguments[1],done=arguments[arguments.length-1];
+                fetch('/api/auth/login',{
+                  method:'POST',
+                  credentials:'same-origin',
+                  headers:{'Content-Type':'application/json'},
+                  body:JSON.stringify({email,password})
+                }).then(async r=>done({status:r.status,body:await r.text()})).catch(e=>done({status:0,body:String(e)}));
+              """, email, PASSWORD)
+              assert login['status'] == 200, login
+              session = driver.get_cookie('huidi_team_session')
+              scope = driver.get_cookie('huidi_workspace_scope')
+              assert session, driver.get_cookies()
+              assert scope and scope['value'] == f"org-{org['id']}", (scope, driver.get_cookies())
+
+          first, email_a, org_a = register('A')
+          second, email_b, org_b = register('B')
+          assert org_a['id'] != org_b['id'], (org_a, org_b)
+          marker_a = 'A' + uuid.uuid4().hex[:8]
+          marker_b = 'B' + uuid.uuid4().hex[:8]
+          _, customer_a, deal_a = seed(first, marker_a)
+          _, customer_b, deal_b = seed(second, marker_b)
+
+          driver = webdriver.Chrome(options=browser_options())
+          wait = WebDriverWait(driver, 25)
+
+          def enter(email, org, marker, forbidden):
+              browser_login(driver, email, org)
+              driver.get(BASE + '/')
+              wait.until(lambda d: '/community/workspace.html' in d.current_url)
+              wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
+              scope = driver.get_cookie('huidi_workspace_scope')
+              assert scope and scope['value'] == f"org-{org['id']}", scope
+              wait.until(lambda d: marker in (d.execute_script("return document.querySelector('#customerRows')?.innerText || ''")))
+              rows = driver.execute_script("return document.querySelector('#customerRows')?.innerText || ''")
+              assert marker in rows, rows
+              assert forbidden not in rows, rows
+              storage = driver.execute_script("""
+                const marker=arguments[0],forbidden=arguments[1];
+                const sessionBefore=sessionStorage.getItem('huidi_cloud_session_probe_v1')||'';
+                sessionStorage.setItem('huidi_cloud_session_probe_v1',marker);
+                return {
+                  visible: localStorage.getItem('huidi_local_customers_v1') || '',
+                  keys: Object.keys(localStorage),
+                  sessionBefore,
+                  sessionVisible: sessionStorage.getItem('huidi_cloud_session_probe_v1')||'',
+                  sessionKeys: Object.keys(sessionStorage),
+                  forbidden
+                };
+              """, marker, forbidden)
+              assert marker in storage['visible'], storage
+              assert forbidden not in storage['visible'], storage
+              assert forbidden not in storage['sessionBefore'], storage
+              assert storage['sessionVisible'] == marker, storage
+              assert any(f"huidi_workspace_org-{org['id']}__" in key for key in storage['keys']), storage
+              assert any(f"huidi_workspace_org-{org['id']}__" in key for key in storage['sessionKeys']), storage
+              dbs = driver.execute_async_script("""
+                const done=arguments[arguments.length-1];
+                if(!indexedDB.databases){done([]);return;}
+                indexedDB.databases().then(rows=>done(rows.map(x=>x.name||''))).catch(()=>done([]));
+              """)
+              assert any(f'org-{org["id"]}' in name for name in dbs), dbs
+              return storage, dbs
+
+          doc_id = 'community-doc-' + uuid.uuid4().hex[:10]
+          direct_buyer = f'Cloud Direct Buyer {marker_b}'
+          direct_item = f'Cloud Direct Item {marker_b}'
+          try:
+              storage_a, dbs_a = enter(email_a, org_a, marker_a, marker_b)
+              storage_b, dbs_b = enter(email_b, org_b, marker_b, marker_a)
+              assert any(f"huidi_workspace_org-{org_a['id']}__" in key for key in storage_b['keys']), storage_b
+              assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in storage_b['keys']), storage_b
+              assert any(f"huidi_workspace_org-{org_a['id']}__" in key for key in storage_b['sessionKeys']), storage_b
+              assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in storage_b['sessionKeys']), storage_b
+              assert any(f'org-{org_a["id"]}' in name for name in dbs_b), (dbs_a, dbs_b)
+              assert any(f'org-{org_b["id"]}' in name for name in dbs_b), dbs_b
+
+              record = {
+                  'id': doc_id,
+                  'title': f'Quotation {marker_b}',
+                  'document_type': 'quotation',
+                  'deal_id': str(deal_b['id']),
+                  'customer_id': str(customer_b['id']),
+                  'summary': {
+                      'document_type': 'quotation',
+                      'document_no': 'Q-' + marker_b,
+                      'document_status': 'draft',
+                      'deal_id': str(deal_b['id']),
+                      'customer_id': str(customer_b['id']),
+                      'customer_name': direct_buyer,
+                      'currency': 'USD',
+                      'product_ids': [],
+                  },
+                  'payload': {
+                      'type': 'quotation',
+                      'documentType': 'quotation',
+                      'dealId': str(deal_b['id']),
+                      'customerId': str(customer_b['id']),
+                      'state': {
+                          'documentType': 'quotation',
+                          'fields': {
+                              'documentType': 'quotation',
+                              'buyerName': direct_buyer,
+                              'buyerContact': marker_b,
+                              'buyerEmail': f'{marker_b.lower()}@example.test',
+                              'currency': 'USD',
+                              'invoiceNo': 'Q-' + marker_b,
+                          },
+                          'items': [{
+                              'sku': 'SKU-' + marker_b,
+                              'name': direct_item,
+                              'spec': 'SUS304 4 inch',
+                              'qty': '5000',
+                              'unit': 'PCS',
+                              'price': '',
+                          }],
+                      },
+                  },
+              }
+              saved = driver.execute_async_script("""
+                const record=arguments[0],done=arguments[arguments.length-1];
+                window.HUIDILocalDB.putDocument(record).then(()=>done('ok')).catch(e=>done('error:'+e.message));
+              """, record)
+              assert saved == 'ok', saved
+
+              deadline = time.time() + 12
+              records_b = []
+              while time.time() < deadline:
+                  response = second.get('/api/community-sync/document-records')
+                  assert response.status_code == 200, response.text
+                  records_b = response.json()['records']
+                  if any(x.get('id') == doc_id for x in records_b):
+                      break
+                  time.sleep(0.3)
+              assert any(x.get('id') == doc_id for x in records_b), records_b
+              records_a = first.get('/api/community-sync/document-records')
+              assert records_a.status_code == 200, records_a.text
+              assert all(x.get('id') != doc_id for x in records_a.json()['records']), records_a.text
+          finally:
+              driver.quit()
+
+          # Fresh profile: no IndexedDB document and no staged session state.
+          # Directly opening the mature Local editor must wait for tenant cloud
+          # hydration, then reuse the Local restore owner to apply the document.
+          fresh = webdriver.Chrome(options=browser_options())
+          fresh_wait = WebDriverWait(fresh, 30)
+          try:
+              browser_login(fresh, email_b, org_b)
+              fresh.get(
+                  BASE + '/community/editor.html?type=quotation&doc=quotation&local=1&localDoc=' + doc_id
+              )
+              fresh_wait.until(lambda d: d.execute_script("return document.documentElement.dataset.huidiCloud || ''") == 'ready')
+              fresh_wait.until(lambda d: d.execute_script("return document.getElementById('buyerName')?.value || ''") == direct_buyer)
+              buyer = fresh.find_element('id', 'buyerName').get_attribute('value')
+              assert buyer == direct_buyer, buyer
+              item = fresh_wait.until(lambda d: d.execute_script("return document.querySelector('.item-row .i-name')?.value || ''"))
+              assert item == direct_item, item
+              current_doc = fresh.execute_script("return sessionStorage.getItem('huidi_local_doc_id_v1') || ''")
+              assert current_doc == doc_id, current_doc
+              session_keys = fresh.execute_script("return Object.keys(sessionStorage)")
+              assert any(f"huidi_workspace_org-{org_b['id']}__" in key for key in session_keys), session_keys
+              assert all(f"huidi_workspace_org-{org_a['id']}__" not in key for key in session_keys), session_keys
+              server_doc = second.get('/api/community-sync/documents/' + doc_id)
+              assert server_doc.status_code == 200, server_doc.text
+              assert server_doc.json()['record']['payload']['state']['fields']['buyerName'] == direct_buyer
+              print('Community Online two-account storage isolation + fresh-browser mature Local editor cloud restore PASS')
+          finally:
+              fresh.quit()
+              first.close()
+              second.close()
+          PY
+      - name: Stop HUIDI
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-community-server.pid ]; then
+            kill "$(cat /tmp/huidi-community-server.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-community-server.log ]; then
+            tail -260 /tmp/huidi-community-server.log
+          fi
