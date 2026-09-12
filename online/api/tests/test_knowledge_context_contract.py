@@ -142,6 +142,16 @@ class KnowledgeContextContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, self.ui)
 
+    def test_knowledge_search_survives_same_lead_panel_remount_without_stale_overwrite(self) -> None:
+        for marker in (
+            "activeQuery", "activeLead", "searchTicket", "liveSearchBox",
+            "leadId(searchRoot(box))===lead",
+            "if(!root||leadId(root)!==lead)return null",
+            "if(mine!==searchTicket||activeQuery!==q||activeLead!==lead)return null",
+        ):
+            self.assertIn(marker, self.ui)
+        self.assertNotIn("mine!==ticket||!box.isConnected", self.ui)
+
     def test_knowledge_ui_javascript_parses(self) -> None:
         node = shutil.which("node")
         if not node:
