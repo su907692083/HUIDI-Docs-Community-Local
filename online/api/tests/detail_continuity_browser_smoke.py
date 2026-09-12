@@ -92,6 +92,16 @@ def runtime_state(driver: webdriver.Chrome) -> dict:
     )
 
 
+def core_owners_ready(driver: webdriver.Chrome) -> bool:
+    state = runtime_state(driver)
+    return bool(
+        state["ready"] in {"interactive", "complete"}
+        and state["leadOwner"] == "function"
+        and state["detailContinuity"] == "function"
+        and state["workspacePages"] == "function"
+    )
+
+
 def dump_browser_log(driver: webdriver.Chrome, label: str) -> None:
     try:
         rows = driver.get_log("browser")
@@ -109,6 +119,10 @@ def main() -> None:
     stamp = str(int(time.time() * 1000))[-8:]
     try:
         driver.get(BASE + "/")
+        # Root scripts load asynchronously after the document becomes available.
+        # Wait for the three canonical owners the continuity flow actually uses
+        # instead of sampling the first loading frame and treating it as a failure.
+        wait.until(core_owners_ready)
         initial_state = runtime_state(driver)
         print("HUIDI runtime state initial:", initial_state)
         assert initial_state["leadOwner"] == "function", initial_state
