@@ -58,6 +58,16 @@ class DocumentEntryConnectivityContractTests(unittest.TestCase):
         self.assertNotIn("indexedDB", source)
         self.assertNotIn("localStorage", source)
 
+    def test_authoritative_server_selection_replaces_only_provisional_auto_match(self) -> None:
+        source = (WEB / "document-entry-connectivity-v1.js").read_text(encoding="utf-8")
+        self.assertIn("const acceptServer=!dirty||autoMatched", source)
+        self.assertIn("if(acceptServer){selected=new Set(serverSelected);dirty=false}", source)
+        self.assertIn("matches.length===1", source)
+        self.assertIn("dirty=true;autoMatched=true", source)
+        # Explicit user edits must stop being provisional so refreshes cannot
+        # silently overwrite unsaved human choices.
+        self.assertGreaterEqual(source.count("dirty=true;autoMatched=false"), 2)
+
     def test_connector_parses(self) -> None:
         subprocess.run(
             ["node", "--check", str(WEB / "document-entry-connectivity-v1.js")],
