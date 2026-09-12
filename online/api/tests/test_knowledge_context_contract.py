@@ -152,6 +152,18 @@ class KnowledgeContextContractTests(unittest.TestCase):
             self.assertIn(marker, self.ui)
         self.assertNotIn("mine!==ticket||!box.isConnected", self.ui)
 
+    def test_grounded_ai_suggestion_survives_same_lead_panel_remount_without_stale_overwrite(self) -> None:
+        for marker in (
+            "liveSuggestBox",
+            "if(mine!==suggestTicket||activeQuery!==q||activeLead!==lead)return null",
+            "if(!root||leadId(root)!==lead)return null",
+            "current.purpose===purpose&&current.language===language?live:null",
+            "suggestTicket+=1;refreshModeHint(box)",
+            "suggestTicket+=1;$('[data-hkc-ai]',box).hidden=true",
+        ):
+            self.assertIn(marker, self.ui)
+        self.assertNotIn("mine!==suggestTicket||!box.isConnected", self.ui)
+
     def test_knowledge_ui_javascript_parses(self) -> None:
         node = shutil.which("node")
         if not node:
