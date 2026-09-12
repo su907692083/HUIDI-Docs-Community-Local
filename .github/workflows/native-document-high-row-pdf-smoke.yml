@@ -1,0 +1,74 @@
+name: HUIDI Native Document High Row PDF Smoke
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/api/tests/native_document_high_row_pdf_browser_smoke.py'
+      - 'online/api/app/native_document_print_guard.py'
+      - 'online/api/app/document_workbench.py'
+      - 'online/api/app/document_context.py'
+      - 'online/api/app/deal_product_selection.py'
+      - '.github/workflows/native-document-high-row-pdf-smoke.yml'
+  pull_request:
+    paths:
+      - 'online/api/tests/native_document_high_row_pdf_browser_smoke.py'
+      - 'online/api/app/native_document_print_guard.py'
+      - 'online/api/app/document_workbench.py'
+      - 'online/api/app/document_context.py'
+      - 'online/api/app/deal_product_selection.py'
+      - '.github/workflows/native-document-high-row-pdf-smoke.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  high_row_pdf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-high-row-pdf-secret
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '0'
+      DATABASE_URL: sqlite:////tmp/huidi-high-row-pdf.db
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install isolated dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Verify print guard contract
+        run: python -m unittest tests.test_native_document_print_guard -v
+      - name: Start isolated Online workbench
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18080 > /tmp/huidi-high-row-pdf.log 2>&1 &
+          echo $! > /tmp/huidi-high-row-pdf.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:18080/ > /dev/null; then
+              exit 0
+            fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-high-row-pdf.log
+          exit 1
+      - name: Exercise 32-row multi-page commercial and packing PDFs in Chrome
+        run: python tests/native_document_high_row_pdf_browser_smoke.py
+      - name: Stop isolated workbench
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-high-row-pdf.pid ]; then
+            kill "$(cat /tmp/huidi-high-row-pdf.pid)" 2>/dev/null || true
+          fi
+          if [ -s /tmp/huidi-high-row-pdf.log ]; then
+            tail -160 /tmp/huidi-high-row-pdf.log
+          fi
