@@ -24,6 +24,12 @@ function catalogIds(){
   return[...new Set(values.map(clean).filter(Boolean))];
 }
 
+function sameIds(left,right){
+  const a=[...new Set((left||[]).map(clean).filter(Boolean))].sort();
+  const b=[...new Set((right||[]).map(clean).filter(Boolean))].sort();
+  return a.length===b.length&&a.every((value,index)=>value===b[index]);
+}
+
 function decorate(){
   const button=document.querySelector('[data-hoc-documents]');
   if(!button)return false;
@@ -58,25 +64,33 @@ async function handoff(){
     return false;
   }
 
-  if(ids.length){
-    const accepted=confirm(
-      `确认把产品目录已选 ${ids.length} 个产品加入当前询盘 #${id} 并进入单据工作台？\n`+
-      '产品名称、SKU、规格和其他非价格资料会沿用正式产品资料；正式单价、金额和执行数量仍需在单据中确认。'
-    );
-    if(!accepted)return false;
-  }
-
   busy=true;
   const button=document.querySelector('[data-hoc-documents]');
   const priorText=button?.textContent||'';
-  if(button){button.disabled=true;button.textContent=ids.length?'正在同步并进入…':'正在进入…'}
+  if(button){button.disabled=true;button.textContent=ids.length?'正在核对并进入…':'正在进入…'}
   try{
     if(ids.length){
-      const out=await api(`/api/business/deals/${encodeURIComponent(id)}/products`,{
-        method:'PUT',
-        body:JSON.stringify({product_ids:ids})
-      });
-      window.HUIDIPlainLanguage?.toast?.(`已把 ${Number(out.selected_count??ids.length)} 个目录产品交给单据工作台`);
+      let alreadyLinked=false;
+      try{
+        const current=await api(`/api/business/deals/${encodeURIComponent(id)}/products?limit=100`);
+        alreadyLinked=sameIds(current?.selected,ids);
+      }catch(_){}
+
+      if(!alreadyLinked){
+        const accepted=confirm(
+          `确认把产品目录已选 ${ids.length} 个产品加入当前询盘 #${id} 并进入单据工作台？\n`+
+          '产品名称、SKU、规格和其他非价格资料会沿用正式产品资料；正式单价、金额和执行数量仍需在单据中确认。'
+        );
+        if(!accepted)return false;
+        if(button)button.textContent='正在同步并进入…';
+        const out=await api(`/api/business/deals/${encodeURIComponent(id)}/products`,{
+          method:'PUT',
+          body:JSON.stringify({product_ids:ids})
+        });
+        window.HUIDIPlainLanguage?.toast?.(`已把 ${Number(out.selected_count??ids.length)} 个目录产品交给单据工作台`);
+      }else{
+        window.HUIDIPlainLanguage?.toast?.(`目录所选 ${ids.length} 个产品已与当前询盘一致，直接进入单据工作台`);
+      }
     }else{
       window.HUIDIPlainLanguage?.toast?.('目录未选择产品，保留当前询盘已有产品关联');
     }
