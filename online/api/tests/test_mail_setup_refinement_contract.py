@@ -25,13 +25,15 @@ class MailSetupRefinementContractTest(unittest.TestCase):
             self.assertNotIn(forbidden, self.asset)
         for required in (
             "/api/mail/accounts",
-            "/api/mail/connect/",
             "/smtp",
             "/test",
+            "data-connect",
+            "data-huf-mail",
             "HUIDIBeginnerFlow",
             "HUIDI:mail-accounts-changed",
         ):
             self.assertIn(required, self.asset)
+        self.assertNotIn("/api/mail/connect/", self.asset)
 
     def test_beginner_mail_copy_and_common_smtp_presets_are_present(self):
         for text in (
@@ -55,6 +57,7 @@ class MailSetupRefinementContractTest(unittest.TestCase):
         self.assertIn("管理员提供", self.asset)
         self.assertIn("企业邮箱连接用于发信", self.asset)
         self.assertNotIn("POST · Bearer", self.asset)
+        self.assertNotIn("client_secret", self.asset.lower())
 
 
 if __name__ == "__main__":
