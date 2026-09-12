@@ -20,7 +20,7 @@ def exercise(base: str, output: Path) -> None:
         try:
             page.goto(base+"/",wait_until="domcontentloaded")
             page.wait_for_function("() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDIMailSetupRefinement)",timeout=35000)
-            setup=page.locator('[data-huidi-foundation]').first
+            setup=page.locator('#hufHome [data-huf-open]').first
             setup.wait_for(state="visible",timeout=12000);setup.click()
             page.locator('[data-huf-other-mail]').wait_for(state="visible",timeout=12000);page.locator('[data-huf-other-mail]').click()
             page.wait_for_selector('#hmsBack.open [data-hms-company]:not(.hms-hidden)',timeout=10000)
