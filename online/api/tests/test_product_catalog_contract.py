@@ -16,7 +16,7 @@ class ProductCatalogLargeDataContractTests(unittest.TestCase):
         self.assertIn('"items": [_row_payload(x) for x in rows]', text)
         self.assertIn('ProductBrainRecord.payload_json.ilike(pattern)', text)
 
-    def test_catalog_uses_paged_owner_with_bounded_dom_and_server_search(self):
+    def test_catalog_uses_paged_owner_with_bounded_dom_and_explicit_canonical_refresh(self):
         text = (ROOT / "web" / "catalog-studio-online.js").read_text(encoding="utf-8")
         self.assertIn("const PAGE_SIZE=50", text)
         self.assertIn("paged:'1'", text)
@@ -26,7 +26,18 @@ class ProductCatalogLargeDataContractTests(unittest.TestCase):
         self.assertIn("全选本页", text)
         self.assertIn("setTimeout(()=>loadProducts(1,next),260)", text)
         self.assertNotIn("fetch('/api/product-brains')", text)
-        self.assertNotIn("HUIDIProductServer?.sync", text)
+
+        # Catalog remains a projection over the canonical Product owner. A user
+        # clicking “刷新产品” may explicitly ask the existing ProductServer owner
+        # to synchronize first; the catalog must not create/write its own product
+        # records or trigger that sync from ordinary render/pagination paths.
+        self.assertIn("async function refreshFromSource({sync=true,quiet=false}={})", text)
+        self.assertIn("if(sync){try{await window.HUIDIProductServer?.sync?.()}catch(_){}}", text)
+        self.assertIn("$(\'[data-hoc-refresh]\').onclick=()=>refreshFromSource({sync:true})", text)
+        self.assertIn("window.addEventListener('huidi-product-brain-synced'", text)
+        self.assertIn("refreshFromSource({sync:false,quiet:true})", text)
+        self.assertNotIn("method:'POST'", text)
+        self.assertNotIn('method:"POST"', text)
 
     def test_real_browser_large_data_gate_exists(self):
         smoke = ROOT / "tests" / "product_catalog_large_data_browser_smoke.py"
@@ -34,8 +45,12 @@ class ProductCatalogLargeDataContractTests(unittest.TestCase):
         text = smoke.read_text(encoding="utf-8")
         self.assertIn("range(1, 56)", text)
         self.assertIn("len(first_api[\"items\"]) == 50", text)
-        self.assertIn("len(second_api[\"items\"]) == 5", text)
-        self.assertIn('"/api/product-brains" not in final_urls', text)
+        # The test database can already contain canonical products from other
+        # exact-head regressions. Page 2 must contain at least the seeded tail,
+        # rather than assuming this smoke owns the whole database.
+        self.assertIn("len(second_api[\"items\"]) >= 5", text)
+        self.assertIn('"/api/product-brains" not in first_urls', text)
+        self.assertIn("ids=", text)
 
 
 if __name__ == "__main__":
