@@ -33,7 +33,9 @@ class SafeBusinessAutomationContractTests(unittest.TestCase):
         self.assertIn('build_notifications', self.overview)
         self.assertIn('mode": "notification_projection', self.overview)
         self.assertIn('new_workflow_storage', self.overview)
-        self.assertIn('"allowed_actions": ["notification_only"]', self.overview)
+        self.assertIn('ALLOWED_ACTIONS = ["notification_only"]', self.overview)
+        self.assertIn('"allowed_actions": list(ALLOWED_ACTIONS)', self.overview)
+        self.assertIn('"blocked_actions": list(BLOCKED_ACTIONS)', self.overview)
         for forbidden in ('__tablename__', 'mapped_column(', 'Base.metadata', 'subprocess', 'eval(', 'exec('):
             self.assertNotIn(forbidden, self.overview)
 
