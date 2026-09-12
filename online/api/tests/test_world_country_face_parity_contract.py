@@ -40,10 +40,13 @@ class WorldCountryFaceParityContractTests(unittest.TestCase):
 
     def test_real_community_entry_loads_face_layer_after_existing_world_owner(self):
         public_root = ROOT.parents[1] / 'public'
-        loader = (public_root / 'huidi-community-online-intelligence-v2.js').read_text(encoding='utf-8')
-        self.assertIn("worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceParity']", loader)
-        self.assertIn("await map.open();await load('worldFace')", loader)
-        self.assertIn("HUIDIWorldCountryFaceParity?.refresh?.()", loader)
+        entry = (public_root / 'huidi-community-online-intelligence-v2.js').read_text(encoding='utf-8')
+        face_loader = (ROOT / 'web/world-country-face-parity-v1.js').read_text(encoding='utf-8')
+        self.assertIn("worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceSelectionSync']", entry)
+        self.assertNotIn("worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceParity']", entry)
+        self.assertIn('window.HUIDIWorldCountryFaceSelectionSync=Object.freeze', face_loader)
+        self.assertIn("await map.open();await load('worldFace')", entry)
+        self.assertIn("HUIDIWorldCountryFaceParity?.refresh?.()", entry)
         result = subprocess.run(['node', '--check', str(public_root / 'huidi-community-online-intelligence-v2.js')], capture_output=True, text=True)
         self.assertEqual(result.returncode, 0, result.stderr)
 
