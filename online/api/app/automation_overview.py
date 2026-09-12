@@ -28,6 +28,15 @@ STATE_NAMES = {
     "failed": "失败",
     "skipped": "已跳过",
 }
+ALLOWED_ACTIONS = ["notification_only"]
+BLOCKED_ACTIONS = [
+    "send_business_mail",
+    "convert_lead_or_create_deal",
+    "mutate_customer_or_deal",
+    "write_formal_document",
+    "change_formal_price",
+    "execute_arbitrary_code",
+]
 
 
 def _rule_projection(row: NotificationRoute) -> dict[str, Any]:
@@ -113,15 +122,8 @@ def automation_overview(request: Request, db: Session = Depends(get_db)):
             {"category": key, "name": name, "open": int(event_counts.get(key, 0))}
             for key, name in CATEGORY_NAMES.items()
         ],
-        "allowed_actions": ["notification_only"],
-        "blocked_actions": [
-            "send_business_mail",
-            "convert_lead_or_create_deal",
-            "mutate_customer_or_deal",
-            "write_formal_document",
-            "change_formal_price",
-            "execute_arbitrary_code",
-        ],
+        "allowed_actions": list(ALLOWED_ACTIONS),
+        "blocked_actions": list(BLOCKED_ACTIONS),
         "guardrails": {
             "reuses_notification_owner": True,
             "new_workflow_storage": False,
@@ -132,6 +134,11 @@ def automation_overview(request: Request, db: Session = Depends(get_db)):
             "auto_document_write": False,
             "auto_price_change": False,
             "configuration_requires_owner_or_admin": True,
+            # Backward-compatible policy aliases for existing audit consumers.
+            # They are copied from the same constants as the root projection so
+            # the policy cannot silently diverge between response locations.
+            "allowed_actions": list(ALLOWED_ACTIONS),
+            "blocked_actions": list(BLOCKED_ACTIONS),
         },
         "message": "当前业务自动化只负责把现有业务事件按条件发送提醒；高风险业务动作仍由人工在原 Owner 中确认执行。",
     }
