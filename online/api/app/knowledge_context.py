@@ -22,6 +22,7 @@ SOURCE_LABELS = {
     "deal": "询盘",
     "intelligence": "联网情报",
 }
+SOURCE_WEIGHTS = {"customer": 4, "deal": 4, "product": 3, "lead": 2, "intelligence": 1}
 _PRICE_WITH_CURRENCY = re.compile(
     r"(?i)(?:\b\d+(?:[.,]\d+)?\s*(?:USD|EUR|GBP|CNY|RMB|JPY|AUD|CAD|HKD)\b|(?:USD|EUR|GBP|CNY|RMB|JPY|AUD|CAD|HKD)\s*\d+(?:[.,]\d+)?|[$€£¥]\s*\d+(?:[.,]\d+)?)"
 )
@@ -82,8 +83,32 @@ def _score(item: dict[str, Any], query: str, tokens: list[str]) -> int:
             score += 4
         elif token in snippet:
             score += 2
-    score += {"customer": 4, "deal": 4, "product": 3, "lead": 2, "intelligence": 1}.get(item.get("source"), 0)
+    score += SOURCE_WEIGHTS.get(str(item.get("source") or ""), 0)
     return score
+
+
+def _match_reasons(item: dict[str, Any], query: str, tokens: list[str]) -> list[str]:
+    """Explain deterministic lexical ranking without exposing hidden model logic."""
+    title = _clean(item.get("title"), 800).lower()
+    snippet = _clean(item.get("snippet"), 1600).lower()
+    q = query.lower()
+    reasons: list[str] = []
+    if q and q in title:
+        reasons.append("完整查询命中标题")
+    elif q and q in snippet:
+        reasons.append("完整查询命中内容")
+    title_terms = [x for x in tokens if x in title]
+    body_terms = [x for x in tokens if x not in title_terms and x in snippet]
+    if title_terms:
+        reasons.append("标题词：" + "、".join(title_terms[:3]))
+    if body_terms:
+        reasons.append("内容词：" + "、".join(body_terms[:3]))
+    source = str(item.get("source") or "")
+    if SOURCE_WEIGHTS.get(source, 0) >= 4:
+        reasons.append("正式业务记录优先")
+    elif source == "product":
+        reasons.append("正式产品资料优先")
+    return reasons[:3] or ["已有业务字段命中"]
 
 
 def _result(source: str, record_id: Any, title: Any, snippet: Any, *, updated_at: Any = None, route: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -104,6 +129,15 @@ def _patterns(query: str, tokens: list[str]) -> list[str]:
     return [f"%{x}%" for x in dict.fromkeys(x for x in values if x)][:7]
 
 
+def _count_sources(items: list[dict[str, Any]]) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for item in items:
+        key = str(item.get("source") or "")
+        if key:
+            counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
 @app.get("/api/knowledge/search")
 def search_business_knowledge(
     q: str = Query(min_length=2, max_length=240),
@@ -116,6 +150,10 @@ def search_business_knowledge(
     no knowledge table, embeddings, external network calls or write path. Formal
     and reference price fragments are deliberately excluded from reusable context,
     including price-like text embedded in notes or inquiry requirements.
+
+    Retrieval diagnostics expose only deterministic field-weighted lexical ranking
+    facts: matched terms, source coverage and bounded candidate counts. There is no
+    hidden vector score or background provider request behind these explanations.
     """
     query = _clean(q, 240)
     tokens = _tokens(query)
@@ -213,13 +251,15 @@ def search_business_knowledge(
             route={"kind": "intelligence", "id": row.id, "lead_id": row.lead_id, "deal_id": row.deal_id},
         ))
 
+    candidate_count = len(items)
+    candidate_counts = _count_sources(items)
     for item in items:
         item["relevance"] = _score(item, query, tokens)
+        item["match_reasons"] = _match_reasons(item, query, tokens)
     items.sort(key=lambda x: (int(x.get("relevance") or 0), x.get("updated_at") or ""), reverse=True)
     items = items[:limit]
-    counts: dict[str, int] = {}
-    for item in items:
-        counts[item["source"]] = counts.get(item["source"], 0) + 1
+    counts = _count_sources(items)
+    missing_sources = [key for key in SOURCE_LABELS if not counts.get(key)]
     return {
         "ok": True,
         "mode": "authoritative_lexical",
@@ -227,6 +267,20 @@ def search_business_knowledge(
         "query": query,
         "items": items,
         "source_counts": counts,
+        "diagnostics": {
+            "strategy": "field_weighted_lexical_rerank_v1",
+            "candidate_count": candidate_count,
+            "returned_count": len(items),
+            "query_terms": tokens,
+            "candidate_source_counts": candidate_counts,
+            "returned_source_counts": counts,
+            "missing_sources": missing_sources,
+            "source_labels": SOURCE_LABELS,
+            "bounded_per_source": per_source,
+            "explainable": True,
+            "vector_search": False,
+            "message": "结果只按当前工作区已有字段做确定性相关度排序；每条展示命中理由，未命中的 Owner 会明确列出。",
+        },
         "guardrails": {
             "read_only": True,
             "citations_required": True,
