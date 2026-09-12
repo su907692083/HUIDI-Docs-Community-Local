@@ -110,9 +110,14 @@ class BackupAutomationTests(unittest.TestCase):
             finally:
                 reset_current_organization(token)
 
-    def test_legacy_all_reminder_scope_includes_system_but_partial_scope_does_not(self):
-        self.assertIn("system", _categories('["reply","followup","mail","deal"]'))
+    def test_system_backup_notification_requires_explicit_route_opt_in(self):
+        # The backup failure event itself always exists, but historical routes
+        # that selected the original four business categories must not silently
+        # gain a new operational/system subscription. Owners/admins opt in by
+        # explicitly adding "system" to that rule.
+        self.assertNotIn("system", _categories('["reply","followup","mail","deal"]'))
         self.assertNotIn("system", _categories('["reply","followup"]'))
+        self.assertIn("system", _categories('["reply","followup","mail","deal","system"]'))
 
     def test_backup_coordinator_enters_each_company_context(self):
         seen = []
