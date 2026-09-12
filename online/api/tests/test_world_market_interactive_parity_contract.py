@@ -121,6 +121,17 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
         self.assertIn("interactive map as a first-class navigation surface", self.gate)
         self.assertIn("Do not say \"all referenced open-source projects are fully absorbed\"", self.gate)
 
+    def test_responsive_restore_reparents_surface_before_any_rebuild(self):
+        recovery = self.intel.split(
+            "async function recoverResponsiveMap()", 1
+        )[1].split("function scheduleResponsiveMap", 1)[0]
+        mount = "HUIDICustomerIntelligence?.mount?.(pane,{autoload:false})"
+        rebuild = "await open('world-map',{force:true})"
+        self.assertIn(mount, recovery)
+        self.assertIn(rebuild, recovery)
+        self.assertNotIn("await open('world-map')", recovery)
+        self.assertLess(recovery.index(mount), recovery.index(rebuild))
+
     def test_new_browser_assets_parse(self):
         node = shutil.which("node")
         if not node:
