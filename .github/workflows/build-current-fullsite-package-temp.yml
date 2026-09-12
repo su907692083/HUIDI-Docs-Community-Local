@@ -1,0 +1,49 @@
+name: HUIDI Temporary Current Fullsite Package
+
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths: ['.github/workflows/build-current-fullsite-package-temp.yml']
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout verified source tree
+        uses: actions/checkout@v4
+        with:
+          ref: fc464e85b42acf1210ceab98ce33c48ba00a2bb2
+          persist-credentials: false
+      - name: Build fullsite archive and manifest
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          git rev-parse HEAD > dist/COMMIT.txt
+          git rev-parse HEAD^{tree} > dist/TREE.txt
+          git ls-files | LC_ALL=C sort > dist/FILES.txt
+          python - <<'PY'
+          from pathlib import Path
+          import zipfile
+          root = Path('.')
+          out = Path('dist/HUIDI-FULLSITE-f5a3ca868e72f14b.zip')
+          paths = [Path(p) for p in Path('dist/FILES.txt').read_text(encoding='utf-8').splitlines() if p]
+          with zipfile.ZipFile(out, 'w', compression=zipfile.ZIP_DEFLATED, compresslevel=9) as z:
+              for p in paths:
+                  if p.exists() and p.is_file():
+                      z.write(p, p.as_posix())
+          PY
+          sha256sum dist/HUIDI-FULLSITE-f5a3ca868e72f14b.zip > dist/SHA256SUMS.txt
+          printf 'commit=fc464e85b42acf1210ceab98ce33c48ba00a2bb2\ntree=f5a3ca868e72f14b3e9e74986f648aa4ccbba515\n' > dist/VERIFY.txt
+          cat dist/SHA256SUMS.txt
+          wc -l dist/FILES.txt
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: HUIDI-FULLSITE-f5a3ca868e72f14b
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
