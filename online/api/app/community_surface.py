@@ -145,6 +145,7 @@ def _workspace_html() -> str:
             f'<script src="/community/huidi-fused-p3-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-shell-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-functional-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+            f'<script src="/community/huidi-customer-workflow-refinement-v1.js?v={FUSION_ASSET_VERSION}"></script>'
         )
         if "</body>" not in html:
             raise HTTPException(status_code=500, detail="Community workspace body is invalid")
