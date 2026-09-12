@@ -150,8 +150,7 @@ def main() -> None:
         )
 
         wait.until(lambda d: d.find_element(By.CSS_SELECTOR, "[data-hoc-documents]").text == "加入单据工作台")
-        docs_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-documents]")
-        click_visible(driver, wait, docs_button)
+        click_visible(driver, wait, driver.find_element(By.CSS_SELECTOR, "[data-hoc-documents]"))
         confirmation = wait.until(EC.alert_is_present())
         assert "加入当前询盘" in confirmation.text, confirmation.text
         assert "正式单价、金额和执行数量仍需在单据中确认" in confirmation.text, confirmation.text
@@ -166,7 +165,6 @@ def main() -> None:
         linked = http_json(f"/api/business/deals/{deal_id}/products?limit=100")
         assert set(linked.get("selected") or []) == expected, linked
 
-        # Follow the same path the user follows inside the real document workbench.
         active = driver.find_elements(By.CSS_SELECTOR, f'[data-hdw-deal="{deal_id}"]')
         assert active, f"deal {deal_id} must be visible in document workbench"
         if "active" not in (active[0].get_attribute("class") or "").split():
@@ -175,34 +173,80 @@ def main() -> None:
             lambda d: "active"
             in (d.find_element(By.CSS_SELECTOR, f'[data-hdw-deal="{deal_id}"]').get_attribute("class") or "").split()
         )
-        quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hdw-doc="quotation"]')))
-        click_visible(driver, wait, quote)
+        click_visible(driver, wait, wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hdw-doc="quotation"]'))))
 
-        frame = wait.until(EC.presence_of_element_located((By.ID, "hwpDocumentFrame")))
+        wait.until(EC.presence_of_element_located((By.ID, "hwpDocumentFrame")))
         wait.until(lambda d: "/documents/online/" in (d.find_element(By.ID, "hwpDocumentFrame").get_attribute("src") or ""))
-        frame_src = frame.get_attribute("src") or ""
+        frame_src = driver.find_element(By.ID, "hwpDocumentFrame").get_attribute("src") or ""
         deal_after = http_json(f"/api/business/deals/{deal_id}")
         quotes = [item for item in (deal_after.get("documents") or []) if item.get("type") == "quotation"]
         assert len(quotes) == 1, deal_after
+        quote_id = int(quotes[0]["id"])
+        assert f"/documents/online/{quote_id}" in frame_src, (frame_src, quote_id)
+
+        page_probe = driver.execute_async_script(
+            """
+            const [url, names, done]=arguments;
+            fetch(url,{credentials:'same-origin'}).then(async response=>{
+              const text=await response.text();
+              done({
+                status:response.status,
+                rowCount:(text.match(/<tr data-item-row/g)||[]).length,
+                names:names.map(name=>text.includes(name)),
+                hasNativeHeader:text.includes('data-huidi-native-header')
+              });
+            }).catch(error=>done({status:0,error:String(error)}));
+            """,
+            f"/documents/online/{quote_id}",
+            [product["name"] for product in products],
+        )
+        print("CATALOG_HANDOFF_NATIVE_PAGE=" + json.dumps(page_probe, ensure_ascii=False))
+        assert page_probe.get("status") == 200, page_probe
+        assert page_probe.get("rowCount") == 2, page_probe
+        assert page_probe.get("names") == [True, True], page_probe
+        assert page_probe.get("hasNativeHeader") is True, page_probe
 
         driver.switch_to.frame(driver.find_element(By.ID, "hwpDocumentFrame"))
-        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "[data-item-row]")) == 2)
-        rows = []
-        for row in driver.find_elements(By.CSS_SELECTOR, "[data-item-row]"):
-            rows.append(
-                {
-                    "product": row.find_element(By.CSS_SELECTOR, '[data-item-k="product"]').get_attribute("value") or "",
-                    "sku": row.find_element(By.CSS_SELECTOR, '[data-item-k="sku"]').get_attribute("value") or "",
-                    "spec": row.find_element(By.CSS_SELECTOR, '[data-item-k="spec"]').get_attribute("value") or "",
-                    "price": row.find_element(By.CSS_SELECTOR, '[data-item-k="unit_price"]').get_attribute("value") or "",
-                }
+        WebDriverWait(driver, 15).until(lambda d: d.execute_script("return document.readyState") == "complete")
+        snapshot = {}
+        for _ in range(60):
+            snapshot = driver.execute_script(
+                """
+                const rows=[...document.querySelectorAll('tr[data-item-row],.item-row')];
+                const val=(row,selectors)=>{
+                  for(const selector of selectors){
+                    const node=row.querySelector(selector);
+                    if(node)return String(node.value??node.textContent??'');
+                  }
+                  return '';
+                };
+                return {
+                  url:location.href,
+                  title:document.title,
+                  ready:document.readyState,
+                  rows:rows.map(row=>({
+                    product:val(row,['[data-item-k="product"]','.i-name']),
+                    sku:val(row,['[data-item-k="sku"]','.i-sku']),
+                    spec:val(row,['[data-item-k="spec"]','.i-spec']),
+                    price:val(row,['[data-item-k="unit_price"]','.i-price'])
+                  })),
+                  header:Boolean(document.querySelector('.top[data-huidi-native-header]')),
+                  body:String(document.body?.innerText||'').slice(0,800)
+                };
+                """
             )
+            if len(snapshot.get("rows") or []) >= 2:
+                break
+            time.sleep(0.25)
+        print("CATALOG_HANDOFF_FRAME=" + json.dumps(snapshot, ensure_ascii=False))
+        rows = snapshot.get("rows") or []
+        assert len(rows) == 2, snapshot
         assert {row["product"] for row in rows} == {product["name"] for product in products}, rows
         assert {row["sku"] for row in rows} == {product["sku"] for product in products}, rows
         for product in products:
             assert any(product["spec"] in row["spec"] for row in rows if row["sku"] == product["sku"]), rows
         assert all(row["price"] == "" for row in rows), rows
-        assert driver.find_element(By.CSS_SELECTOR, ".top[data-huidi-native-header]")
+        assert snapshot.get("header") is True, snapshot
         driver.switch_to.default_content()
 
         print(
