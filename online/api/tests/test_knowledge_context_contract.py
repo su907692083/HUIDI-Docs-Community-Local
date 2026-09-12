@@ -82,6 +82,26 @@ class KnowledgeContextContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, self.ai)
 
+    def test_one_knowledge_panel_exposes_all_bounded_business_ai_modes(self) -> None:
+        expected = {
+            "outreach_strategy": "开发策略",
+            "account_summary": "客户总结",
+            "inquiry_next_step": "询盘下一步",
+            "market_brief": "市场简报",
+        }
+        for key, label in expected.items():
+            self.assertIn(f'"{key}"', self.ai)
+            self.assertIn(f'{key}:{{label:\'{label}\'', self.ui)
+            self.assertIn(f'<option value="{key}">{label}</option>', self.ui)
+        self.assertIn('data-hkc-purpose', self.ui)
+        self.assertIn('data-hkc-language', self.ui)
+        self.assertIn('<option value="Chinese">中文</option>', self.ui)
+        self.assertIn('<option value="English">English</option>', self.ui)
+        self.assertIn('const {purpose,language}=modeInfo(box)', self.ui)
+        self.assertIn('JSON.stringify({query:q,purpose,language,max_sources:6})', self.ui)
+        self.assertNotIn("purpose:'outreach_strategy',language:'Chinese'", self.ui)
+        self.assertIn("version:'1.2.0'", self.ui)
+
     def test_ai_ui_is_explicit_copy_only_not_auto_apply_or_send(self) -> None:
         for marker in (
             "基于引用给建议", "/api/knowledge/suggest", "复制建议",
