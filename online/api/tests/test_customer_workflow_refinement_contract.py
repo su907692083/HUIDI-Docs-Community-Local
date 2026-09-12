@@ -43,6 +43,12 @@ class CustomerWorkflowRefinementContractTest(unittest.TestCase):
         self.assertIn("hdwRouteAction", self.asset)
         self.assertIn("建客户/询盘", self.asset)
         self.assertIn("继续开发", self.asset)
+        self.assertIn("const evidence=buttons.find", self.asset)
+        self.assertIn("keep=new Set([develop,adopt,evidence]", self.asset)
+        self.assertIn("背调证据保持直接可用", self.asset)
+
+    def test_critical_tabs_keep_accessible_height_even_when_linked_css_fails(self):
+        self.assertIn("min-height:34px!important", self.asset)
 
     def test_customer_development_and_communication_surfaces_are_both_covered(self):
         for token in (
