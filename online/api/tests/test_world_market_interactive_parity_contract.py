@@ -59,6 +59,18 @@ class WorldMarketInteractiveParityContractTests(unittest.TestCase):
         self.assertIn("暂无你的业务记录", self.face_core)
         self.assertIn("不生成客户、询盘或热度数据", self.face_core)
 
+    def test_world_face_loader_gates_on_its_synchronous_owner(self):
+        self.assertIn(
+            "worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceSelectionSync']",
+            self.intel,
+        )
+        self.assertIn("window.HUIDIWorldCountryFaceSelectionSync=Object.freeze", self.face_loader)
+        self.assertIn("window.HUIDIWorldCountryFaceParity?.refresh?.()", self.face_loader)
+        self.assertNotIn(
+            "worldFace:['world-country-face-parity-v1.js','HUIDIWorldCountryFaceParity']",
+            self.intel,
+        )
+
     def test_country_context_routes_to_existing_foreign_trade_owners(self):
         for label in (
             "找当地买家",
