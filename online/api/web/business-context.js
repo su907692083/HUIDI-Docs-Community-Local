@@ -16,11 +16,13 @@ function loadUnifiedNextActions(){if(window.HUIDIUnifiedNextActionsFusion)return
 function loadBusinessLowInput(){if(window.HUIDIBusinessLowInputFusion)return;loadScript('data-huidi-business-low-input','/assets/business-low-input-fusion.js?v=HUIDI-BUSINESS-LOW-INPUT-3',()=>{if(dealId)window.HUIDIBusinessLowInputFusion?.setDealId?.(dealId);if(dealSnapshot)window.HUIDIBusinessLowInputFusion?.acceptDeal?.(dealSnapshot)})}
 function loadBusinessDocumentReuse(){if(window.HUIDIBusinessDocumentReuseFusion)return;loadScript('data-huidi-business-document-reuse','/assets/business-document-reuse-fusion.js?v=HUIDI-BUSINESS-DOCUMENT-REUSE-1',()=>{if(dealId)window.HUIDIBusinessDocumentReuseFusion?.setDealId?.(dealId);if(dealSnapshot)window.HUIDIBusinessDocumentReuseFusion?.acceptDeal?.(dealSnapshot)})}
 function loadDocumentEntryConnectivity(){if(window.HUIDIDocumentEntryConnectivity)return;loadScript('data-huidi-document-entry-connectivity','/assets/document-entry-connectivity-v1.js?v=HUIDI-DOCUMENT-ENTRY-1',()=>{if(dealId)window.HUIDIDocumentEntryConnectivity?.setDeal?.(dealId,dealSnapshot);else window.HUIDIDocumentEntryConnectivity?.refresh?.()})}
+function loadCatalogDocumentHandoff(){if(window.HUIDICatalogDocumentHandoff)return;loadScript('data-huidi-catalog-document-handoff','/assets/catalog-document-handoff-v1.js?v=HUIDI-CATALOG-DOCUMENT-HANDOFF-1')}
 window.fetch=async(input,init={})=>{const next=withContext(input,init);noteBusinessDeal(input,next);const response=await rawFetch(input,next);return observeBusinessResponse(input,next,response)};
 document.addEventListener('click',e=>{const open=e.target.closest('[data-open]');if(open)leadId=String(open.dataset.open||'')},true);
 loadUnifiedNextActions();
 loadBusinessLowInput();
 loadBusinessDocumentReuse();
 loadDocumentEntryConnectivity();
+loadCatalogDocumentHandoff();
 window.HUIDIBusinessContext=Object.freeze({leadId:()=>leadId,dealId:()=>dealId,deal:()=>dealSnapshot,clear:()=>{leadId='';dealId='';dealSnapshot=null;window.HUIDIBusinessLowInputFusion?.clearDealId?.();window.HUIDIBusinessDocumentReuseFusion?.clearDealId?.()}});
 })();
