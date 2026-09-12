@@ -140,6 +140,7 @@ def _workspace_html() -> str:
             f'<script src="/community/huidi-community-online-development-workbench-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-development-routing-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-business-activity-timeline-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+            f'<script src="/community/huidi-product-master-refinement-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-knowledge-context-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-fused-p3-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
             f'<script src="/community/huidi-community-online-shell-closure-v1.js?v={FUSION_ASSET_VERSION}"></script>'
