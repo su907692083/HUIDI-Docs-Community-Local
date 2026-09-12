@@ -134,8 +134,7 @@ def main() -> None:
         search.send_keys(f"Catalog Handoff Product {stamp}")
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")) == 2)
 
-        # Every catalog selection re-renders the list. Re-query the live DOM for each click
-        # so this gate validates the application instead of keeping stale Selenium nodes.
+        # Every catalog selection re-renders the list. Re-query the live DOM for each click.
         for index in range(2):
             box = driver.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")[index]
             driver.execute_script("arguments[0].click();", box)
@@ -159,6 +158,7 @@ def main() -> None:
         confirmation.accept()
 
         wait.until(lambda d: "page=documents" in d.current_url)
+        wait.until(EC.visibility_of_element_located((By.ID, "hdwList")))
         wait.until(
             lambda d: str(d.execute_script("return window.HUIDIDocumentEntryConnectivity?.dealId?.() || '';"))
             == str(deal_id)
@@ -166,48 +166,44 @@ def main() -> None:
         linked = http_json(f"/api/business/deals/{deal_id}/products?limit=100")
         assert set(linked.get("selected") or []) == expected, linked
 
-        driver.execute_script(
-            "window.HUIDIDocumentEntryConnectivity.openForDeal(arguments[0],'quotation');",
-            str(deal_id),
+        # Follow the same path the user follows inside the real document workbench.
+        active = driver.find_elements(By.CSS_SELECTOR, f'[data-hdw-deal="{deal_id}"]')
+        assert active, f"deal {deal_id} must be visible in document workbench"
+        if "active" not in (active[0].get_attribute("class") or "").split():
+            click_visible(driver, wait, active[0])
+        wait.until(
+            lambda d: "active"
+            in (d.find_element(By.CSS_SELECTOR, f'[data-hdw-deal="{deal_id}"]').get_attribute("class") or "").split()
         )
-        wait.until(lambda d: d.execute_script("return location.pathname === '/community/editor.html'"))
-        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, ".item-row")) == 2)
+        quote = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hdw-doc="quotation"]')))
+        click_visible(driver, wait, quote)
 
-        snapshot = driver.execute_script(
-            """
-            const ctx=JSON.parse(sessionStorage.getItem('huidi_local_document_context_v2')||'null');
-            return {
-              dealId:String(ctx?.dealId||''),
-              products:(ctx?.products||[]).map(p=>({
-                id:String(p.local_product_id||p.brain_id||p.id||''),
-                name:String(p.name||''),
-                sku:String(p.sku||''),
-                spec:String(p.spec||p.specification||''),
-                price:String(p.price??'')
-              })),
-              rows:[...document.querySelectorAll('.item-row')].map(row=>({
-                id:String(row.dataset.huidiProductId||''),
-                name:String(row.querySelector('.i-name')?.value||''),
-                price:String(row.querySelector('.i-price')?.value||''),
-                confirmed:String(row.querySelector('.i-price')?.dataset.huidiFormalPriceConfirmed||'')
-              }))
-            };
-            """
-        )
-        assert snapshot["dealId"] == str(deal_id), snapshot
-        assert {row["id"] for row in snapshot["rows"]} == expected, snapshot
-        assert len(snapshot["products"]) == 2, snapshot
-        assert {row["id"] for row in snapshot["products"]} == expected, snapshot
+        frame = wait.until(EC.presence_of_element_located((By.ID, "hwpDocumentFrame")))
+        wait.until(lambda d: "/documents/online/" in (d.find_element(By.ID, "hwpDocumentFrame").get_attribute("src") or ""))
+        frame_src = frame.get_attribute("src") or ""
+        deal_after = http_json(f"/api/business/deals/{deal_id}")
+        quotes = [item for item in (deal_after.get("documents") or []) if item.get("type") == "quotation"]
+        assert len(quotes) == 1, deal_after
+
+        driver.switch_to.frame(driver.find_element(By.ID, "hwpDocumentFrame"))
+        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "[data-item-row]")) == 2)
+        rows = []
+        for row in driver.find_elements(By.CSS_SELECTOR, "[data-item-row]"):
+            rows.append(
+                {
+                    "product": row.find_element(By.CSS_SELECTOR, '[data-item-k="product"]').get_attribute("value") or "",
+                    "sku": row.find_element(By.CSS_SELECTOR, '[data-item-k="sku"]').get_attribute("value") or "",
+                    "spec": row.find_element(By.CSS_SELECTOR, '[data-item-k="spec"]').get_attribute("value") or "",
+                    "price": row.find_element(By.CSS_SELECTOR, '[data-item-k="unit_price"]').get_attribute("value") or "",
+                }
+            )
+        assert {row["product"] for row in rows} == {product["name"] for product in products}, rows
+        assert {row["sku"] for row in rows} == {product["sku"] for product in products}, rows
         for product in products:
-            ctx_product = next(row for row in snapshot["products"] if row["id"] == product["brain_id"])
-            editor_row = next(row for row in snapshot["rows"] if row["id"] == product["brain_id"])
-            assert ctx_product["name"] == product["name"], snapshot
-            assert ctx_product["sku"] == product["sku"], snapshot
-            assert product["spec"] in ctx_product["spec"], snapshot
-            assert ctx_product["price"] == "", snapshot
-            assert editor_row["name"] == product["name"], snapshot
-            assert editor_row["price"] == "", snapshot
-            assert editor_row["confirmed"] in {"", "0"}, snapshot
+            assert any(product["spec"] in row["spec"] for row in rows if row["sku"] == product["sku"]), rows
+        assert all(row["price"] == "" for row in rows), rows
+        assert driver.find_element(By.CSS_SELECTOR, ".top[data-huidi-native-header]")
+        driver.switch_to.default_content()
 
         print(
             "HUIDI Catalog -> Document explicit handoff Chrome PASS:",
@@ -215,7 +211,8 @@ def main() -> None:
                 "deal_id": deal_id,
                 "selected": sorted(expected),
                 "workbench": "page=documents",
-                "quotation_rows": len(snapshot["rows"]),
+                "quotation": frame_src,
+                "quotation_rows": len(rows),
                 "sku_spec_reused": True,
                 "formal_prices_blank": True,
             },
