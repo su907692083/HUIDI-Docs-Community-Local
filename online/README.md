@@ -86,7 +86,7 @@ uvicorn app.daily_app:app --reload --host 0.0.0.0 --port 8080
 
 `http://127.0.0.1:8080/`
 
-Docker 也使用 `app.daily_app:app`。
+Docker 也使用 `app.daily_app:app`。如果不使用 Railway，可直接按根目录 `SELF-HOSTING.md` 使用 Windows Server 启动器或 `docker-compose.online.yml` 自托管，业务数据和备份会放到独立持久化目录。
 
 ## 已经接通的业务能力
 
@@ -122,22 +122,20 @@ Docker 也使用 `app.daily_app:app`。
 6. 能真实调用的联网能力就接真实 Provider，不用装饰性 Demo 冒充完成。
 7. 复杂配置隐藏到设置层，业务员日常界面只看到“下一步”。
 
-## 后续继续施工
+## 当前联网能力收口
 
-下一层会继续把联网能力做实，而不是阉割：
+当前主线已经不再停留在早期 TODO：
 
-- Gmail / Outlook OAuth2
-- 收件箱 / 回复识别 / Thread
-- 自动 Reply-stop
-- 发送序列与队列
-- Bounce / Unsubscribe 自动回写
-- 真实工商 / 海关 /贸易数据 Provider
-- 地图获客
-- Trade Intelligence
-- HS Code / 关税
-- 汇率
-- 船期 / 物流
-- 团队账号 / 权限 / 协作
-- Online Product Brain 服务器持久化
+- Gmail / Outlook OAuth2、SMTP 发送
+- 收件箱同步、Thread / Reply 识别、Reply-stop
+- 发送序列、队列、退订/黑名单与发送治理
+- Serper 主搜索、Tavily 企业搜索备用、Hunter 联系人优先
+- 世界市场 / 客户情报与 GNews 可选新闻源
+- 工商 / 贸易 / HS 关税 / 汇率 / 船期物流外部 Provider 接口
+- 团队账号、公司隔离、权限与审计
+- Online Product Brain / Customer / Deal / Document 服务器持久化
+- Community Local 母工作台与 Online 能力融合
+
+后续施工继续围绕真实业务闭环、Provider 覆盖率、数据质量、交付稳定性和低操作成本推进，不再重复建设第二套业务数据平面。
 
 第三方项目继续只按各自许可证允许的范围融合，边界见 `THIRD-PARTY-NOTICES.md`。

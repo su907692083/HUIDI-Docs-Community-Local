@@ -1,0 +1,37 @@
+services:
+  huidi-online:
+    build:
+      context: .
+      dockerfile: Dockerfile.online
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./online/.env.server
+    environment:
+      APP_ENV: production
+      DATABASE_URL: sqlite:////data/huidi-online.db
+      HUIDI_BACKUP_DIR: /data/backups
+      HUIDI_COMMUNITY_SURFACE: "1"
+      HUIDI_TEAM_ACCESS: "1"
+      HUIDI_SIGNUP_ENABLED: "0"
+    volumes:
+      - ./.huidi-online-data:/data
+    command:
+      - /bin/sh
+      - -c
+      - >-
+        test -n "$$HUIDI_SECRET_KEY" || { echo "HUIDI_SECRET_KEY is required in online/.env.server"; exit 2; };
+        test -n "$$HUIDI_OWNER_EMAIL" || { echo "HUIDI_OWNER_EMAIL is required in online/.env.server"; exit 2; };
+        test $${#HUIDI_OWNER_PASSWORD} -ge 8 || { echo "HUIDI_OWNER_PASSWORD must be at least 8 characters"; exit 2; };
+        exec uvicorn app.daily_app:app --host 0.0.0.0 --port 8080
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8080/api/health', timeout=5).read()"
+      interval: 30s
+      timeout: 8s
+      retries: 5
+      start_period: 30s

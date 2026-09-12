@@ -4,3 +4,13 @@ Thumbs.db
 *.log
 .local-backups/
 online/api/backups/
+# HUIDI Online local/server runtime state
+online/.env
+online/.env.server
+online/api/.huidi-secret
+online/api/.huidi-deps-ready
+online/api/.huidi-server-deps-ready
+online/api/huidi-online.db
+online/api/huidi-online-tenants/
+online/server-data/
+.huidi-online-data/
