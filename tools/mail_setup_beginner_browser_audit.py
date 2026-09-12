@@ -20,9 +20,12 @@ def exercise(base: str, output: Path) -> None:
         try:
             page.goto(base+"/",wait_until="domcontentloaded")
             page.wait_for_function("() => document.documentElement.dataset.huidiCloud==='ready' && Boolean(window.HUIDIMailSetupRefinement)",timeout=35000)
-            setup=page.locator('#hufHome [data-huf-open]').first
-            setup.wait_for(state="visible",timeout=12000);setup.click()
-            page.locator('[data-huf-other-mail]').wait_for(state="visible",timeout=12000);page.locator('[data-huf-other-mail]').click()
+            communication=page.locator('.nav-btn[data-view="mail"]').first
+            communication.wait_for(state="visible",timeout=12000);communication.click()
+            mailbox_tab=page.locator('#view-mail [data-fv2-tab="mailbox"]')
+            mailbox_tab.wait_for(state="visible",timeout=12000);mailbox_tab.click()
+            other=page.locator('#view-mail [data-fv2-pane="mailbox"] [data-other-mail]')
+            other.wait_for(state="visible",timeout=12000);other.click()
             page.wait_for_selector('#hmsBack.open [data-hms-company]:not(.hms-hidden)',timeout=10000)
             modal=page.locator('#hmsBack');text=modal.inner_text()
             check("business-language mailbox setup",all(x in text for x in ["一键连接 Gmail","一键连接 Outlook","连接企业邮箱","授权码 / 专用密码","连接并检查"]))
