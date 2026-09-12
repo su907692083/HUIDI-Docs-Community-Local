@@ -38,9 +38,10 @@ jobs:
         run: |
           node --check web/catalog-studio-online.js
           node --check web/catalog-document-handoff-v1.js
+          node --check web/document-entry-connectivity-v1.js
           node --check web/business-context.js
           python -m py_compile app/product_memory.py tests/product_catalog_large_data_browser_smoke.py tests/catalog_document_handoff_browser_smoke.py
-          python -m unittest tests.test_product_catalog_contract tests.test_catalog_document_handoff_contract -v
+          python -m unittest tests.test_product_catalog_contract tests.test_catalog_document_handoff_contract tests.test_document_entry_connectivity_contract -v
       - name: Start Online workbench
         run: |
           python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18086 > /tmp/huidi-product-catalog-large-data-server.log 2>&1 &
