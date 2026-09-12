@@ -93,6 +93,7 @@ def main() -> None:
         },
     )
     deal_id = int(lead["deal"]["id"])
+    expected = {products[0]["brain_id"], products[1]["brain_id"]}
 
     driver = webdriver.Chrome(options=chrome_options())
     driver.set_page_load_timeout(20)
@@ -133,20 +134,24 @@ def main() -> None:
         search.send_keys(f"Catalog Handoff Product {stamp}")
         wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")) == 2)
 
-        boxes = driver.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")
-        for box in boxes:
+        # Every catalog selection re-renders the list. Re-query the live DOM for each click
+        # so this gate validates the application instead of keeping stale Selenium nodes.
+        for index in range(2):
+            box = driver.find_elements(By.CSS_SELECTOR, "#hocList [data-hoc-select]")[index]
             driver.execute_script("arguments[0].click();", box)
-        expected = {products[0]["brain_id"], products[1]["brain_id"]}
-        wait.until(
-            lambda d: set(
-                str(value)
-                for value in d.execute_script("return window.HUIDIOnlineCatalog.selectedProductIds();")
+            wait.until(
+                lambda d, count=index + 1: len(
+                    d.execute_script("return window.HUIDIOnlineCatalog.selectedProductIds();")
+                )
+                == count
             )
+        wait.until(
+            lambda d: set(str(value) for value in d.execute_script("return window.HUIDIOnlineCatalog.selectedProductIds();"))
             == expected
         )
 
-        docs_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-documents]")
         wait.until(lambda d: d.find_element(By.CSS_SELECTOR, "[data-hoc-documents]").text == "加入单据工作台")
+        docs_button = driver.find_element(By.CSS_SELECTOR, "[data-hoc-documents]")
         click_visible(driver, wait, docs_button)
         confirmation = wait.until(EC.alert_is_present())
         assert "加入当前询盘" in confirmation.text, confirmation.text
@@ -165,16 +170,44 @@ def main() -> None:
             "window.HUIDIDocumentEntryConnectivity.openForDeal(arguments[0],'quotation');",
             str(deal_id),
         )
-        wait.until(lambda d: "/documents/online/" in d.current_url)
-        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, "[data-item-row]")) == 2)
+        wait.until(lambda d: d.execute_script("return location.pathname === '/community/editor.html'"))
+        wait.until(lambda d: len(d.find_elements(By.CSS_SELECTOR, ".item-row")) == 2)
 
-        row_text = "\n".join(row.text for row in driver.find_elements(By.CSS_SELECTOR, "[data-item-row]"))
+        snapshot = driver.execute_script(
+            """
+            const ctx=JSON.parse(sessionStorage.getItem('huidi_local_document_context_v2')||'null');
+            return {
+              dealId:String(ctx?.dealId||''),
+              products:(ctx?.products||[]).map(p=>({
+                id:String(p.local_product_id||p.brain_id||p.id||''),
+                name:String(p.name||''),
+                sku:String(p.sku||''),
+                spec:String(p.spec||p.specification||''),
+                price:String(p.price??'')
+              })),
+              rows:[...document.querySelectorAll('.item-row')].map(row=>({
+                id:String(row.dataset.huidiProductId||''),
+                name:String(row.querySelector('.i-name')?.value||''),
+                price:String(row.querySelector('.i-price')?.value||''),
+                confirmed:String(row.querySelector('.i-price')?.dataset.huidiFormalPriceConfirmed||'')
+              }))
+            };
+            """
+        )
+        assert snapshot["dealId"] == str(deal_id), snapshot
+        assert {row["id"] for row in snapshot["rows"]} == expected, snapshot
+        assert len(snapshot["products"]) == 2, snapshot
+        assert {row["id"] for row in snapshot["products"]} == expected, snapshot
         for product in products:
-            assert product["name"] in row_text, row_text
-            assert product["sku"] in row_text, row_text
-        prices = driver.find_elements(By.CSS_SELECTOR, "input[data-item-k='unit_price']")
-        assert len(prices) == 2, len(prices)
-        assert all((field.get_attribute("value") or "") == "" for field in prices), [field.get_attribute("value") for field in prices]
+            ctx_product = next(row for row in snapshot["products"] if row["id"] == product["brain_id"])
+            editor_row = next(row for row in snapshot["rows"] if row["id"] == product["brain_id"])
+            assert ctx_product["name"] == product["name"], snapshot
+            assert ctx_product["sku"] == product["sku"], snapshot
+            assert product["spec"] in ctx_product["spec"], snapshot
+            assert ctx_product["price"] == "", snapshot
+            assert editor_row["name"] == product["name"], snapshot
+            assert editor_row["price"] == "", snapshot
+            assert editor_row["confirmed"] in {"", "0"}, snapshot
 
         print(
             "HUIDI Catalog -> Document explicit handoff Chrome PASS:",
@@ -182,7 +215,8 @@ def main() -> None:
                 "deal_id": deal_id,
                 "selected": sorted(expected),
                 "workbench": "page=documents",
-                "quotation_rows": len(prices),
+                "quotation_rows": len(snapshot["rows"]),
+                "sku_spec_reused": True,
                 "formal_prices_blank": True,
             },
         )
