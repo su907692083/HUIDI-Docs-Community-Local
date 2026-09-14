@@ -1,0 +1,112 @@
+name: HUIDI Online Auth Smoke
+
+on:
+  pull_request:
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-auth-smoke.yml'
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths:
+      - 'online/**'
+      - '.github/workflows/online-auth-smoke.yml'
+
+jobs:
+  auth_browser:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: online/api
+    env:
+      HUIDI_SECRET_KEY: ci-auth-browser-secret-2026
+      HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+      HUIDI_TEAM_ACCESS: '1'
+      HUIDI_SIGNUP_ENABLED: '1'
+      DATABASE_URL: sqlite:////tmp/huidi-auth-browser.db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install 'selenium>=4.20,<5'
+      - name: Check auth browser JavaScript
+        run: node --check web/auth-portal.js
+      - name: Start Online with public auth enabled
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.daily_app:app --host 127.0.0.1 --port 18085 > /tmp/huidi-auth.log 2>&1 &
+          echo $! > /tmp/huidi-auth.pid
+          for i in $(seq 1 80); do
+            if curl -fsS http://127.0.0.1:18085/api/auth/status > /dev/null; then exit 0; fi
+            sleep 0.25
+          done
+          cat /tmp/huidi-auth.log
+          exit 1
+      - name: Verify login registration and private workspace in Chrome
+        run: |
+          python - <<'PY'
+          import time, uuid
+          from selenium import webdriver
+          from selenium.webdriver.common.by import By
+          from selenium.webdriver.support.ui import WebDriverWait
+          from selenium.webdriver.support import expected_conditions as EC
+          from selenium.webdriver.chrome.options import Options
+
+          options=Options()
+          options.add_argument('--headless=new')
+          options.add_argument('--no-sandbox')
+          options.add_argument('--disable-gpu')
+          options.add_argument('--disable-dev-shm-usage')
+          options.add_argument('--window-size=1440,1000')
+          driver=webdriver.Chrome(options=options)
+          wait=WebDriverWait(driver,12)
+          try:
+              driver.get('http://127.0.0.1:18085/')
+              wait.until(lambda d: d.current_url.endswith('/login'))
+              wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR,'.auth-head h2'),'登录 HUIDI'))
+              assert driver.find_element(By.CSS_SELECTOR,'[data-login-tab="email"]').is_displayed()
+              assert driver.find_element(By.CSS_SELECTOR,'[data-login-tab="phone"]').get_attribute('disabled') is not None
+              assert driver.find_element(By.CSS_SELECTOR,'[data-oauth="wechat"]').get_attribute('disabled') is not None
+              assert driver.find_element(By.CSS_SELECTOR,'[data-oauth="feishu"]').get_attribute('disabled') is not None
+
+              driver.get('http://127.0.0.1:18085/register')
+              wait.until(EC.presence_of_element_located((By.ID,'registerForm')))
+              email=f'chrome-{uuid.uuid4().hex[:12]}@example.test'
+              driver.find_element(By.ID,'regName').send_keys('Chrome Auth User')
+              driver.find_element(By.ID,'regEmail').send_keys(email)
+              driver.find_element(By.ID,'regPassword').send_keys('correct-horse-2026')
+              driver.find_element(By.ID,'registerBtn').click()
+              wait.until(lambda d: d.current_url.rstrip('/')=='http://127.0.0.1:18085')
+              wait.until(EC.presence_of_element_located((By.CSS_SELECTOR,'.side')))
+              wait.until(EC.text_to_be_present_in_element((By.CSS_SELECTOR,'.brand'),'HUIDI'))
+              cookie=driver.get_cookie('huidi_team_session')
+              assert cookie and cookie.get('httpOnly') is True, cookie
+
+              me=driver.execute_async_script("""
+                const done=arguments[0];fetch('/api/team/me').then(r=>r.json().then(x=>done({s:r.status,x}))).catch(e=>done({s:0,x:String(e)}));
+              """)
+              assert me['s']==200, me
+              assert me['x']['organization']['id']>1, me
+              assert me['x']['isolation']=='physical_database_per_organization', me
+
+              created=driver.execute_async_script("""
+                const done=arguments[0];fetch('/api/leads/manual',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({company_name:'Auth Private Buyer',country:'DE',create_inquiry:false})}).then(r=>r.json().then(x=>done({s:r.status,x}))).catch(e=>done({s:0,x:String(e)}));
+              """)
+              assert created['s']==200, created
+              rows=driver.execute_async_script("""
+                const done=arguments[0];fetch('/api/leads?paged=1&page_size=50').then(r=>r.json().then(x=>done({s:r.status,x}))).catch(e=>done({s:0,x:String(e)}));
+              """)
+              assert rows['s']==200, rows
+              assert any(x['company_name']=='Auth Private Buyer' for x in rows['x']['items']), rows
+              print('HUIDI public auth + registration + private workspace PASS')
+          finally:
+              driver.quit()
+          PY
+      - name: Stop Online
+        if: always()
+        run: |
+          if [ -f /tmp/huidi-auth.pid ]; then kill "$(cat /tmp/huidi-auth.pid)" 2>/dev/null || true; fi
+          if [ -s /tmp/huidi-auth.log ]; then tail -180 /tmp/huidi-auth.log; fi

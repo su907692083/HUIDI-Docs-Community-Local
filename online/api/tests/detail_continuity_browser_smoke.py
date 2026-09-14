@@ -1,0 +1,341 @@
+from __future__ import annotations
+
+import json
+import time
+
+from selenium import webdriver
+from selenium.common.exceptions import TimeoutException
+from selenium.webdriver import ActionChains
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import WebDriverWait
+
+
+BASE = "http://127.0.0.1:18080"
+
+
+def options() -> Options:
+    opts = Options()
+    opts.add_argument("--headless=new")
+    opts.add_argument("--no-sandbox")
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--disable-dev-shm-usage")
+    opts.add_argument("--window-size=1440,1000")
+    opts.set_capability("goog:loggingPrefs", {"browser": "ALL"})
+    return opts
+
+
+def post(driver: webdriver.Chrome, path: str, payload: dict) -> dict:
+    result = driver.execute_async_script(
+        """
+        const [path, payload, done] = arguments;
+        fetch(path, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        }).then(async response => done({status: response.status, body: await response.text()}))
+          .catch(error => done({status: 0, body: String(error)}));
+        """,
+        path,
+        payload,
+    )
+    assert result["status"] < 400, result
+    return json.loads(result["body"] or "{}")
+
+
+def ctrl_s(driver: webdriver.Chrome) -> None:
+    ActionChains(driver).key_down(Keys.CONTROL).send_keys("s").key_up(Keys.CONTROL).perform()
+
+
+def enabled(element) -> bool:
+    return element.is_enabled() and element.get_attribute("disabled") is None
+
+
+def pointer_click(driver: webdriver.Chrome, element) -> None:
+    driver.execute_script("arguments[0].scrollIntoView({block:'center', inline:'nearest'});", element)
+    ActionChains(driver).move_to_element(element).pause(0.05).click().perform()
+
+
+def runtime_state(driver: webdriver.Chrome) -> dict:
+    return driver.execute_script(
+        """
+        const rail = document.querySelector('#hdcLeadRail');
+        const current = window.HUIDILeadWorkbench?.current?.();
+        return {
+          ready: document.readyState,
+          leadOwner: typeof window.HUIDILeadWorkbench?.open,
+          leadRefresh: typeof window.HUIDILeadWorkbench?.refresh,
+          detailContinuity: typeof window.HUIDIDetailContinuity?.decorateLead,
+          workspacePages: typeof window.HUIDIWorkspacePages?.open,
+          page: window.HUIDIWorkspacePages?.current?.() || '',
+          backdropClass: document.querySelector('#backdrop')?.className || '',
+          productClass: document.querySelector('#pbBackdrop')?.className || '',
+          leadButtons: document.querySelectorAll('#tbody [data-open]').length,
+          firstLeadId: document.querySelector('#tbody [data-open]')?.dataset?.open || '',
+          hprActive: document.querySelector('.main')?.classList.contains('hpr-active') || false,
+          ownerCurrentId: String(current?.id || ''),
+          ownerCurrentCompany: String(current?.company_name || ''),
+          dCompany: document.querySelector('#dCompany')?.textContent || '',
+          dWebsiteConnected: Boolean(document.querySelector('#dWebsite')?.isConnected),
+          timelineConnected: Boolean(document.querySelector('#timeline')?.isConnected),
+          assessmentConnected: Boolean(document.querySelector('#assessmentBox')?.isConnected),
+          hdcRailPresent: Boolean(rail),
+          hdcRailDisplay: rail ? getComputedStyle(rail).display : '',
+          hdcLeadState: document.querySelector('[data-hdc-lead-state]')?.textContent || '',
+          leadCollapseCount: document.querySelectorAll('[data-hdc-collapse]').length,
+          drawerRailPresent: Boolean(document.querySelector('#huidiDrawerRail'))
+        };
+        """
+    )
+
+
+def core_owners_ready(driver: webdriver.Chrome) -> bool:
+    state = runtime_state(driver)
+    return bool(
+        state["ready"] in {"interactive", "complete"}
+        and state["leadOwner"] == "function"
+        and state["detailContinuity"] == "function"
+        and state["workspacePages"] == "function"
+    )
+
+
+def dump_browser_log(driver: webdriver.Chrome, label: str) -> None:
+    try:
+        rows = driver.get_log("browser")
+    except Exception as exc:
+        print(f"HUIDI browser console {label}: unavailable: {exc}")
+        return
+    print(f"HUIDI browser console {label}: {json.dumps(rows, ensure_ascii=False)}")
+
+
+def main() -> None:
+    driver = webdriver.Chrome(options=options())
+    driver.set_page_load_timeout(20)
+    driver.set_script_timeout(10)
+    wait = WebDriverWait(driver, 20)
+    stamp = str(int(time.time() * 1000))[-8:]
+    try:
+        driver.get(BASE + "/")
+        # Root scripts load asynchronously after the document becomes available.
+        # Wait for the three canonical owners the continuity flow actually uses
+        # instead of sampling the first loading frame and treating it as a failure.
+        wait.until(core_owners_ready)
+        initial_state = runtime_state(driver)
+        print("HUIDI runtime state initial:", initial_state)
+        assert initial_state["leadOwner"] == "function", initial_state
+        assert initial_state["detailContinuity"] == "function", initial_state
+        assert initial_state["workspacePages"] == "function", initial_state
+        dump_browser_log(driver, "initial")
+
+        # Product detail: low-frequency sections collapse, Ctrl+S uses the existing
+        # product owner, and current visible product list can be reviewed continuously.
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-huidi-product]'))).click()
+        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#pbBackdrop.open.pb-page-surface')))
+        sections = driver.find_elements(By.CSS_SELECTOR, '#pbForm details.hdc-product-section')
+        assert len(sections) == 2, len(sections)
+        assert all(section.get_attribute('open') is None for section in sections)
+
+        for suffix in ("A", "B"):
+            driver.find_element(By.ID, 'pbNew').click()
+            name = wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '[data-pbf="name"]')))
+            sku = driver.find_element(By.CSS_SELECTOR, '[data-pbf="sku"]')
+            name.clear()
+            name.send_keys(f'Continuity Product {stamp}-{suffix}')
+            sku.clear()
+            sku.send_keys(f'HDC-{stamp}-{suffix}')
+            ctrl_s(driver)
+            wait.until(lambda d: any(f'Continuity Product {stamp}-{suffix}' in x.text for x in d.find_elements(By.CSS_SELECTOR, '#pbList [data-pbid]')))
+
+        items = driver.find_elements(By.CSS_SELECTOR, '#pbList [data-pbid]')
+        assert len(items) >= 2, len(items)
+        items[0].click()
+        wait.until(lambda d: d.find_elements(By.CSS_SELECTOR, '#pbList [data-pbid].active'))
+        before_product = driver.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value')
+        wait.until(lambda d: enabled(d.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]')))
+        driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-next]').click()
+        wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value') != before_product)
+        wait.until(lambda d: enabled(d.find_element(By.CSS_SELECTOR, '[data-hdc-product-prev]')))
+        driver.find_element(By.CSS_SELECTOR, '[data-hdc-product-prev]').click()
+        wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '[data-pbf="name"]').get_attribute('value') == before_product)
+
+        # Return through the existing Page Router, then assert the actual lead-list
+        # workspace is active. Empty tbody is zero-height, so presence—not visibility—
+        # is the correct precondition before the first manual leads are created.
+        driver.find_element(By.CSS_SELECTOR, '[data-hpr-home]').click()
+        wait.until(lambda d: d.execute_script("return window.HUIDIWorkspacePages?.current?.()") == 'home')
+        wait.until(lambda d: 'hpr-active' not in (d.find_element(By.CSS_SELECTOR, '.main').get_attribute('class') or ''))
+        wait.until(EC.presence_of_element_located((By.ID, 'tbody')))
+        wait.until(lambda d: 'open' not in (d.find_element(By.ID, 'pbBackdrop').get_attribute('class') or ''))
+
+        # Lead detail: create two real manual leads. Use the exact lead IDs returned by
+        # the existing endpoint, then click the visible “全部” tab so app.js performs
+        # the real list reload. The first open is a real pointer action. Verify the
+        # mature native drawer opens and owns the target record before checking the
+        # continuity enhancement rail.
+        lead_ids: list[str] = []
+        lead_names: list[str] = []
+        for suffix in ("A", "B"):
+            company = f'Continuity Lead {stamp}-{suffix}'
+            out = post(driver, '/api/leads/manual', {
+                'company_name': company,
+                'product_keyword': 'stainless steel hinge',
+                'country': 'DE',
+                'website': '',
+                'contact_name': '',
+                'contact_email': '',
+                'requirements': '',
+                'create_inquiry': False,
+            })
+            lead_id = str((out.get('lead') or {}).get('id') or '')
+            assert lead_id, out
+            lead_ids.append(lead_id)
+            lead_names.append(company)
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '#tabs .tab[data-status=""]'))).click()
+        first_lead = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[0]}"]')))
+        assert driver.find_elements(By.CSS_SELECTOR, f'#tbody [data-open="{lead_ids[1]}"]')
+        before_click_state = runtime_state(driver)
+        print("HUIDI runtime state before lead click:", before_click_state)
+        assert before_click_state["leadOwner"] == "function", before_click_state
+        assert before_click_state["detailContinuity"] == "function", before_click_state
+        dump_browser_log(driver, "before-lead-click")
+        pointer_click(driver, first_lead)
+        try:
+            wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#backdrop.open')))
+        except TimeoutException:
+            print("HUIDI runtime state after lead click timeout:", runtime_state(driver))
+            dump_browser_log(driver, "lead-open-timeout")
+            raise
+        wait.until(lambda d: d.find_element(By.ID, 'dCompany').text.strip() == lead_names[0])
+        try:
+            rail = wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
+        except TimeoutException:
+            print("HUIDI runtime state after lead rail timeout:", runtime_state(driver))
+            drawer_html = driver.execute_script("return document.querySelector('#backdrop .drawer')?.innerHTML || '';")
+            print("HUIDI lead drawer HTML after rail timeout:", drawer_html[:8000])
+            dump_browser_log(driver, "lead-rail-timeout")
+            raise
+        assert rail.is_displayed()
+        assert driver.find_element(By.CSS_SELECTOR, '[data-hdc-collapse="客户背调"]').get_attribute('open') is None
+        assert driver.find_element(By.CSS_SELECTOR, '[data-hdc-collapse="开发记录"]').get_attribute('open') is None
+        before_lead = driver.find_element(By.ID, 'dCompany').text
+        lead_next = driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-next]')
+        lead_prev = driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-prev]')
+        nav = lead_next if enabled(lead_next) else lead_prev
+        assert enabled(nav), 'lead continuity needs at least one enabled neighbor'
+        pointer_click(driver, nav)
+        wait.until(lambda d: d.find_element(By.ID, 'dCompany').text != before_lead)
+
+        # Deep-link/detail scale gate: create one more real Lead after the visible page
+        # has already loaded so it is deliberately absent from app.js' in-memory page.
+        # Opening that exact ID must issue only the single-record GET, never the legacy
+        # unpaged /api/leads collection request.
+        hidden_company = f'Continuity Lead {stamp}-OFFPAGE'
+        hidden_out = post(driver, '/api/leads/manual', {
+            'company_name': hidden_company,
+            'product_keyword': 'stainless steel hinge',
+            'country': 'DE',
+            'website': '',
+            'contact_name': '',
+            'contact_email': '',
+            'requirements': '',
+            'create_inquiry': False,
+        })
+        hidden_lead_id = str((hidden_out.get('lead') or {}).get('id') or '')
+        assert hidden_lead_id, hidden_out
+        driver.execute_script(
+            """
+            window.__hdcFetchUrls = [];
+            window.__hdcOriginalFetch = window.fetch;
+            window.fetch = function(...args) {
+              window.__hdcFetchUrls.push(String(args[0]));
+              return window.__hdcOriginalFetch.apply(this, args);
+            };
+            """
+        )
+        open_result = driver.execute_async_script(
+            """
+            const [leadId, done] = arguments;
+            Promise.resolve(window.HUIDILeadWorkbench.open(leadId))
+              .then(() => done({ok: true}))
+              .catch(error => done({ok: false, error: String(error)}));
+            """,
+            hidden_lead_id,
+        )
+        assert open_result.get('ok'), open_result
+        wait.until(lambda d: d.find_element(By.ID, 'dCompany').text.strip() == hidden_company)
+        wait.until(lambda d: f'lead={hidden_lead_id}' in d.current_url)
+        fetch_urls = driver.execute_script("return Array.from(window.__hdcFetchUrls || []);")
+        assert f'/api/leads/{hidden_lead_id}' in fetch_urls, fetch_urls
+        assert '/api/leads' not in fetch_urls, fetch_urls
+        driver.execute_script(
+            """
+            if (window.__hdcOriginalFetch) window.fetch = window.__hdcOriginalFetch;
+            delete window.__hdcOriginalFetch;
+            delete window.__hdcFetchUrls;
+            """
+        )
+        wait.until(EC.visibility_of_element_located((By.ID, 'hdcLeadRail')))
+        driver.find_element(By.CSS_SELECTOR, '[data-hdc-lead-back]').click()
+        wait.until(lambda d: 'open' not in (d.find_element(By.ID, 'backdrop').get_attribute('class') or ''))
+
+        # Inquiry + customer detail: use exact returned Deal/Customer IDs so continuity
+        # is verified across the same Customer -> Deal identity chain.
+        deal_ids: list[str] = []
+        customer_ids: list[str] = []
+        for suffix in ("A", "B"):
+            out = post(driver, '/api/leads/manual', {
+                'company_name': f'Continuity Buyer {stamp}-{suffix}',
+                'product_keyword': 'stainless steel hinge',
+                'country': 'US',
+                'website': '',
+                'contact_name': 'Buyer',
+                'contact_email': '',
+                'requirements': 'Quantity 1000 pcs',
+                'create_inquiry': True,
+            })
+            deal_id = str((out.get('deal') or {}).get('id') or '')
+            customer_id = str((out.get('customer') or {}).get('id') or '')
+            assert deal_id and customer_id, out
+            deal_ids.append(deal_id)
+            customer_ids.append(customer_id)
+
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-huidi-business="deals"]'))).click()
+        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessBack.open.hb-page-surface')))
+        deal_row = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#huidiBusinessMain [data-deal="{deal_ids[0]}"]')))
+        assert driver.find_elements(By.CSS_SELECTOR, f'#huidiBusinessMain [data-deal="{deal_ids[1]}"]')
+        deal_row.click()
+        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessMain .hdc-business-rail')))
+        reference = driver.find_element(By.CSS_SELECTOR, 'details[data-hdc-collapse="联网业务参考"]')
+        assert reference.get_attribute('open') is None
+        before_deal = driver.find_element(By.CSS_SELECTOR, '#huidiBusinessMain .hb-card h3').text
+        deal_next = driver.find_element(By.CSS_SELECTOR, '[data-hdc-business-next]')
+        deal_prev = driver.find_element(By.CSS_SELECTOR, '[data-hdc-business-prev]')
+        nav = deal_next if enabled(deal_next) else deal_prev
+        assert enabled(nav), 'deal continuity needs at least one enabled neighbor'
+        nav.click()
+        wait.until(lambda d: d.find_element(By.CSS_SELECTOR, '#huidiBusinessMain .hb-card h3').text != before_deal)
+
+        driver.find_element(By.CSS_SELECTOR, '[data-back-deals]').click()
+        wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, '[data-hb-view="customers"]'))).click()
+        customer_row = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, f'#huidiBusinessMain [data-customer-id="{customer_ids[0]}"]')))
+        assert driver.find_elements(By.CSS_SELECTOR, f'#huidiBusinessMain [data-customer-id="{customer_ids[1]}"]')
+        customer_row.click()
+        wait.until(EC.visibility_of_element_located((By.CSS_SELECTOR, '#huidiBusinessMain .hdc-business-rail')))
+        before_customer = driver.find_element(By.ID, 'hbCustomerCompany').get_attribute('value')
+        customer_next = driver.find_element(By.CSS_SELECTOR, '[data-hdc-business-next]')
+        customer_prev = driver.find_element(By.CSS_SELECTOR, '[data-hdc-business-prev]')
+        nav = customer_next if enabled(customer_next) else customer_prev
+        assert enabled(nav), 'customer continuity needs at least one enabled neighbor'
+        nav.click()
+        wait.until(lambda d: d.find_element(By.ID, 'hbCustomerCompany').get_attribute('value') != before_customer)
+
+        print('HUIDI continuous product / lead / inquiry / customer detail review browser smoke PASS')
+    finally:
+        driver.quit()
+
+
+if __name__ == '__main__':
+    main()

@@ -845,7 +845,7 @@
     return `<div class="fp-v8-backdrop ${state.opened ? 'is-open' : ''}" id="fpV8Backdrop" aria-hidden="${!state.opened}">
       <section class="fp-v8-modal fp-v9-modal" role="dialog" aria-modal="true" aria-label="HUIDI 模板中心">
         <aside class="fp-v8-side">
-          <div class="fp-v8-logo"><img src="./assets/brand/flypigbox-icon-64.png" alt="">HUIDI <span>模板与品牌中心</span></div>
+          <div class="fp-v8-logo"><img src="./assets/brand/huidi-icon-64.png" alt="">HUIDI <span>模板与品牌中心</span></div>
           <nav class="fp-v8-nav">${tabButtons}</nav>
           <div class="fp-v8-side-footer">当前身份：${escape(tierLabel(state.tier))}</div>
         </aside>

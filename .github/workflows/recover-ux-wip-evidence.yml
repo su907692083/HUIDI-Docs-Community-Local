@@ -1,0 +1,43 @@
+name: Recover Existing UX WIP Evidence
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths: ['.github/workflows/recover-ux-wip-evidence.yml']
+permissions:
+  contents: read
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Archive current source and previously created source-only blobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python - <<'PY'
+          import base64, hashlib, json, os, subprocess, urllib.request
+          from pathlib import Path
+          root=Path('/tmp/huidi-ux-recovery');root.mkdir()
+          shas=['e916824c685faef0c145c510ccfb12d2380c588c','b8cf128d26a30531c9d89843b98c491c52226c61','7f5f83e5760acdb0629ca22c628d2ea6231374ab','6858bc7bc659fb1e799517566b08a62c96a3fd02','52df5e6411a9527e8609f56eaaee9c50a81c9b08','8481fde53772ba46176a623a7f68acf20954dde2']
+          manifest=[]
+          for sha in shas:
+              req=urllib.request.Request('https://api.github.com/repos/su907692083/HUIDI-Docs-Community-Local/git/blobs/'+sha,headers={'Authorization':'Bearer '+os.environ['GH_TOKEN'],'Accept':'application/vnd.github+json'})
+              with urllib.request.urlopen(req,timeout=30) as response: data=json.load(response)
+              raw=base64.b64decode(data['content'])
+              assert hashlib.sha1(b'blob '+str(len(raw)).encode()+b'\0'+raw).hexdigest()==sha
+              (root/(sha+'.bin')).write_bytes(raw)
+              manifest.append({'sha':sha,'bytes':len(raw),'sha256':hashlib.sha256(raw).hexdigest()})
+          head=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          subprocess.run(['git','archive','--format=zip','--output='+str(root/'SOURCE.zip'),'HEAD'],check=True)
+          (root/'MANIFEST.json').write_text(json.dumps({'head':head,'blobs':manifest,'application_modified':False},indent=2))
+          print('Recovered source evidence only; no branch, application, database or deployment changes.')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HUIDI-UX-WIP-RECOVERY-${{ github.sha }}
+          path: /tmp/huidi-ux-recovery/
+          retention-days: 14

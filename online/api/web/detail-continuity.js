@@ -1,0 +1,381 @@
+(()=>{
+'use strict';
+if(window.HUIDIDetailContinuity)return;
+
+const $=s=>document.querySelector(s);
+const all=s=>[...document.querySelectorAll(s)];
+let leadIds=[];
+let leadId='';
+let leadEpoch=0;
+let business={kind:'',ids:[],id:'',page:1};
+let businessEpoch=0;
+
+function css(){
+  if($('#huidiDetailContinuityCss'))return;
+  const s=document.createElement('style');
+  s.id='huidiDetailContinuityCss';
+  s.textContent=`
+.hdc-record-rail{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:8px 0 10px;padding:7px 9px;border:1px solid #e1e7ef;border-radius:10px;background:#fbfcfe;position:sticky;top:0;z-index:8}.hdc-record-rail button{height:30px;border:1px solid #d8e1ec;border-radius:8px;background:#fff;padding:0 9px;font-size:9px;font-weight:850;color:#36516f;cursor:pointer}.hdc-record-rail button:disabled{opacity:.45;cursor:default}.hdc-record-rail .hdc-save-next{background:#1d63e9;border-color:#1d63e9;color:#fff}.hdc-record-state{font-size:9px;color:#6c7c90;font-weight:800}.hdc-keyhint{font-size:8px;color:#8b97a6;margin-left:auto}.hdc-collapsible{border:1px solid #e5eaf1;border-radius:10px;background:#fff;margin:9px 0;padding:0!important}.hdc-collapsible>summary,.hdc-product-section>summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:9px 11px;cursor:pointer;font-size:10px;font-weight:850;color:#405873}.hdc-collapsible>summary::-webkit-details-marker,.hdc-product-section>summary::-webkit-details-marker{display:none}.hdc-collapsible>summary:after,.hdc-product-section>summary:after{content:'⌄';font-size:11px;transition:transform .14s ease}.hdc-collapsible[open]>summary:after,.hdc-product-section[open]>summary:after{transform:rotate(180deg)}.hdc-collapsible>summary span,.hdc-product-section>summary span{font-size:8px;font-weight:700;color:#8a97a6;margin-left:auto}.hdc-collapsible[open]{padding:0 12px 12px!important}.hdc-collapsible[open]>summary{margin:0 -12px 8px}.hdc-collapsible>.assessment-head h3,.hdc-collapsible>h3{display:none}.hdc-product-section{grid-column:1/-1;border:1px solid #e5eaf1;border-radius:10px;background:#fbfcfe}.hdc-section-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:0 10px 10px}.hdc-product-section[open]>summary{border-bottom:1px solid #e7edf4;margin-bottom:10px}.hdc-product-rail{margin-top:12px}.hb-actions.hdc-business-rail{position:sticky;top:46px;z-index:4;padding:7px 0;background:rgba(251,252,254,.96);backdrop-filter:blur(7px)}.hb-actions.hdc-business-rail .hdc-record-state{align-self:center}.hb-actions.hdc-business-rail .hdc-keyhint{align-self:center}.drawer .hdc-record-rail{top:-1px;background:rgba(255,255,255,.97)}@media(max-width:760px){.hdc-keyhint{display:none}.hdc-section-grid{grid-template-columns:1fr}.hdc-product-section .pb-field.full{grid-column:auto}}
+`;
+  document.head.appendChild(s);
+}
+
+function allWithin(root,sel){return root?[...root.querySelectorAll(sel)]:[]}
+function filledCount(root){
+  const fields=allWithin(root,'[data-pbf]');
+  const filled=fields.filter(x=>String(x.value||'').trim()).length;
+  return {filled,total:fields.length};
+}
+
+function foldProductSections(){
+  const grid=$('#pbForm .pb-grid');
+  if(!grid||grid.dataset.hdcFolded==='1')return;
+  const titles=[...grid.children].filter(x=>x.classList?.contains('pb-section-title'));
+  for(const title of titles){
+    const label=String(title.textContent||'').trim();
+    const nodes=[];
+    let next=title.nextElementSibling;
+    while(next&&!next.classList.contains('pb-section-title')){
+      nodes.push(next);
+      next=next.nextElementSibling;
+    }
+    const details=document.createElement('details');
+    details.className='hdc-product-section';
+    details.dataset.hdcProductSection=label.includes('贸易')?'trade':'public';
+    details.innerHTML=`<summary><b>${label}</b><span data-hdc-section-state>按需展开</span></summary><div class="hdc-section-grid"></div>`;
+    title.replaceWith(details);
+    const inner=details.querySelector('.hdc-section-grid');
+    nodes.forEach(n=>inner.appendChild(n));
+  }
+  grid.dataset.hdcFolded='1';
+  updateProductSectionState();
+}
+
+function updateProductSectionState(){
+  all('.hdc-product-section').forEach(d=>{
+    const c=filledCount(d);
+    const state=d.querySelector('[data-hdc-section-state]');
+    if(state)state.textContent=c.total?`${c.filled}/${c.total} 项已填 · 按需展开`:'按需展开';
+  });
+}
+
+function productItems(){return all('#pbList [data-pbid]')}
+function productIndex(){
+  const items=productItems();
+  const idx=items.findIndex(x=>x.classList.contains('active'));
+  return {items,idx};
+}
+function gotoProduct(delta){
+  const {items,idx}=productIndex();
+  const target=items[idx+delta];
+  if(target)target.click();
+}
+function updateProductRail(){
+  const rail=$('#hdcProductRail');
+  if(!rail)return;
+  const {items,idx}=productIndex();
+  rail.querySelector('[data-hdc-product-prev]').disabled=idx<=0;
+  rail.querySelector('[data-hdc-product-next]').disabled=idx<0||idx>=items.length-1;
+  const state=rail.querySelector('[data-hdc-product-state]');
+  state.textContent=items.length&&idx>=0?`${idx+1} / ${items.length}`:`${items.length} 项`;
+}
+function decorateProduct(){
+  const form=$('#pbForm');
+  if(!form)return false;
+  foldProductSections();
+  let rail=$('#hdcProductRail');
+  if(!rail){
+    rail=document.createElement('div');
+    rail.id='hdcProductRail';
+    rail.className='hdc-record-rail hdc-product-rail';
+    rail.innerHTML='<button type="button" data-hdc-product-prev>← 上一产品</button><button type="button" data-hdc-product-next>下一产品 →</button><span class="hdc-record-state" data-hdc-product-state></span><span class="hdc-keyhint">Ctrl / ⌘ + S 保存</span>';
+    form.insertBefore(rail,form.firstChild);
+    rail.querySelector('[data-hdc-product-prev]').onclick=()=>gotoProduct(-1);
+    rail.querySelector('[data-hdc-product-next]').onclick=()=>gotoProduct(1);
+    form.addEventListener('input',updateProductSectionState);
+  }
+  updateProductRail();
+  updateProductSectionState();
+  return true;
+}
+
+function replaceSectionWithDetails(anchor,label){
+  const section=anchor?.closest?.('.section');
+  if(!section||!section.isConnected)return null;
+  if(section.matches('details.hdc-collapsible'))return section;
+  const parent=section.parentNode;
+  if(!parent)return null;
+  const details=document.createElement('details');
+  details.className=section.className+' hdc-collapsible';
+  details.dataset.hdcCollapse=label;
+  details.innerHTML=`<summary><b>${label}</b><span>按需展开</span></summary>`;
+  parent.replaceChild(details,section);
+  while(section.firstChild)details.appendChild(section.firstChild);
+  return details;
+}
+function decorateLeadSections(){
+  const back=$('#backdrop');
+  if(!back?.classList.contains('open'))return false;
+  const assessment=replaceSectionWithDetails($('#assessmentBox'),'客户背调');
+  const timeline=replaceSectionWithDetails($('#timeline'),'开发记录');
+  return Boolean(assessment?.isConnected&&timeline?.isConnected);
+}
+function leadPosition(){
+  const idx=leadIds.indexOf(String(leadId));
+  return {idx,total:leadIds.length};
+}
+function refreshLeadIds(){
+  const ids=all('#tbody [data-open]').map(x=>String(x.dataset.open||'')).filter(Boolean);
+  if(ids.length)leadIds=ids;
+}
+function armLeadDecoration(id){
+  const expectedId=String(id||'');
+  if(!expectedId)return 0;
+  refreshLeadIds();
+  leadId=expectedId;
+  const epoch=++leadEpoch;
+  scheduleLeadDecoration(expectedId,epoch,0);
+  return epoch;
+}
+function leadDetailReady(expectedId=leadId){
+  const back=$('#backdrop');
+  const owner=window.HUIDILeadWorkbench;
+  const current=owner?.current?.();
+  const surface=window.HUIDIPageSurfaceClosure;
+  if(!back?.classList.contains('open'))return false;
+  if(surface?.current&&surface.current()!=='lead')return false;
+  if(surface&&!back.classList.contains('lead-page-surface'))return false;
+  if(expectedId&&String(current?.id||'')!==String(expectedId))return false;
+  return Boolean($('#dWebsite')?.isConnected&&$('#dCompany')?.isConnected&&$('#timeline')?.isConnected);
+}
+async function openLeadOwner(id){
+  const owner=window.HUIDILeadWorkbench;
+  if(typeof owner?.open!=='function')return false;
+  const expectedId=String(id||'');
+  const epoch=armLeadDecoration(expectedId);
+  if(!epoch)return false;
+  try{
+    const out=await owner.open(expectedId);
+    if(epoch===leadEpoch&&leadId===expectedId)scheduleLeadDecoration(expectedId,epoch,0);
+    return out;
+  }catch(error){
+    if(epoch===leadEpoch)console.warn('HUIDI detail continuity: lead owner open failed',error);
+    return false;
+  }
+}
+function gotoLead(delta){
+  const {idx}=leadPosition();
+  const target=leadIds[idx+delta];
+  if(!target)return;
+  if(typeof window.HUIDILeadWorkbench?.open==='function'){
+    openLeadOwner(target);
+    return;
+  }
+  const btn=$(`#tbody [data-open="${CSS.escape(String(target))}"]`);
+  btn?.click();
+}
+function decorateLead(expectedId=leadId){
+  if(!leadDetailReady(expectedId))return false;
+  const website=$('#dWebsite');
+  let rail=$('#hdcLeadRail');
+  if(!rail){
+    rail=document.createElement('div');
+    rail.id='hdcLeadRail';
+    rail.className='hdc-record-rail';
+    rail.innerHTML='<button type="button" data-hdc-lead-back>← 返回列表</button><button type="button" data-hdc-lead-prev>上一条</button><button type="button" data-hdc-lead-next>下一条</button><span class="hdc-record-state" data-hdc-lead-state></span><span class="hdc-keyhint">Ctrl / ⌘ + S 保存资料</span>';
+    website.insertAdjacentElement('afterend',rail);
+    rail.querySelector('[data-hdc-lead-back]').onclick=()=>$('#closeDrawer')?.click();
+    rail.querySelector('[data-hdc-lead-prev]').onclick=()=>gotoLead(-1);
+    rail.querySelector('[data-hdc-lead-next]').onclick=()=>gotoLead(1);
+  }
+  const {idx,total}=leadPosition();
+  rail.querySelector('[data-hdc-lead-prev]').disabled=idx<=0;
+  rail.querySelector('[data-hdc-lead-next]').disabled=idx<0||idx>=total-1;
+  rail.querySelector('[data-hdc-lead-state]').textContent=idx>=0?`${idx+1} / ${total}`:`${total} 条`;
+  if(!rail.isConnected)return false;
+  if(!decorateLeadSections())return false;
+  return Boolean($('[data-hdc-collapse="客户背调"]')?.isConnected&&$('[data-hdc-collapse="开发记录"]')?.isConnected);
+}
+function scheduleLeadDecoration(expectedId=leadId,epoch=leadEpoch,attempt=0){
+  if(epoch!==leadEpoch||String(expectedId)!==String(leadId))return;
+  let ready=false;
+  try{ready=decorateLead(expectedId)}catch(error){
+    if(attempt>=20)console.warn('HUIDI detail continuity: lead detail never became ready',error);
+  }
+  if(ready)return;
+  if(attempt>=20)return;
+  setTimeout(()=>scheduleLeadDecoration(expectedId,epoch,attempt+1),50);
+}
+
+function currentBusinessPage(){
+  const txt=$('#huidiBusinessMain .hb-page')?.textContent||'';
+  const m=txt.match(/第\s*(\d+)\s*\//);
+  return m?Number(m[1])||1:1;
+}
+function captureBusiness(kind,node){
+  const sel=kind==='deal'?'#huidiBusinessMain [data-deal]':'#huidiBusinessMain [data-customer-id]';
+  const attr=kind==='deal'?'deal':'customerId';
+  business={
+    kind,
+    ids:all(sel).map(x=>String(x.dataset[attr]||'')).filter(Boolean),
+    id:String(node.dataset[attr]||''),
+    page:currentBusinessPage()
+  };
+  const epoch=++businessEpoch;
+  scheduleBusinessDecoration(epoch,0);
+}
+async function gotoBusiness(delta){
+  const idx=business.ids.indexOf(String(business.id));
+  const target=business.ids[idx+delta];
+  if(!target||!window.HUIDIBusinessCenter?.open)return;
+  const view=business.kind==='deal'?'deals':'customers';
+  await window.HUIDIBusinessCenter.open(view,business.page);
+  for(let i=0;i<20;i++){
+    const sel=business.kind==='deal'
+      ?`#huidiBusinessMain [data-deal="${CSS.escape(target)}"]`
+      :`#huidiBusinessMain [data-customer-id="${CSS.escape(target)}"]`;
+    const row=$(sel);
+    if(row){row.click();return;}
+    await new Promise(r=>setTimeout(r,25));
+  }
+}
+function foldReferenceCard(){
+  const main=$('#huidiBusinessMain');
+  if(!main)return false;
+  for(const card of allWithin(main,'.hb-card')){
+    const h=card.querySelector(':scope > h3');
+    if(!h||String(h.textContent||'').trim()!=='联网业务参考'||card.matches('details.hdc-collapsible'))continue;
+    if(!card.isConnected||!card.parentNode)continue;
+    const details=document.createElement('details');
+    details.className='hb-card hdc-collapsible';
+    details.dataset.hdcCollapse='联网业务参考';
+    details.innerHTML='<summary><b>联网业务参考</b><span>仅核对时展开</span></summary>';
+    card.parentNode.replaceChild(details,card);
+    while(card.firstChild){
+      if(card.firstChild===h){card.removeChild(h);continue;}
+      details.appendChild(card.firstChild);
+    }
+  }
+  return true;
+}
+function decorateBusiness(){
+  const main=$('#huidiBusinessMain');
+  if(!main?.isConnected)return false;
+  const isDeal=Boolean(main.querySelector('[data-back-deals]'));
+  const isCustomer=Boolean(main.querySelector('[data-back-customers]'));
+  if(!isDeal&&!isCustomer)return false;
+  const kind=isDeal?'deal':'customer';
+  if(business.kind!==kind)return false;
+  const top=main.querySelector(isDeal?'[data-back-deals]':'[data-back-customers]')?.closest('.hb-actions');
+  if(!top?.isConnected)return false;
+  top.classList.add('hdc-business-rail');
+  if(!top.querySelector('[data-hdc-business-prev]')){
+    const prev=document.createElement('button');
+    prev.type='button';
+    prev.className='hb-btn';
+    prev.dataset.hdcBusinessPrev='1';
+    prev.textContent='上一条';
+    const next=document.createElement('button');
+    next.type='button';
+    next.className='hb-btn';
+    next.dataset.hdcBusinessNext='1';
+    next.textContent='下一条';
+    const state=document.createElement('span');
+    state.className='hdc-record-state';
+    state.dataset.hdcBusinessState='1';
+    const hint=document.createElement('span');
+    hint.className='hdc-keyhint';
+    hint.textContent='Ctrl / ⌘ + S 保存';
+    top.append(prev,next,state,hint);
+    prev.onclick=()=>gotoBusiness(-1);
+    next.onclick=()=>gotoBusiness(1);
+  }
+  const idx=business.ids.indexOf(String(business.id));
+  const total=business.ids.length;
+  top.querySelector('[data-hdc-business-prev]').disabled=idx<=0;
+  top.querySelector('[data-hdc-business-next]').disabled=idx<0||idx>=total-1;
+  top.querySelector('[data-hdc-business-state]').textContent=idx>=0?`${idx+1} / ${total}`:`${total} 条`;
+  if(isDeal&&!foldReferenceCard())return false;
+  return Boolean(top.querySelector('[data-hdc-business-prev]')&&top.querySelector('[data-hdc-business-next]'));
+}
+function scheduleBusinessDecoration(epoch=businessEpoch,attempt=0){
+  if(epoch!==businessEpoch)return;
+  let ready=false;
+  try{ready=decorateBusiness()}catch(error){
+    if(attempt>=20)console.warn('HUIDI detail continuity: business detail never became ready',error);
+  }
+  if(ready)return;
+  if(attempt>=20)return;
+  setTimeout(()=>scheduleBusinessDecoration(epoch,attempt+1),50);
+}
+
+function saveShortcut(e){
+  if(!(e.ctrlKey||e.metaKey)||String(e.key).toLowerCase()!=='s')return;
+  if($('#backdrop')?.classList.contains('open')){
+    e.preventDefault();
+    $('#saveLead')?.click();
+    return;
+  }
+  if($('#pbBackdrop')?.classList.contains('open')){
+    e.preventDefault();
+    $('#pbForm')?.requestSubmit?.();
+    return;
+  }
+  if($('#huidiBusinessBack')?.classList.contains('open')){
+    const save=$('#huidiBusinessMain [data-save-deal],#huidiBusinessMain [data-save-customer]');
+    if(save){
+      e.preventDefault();
+      save.click();
+    }
+  }
+}
+
+function click(e){
+  const lead=e.target.closest('#tbody [data-open]');
+  if(lead){
+    armLeadDecoration(lead.dataset.open||'');
+    return;
+  }
+  const deal=e.target.closest('#huidiBusinessMain [data-deal]');
+  if(deal)captureBusiness('deal',deal);
+  const customer=e.target.closest('#huidiBusinessMain [data-customer-id]');
+  if(customer)captureBusiness('customer',customer);
+  if(e.target.closest('#pbList [data-pbid],#pbNew,[data-huidi-product]'))setTimeout(decorateProduct,30);
+  const jump=e.target.closest('#huidiDrawerRail button');
+  if(jump){
+    const label=String(jump.textContent||'').trim();
+    if(label==='背调')$('[data-hdc-collapse="客户背调"]')?.setAttribute('open','');
+    if(label==='记录')$('[data-hdc-collapse="开发记录"]')?.setAttribute('open','');
+  }
+}
+
+function syncLeadAfterNativeOpen(){
+  const back=$('#backdrop');
+  const current=window.HUIDILeadWorkbench?.current?.();
+  if(!back?.classList.contains('open')||!current?.id||$('#hdcLeadRail'))return;
+  armLeadDecoration(String(current.id));
+}
+
+function pageSurfaceReady(e){
+  const detail=e?.detail||{};
+  if(String(detail.route||'')!=='lead')return;
+  const id=String(detail.leadId||window.HUIDILeadWorkbench?.current?.()?.id||'');
+  if(id)armLeadDecoration(id);
+}
+
+function boot(){
+  css();
+  decorateProduct();
+  document.addEventListener('click',click,true);
+  document.addEventListener('click',syncLeadAfterNativeOpen);
+  document.addEventListener('huidi:page-surface-ready',pageSurfaceReady);
+  document.addEventListener('keydown',saveShortcut,true);
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+
+window.HUIDIDetailContinuity=Object.freeze({
+  decorateProduct,
+  decorateLead,
+  decorateBusiness
+});
+})();
