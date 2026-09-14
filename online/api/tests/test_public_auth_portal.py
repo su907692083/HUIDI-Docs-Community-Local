@@ -128,7 +128,7 @@ class PublicAuthPortalTests(unittest.TestCase):
         os.environ["HUIDI_SUPABASE_URL"] = "https://example.supabase.co"
         os.environ["HUIDI_SUPABASE_PUBLISHABLE_KEY"] = "sb_publishable_test_only"
         client = TestClient(app)
-        email, created = self._register(client, "Supabase 映射")
+        email, created = self._register(client, "Supabase映射")
         original_member_id = int(created["member"]["id"])
         original_org_id = int(created["organization"]["id"])
         self.assertEqual(client.post("/api/team/logout", json={}).status_code, 200)
