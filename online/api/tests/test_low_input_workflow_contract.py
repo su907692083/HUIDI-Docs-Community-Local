@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
+from fastapi import HTTPException
+
 from app.daily_app import app
 from app.low_input_workflow import PrepareInquiryRequest, extract_reply_facts, prepare_inquiry
 from app.mail_sync import MailboxMessage
@@ -93,16 +95,33 @@ class LowInputWorkflowContractTests(unittest.TestCase):
                     sender=lead.contact_email,
                     recipients_json="[]",
                     subject="RFQ stainless hinge",
-                    snippet="Please quote 5,000 pcs FOB Ningbo. Material SUS304, size 4 inch. Samples required.",
+                    snippet="Please quote 5,000 pcs FOB Ningbo. Material SUS304, size 4 inch. Samples required. Delivery within 20 days.",
                     received_at=datetime.now(timezone.utc).replace(tzinfo=None),
                     lead_id=lead.id,
                     has_unsubscribe=0,
                 )
             )
             db.commit()
+            with self.assertRaises(HTTPException) as stale:
+                prepare_inquiry(
+                    lead.id,
+                    PrepareInquiryRequest(
+                        confirm=True,
+                        include_reply=True,
+                        confirmed_fact_keys=["not_a_current_fact"],
+                    ),
+                    db,
+                )
+            self.assertEqual(stale.exception.status_code, 400)
+
             out = prepare_inquiry(
                 lead.id,
-                PrepareInquiryRequest(confirm=True, product_brain_id=brain_id, include_reply=True),
+                PrepareInquiryRequest(
+                    confirm=True,
+                    product_brain_id=brain_id,
+                    include_reply=True,
+                    confirmed_fact_keys=["quantity", "incoterm", "specification"],
+                ),
                 db,
             )
             self.assertTrue(out["ok"])
@@ -112,6 +131,12 @@ class LowInputWorkflowContractTests(unittest.TestCase):
             self.assertIn("5,000 pcs", out["deal"]["requirements"])
             self.assertIn("FOB", out["deal"]["requirements"])
             self.assertIn("Stainless Steel Hinge", out["deal"]["requirements"])
+            self.assertNotIn("20 days", out["deal"]["requirements"])
+            self.assertNotIn("Samples required", out["deal"]["requirements"])
+            self.assertEqual(
+                [item["key"] for item in out["confirmed_reply_facts"]],
+                ["quantity", "incoterm", "specification"],
+            )
             db.refresh(lead)
             self.assertEqual(lead.status, "converted")
         finally:
@@ -146,7 +171,11 @@ class LowInputWorkflowContractTests(unittest.TestCase):
         source = self.text("web/low-input-flow.js")
         for marker in [
             "自动带入",
-            "确认要点并转询盘",
+            "确认勾选事实并转询盘",
+            "data-li-reply-fact",
+            "selectedReplyFactKeys",
+            "confirmed_fact_keys",
+            "未勾选内容不会写入询盘",
             "4天后提醒",
             "productSummary",
             "summaryEdited",

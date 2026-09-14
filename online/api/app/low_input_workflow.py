@@ -21,6 +21,7 @@ class PrepareInquiryRequest(BaseModel):
     confirm: bool = False
     product_brain_id: str = Field(default="", max_length=160)
     include_reply: bool = True
+    confirmed_fact_keys: list[str] | None = None
 
 
 def _clean(value: Any) -> str:
@@ -329,15 +330,46 @@ def prepare_inquiry(lead_id: int, req: PrepareInquiryRequest, db: Session = Depe
 
     reply = _latest_reply(db, lead.id) if req.include_reply else None
     reply_info = extract_reply_facts(reply.subject, reply.snippet) if reply else {"facts": [], "excerpt": "", "missing": []}
+    reply_facts = list(reply_info.get("facts") or [])
+    available_fact_keys = {
+        _clean(item.get("key")) for item in reply_facts if _clean(item.get("key"))
+    }
+    explicit_fact_selection = req.confirmed_fact_keys is not None
+    if explicit_fact_selection:
+        confirmed_fact_keys: list[str] = []
+        for value in req.confirmed_fact_keys or []:
+            key = _clean(value)
+            if key and key not in confirmed_fact_keys:
+                confirmed_fact_keys.append(key)
+        unknown_fact_keys = [key for key in confirmed_fact_keys if key not in available_fact_keys]
+        if unknown_fact_keys:
+            raise HTTPException(400, "选中的回复要点已变化，请刷新后重新确认")
+    else:
+        confirmed_fact_keys = [
+            _clean(item.get("key")) for item in reply_facts if _clean(item.get("key"))
+        ]
+    confirmed_key_set = set(confirmed_fact_keys)
+    confirmed_facts = [
+        item for item in reply_facts if _clean(item.get("key")) in confirmed_key_set
+    ]
+    unconfirmed_labels = [
+        _clean(item.get("label") or item.get("key"))
+        for item in reply_facts
+        if _clean(item.get("key")) not in confirmed_key_set
+    ]
 
     customer, deal = upsert_from_lead(db, lead)
     requirement_lines: list[str] = []
-    if reply:
+    if reply and not explicit_fact_selection:
         requirement_lines.append("客户回复已确认：")
-        for item in reply_info.get("facts", []):
+        for item in confirmed_facts:
             requirement_lines.append(f"- {item['label']}：{item['value']}")
         if reply_info.get("excerpt"):
             requirement_lines.append("客户原话参考：" + _clean(reply_info["excerpt"]))
+    elif reply and confirmed_facts:
+        requirement_lines.append("客户回复（人工勾选确认）：")
+        for item in confirmed_facts:
+            requirement_lines.append(f"- {item['label']}：{item['value']}")
     if product:
         requirement_lines.append("关联产品：" + _clean(product.get("name") or product.get("sku")))
         if _clean(product.get("spec")):
@@ -358,6 +390,11 @@ def prepare_inquiry(lead_id: int, req: PrepareInquiryRequest, db: Session = Depe
     else:
         deal.next_action = deal.next_action or "确认客户需求并准备报价"
     deal.updated_at = datetime.now(timezone.utc)
+    remaining_confirmation: list[str] = []
+    for value in [*list(reply_info.get("missing") or []), *unconfirmed_labels]:
+        label = _clean(value)
+        if label and label not in remaining_confirmation:
+            remaining_confirmation.append(label)
     add_activity(
         db,
         lead.id,
@@ -368,7 +405,7 @@ def prepare_inquiry(lead_id: int, req: PrepareInquiryRequest, db: Session = Depe
             "deal_id": deal.id,
             "product_brain_id": _clean(product.get("brain_id")) if product else "",
             "reply_message_id": reply.provider_message_id if reply else "",
-            "reply_fact_keys": [x.get("key") for x in reply_info.get("facts", [])],
+            "reply_fact_keys": confirmed_fact_keys,
         },
     )
     db.commit()
@@ -379,6 +416,7 @@ def prepare_inquiry(lead_id: int, req: PrepareInquiryRequest, db: Session = Depe
         "deal": deal_dict(deal, db),
         "product": product,
         "reply": reply_info if reply else None,
-        "remaining_confirmation": reply_info.get("missing", []) if reply else [],
+        "confirmed_reply_facts": confirmed_facts if reply else [],
+        "remaining_confirmation": remaining_confirmation if reply else [],
         "note": "未自动写入正式价格或金额；报价前仍需确认价格和未明确的客户要求。",
     }

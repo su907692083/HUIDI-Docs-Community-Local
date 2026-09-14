@@ -265,6 +265,7 @@ def main() -> None:
               prepare:Boolean(document.querySelector('[data-hdw-prepare-inquiry]')),
               iframeCount:document.querySelectorAll('iframe').length,
               selectedProduct:product?.value||'',
+              factChecks:[...document.querySelectorAll('[data-hdw-reply-fact]')].map(x=>({key:x.dataset.hdwReplyFact||'',checked:Boolean(x.checked)})),
               productOptions:[...(product?.options||[])].map(x=>({value:x.value,text:x.textContent||'',selected:x.selected})),
               localProducts:(core?.repositories?.products?.list?.()||[]).map(x=>({
                 id:String(x.id||''),brain_id:String(x.brain_id||''),local_product_id:String(x.local_product_id||''),name:x.name||''
@@ -278,6 +279,9 @@ def main() -> None:
         assert "5000 pcs" in ui["text"], ui
         assert "FOB" in ui["text"], ui
         assert "SUS304 4 inch" in ui["text"], ui
+        fact_checks = {x["key"]: x for x in ui["factChecks"]}
+        for key in ("quantity", "incoterm", "specification", "delivery"):
+            assert key in fact_checks and fact_checks[key]["checked"] is True, ui
         assert ui["generateDisabled"] and ui["approveDisabled"] and ui["armDisabled"], ui
         assert ui["prepare"], ui
         assert ui["iframeCount"] == 0, ui
@@ -296,6 +300,18 @@ def main() -> None:
                 """
             )
         )
+        unchecked = driver.execute_script(
+            """
+            const box=[...document.querySelectorAll('[data-hdw-reply-fact]')]
+              .find(x=>x.dataset.hdwReplyFact==='delivery');
+            if(!box)return false;
+            box.checked=false;
+            box.dispatchEvent(new Event('change',{bubbles:true}));
+            return true;
+            """
+        )
+        assert unchecked
+
         clicked = driver.execute_script(
             """
             const b=document.querySelector('[data-hdw-prepare-inquiry]');
@@ -379,6 +395,7 @@ def main() -> None:
     assert "5000 pcs" in deal["requirements"], deal
     assert "FOB" in deal["requirements"], deal
     assert "SUS304 4 inch" in deal["requirements"], deal
+    assert "20 days" not in deal["requirements"], deal
     assert "核对价格" in deal["next_action"], deal
     assert deal["product_keyword"] == "Stainless Steel Hinge", deal
 

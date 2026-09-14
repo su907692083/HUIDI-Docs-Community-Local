@@ -66,7 +66,9 @@ jobs:
           routing = Path('../../public/huidi-community-online-development-routing-v1.js').read_text(encoding='utf-8')
           for marker in (
               '处理回复',
-              '确认回复并转询盘',
+              '确认勾选事实并转询盘',
+              'data-hdw-reply-fact',
+              'confirmed_fact_keys',
               '/low-input/prepare-inquiry',
               '客户已回复，冷开发发送已停止',
               'landInInquiry',
