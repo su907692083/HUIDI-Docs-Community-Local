@@ -111,6 +111,11 @@ class AuthLoginRequest(BaseModel):
     password: str = Field(min_length=8, max_length=4096)
 
 
+class SupabaseLoginRequest(BaseModel):
+    email: str = Field(min_length=5, max_length=255)
+    password: str = Field(min_length=8, max_length=4096)
+
+
 class AuthRegisterRequest(BaseModel):
     account_type: str = Field(default="individual", pattern="^(individual|team)$")
     display_name: str = Field(default="", max_length=160)
@@ -168,6 +173,71 @@ def _safe_next(value: str) -> str:
     if not value.startswith("/") or value.startswith("//"):
         return "/"
     return value[:500]
+
+
+def _supabase_config() -> tuple[str, str]:
+    return (
+        os.getenv("HUIDI_SUPABASE_URL", "").strip().rstrip("/"),
+        os.getenv("HUIDI_SUPABASE_PUBLISHABLE_KEY", "").strip(),
+    )
+
+
+def _supabase_ready() -> bool:
+    url, publishable_key = _supabase_config()
+    return bool(url.startswith("https://") and publishable_key)
+
+
+def _supabase_password_identity(email: str, password: str) -> dict[str, str]:
+    url, publishable_key = _supabase_config()
+    if not _supabase_ready():
+        raise HTTPException(503, "Supabase 登录尚未配置")
+    headers = {"apikey": publishable_key, "Content-Type": "application/json"}
+    try:
+        token_response = httpx.post(
+            f"{url}/auth/v1/token",
+            params={"grant_type": "password"},
+            headers=headers,
+            json={"email": email, "password": password},
+            timeout=20,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Supabase 登录服务暂时不可用") from exc
+    if not token_response.is_success:
+        raise HTTPException(401, "Supabase 邮箱或密码不正确")
+    try:
+        token_data = token_response.json()
+    except Exception as exc:
+        raise HTTPException(502, "Supabase 登录响应无效") from exc
+    access_token = str(token_data.get("access_token") or "")
+    if not access_token:
+        raise HTTPException(401, "Supabase 邮箱或密码不正确")
+    try:
+        user_response = httpx.get(
+            f"{url}/auth/v1/user",
+            headers={"apikey": publishable_key, "Authorization": f"Bearer {access_token}"},
+            timeout=20,
+        )
+    except httpx.HTTPError as exc:
+        raise HTTPException(502, "Supabase 身份校验暂时不可用") from exc
+    if not user_response.is_success:
+        raise HTTPException(401, "Supabase 登录状态无效")
+    try:
+        user = user_response.json()
+    except Exception as exc:
+        raise HTTPException(502, "Supabase 用户信息无效") from exc
+    verified_email = _email(user.get("email"))
+    if not verified_email or verified_email != _email(email):
+        raise HTTPException(403, "Supabase 登录邮箱与 HUIDI 登录邮箱不一致")
+    if not user.get("email_confirmed_at") and not user.get("confirmed_at"):
+        raise HTTPException(403, "Supabase 邮箱尚未确认")
+    subject = str(user.get("id") or "").strip()
+    if not subject:
+        raise HTTPException(502, "Supabase 没有返回有效用户身份")
+    return {
+        "subject": subject,
+        "email": verified_email,
+        "metadata": json.dumps({"provider": "supabase", "email": verified_email}, ensure_ascii=False),
+    }
 
 
 def _phone(value: str) -> str:
@@ -598,6 +668,7 @@ def auth_status():
         "isolation": "physical_database_per_organization",
         "providers": {
             "email": True,
+            "supabase": _supabase_ready(),
             "phone": bool(_sms_mode()),
             "wechat": _provider_ready("wechat"),
             "feishu": _provider_ready("feishu"),
@@ -616,6 +687,49 @@ def auth_login(req: AuthLoginRequest, response: Response, db: Session = Depends(
         raise HTTPException(403, "这个工作区当前已停用")
     _issue_session(db, member, response)
     return {"ok": True, "member": _member_dict(member, db)}
+
+
+@app.post("/api/auth/supabase/login")
+def auth_supabase_login(req: SupabaseLoginRequest, response: Response, db: Session = Depends(get_control_db)):
+    email = _email(req.email)
+    if not EMAIL_RX.fullmatch(email):
+        raise HTTPException(400, "邮箱格式不正确")
+    profile = _supabase_password_identity(email, req.password)
+    member = db.scalar(select(TeamMember).where(TeamMember.email == profile["email"]))
+    if not member:
+        raise HTTPException(
+            403,
+            "Supabase 身份已验证，但这个邮箱没有匹配到现有 HUIDI 工作区。请不要注册新工作区。",
+        )
+    if not member.enabled:
+        raise HTTPException(403, "这个 HUIDI 账号当前已停用")
+    organization = db.get(Organization, member.organization_id)
+    if not organization or not organization.enabled:
+        raise HTTPException(403, "这个工作区当前已停用")
+    found = _identity(db, "supabase", profile["subject"])
+    if found and int(found.member_id) != int(member.id):
+        raise HTTPException(409, "这个 Supabase 身份已经绑定到另一个 HUIDI 账号")
+    now = _utcnow()
+    if found:
+        found.label = profile["email"]
+        found.verified_at = now
+        found.metadata_json = profile["metadata"]
+        found.updated_at = now
+    else:
+        db.add(
+            AuthIdentity(
+                member_id=member.id,
+                provider="supabase",
+                subject=profile["subject"],
+                label=profile["email"],
+                verified_at=now,
+                metadata_json=profile["metadata"],
+                created_at=now,
+                updated_at=now,
+            )
+        )
+    _issue_session(db, member, response)
+    return {"ok": True, "provider": "supabase", "member": _member_dict(member, db)}
 
 
 @app.post("/api/auth/register")
