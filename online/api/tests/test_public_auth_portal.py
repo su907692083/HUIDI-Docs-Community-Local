@@ -136,7 +136,7 @@ class PublicAuthPortalTests(unittest.TestCase):
             "app.auth_portal._supabase_password_identity",
             return_value={
                 "subject": "supabase-user-existing-123",
-                "email": email,
+                "email": email.lower(),
                 "metadata": '{"provider":"supabase"}',
             },
         ):
