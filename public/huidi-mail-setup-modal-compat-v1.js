@@ -117,7 +117,7 @@ function enhanceCompanyPanel(){
  const zoho=select?.querySelector('option[value="zoho"]');if(zoho)zoho.textContent='Zoho 个人邮箱';
  const email=$('[data-hms-email]');if(email&&!$('[data-hmo-oauth-tip]',email.parentElement)){email.insertAdjacentHTML('afterend','<div class="hmo-oauth-tip" data-hmo-oauth-tip></div>')}
  if(!$('[data-hmo-capability]',panel)){
-  const actions=$('.hms-actions',panel);actions?.insertAdjacentHTML('beforebegin',`<div class="hmo-capability" data-hmo-capability><div><b>Gmail / Outlook</b><span>一键授权后可收信、发信、同步回复和自动刷新授权。</span></div><div><b>企业邮箱 / 其他邮箱</b><span>当前通过 SMTP 安全发信；自动收件仍建议使用 Gmail 或 Outlook。</span></div><div><b>系统通知邮箱</b><span>注册验证、找回密码属于平台通知邮箱，与业务邮箱分开配置。</span></div></div>`)
+  const actions=$('.hms-actions',panel);actions?.insertAdjacentHTML('beforebegin',`<div class="hmo-capability" data-hmo-capability><div><b>Gmail / Outlook</b><span>一键授权后可收信、发信、同步回复和自动刷新授权。</span></div><div><b>企业邮箱 / 其他邮箱</b><span>当前用于安全发信；自动收件仍建议使用 Gmail 或 Outlook。</span></div><div><b>系统通知邮箱</b><span>注册验证、找回密码属于平台通知邮箱，与业务邮箱分开配置。</span></div></div>`)
  }
  applyExtendedPreset();detectEmail()
 }
@@ -131,5 +131,5 @@ document.addEventListener('click',e=>{
 },true);
 window.addEventListener('HUIDI:mail-accounts-changed',schedule);window.addEventListener('HUIDI:fusion-pane-rendered',schedule);window.addEventListener('HUIDI:community-online-view',schedule);
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',schedule,{once:true});else schedule();
-window.HUIDIMailOnboardingAssist=Object.freeze({version:'1.0.0',schedule,detectEmail,applyExtendedPreset});
+window.HUIDIMailOnboardingAssist=Object.freeze({version:'1.0.1',schedule,detectEmail,applyExtendedPreset});
 })();
