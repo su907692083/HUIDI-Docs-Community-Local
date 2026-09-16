@@ -75,10 +75,11 @@ class MailOnboardingAssistContractTests(unittest.TestCase):
 
     def test_business_mail_and_system_mail_capabilities_are_not_mixed(self) -> None:
         self.assertIn("一键授权后可收信、发信、同步回复和自动刷新授权", self.asset)
-        self.assertIn("当前通过 SMTP 安全发信", self.asset)
+        self.assertIn("当前用于安全发信", self.asset)
         self.assertIn("自动收件仍建议使用 Gmail 或 Outlook", self.asset)
         self.assertIn("注册验证、找回密码属于平台通知邮箱", self.asset)
         self.assertIn("与业务邮箱分开配置", self.asset)
+        self.assertNotIn("当前通过 SMTP 安全发信", self.asset)
 
     def test_assist_is_presentation_only_and_does_not_touch_credentials_or_business_data(self) -> None:
         assist = self.asset.split("/* HUIDI Mail Onboarding Assist V1", 1)[1]
