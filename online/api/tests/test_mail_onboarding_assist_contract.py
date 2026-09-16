@@ -53,7 +53,8 @@ class MailOnboardingAssistContractTests(unittest.TestCase):
             "smtppro.zoho.com",
         ):
             self.assertIn(host, self.asset)
-        self.assertIn("授权码或专用密码", self.asset)
+        self.assertIn("授权码或安全密码", self.asset)
+        self.assertIn("应用专用密码", self.asset)
         self.assertIn("查看官方帮助", self.asset)
 
     def test_common_public_domains_select_the_right_path(self) -> None:
