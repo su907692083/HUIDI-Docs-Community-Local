@@ -69,7 +69,7 @@ jobs:
         run: |
           set -euo pipefail
           relay="$RUNNER_TEMP/huidi-relay"
-          base64 --decode "$relay/payload.cms.b64" > "$relay/payload.cms"
+          openssl base64 -d -A -in "$relay/payload.cms.b64" -out "$relay/payload.cms"
           openssl cms -decrypt -binary -inform DER \
             -in "$relay/payload.cms" \
             -recip "$relay/relay-cert.pem" \
