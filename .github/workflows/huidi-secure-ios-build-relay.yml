@@ -1,0 +1,103 @@
+name: HUIDI Secure iOS Build Relay
+
+on:
+  push:
+    paths:
+      - '.github/workflows/huidi-secure-ios-build-relay.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 12
+    steps:
+      - name: Checkout relay repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Create ephemeral relay certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/huidi-relay"
+          openssl req -x509 -newkey rsa:3072 -nodes -days 1             -subj '/CN=HUIDI Ephemeral Relay/'             -keyout "$RUNNER_TEMP/huidi-relay/relay-private.pem"             -out "$RUNNER_TEMP/huidi-relay/relay-cert.pem" >/dev/null 2>&1
+          openssl x509 -in "$RUNNER_TEMP/huidi-relay/relay-cert.pem" -noout -fingerprint -sha256
+
+      - name: Publish relay public certificate
+        uses: actions/upload-artifact@v4
+        with:
+          name: huidi-relay-public-cert
+          path: ${{ runner.temp }}/huidi-relay/relay-cert.pem
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Wait for encrypted source payload
+        shell: bash
+        run: |
+          set -euo pipefail
+          payload=".huidi-relay/payload.cms.b64"
+          for i in $(seq 1 120); do
+            git fetch origin main --quiet || true
+            git checkout origin/main -- "$payload" 2>/dev/null || true
+            if [ -s "$payload" ]; then
+              echo "ENCRYPTED_PAYLOAD_READY"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "PAYLOAD_TIMEOUT"
+          exit 20
+
+      - name: Decrypt source package
+        shell: bash
+        run: |
+          set -euo pipefail
+          base64 --decode .huidi-relay/payload.cms.b64 > "$RUNNER_TEMP/huidi-relay/payload.cms"
+          openssl cms -decrypt -binary -inform DER             -in "$RUNNER_TEMP/huidi-relay/payload.cms"             -recip "$RUNNER_TEMP/huidi-relay/relay-cert.pem"             -inkey "$RUNNER_TEMP/huidi-relay/relay-private.pem"             -out "$RUNNER_TEMP/huidi-relay/payload.zip"
+          mkdir -p "$RUNNER_TEMP/huidi-src"
+          ditto -x -k "$RUNNER_TEMP/huidi-relay/payload.zip" "$RUNNER_TEMP/huidi-src"
+          test -f "$RUNNER_TEMP/huidi-src/build.sh"
+          test -f "$RUNNER_TEMP/huidi-src/output-cert.pem"
+          echo "SOURCE_DECRYPTED"
+
+      - name: Build encrypted result
+        id: build
+        shell: bash
+        run: |
+          set +e
+          cd "$RUNNER_TEMP/huidi-src"
+          chmod +x build.sh
+          ./build.sh > "$RUNNER_TEMP/huidi-relay/build.log" 2>&1
+          rc=$?
+          set -e
+
+          result="$RUNNER_TEMP/huidi-result"
+          mkdir -p "$result"
+          cp "$RUNNER_TEMP/huidi-relay/build.log" "$result/build.log"
+          printf '%s\n' "$rc" > "$result/build-exit-code.txt"
+
+          if [ "$rc" -eq 0 ] && [ -f build/HUIDIDouyinSpeed.dylib ]; then
+            cp build/HUIDIDouyinSpeed.dylib "$result/HUIDIDouyinSpeed.dylib"
+            file build/HUIDIDouyinSpeed.dylib > "$result/file.txt" 2>&1 || true
+            shasum -a 256 build/HUIDIDouyinSpeed.dylib > "$result/SHA256SUMS.txt"
+            echo "BUILD_OK"
+          else
+            echo "BUILD_FAILED"
+          fi
+
+          cd "$result"
+          ditto -c -k --sequesterRsrc --keepParent . "$RUNNER_TEMP/huidi-relay/result.zip"
+          openssl cms -encrypt -binary -aes256             -in "$RUNNER_TEMP/huidi-relay/result.zip"             -outform DER             -out "$RUNNER_TEMP/huidi-relay/result.cms"             "$RUNNER_TEMP/huidi-src/output-cert.pem"
+
+      - name: Upload encrypted build result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: huidi-encrypted-build-result
+          path: ${{ runner.temp }}/huidi-relay/result.cms
+          retention-days: 1
+          if-no-files-found: error
