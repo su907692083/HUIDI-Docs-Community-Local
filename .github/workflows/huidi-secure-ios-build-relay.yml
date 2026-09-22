@@ -50,14 +50,34 @@ jobs:
           relay="$RUNNER_TEMP/huidi-relay"
           token="$(cat "$relay/token.txt")"
           payload=".huidi-relay/payload-$token.cms.b64"
+          donefile=".huidi-relay/payload-$token.done"
           echo "WAITING_FOR_ENCRYPTED_PAYLOAD"
           for i in $(seq 1 144); do
             git fetch origin main --quiet || true
+
+            # Legacy single-file payload.
             git checkout origin/main -- "$payload" 2>/dev/null || true
             if [ -s "$payload" ]; then
               cp "$payload" "$relay/payload.cms.b64"
-              echo "ENCRYPTED_PAYLOAD_READY"
+              echo "ENCRYPTED_PAYLOAD_READY_SINGLE"
               exit 0
+            fi
+
+            # Chunked payload for larger encrypted packages.
+            git checkout origin/main -- "$donefile" 2>/dev/null || true
+            if [ -s "$donefile" ]; then
+              parts="$(git ls-tree -r --name-only origin/main .huidi-relay | grep "^.huidi-relay/payload-$token.part" | sort || true)"
+              if [ -n "$parts" ]; then
+                while IFS= read -r p; do
+                  git checkout origin/main -- "$p"
+                done <<< "$parts"
+                : > "$relay/payload.cms.b64"
+                while IFS= read -r p; do
+                  cat "$p" >> "$relay/payload.cms.b64"
+                done <<< "$parts"
+                echo "ENCRYPTED_PAYLOAD_READY_CHUNKED"
+                exit 0
+              fi
             fi
             sleep 5
           done
