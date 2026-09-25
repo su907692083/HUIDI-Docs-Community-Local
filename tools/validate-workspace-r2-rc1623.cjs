@@ -16,7 +16,11 @@ need(/version:'1\.2\.0-RC16\.\d+'/.test(base),'backup release identity missing')
 const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(path.join(root,p))).digest('hex');
 need(sha('public/flypigbox-v3-3-2-3-pdf-flow-fix.js')==='abb741448747b8161c9dfafff77a76f8cecd41771d436234424f3a43af275b36','protected PDF flow changed');
 need(sha('public/flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js')==='570884ad3445361c60b0ef491544f54adce689b89f92ffd546803b619cb93583','protected output gate changed');
-need(sha('public/huidi-workspace-r1-rc1622.js')==='ef5e82df349da28c0e50c8ce54cfa050c50691704769840990051f4ced19ad4d','RC16.22 Workspace R1 JS changed');
+const workspaceR1JsSha=sha('public/huidi-workspace-r1-rc1622.js');
+need(new Set([
+  'ef5e82df349da28c0e50c8ce54cfa050c50691704769840990051f4ced19ad4d', // RC16.22 baseline
+  'd52cfa7efaa0207af29a0784f4a20e94973cb823a1e88134b7c905d3d59f1de4', // approved post-RC16.29 continuity fixes
+]).has(workspaceR1JsSha),'RC16.22 Workspace R1 JS changed outside approved continuity hashes');
 need(sha('public/huidi-workspace-r1-rc1622.css')==='9e8bdc1ec2cfe3804b5d01a9f7de0add9f0ae818878c123d40497223dc5bc33a','RC16.22 Workspace R1 CSS changed');
 if(fail.length){console.error('RC16.23 WORKSPACE R2 VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
 console.log('RC16.23 WORKSPACE R2 VALIDATION PASSED');

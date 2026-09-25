@@ -1,0 +1,61 @@
+name: HUIDI Provider Configuration Audit
+on:
+  push:
+    branches: ['online/v0.1-lead-workbench']
+    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', 'tools/source_reuse_browser_audit.py', 'tools/task_flow_browser_audit.py', 'tools/mail_setup_beginner_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
+  pull_request:
+    paths: ['online/**', 'public/**', 'tools/provider_configuration_browser_audit.py', 'tools/workspace_human_operation_audit.py', 'tools/source_reuse_browser_audit.py', 'tools/task_flow_browser_audit.py', 'tools/mail_setup_beginner_browser_audit.py', '.github/workflows/provider-configuration-audit.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: provider-configuration-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+jobs:
+  provider_configuration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare exact-source evidence directory
+        run: |
+          mkdir -p /tmp/huidi-provider-evidence
+          git rev-parse HEAD > /tmp/huidi-provider-evidence/SOURCE-COMMIT.txt
+      - name: Install isolated test dependencies
+        run: |
+          set -euo pipefail
+          sudo find /etc/apt/sources.list.d -maxdepth 1 -type f \( -name 'google-chrome*.list' -o -name 'google-chrome*.sources' \) -delete || true
+          python -m pip install -r online/api/requirements.txt playwright
+          python -m playwright install --with-deps chromium
+      - name: Verify runtime configuration, tenant isolation and secret handling
+        env:
+          HUIDI_DISABLE_BACKGROUND_JOBS: '1'
+          HUIDI_SECRET_KEY: 'isolated-provider-ci-only-not-production'
+          DATABASE_URL: 'sqlite:////tmp/huidi-provider-runtime-ci.db'
+        run: |
+          set -euo pipefail
+          cd online/api
+          python -m unittest discover -s tests -p 'test_*.py' 2>&1 | tee /tmp/huidi-provider-evidence/UNIT-TESTS.txt
+      - name: Exercise actual configuration pages in Chromium
+        run: python tools/provider_configuration_browser_audit.py --output /tmp/huidi-provider-evidence/browser
+      - name: Exercise beginner mailbox and SMTP setup in Chromium
+        run: python tools/mail_setup_beginner_browser_audit.py --output /tmp/huidi-provider-evidence/mail-setup
+      - name: Exercise human clicks, keyboard choices and stylesheet-failure isolation
+        run: python tools/workspace_human_operation_audit.py --output /tmp/huidi-provider-evidence/human
+      - name: Exercise source filters and Feishu table reuse with isolated upstream
+        run: python tools/source_reuse_browser_audit.py --output /tmp/huidi-provider-evidence/reuse
+      - name: Exercise low-input foreign-trade task flow through existing owners
+        run: python tools/task_flow_browser_audit.py --output /tmp/huidi-provider-evidence/task-flow
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HUIDI-PROVIDER-CONFIGURATION-${{ github.event.pull_request.head.sha || github.sha }}
+          path: /tmp/huidi-provider-evidence/
+          retention-days: 14
+          if-no-files-found: error
