@@ -3,3 +3,9 @@ node_modules/
 Thumbs.db
 *.log
 .local-backups/
+
+# Local-only secrets / runtime configuration
+config/feishu.local.json
+
+# Ephemeral cross-project relay staging must never enter HUIDI Docs
+.huidi-relay/
