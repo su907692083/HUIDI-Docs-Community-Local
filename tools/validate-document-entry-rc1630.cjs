@@ -20,5 +20,16 @@ const checks=[
 ];
 
 for(const [name,ok] of checks) ok?pass(name):fail(name);
+
+function walk(dir){
+  return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
+    const full=path.join(dir,entry.name);
+    if(entry.isDirectory())return walk(full);
+    return /\.(?:js|html)$/.test(entry.name)?[full]:[];
+  });
+}
+const legacyActive=/workspace\.html\?view=(?:documents|products|catalog|customers|deals|mail)\b/;
+const legacyHits=walk(path.join(root,'public')).filter(file=>legacyActive.test(fs.readFileSync(file,'utf8'))).map(file=>path.relative(root,file));
+if(legacyHits.length)fail('legacy active workspace query routes remain: '+legacyHits.join(', '));else pass('active workspace routes use hash navigation');
 if(process.exitCode)process.exit(process.exitCode);
 console.log('[DOCUMENT-ENTRY] OK');
