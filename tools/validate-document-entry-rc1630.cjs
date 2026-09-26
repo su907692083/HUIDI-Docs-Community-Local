@@ -11,6 +11,7 @@ const catalog=read('public/catalog-studio/index.html');
 
 const checks=[
   ['workspace routes launchDoc through document-start',workspace.includes("location.href=`./document-start.html?${qs.toString()}`;return;")],
+  ['workspace persists active view in hash',workspace.includes("history.replaceState(null,'',`#${id}`)")],
   ['customer quote uses shared launchDoc owner',workspace.includes("if(a==='customer-quote')launchDoc('quotation',{customerId:id})")],
   ['product quote uses shared launchDoc owner',workspace.includes("if(a==='product-quote')launchDoc('quotation',{productIds:[id]})")],
   ['document-start reads preset deal/customer/product context',start.includes("preset={dealId:startParams.get('deal')||'',customerId:startParams.get('customer')||''")&&start.includes("productIds:startParams.getAll('product').filter(Boolean)")],
