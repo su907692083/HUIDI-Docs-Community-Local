@@ -15,6 +15,7 @@ const checks=[
   ['product quote uses shared launchDoc owner',workspace.includes("if(a==='product-quote')launchDoc('quotation',{productIds:[id]})")],
   ['document-start reads preset deal/customer/product context',start.includes("preset={dealId:startParams.get('deal')||'',customerId:startParams.get('customer')||''")&&start.includes("productIds:startParams.getAll('product').filter(Boolean)")],
   ['document-start applies preset context',start.includes('function applyPreset(){')&&start.includes('render();applyPreset();')],
+  ['document-start preserves selections across type changes',start.includes('function snapshotChoice(){')&&start.includes('function restoreChoice(saved){')],
   ['catalog returns with hash route',catalog.includes('../workspace.html#catalog')],
   ['legacy catalog query route removed',!catalog.includes('../workspace.html?view=catalog')]
 ];
