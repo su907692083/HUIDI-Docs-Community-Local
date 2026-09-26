@@ -8,6 +8,8 @@ const pass=m=>console.log('[DOCUMENT-ENTRY] PASS:',m);
 const workspace=read('public/huidi-local-workspace-v120.js');
 const start=read('public/document-start.html');
 const catalog=read('public/catalog-studio/index.html');
+const workspaceR1=read('public/huidi-workspace-r1-rc1622.js');
+const realtimeBridge=read('public/flypigbox-r1-3a-18-28-realtime-event-bridge.js');
 const launchStart=workspace.indexOf('function launchDoc(');
 const launchEnd=workspace.indexOf('function copyText',launchStart);
 const launchBlock=launchStart>=0&&launchEnd>launchStart?workspace.slice(launchStart,launchEnd):'';
@@ -21,6 +23,8 @@ const checks=[
   ['document-start reads preset deal/customer/product context',start.includes("preset={dealId:startParams.get('deal')||'',customerId:startParams.get('customer')||''")&&start.includes("productIds:startParams.getAll('product').filter(Boolean)")],
   ['document-start applies preset context',start.includes('function applyPreset(){')&&start.includes('render();applyPreset();')],
   ['document-start preserves selections across type changes',start.includes('function snapshotChoice(){')&&start.includes('function restoreChoice(saved){')],
+  ['workspace record deep link uses existing R1 detail drawer',workspaceR1.includes("function openDeepLink(){")&&workspaceR1.includes("p.get('record')")&&workspaceR1.includes("showDetail(view,id)")&&workspaceR1.includes("refresh();openDeepLink();")],
+  ['realtime bridge preserves record with hash view',realtimeBridge.includes('?record=')&&realtimeBridge.includes('encodeURIComponent(id)')&&realtimeBridge.includes('#')&&realtimeBridge.includes('encodeURIComponent(view)')],
   ['catalog returns with hash route',catalog.includes('../workspace.html#catalog')],
   ['legacy catalog query route removed',!catalog.includes('../workspace.html?view=catalog')]
 ];
