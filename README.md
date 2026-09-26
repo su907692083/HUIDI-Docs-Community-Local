@@ -6,7 +6,17 @@ Source Available · Local-first · Windows / Browser
 > 不想每天在 Excel、聊天记录、报价文件、客户资料和不同单据之间反复复制粘贴？  
 > HUIDI Docs 希望把它们串成一条线：**客户 / 询盘 → 商品 → 报价 → PI → 合同 → CI / 装箱单 → 出运**。
 
-当前候选版本：**V1.2.0 RC16.29**
+当前已发布候选版：**V1.2.0 RC16.29**
+
+**快速入口**
+
+- [下载 Windows 版](https://github.com/su907692083/HUIDI-Docs-Community-Local/releases/download/v1.2.0-rc16.29/HUIDI-Docs-Community-Local-V1.2.0-RC16.29-WINDOWS.zip)
+- [Windows 快速开始](./README-FIRST.zh-CN.md)
+- [完整功能说明](./FEATURES-RC16.29.zh-CN.md)
+- [当前 Release 说明](./RELEASE-NOTES-1.2.0-RC16.29.zh-CN.md)
+- [源码开放授权边界](./SOURCE-AVAILABLE-SCOPE.md)
+
+> **第一次使用：**完整解压 Windows ZIP → 双击 `START-HUIDI-LOCAL.cmd` → 浏览器打开本地工作台。核心客户、商品、业务与单据数据默认保存在当前电脑浏览器中；换电脑或清理浏览器前，请先导出完整 JSON 备份。
 
 ---
 
