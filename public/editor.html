@@ -274,10 +274,10 @@
     <div class="intro-layout">
       <div class="intro-copy">
         <p class="eyebrow">HUIDI · B2B Trade Document Workspace</p>
-        <h1>把多语言 PI、客户资料与交易条款，放进一个可控工作台</h1>
+        <h1>把多语言外贸单据、客户资料与交易条款，放进一个可控工作台</h1>
         <p class="lead">为跨境电商、传统外贸与工厂销售团队设计：从客户资料、商品明细、收款账户与交易条款，到多语言 PDF，一份单据完成可核对的对外沟通。Community Local 默认只使用当前浏览器本地数据，不连接 HUIDI 生产云服务。</p>
         <div class="launch-hero-actions">
-          <button class="btn primary" id="launchStartBtn" type="button">开始制作 PI</button>
+          <button class="btn primary" id="launchStartBtn" type="button">开始制作</button>
           <button class="btn secondary" id="launchGuideBtn" type="button">查看工具说明</button>
           <button class="btn ghost launch-security-link" id="launchSecurityBtn" type="button">数据与使用说明</button>
         </div>
@@ -4977,7 +4977,7 @@
       const workspaceMeta=window.FlypigBOXWorkspaceMeta?.build?.(payload,docType)||{document_type:docType,document_no:fallbackNo};
       if(!window.HUIDI_LOCAL_ONLY?.localOnly)intelligence?.localMirror?.({id:currentId||'workspace_current',title,status:'draft',payload,...workspaceMeta});
       if(!sb){
-        appStatus(`已保存到本机：${title}。云端同步尚未配置。`,'ok');
+        appStatus(`已保存到本机：${title}。建议定期导出完整备份。`,'ok');
         intelligence?.showSaveReceipt?.({title,summary,cloud:false,customerMatched});
         return;
       }
@@ -5010,7 +5010,7 @@
       console.error(error);
       appStatus('已尝试保存本机信息；单据中心同步出现异常，请稍后重试。','error');
     } finally {
-      if (button) { button.disabled = false; button.textContent = '💾 一键保存'; }
+      if (button) { button.disabled = false; button.textContent = window.HUIDI_LOCAL_ONLY?.localOnly ? '保存到本机' : '💾 一键保存'; }
     }
   }
 
