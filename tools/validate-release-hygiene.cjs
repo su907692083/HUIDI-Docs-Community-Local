@@ -76,8 +76,8 @@ for(const full of releaseFiles){
 if(!process.exitCode)pass('secret/certificate scan clean');
 
 const crossProjectMarkers=[
-  ['HUIDIDouyinSpeed','iOS speed project marker'],
-  ['HUIDI Secure iOS Build Relay','iOS relay workflow marker']
+  ['HUIDI'+'DouyinSpeed','iOS speed project marker'],
+  ['HUIDI Secure iOS '+'Build Relay','iOS relay workflow marker']
 ];
 for(const [needle,label] of crossProjectMarkers){
   const hits=releaseFiles.filter(full=>{
