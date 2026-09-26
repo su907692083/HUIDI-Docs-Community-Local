@@ -109,7 +109,6 @@ function showDetail(view,id){const d=data(),dr=drawer(),kind=$('#r1DrawerKind',d
  if(view==='documents'){const x=byId(d.docs,id);if(!x)return;const s=x.summary||{},type=getDocType(x);kind.textContent='单据详情';title.textContent=`${names[type]||'单据'} · ${getDocNo(x)}`;html=`<section class="workspace-r1-detail-section"><h4>单据信息</h4><div class="workspace-r1-detail-grid">${detailField('类型',names[type]||type)}${detailField('状态',s.document_status||x.document_status||'draft')}${detailField('客户',getDocCustomer(x),true)}${detailField('单号',getDocNo(x))}${detailField('更新时间',fmtDate(x.updated_at))}${detailField('来源单号',s.source_document_no||x.source_document_no||'—',true)}</div></section>`;actions=`<button class="btn primary" data-action="doc-open" data-id="${esc(id)}">继续编辑</button>`;}
  if(!html)return;body.innerHTML=`${html}<div class="workspace-r1-drawer-actions">${actions}</div>`;dr.classList.add('open');dr.setAttribute('aria-hidden','false');state.drawer={view,id}}
 
-function openDeepLink(){const p=new URLSearchParams(location.search),id=p.get('record'),view=decodeURIComponent((location.hash||'').replace(/^#/,'')||'');if(!id||!['deals','customers','products','documents'].includes(view))return;setTimeout(()=>showDetail(view,id),80)}
 function refresh(){const d=data();navCounts(d);renderHomeR1(d);renderSummaries(d);['deals','customers','products','documents'].forEach(v=>applyFilter(v,d));markRows();}
 function scheduleRefresh(ms=0){clearTimeout(scheduleRefresh.t);scheduleRefresh.t=setTimeout(refresh,ms)}
 function onClick(e){
@@ -120,6 +119,6 @@ function onClick(e){
  const row=e.target.closest('tbody tr.workspace-r1-clickable');if(row){const view=document.body.dataset.huidiView||'',id=rowId(row);if(['deals','customers','products','documents'].includes(view)&&id)showDetail(view,id)}
  const navBtn=e.target.closest('.nav-btn');if(navBtn)scheduleRefresh();
 }
-function boot(){document.body.classList.add('workspace-r1');document.body.dataset.workspaceRelease=VERSION;buildNav();drawer();refresh();openDeepLink();document.addEventListener('click',onClick);document.addEventListener('input',()=>scheduleRefresh(20),true);document.addEventListener('change',()=>scheduleRefresh(20),true);window.addEventListener('HUIDI:local-data-change',()=>scheduleRefresh(20));window.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.drawer)closeDrawer()});try{window.HUIDILocalCore?.bus?.on?.(()=>scheduleRefresh(30))}catch(_){}}
+function boot(){document.body.classList.add('workspace-r1');document.body.dataset.workspaceRelease=VERSION;buildNav();drawer();refresh();document.addEventListener('click',onClick);document.addEventListener('input',()=>scheduleRefresh(20),true);document.addEventListener('change',()=>scheduleRefresh(20),true);window.addEventListener('HUIDI:local-data-change',()=>scheduleRefresh(20));window.addEventListener('keydown',e=>{if(e.key==='Escape'&&state.drawer)closeDrawer()});try{window.HUIDILocalCore?.bus?.on?.(()=>scheduleRefresh(30))}catch(_){}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
