@@ -35,7 +35,7 @@ function restoreRecycle(id){const bin=read(K.recycle),item=bin.find(x=>x.id===id
 function emptyRecycle(id){const bin=read(K.recycle);write(K.recycle,bin.filter(x=>x.id!==id));toast('已永久删除');renderAll()}
 
 let currentView='home',currentModal=null,editId='';
-function switchView(id){currentView=id;document.body.dataset.huidiView=id;document.body.classList.toggle('huidi-workspace-compact',!['home','deals'].includes(id));$$('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${id}`));$$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
+function switchView(id){currentView=id;if(location.hash.slice(1)!==id)history.replaceState(null,'',`#${id}`);document.body.dataset.huidiView=id;document.body.classList.toggle('huidi-workspace-compact',!['home','deals'].includes(id));$$('.view').forEach(v=>v.classList.toggle('active',v.id===`view-${id}`));$$('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.view===id));renderAll();window.scrollTo({top:0,behavior:'smooth'})}
 function setTitle(title,desc){$('#pageTitle').textContent=title;$('#pageDesc').textContent=desc}
 function renderAll(){renderMetrics();renderHome();renderDeals();renderCustomers();renderProducts();renderCatalog();renderDocuments();renderBrands();renderTemplates();renderMail();renderRecycle();renderBackup();renderHelp();syncNetwork();}
 function renderMetrics(){const cs=read(K.customers),ps=read(K.products),ds=read(K.deals),docs=read(K.docs);$('#mCustomers').textContent=cs.length;$('#mProducts').textContent=ps.length;$('#mDeals').textContent=ds.filter(x=>!['completed'].includes(x.stage)).length;$('#mDocs').textContent=docs.length}
