@@ -8,6 +8,7 @@ const pass=m=>console.log('[LOCAL-SURFACE] PASS:',m);
 const editor=read('public/editor.html');
 const mode=read('public/community-local-mode.js');
 const css=read('public/community-local-mode.css');
+const catalog=read('public/catalog-studio/index.html');
 
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
@@ -24,7 +25,9 @@ const checks=[
   ['generic editor launch copy',editor.includes('id="launchStartBtn" type="button">开始制作</button>')&&!editor.includes('id="launchStartBtn" type="button">开始制作 PI</button>')],
   ['generic document intro copy',editor.includes('把多语言外贸单据、客户资料与交易条款，放进一个可控工作台')],
   ['local save success has no cloud setup warning',editor.includes('建议定期导出完整备份。')&&!editor.includes('已保存到本机：${title}。云端同步尚未配置。')],
-  ['local save button restores local label',editor.includes("window.HUIDI_LOCAL_ONLY?.localOnly ? '保存到本机' : '💾 一键保存'")]
+  ['local save button restores local label',editor.includes("window.HUIDI_LOCAL_ONLY?.localOnly ? '保存到本机' : '💾 一键保存'")],
+  ['dead Local assistant is not loaded by editor or catalog',!editor.includes('flypigbox-r1-3a-18-41-assistant.js')&&!editor.includes('flypigbox-r1-3a-18-41-assistant.css')&&!catalog.includes('flypigbox-r1-3a-18-41-assistant.js')&&!catalog.includes('flypigbox-r1-3a-18-41-assistant.css')],
+  ['dead account presentation layer is not loaded by Local editor',!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.js')&&!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.css')]
 ];
 
 for(const [name,ok] of checks)ok?pass(name):fail(name);
