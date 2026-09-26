@@ -27,7 +27,8 @@
     "check:catalog-connectivity": "node ./tools/validate-catalog-connectivity-rc1629.cjs",
     "check:release-hygiene": "node ./tools/validate-release-hygiene.cjs",
     "check:document-entry": "node ./tools/validate-document-entry-rc1630.cjs",
-    "check:local-surface": "node ./tools/validate-local-surface-rc1630.cjs"
+    "check:local-surface": "node ./tools/validate-local-surface-rc1630.cjs",
+    "check:release-docs": "node ./tools/validate-release-docs-rc1630.cjs"
   },
   "description": "HUIDI Docs Community Local — source-available local-first foreign trade document workspace"
 }
