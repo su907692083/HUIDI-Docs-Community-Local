@@ -293,7 +293,7 @@
     else if(summary.internal_order_no)facts.push(`内部订单：${summary.internal_order_no}`);
     root.innerHTML=`<section class="fp-a16-save-card" role="dialog" aria-modal="true" aria-label="单据保存结果"><header><div><p>${cloud?'已同步到工作台单据中心':'已保存到当前浏览器'}</p><h2>单据保存完成</h2></div><button type="button" class="fp-a16-close" aria-label="关闭">×</button></header><div class="fp-a16-save-title">${escapeHTML(title||suggestedTitle(summary))}</div><div class="fp-a16-save-facts">${facts.slice(0,4).map(item=>`<span>${escapeHTML(item)}</span>`).join('')||'<span>已保存完整表单内容</span>'}</div>${customerMatched?'<div class="fp-a16-save-next">已根据公司名称或邮箱，自动关联到工作台中的现有客户。</div>':''}<div class="fp-a16-save-next">${escapeHTML(suggestedNext(summary))}</div><div class="fp-a16-save-actions"><button type="button" data-fp-a16-continue>继续编辑</button><button type="button" class="primary" data-fp-a16-workspace>返回单据中心</button></div></section>`;
     const close=()=>root.remove();
-    root.addEventListener('click',event=>{if(event.target===root||event.target.closest('.fp-a16-close')||event.target.closest('[data-fp-a16-continue]'))close();if(event.target.closest('[data-fp-a16-workspace]'))location.href='./workspace.html?view=documents';});
+    root.addEventListener('click',event=>{if(event.target===root||event.target.closest('.fp-a16-close')||event.target.closest('[data-fp-a16-continue]'))close();if(event.target.closest('[data-fp-a16-workspace]'))location.href='./workspace.html#documents';});
     document.body.appendChild(root);
   }
 
