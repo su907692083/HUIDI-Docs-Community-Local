@@ -9,7 +9,7 @@
   const clean=value=>String(value??'').replace(/\s+/g,' ').trim();
   const has=(obj,keys)=>keys.some(key=>Object.prototype.hasOwnProperty.call(obj||{},key));
   const first=(obj,keys)=>{for(const key of keys){const value=obj?.[key];if(value!==undefined&&value!==null&&String(value).trim()!=='')return value;}return'';};
-  const detailUrl=(view,id='')=>{const base=location.pathname.includes('/catalog-studio/')?'../workspace.html':'./workspace.html';return `${base}?view=${encodeURIComponent(view)}${id?`&record=${encodeURIComponent(id)}`:''}`;};
+  const detailUrl=(view,id='')=>{const base=location.pathname.includes('/catalog-studio/')?'../workspace.html':'./workspace.html',record=id?`?record=${encodeURIComponent(id)}`:'';return `${base}${record}#${encodeURIComponent(view)}`;};
   const user=()=>{try{return window.FlypigBOXWorkspaceAuth?.getUser?.()||window.FlypigBOXMember?.getUser?.()||null;}catch(_){return null;}};
   function safeJson(text){try{return JSON.parse(text);}catch(_){return null;}}
   function requestBody(input,init){
