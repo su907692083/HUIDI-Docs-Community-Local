@@ -227,7 +227,7 @@
     const back=$('a',bridge);
     if(back){
       if(back.textContent!=='返回单据中心')back.textContent='返回单据中心';
-      if(back.getAttribute('href')!=='./workspace.html?view=documents')back.setAttribute('href','./workspace.html?view=documents');
+      if(back.getAttribute('href')!=='./workspace.html#documents')back.setAttribute('href','./workspace.html#documents');
     }
   }
   function renderDocumentFocusCard(){
@@ -365,7 +365,7 @@
     bar.innerHTML=`<div class="fp-context-actions"><button type="button" class="fp-back fp-main-action" data-fp-back>返回单据中心</button><button type="button" class="fp-secondary fp-main-action" data-fp-save>保存草稿</button><button type="button" class="fp-secondary fp-main-action" data-fp-export>定位正式文件操作</button></div><span id="fp-document-desc" class="fp-document-desc">${docDescription()}</span><details class="fp-more-tools"><summary>更多工具</summary><div class="fp-more-tools-panel"><span class="fp-current-document-chip" id="fp-current-document-chip">当前单据：${TYPE[getType()].label} · ${LANG[getLang()]}</span><button type="button" class="fp-secondary" data-fp-translate>翻译辅助</button><button type="button" class="fp-secondary" data-fp-template>模板中心</button><button type="button" class="fp-secondary" data-fp-paper>PDF版式</button><button type="button" class="fp-secondary" data-fp-rules>数据与使用规则</button><button type="button" class="fp-secondary" data-fp-advanced>字段显示设置</button><button type="button" class="fp-secondary" data-fp-check>导出前核对</button><div class="fp-more-tools-divider" aria-hidden="true"></div><button type="button" class="fp-secondary fp-danger-tool" data-fp-clear>清空当前单据</button></div></details><span id="fp-editor-status" class="state">正在检查预览…</span>`;
     $('.site-header')?.insertAdjacentElement('afterend',bar);
     bar.addEventListener('click',event=>{
-      if(event.target.closest('[data-fp-back]'))location.href='./workspace.html?view=documents';
+      if(event.target.closest('[data-fp-back]'))location.href='./workspace.html#documents';
       if(event.target.closest('[data-fp-save]'))$('#saveDraftBtn')?.click();
       if(event.target.closest('[data-fp-export]'))($('#headerExportPdfBtn')||$('#exportPdfBtn'))?.click();
       if(event.target.closest('[data-fp-translate]'))$('#headerTranslateBtn,#translateAllBtn')?.click();
@@ -451,7 +451,7 @@
   }
   function simplifyHeader(){
     const history=$('#openHistoryBtn');
-    if(history){history.textContent='单据中心';history.title='返回单据中心';history.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();location.href='./workspace.html?view=documents';},true);}
+    if(history){history.textContent='单据中心';history.title='返回单据中心';history.addEventListener('click',event=>{event.preventDefault();event.stopImmediatePropagation();location.href='./workspace.html#documents';},true);}
     const clear=$('#clearDocumentBtn');
     if(clear){let menu=$('#fp-more-menu');if(!menu){menu=document.createElement('details');menu.id='fp-more-menu';menu.className='action-menu';menu.innerHTML='<summary class="btn secondary">更多 ···</summary><div class="action-dropdown"></div>';$('#headerTranslateBtn')?.insertAdjacentElement('afterend',menu);}$('.action-dropdown',menu)?.appendChild(clear);clear.style.display='inline-flex';clear.textContent='清空当前单据';}
   }
