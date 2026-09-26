@@ -69,3 +69,6 @@ jobs:
 
       - name: Release documentation consistency
         run: npm run check:release-docs
+
+      - name: Editor owner and load budget
+        run: npm run check:editor-budget
