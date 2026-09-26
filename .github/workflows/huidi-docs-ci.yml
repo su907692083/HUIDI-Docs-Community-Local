@@ -75,3 +75,6 @@ jobs:
 
       - name: Backup integrity
         run: npm run check:backup-integrity
+
+      - name: Local storage safety
+        run: npm run check:storage-safety
