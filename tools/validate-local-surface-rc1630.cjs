@@ -27,7 +27,9 @@ const checks=[
   ['local save success has no cloud setup warning',editor.includes('建议定期导出完整备份。')&&!editor.includes('已保存到本机：${title}。云端同步尚未配置。')],
   ['local save button restores local label',editor.includes("window.HUIDI_LOCAL_ONLY?.localOnly ? '保存到本机' : '💾 一键保存'")],
   ['dead Local assistant is not loaded by editor or catalog',!editor.includes('flypigbox-r1-3a-18-41-assistant.js')&&!editor.includes('flypigbox-r1-3a-18-41-assistant.css')&&!catalog.includes('flypigbox-r1-3a-18-41-assistant.js')&&!catalog.includes('flypigbox-r1-3a-18-41-assistant.css')],
-  ['dead account presentation layer is not loaded by Local editor',!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.js')&&!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.css')]
+  ['dead account presentation layer is not loaded by Local editor',!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.js')&&!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.css')],
+  ['legacy local-preview observer is not loaded by Local editor',!editor.includes('flypigbox-v3-3-6-3-local-guest-ui.js')&&!editor.includes('flypigbox-v3-3-6-3-local-guest-ui.css')],
+  ['hidden cloud job center is not loaded by Local editor',!editor.includes('flypigbox-v3-3-6-24-r1-3a-18-job-center.js')]
 ];
 
 for(const [name,ok] of checks)ok?pass(name):fail(name);
