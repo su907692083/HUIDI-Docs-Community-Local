@@ -23,6 +23,10 @@ const forbidden = [
   '.huidi-relay',
   path.join('.github', 'workflows', 'huidi-secure-ios-build-relay.yml'),
   path.join('config', 'feishu.local.json'),
+  'online',
+  'Dockerfile.online',
+  'docker-compose.online.yml',
+  'Dockerfile.nas-shadow',
 ];
 
 for (const rel of forbidden) {
@@ -70,6 +74,22 @@ for(const full of releaseFiles){
   }
 }
 if(!process.exitCode)pass('secret/certificate scan clean');
+
+const crossProjectMarkers=[
+  ['HUIDIDouyinSpeed','iOS speed project marker'],
+  ['HUIDI Secure iOS Build Relay','iOS relay workflow marker']
+];
+for(const [needle,label] of crossProjectMarkers){
+  const hits=releaseFiles.filter(full=>{
+    const rel=path.relative(root,full).replace(/\\/g,'/');
+    const ext=path.extname(full).toLowerCase();
+    if(!textExtensions.has(ext)&&path.basename(full)!=='.gitignore')return false;
+    if(fs.statSync(full).size>1024*1024)return false;
+    return fs.readFileSync(full,'utf8').includes(needle);
+  }).map(full=>path.relative(root,full).replace(/\\/g,'/'));
+  hits.length?fail(`${label} found in Community release: ${hits.join(', ')}`):pass(`${label} absent`);
+}
+
 
 const packagePath = path.join(root, 'package.json');
 if (!fs.existsSync(packagePath)) {
