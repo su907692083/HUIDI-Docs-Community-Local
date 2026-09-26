@@ -173,7 +173,7 @@
     const refresh=()=>{wrapIntelligence();ensureWorkbenchCenter();ensureEditorButton();};
     let timer=0;new MutationObserver(()=>{clearTimeout(timer);timer=setTimeout(refresh,80);}).observe(document.documentElement,{childList:true,subtree:true});
     ['HUIDI:engine-router-ready','HUIDI:engine-job','HUIDI:document-intelligence-extended','HUIDI:founder-os-state','HUIDI:founder-os-task'].forEach(name=>document.addEventListener(name,refresh));
-    setInterval(refresh,2500);refresh();
+    if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(refresh,2500);refresh();
   }
   function boot(){bind();observe();document.documentElement.dataset.fpbEngineFoundation=VERSION;}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
