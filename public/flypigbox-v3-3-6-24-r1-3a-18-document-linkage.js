@@ -112,7 +112,7 @@
     const actions=$('#fpTradeFactoryCenter .fp-trade-factory-actions')||$('.editor-top-actions')||$('.top-actions');if(!actions)return;
     const button=document.createElement('button');button.type='button';button.className='btn secondary fp-a18-link-button';button.dataset.a18LinkDocument='1';button.textContent='生成关联单据';actions.appendChild(button);
   }
-  document.addEventListener('click',event=>{if(event.target.closest('[data-a18-link-document]')){event.preventDefault();showDialog();return;}if(event.target.closest('[data-a18-workbench-linkage]')){event.preventDefault();location.href='./workspace.html?view=documents';}},true);
+  document.addEventListener('click',event=>{if(event.target.closest('[data-a18-link-document]')){event.preventDefault();showDialog();return;}if(event.target.closest('[data-a18-workbench-linkage]')){event.preventDefault();location.href='./workspace.html#documents';}},true);
 
   function ensureWorkbenchCard(){
     const grid=$('#fp-a17-engine-center .fp-a17-task-grid');if(!grid||$('[data-a18-workbench-linkage]',grid))return;
