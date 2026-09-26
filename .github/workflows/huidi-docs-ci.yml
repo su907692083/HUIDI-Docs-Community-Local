@@ -66,3 +66,6 @@ jobs:
 
       - name: Community Local surface
         run: npm run check:local-surface
+
+      - name: Release documentation consistency
+        run: npm run check:release-docs
