@@ -42,6 +42,8 @@ Community Local 是 **Source Available / 源码开放版**，不是 AGPL / GPL �
 - 云同步、团队实时协作、邮件发送网关、通知网关
 - HUIDI 生产飞书 / 企微连接器、生产机器人和生产凭据（RC16.6.4 的用户自有飞书协作同步不在此排除项内）
 - Founder OS Bridge
+- HUIDI Online 外贸获客 / 云端工作台源码与部署运行时（例如 `online/`、`Dockerfile.online`、`docker-compose.online.yml`）
+- iOS / dylib 构建中继、`.huidi-relay/` 临时载荷和其它跨项目构建产物
 - 生产管理后台
 - 会员、计费、PDF额度、Token 成本和生产密钥
 
