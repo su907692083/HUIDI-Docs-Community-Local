@@ -118,7 +118,7 @@
     const grid=$('#fp-a17-engine-center .fp-a17-task-grid');if(!grid||$('[data-a18-workbench-linkage]',grid))return;
     const button=document.createElement('button');button.type='button';button.className='fp-a17-task';button.dataset.a18WorkbenchLinkage='1';button.innerHTML='<b>单据一键贯通</b><span>从报价生成 PI 或合同，再从订单资料生成 CI 和 PL。</span><em>进入单据中心</em>';grid.appendChild(button);
   }
-  const observer=new MutationObserver(()=>{ensureButton();ensureWorkbenchCard();});observer.observe(document.documentElement,{childList:true,subtree:true});setInterval(()=>{ensureButton();ensureWorkbenchCard();},2500);ensureButton();ensureWorkbenchCard();
+  const observer=new MutationObserver(()=>{ensureButton();ensureWorkbenchCard();});observer.observe(document.documentElement,{childList:true,subtree:true});if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(()=>{ensureButton();ensureWorkbenchCard();},2500);ensureButton();ensureWorkbenchCard();
   window.FlypigBOXDocumentLinkage=Object.freeze({version:VERSION,transitions:TRANSITIONS,convertPayload,compareCiPl,show:showDialog});
   document.documentElement.dataset.fpbDocumentLinkage=VERSION;
 })();
