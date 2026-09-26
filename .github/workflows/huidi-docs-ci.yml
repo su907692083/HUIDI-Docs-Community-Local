@@ -63,3 +63,6 @@ jobs:
 
       - name: Document entry routing
         run: npm run check:document-entry
+
+      - name: Community Local surface
+        run: npm run check:local-surface
