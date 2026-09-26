@@ -263,7 +263,7 @@
     const header = $('.doc-start-topbar'); if (!header || $('#fp-xm-doc-start')) return;
     const bar = document.createElement('section');
     bar.id = 'fp-xm-doc-start'; bar.className = 'fp-xm-page-journey fp-xm-doc-start';
-    bar.innerHTML = '<div class="fp-xm-page-steps"><span class="active">1 选择单据</span><span>2 选择客户和品牌</span><span>3 选择商品</span><span>4 进入编辑器</span></div><div class="fp-xm-page-summary"><b>资料准备 1/4</b><span>可以先进入编辑器，未填写内容会继续保留为空。</span></div><a href="./workspace.html?view=documents">返回单据中心</a>';
+    bar.innerHTML = '<div class="fp-xm-page-steps"><span class="active">1 选择单据</span><span>2 选择客户和品牌</span><span>3 选择商品</span><span>4 进入编辑器</span></div><div class="fp-xm-page-summary"><b>资料准备 1/4</b><span>可以先进入编辑器，未填写内容会继续保留为空。</span></div><a href="./workspace.html#documents">返回单据中心</a>';
     header.insertAdjacentElement('afterend', bar);
     const update = () => {
       const customer = clean($('#customer-select')?.value);
@@ -298,7 +298,7 @@
     const header = $('.site-header'); if (!header || $('#fp-xm-editor')) return;
     const bar = document.createElement('section');
     bar.id = 'fp-xm-editor'; bar.className = 'fp-xm-page-journey fp-xm-editor';
-    bar.innerHTML = '<div class="fp-xm-page-steps"><span class="active">1 资料</span><span class="active">2 编辑</span><span>3 检查</span><span>4 输出</span></div><div class="fp-xm-editor-state"><b>当前单据</b><span data-fp-editor-state>等待编辑</span></div><div class="fp-xm-editor-actions"><a href="./workspace.html?view=documents">返回单据中心</a><button type="button" data-fp-check-document>检查资料</button><button type="button" class="primary" data-fp-save-document>保存单据</button></div>';
+    bar.innerHTML = '<div class="fp-xm-page-steps"><span class="active">1 资料</span><span class="active">2 编辑</span><span>3 检查</span><span>4 输出</span></div><div class="fp-xm-editor-state"><b>当前单据</b><span data-fp-editor-state>等待编辑</span></div><div class="fp-xm-editor-actions"><a href="./workspace.html#documents">返回单据中心</a><button type="button" data-fp-check-document>检查资料</button><button type="button" class="primary" data-fp-save-document>保存单据</button></div>';
     header.insertAdjacentElement('afterend', bar);
     const state = $('[data-fp-editor-state]', bar);
     const setState = (text, tone='') => { if (!state) return; state.textContent = text; state.dataset.tone = tone; };
@@ -318,7 +318,7 @@
     const header = $('header.topbar, header.site-header, .topbar'); if (!header || $('#fp-xm-catalog')) return;
     const bar = document.createElement('section');
     bar.id = 'fp-xm-catalog'; bar.className = 'fp-xm-page-journey fp-xm-catalog';
-    bar.innerHTML = '<div class="fp-xm-page-steps"><span class="active">1 选择商品</span><span>2 整理资料</span><span>3 检查预览</span><span>4 保存与导出</span></div><div class="fp-xm-page-summary"><b>尚未导入商品</b><span>可以从商品资料库选择，也可以上传Excel产品表。</span></div><div class="fp-xm-editor-actions"><a href="../workspace.html?view=products">商品资料库</a><a href="../workspace.html?view=catalog">目录中心</a><button type="button" class="primary" data-fp-save-catalog>保存目录项目</button></div>';
+    bar.innerHTML = '<div class="fp-xm-page-steps"><span class="active">1 选择商品</span><span>2 整理资料</span><span>3 检查预览</span><span>4 保存与导出</span></div><div class="fp-xm-page-summary"><b>尚未导入商品</b><span>可以从商品资料库选择，也可以上传Excel产品表。</span></div><div class="fp-xm-editor-actions"><a href="../workspace.html#products">商品资料库</a><a href="../workspace.html#catalog">目录中心</a><button type="button" class="primary" data-fp-save-catalog>保存目录项目</button></div>';
     header.insertAdjacentElement('afterend', bar);
     const update = () => {
       const count = catalogProductCount(); const b = $('.fp-xm-page-summary b', bar); const s = $('.fp-xm-page-summary span', bar);
