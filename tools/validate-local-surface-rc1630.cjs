@@ -9,6 +9,8 @@ const editor=read('public/editor.html');
 const mode=read('public/community-local-mode.js');
 const css=read('public/community-local-mode.css');
 const catalog=read('public/catalog-studio/index.html');
+const engineIntegration=read('public/flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js');
+const documentLinkage=read('public/flypigbox-v3-3-6-24-r1-3a-18-document-linkage.js');
 
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
@@ -30,7 +32,9 @@ const checks=[
   ['dead account presentation layer is not loaded by Local editor',!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.js')&&!editor.includes('flypigbox-v3-3-4-2-prelaunch-account.css')],
   ['legacy local-preview observer is not loaded by Local editor',!editor.includes('flypigbox-v3-3-6-3-local-guest-ui.js')&&!editor.includes('flypigbox-v3-3-6-3-local-guest-ui.css')],
   ['hidden cloud job center is not loaded by Local editor',!editor.includes('flypigbox-v3-3-6-24-r1-3a-18-job-center.js')],
-  ['notification-only realtime bridge is not loaded by Local editor',!editor.includes('flypigbox-r1-3a-18-28-realtime-event-bridge.js')]
+  ['notification-only realtime bridge is not loaded by Local editor',!editor.includes('flypigbox-r1-3a-18-28-realtime-event-bridge.js')],
+  ['engine duplicate polling disabled in Local mode',engineIntegration.includes("if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(refresh,2500);refresh();")],
+  ['document-linkage duplicate polling disabled in Local mode',documentLinkage.includes("if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(()=>{ensureButton();ensureWorkbenchCard();},2500)")]
 ];
 
 for(const [name,ok] of checks)ok?pass(name):fail(name);
