@@ -1,0 +1,62 @@
+name: HUIDI Docs CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'release/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Release hygiene
+        run: npm run check:release-hygiene
+
+      - name: Core validation
+        run: npm run check
+
+      - name: Layout and pagination
+        run: |
+          npm run check:layout
+          npm run check:pagination
+
+      - name: Document runtime gates
+        run: |
+          npm run check:templates
+          npm run check:composer
+          npm run check:clipnav
+          npm run check:runtime
+          npm run check:export
+          npm run check:toolbar
+          npm run check:wysiwyg
+          npm run check:toolbar-interaction
+          npm run check:actions
+
+      - name: Workspace gates
+        run: |
+          npm run check:workspace-r1
+          npm run check:workspace-r2
+          npm run check:feishu-data
+          npm run check:workspace-r3
+          npm run check:workspace-r4
+          npm run check:workspace-r5
+          npm run check:workspace-r6
+
+      - name: Catalog connectivity
+        run: npm run check:catalog-connectivity
