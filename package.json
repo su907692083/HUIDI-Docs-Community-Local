@@ -24,7 +24,8 @@
     "check:workspace-r4": "node ./tools/validate-workspace-r4-rc1626.cjs",
     "check:workspace-r5": "node ./tools/validate-workspace-r5-rc1627.cjs",
     "check:workspace-r6": "node ./tools/validate-workspace-r6-rc1628.cjs",
-    "check:catalog-connectivity": "node ./tools/validate-catalog-connectivity-rc1629.cjs"
+    "check:catalog-connectivity": "node ./tools/validate-catalog-connectivity-rc1629.cjs",
+    "check:release-hygiene": "node ./tools/validate-release-hygiene.cjs"
   },
   "description": "HUIDI Docs Community Local — source-available local-first foreign trade document workspace"
 }
