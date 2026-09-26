@@ -72,3 +72,6 @@ jobs:
 
       - name: Editor owner and load budget
         run: npm run check:editor-budget
+
+      - name: Backup integrity
+        run: npm run check:backup-integrity
