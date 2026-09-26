@@ -42,7 +42,7 @@ for(const [name,ok] of checks)ok?pass(name):fail(name);
 
 if(exists(verify)){
   const v=read(verify);
-  if(v.includes('HUIDI Docs Community Local '+display.slice(1)))pass('package verification title matches');
+  if(v.includes('HUIDI Docs Community Local '+display))pass('package verification title matches');
   else fail('package verification title mismatch');
 }
 if(exists(sums)){
