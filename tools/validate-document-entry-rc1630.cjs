@@ -8,9 +8,13 @@ const pass=m=>console.log('[DOCUMENT-ENTRY] PASS:',m);
 const workspace=read('public/huidi-local-workspace-v120.js');
 const start=read('public/document-start.html');
 const catalog=read('public/catalog-studio/index.html');
+const launchStart=workspace.indexOf('function launchDoc(');
+const launchEnd=workspace.indexOf('function copyText',launchStart);
+const launchBlock=launchStart>=0&&launchEnd>launchStart?workspace.slice(launchStart,launchEnd):'';
 
 const checks=[
-  ['workspace routes launchDoc through document-start',workspace.includes("location.href=`./document-start.html?${qs.toString()}`;return;")],
+  ['workspace routes launchDoc through document-start',launchBlock.includes("document-start.html?")&&launchBlock.includes("qs.toString()")],
+  ['workspace launchDoc has no direct-editor fallback',launchBlock&&!launchBlock.includes('editor.html')],
   ['workspace persists active view in hash',workspace.includes("history.replaceState(null,'',`#${id}`)")],
   ['customer quote uses shared launchDoc owner',workspace.includes("if(a==='customer-quote')launchDoc('quotation',{customerId:id})")],
   ['product quote uses shared launchDoc owner',workspace.includes("if(a==='product-quote')launchDoc('quotation',{productIds:[id]})")],
