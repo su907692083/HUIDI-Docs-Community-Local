@@ -60,3 +60,6 @@ jobs:
 
       - name: Catalog connectivity
         run: npm run check:catalog-connectivity
+
+      - name: Document entry routing
+        run: npm run check:document-entry
