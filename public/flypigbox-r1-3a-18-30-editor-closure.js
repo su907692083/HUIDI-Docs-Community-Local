@@ -8,7 +8,7 @@
   function context(){
     const editor=qs('#editorTop');if(!editor)return;
     let bar=qs('#fp30EditorContext');if(!bar){bar=document.createElement('section');bar.id='fp30EditorContext';bar.className='fp30-editor-context';editor.before(bar);}
-    bar.innerHTML=`<div><small>当前工作</small><b>${docType()} · ${invoiceNo()}</b><span>先填写和核对，再保存或导出；缺少普通字段时会提示但不强制阻断。</span></div><div class="fp30-editor-context-actions"><a href="./workspace.html?view=documents">返回单据中心</a><button type="button" data-fp30-focus-products>定位商品明细</button><button type="button" data-fp30-focus-preview>查看预览</button></div>`;
+    bar.innerHTML=`<div><small>当前工作</small><b>${docType()} · ${invoiceNo()}</b><span>先填写和核对，再保存或导出；缺少普通字段时会提示但不强制阻断。</span></div><div class="fp30-editor-context-actions"><a href="./workspace.html#documents">返回单据中心</a><button type="button" data-fp30-focus-products>定位商品明细</button><button type="button" data-fp30-focus-preview>查看预览</button></div>`;
   }
   function moreMenu(){
     const actions=qs('.site-header .header-actions');if(!actions||qs('.fp30-editor-more',actions))return;
