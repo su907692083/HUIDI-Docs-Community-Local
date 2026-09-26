@@ -34,6 +34,43 @@ for (const rel of forbidden) {
   }
 }
 
+const allowedEnvExamples = new Set(['.env.example', '.env.sample']);
+const forbiddenExtensions = new Set(['.pem', '.p12', '.pfx', '.key', '.mobileprovision']);
+const textExtensions = new Set(['.js','.cjs','.mjs','.json','.md','.html','.css','.txt','.yml','.yaml','.cmd','.ps1','.toml']);
+const secretPatterns = [
+  [/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/, 'private key material'],
+  [/\bgithub_pat_[A-Za-z0-9_]{20,}\b/, 'GitHub fine-grained token'],
+  [/\bghp_[A-Za-z0-9]{20,}\b/, 'GitHub personal token'],
+  [/\bsb_secret_[A-Za-z0-9_-]{12,}\b/, 'Supabase secret key'],
+  [/\bsk-proj-[A-Za-z0-9_-]{12,}\b/, 'OpenAI project secret'],
+  [/\bxoxb-[A-Za-z0-9-]{16,}\b/, 'Slack bot token']
+];
+
+function walk(dir){
+  return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{
+    if(entry.name==='.git'||entry.name==='node_modules')return[];
+    const full=path.join(dir,entry.name);
+    if(entry.isDirectory())return walk(full);
+    return[full];
+  });
+}
+const releaseFiles=walk(root);
+for(const full of releaseFiles){
+  const rel=path.relative(root,full).replace(/\\/g,'/');
+  const base=path.basename(full);
+  const ext=path.extname(base).toLowerCase();
+  if(base==='.env'&&!allowedEnvExamples.has(base))fail(`forbidden environment file: ${rel}`);
+  if(forbiddenExtensions.has(ext))fail(`forbidden credential/certificate file: ${rel}`);
+  if(!textExtensions.has(ext)&&base!=='.gitignore')continue;
+  const stat=fs.statSync(full);
+  if(stat.size>1024*1024)continue;
+  const body=fs.readFileSync(full,'utf8');
+  for(const [rx,label] of secretPatterns){
+    if(rx.test(body))fail(`possible ${label} found in ${rel}`);
+  }
+}
+if(!process.exitCode)pass('secret/certificate scan clean');
+
 const packagePath = path.join(root, 'package.json');
 if (!fs.existsSync(packagePath)) {
   fail('package.json missing');
