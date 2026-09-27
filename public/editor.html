@@ -1377,30 +1377,6 @@
   function itemRows(){
     return qsa('.item-row').map(row=>({itemKey:row.dataset.itemKey||'',priceBreaks:parseItemPriceBreaks(row.querySelector('.i-price-breaks')?.value),sku:row.querySelector('.i-sku')?.value.trim()||'',customerItemNo:row.querySelector('.i-customer-item-no')?.value.trim()||'',name:row.querySelector('.i-name').value.trim(),spec:row.querySelector('.i-spec').value.trim(),customsDescription:row.querySelector('.i-customs-desc')?.value.trim()||'',originCountry:row.querySelector('.i-origin-country')?.value.trim()||'',hs:row.querySelector('.i-hs').value.trim(),unit:row.querySelector('.i-unit').value,qty:toNum(row.querySelector('.i-qty').value),moq:row.querySelector('.i-moq')?.value.trim()||'',price:toNum(row.querySelector('.i-price').value),cartonNo:row.querySelector('.i-carton-no')?.value.trim()||'',cartonCount:toNum(row.querySelector('.i-carton-count')?.value),qtyPerCarton:toNum(row.querySelector('.i-qty-per-carton')?.value),packageDescription:row.querySelector('.i-package-desc')?.value.trim()||'',netWeight:toNum(row.querySelector('.i-net-weight')?.value),grossWeight:toNum(row.querySelector('.i-gross-weight')?.value),cbm:toNum(row.querySelector('.i-cbm')?.value),dimensions:row.querySelector('.i-dimensions')?.value.trim()||'',shippingMarks:row.querySelector('.i-item-marks')?.value.trim()||'',image:row.dataset.image||''}));
   }
-  function openTierPricing(){
-    const rows=qsa('.item-row').filter(row=>String(row.querySelector('.i-name')?.value||'').trim());
-    if(!rows.length){setStatus('请先填写至少一行商品名称。','error');return;}
-    const cur=get('currency')||'USD';
-    const htmlRows=rows.map((row,index)=>{
-      const name=String(row.querySelector('.i-name')?.value||row.querySelector('.i-sku')?.value||`商品 ${index+1}`).trim(),breaks=parseItemPriceBreaks(row.querySelector('.i-price-breaks')?.value);
-      const cells=[0,1,2].map(i=>{const b=breaks[i]||{};return `<div class="tier-pricing-pair"><input data-tier-qty type="number" min="0" step="0.01" value="${b.qty||''}" placeholder="数量"><input data-tier-price type="number" min="0" step="0.0001" value="${b.price||''}" placeholder="${cur} 单价"></div>`}).join('');
-      return `<div class="tier-pricing-row" data-tier-row="${index}"><strong>${escapeHTML(name)}</strong><div class="tier-pricing-grid">${cells}</div></div>`;
-    }).join('');
-    openModal('阶梯报价',`<p class="hint">用于报价阶段展示不同采购数量对应的单价。这里只是报价参考，不改变当前“数量 × 单价”的正式金额计算；生成 PI/CI 后仍以确认的单价为准。</p><div class="tier-pricing-list">${htmlRows}</div><div class="tier-pricing-actions"><button class="btn secondary" id="clearTierPricingBtn" type="button">清空阶梯价</button><button class="btn secondary" id="cancelTierPricingBtn" type="button">取消</button><button class="btn primary" id="applyTierPricingBtn" type="button">保存阶梯报价</button></div>`);
-    $('cancelTierPricingBtn')?.addEventListener('click',closeModal);
-    $('clearTierPricingBtn')?.addEventListener('click',()=>{qsa('[data-tier-row]',$('modalContent')).forEach(box=>qsa('input',box).forEach(input=>input.value=''));});
-    $('applyTierPricingBtn')?.addEventListener('click',()=>{
-      let count=0;
-      qsa('[data-tier-row]',$('modalContent')).forEach(box=>{
-        const idx=Number(box.dataset.tierRow),row=rows[idx];if(!row)return;
-        const qtys=qsa('[data-tier-qty]',box),prices=qsa('[data-tier-price]',box),breaks=[];
-        qtys.forEach((input,i)=>{const qty=toNum(input.value),price=toNum(prices[i]?.value);if(qty>0&&price>0)breaks.push({qty,price});});
-        breaks.sort((a,b)=>a.qty-b.qty);row.querySelector('.i-price-breaks').value=JSON.stringify(breaks);if(breaks.length)count++;
-      });
-      closeModal();renderPreview();window.FlypigBOXTableOutput?.refresh?.({force:true});setStatus(count?`已保存 ${count} 个商品的阶梯报价；正式金额仍按当前单价计算。`:'已清空阶梯报价。','ok');
-    });
-  }
-
   function parsePackingDimensions(text){
     const nums=String(text||'').replace(/×/g,'x').match(/\d+(?:\.\d+)?/g)?.map(Number)||[];
     if(nums.length<3)return null;
@@ -4314,7 +4290,6 @@
     if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(autosave,5000);
   }
 
-  $('tierPricingBtn')?.addEventListener('click',openTierPricing);
   $('packingAssistantBtn')?.addEventListener('click',openPackingAssistant);
   $('addItemBtn').addEventListener('click',()=>{
     try{
