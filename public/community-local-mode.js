@@ -79,7 +79,7 @@ const boot=()=>{
   if(badge){badge.hidden=false;badge.textContent='本地版 · 数据在本机';badge.title='HUIDI Docs Community Local'}
   const save=document.getElementById('saveAllBtn');
   if(save){save.title='保存到当前电脑浏览器';save.textContent='保存到本机'}
-  ['memberAuthBtn','memberSignOutBtn','membershipPlansBtn','cloudSaveBtn','cloudHistoryBtn','openLaunchPlans','launchPlansBtn','headerTranslateBtn','translateAllBtn','fp-ai-widget','fp-assistant41-launcher'].forEach(id=>{
+  ['memberAuthBtn','memberSignOutBtn','membershipPlansBtn','cloudSaveBtn','cloudHistoryBtn','openLaunchPlans','launchPlansBtn','fp-ai-widget','fp-assistant41-launcher'].forEach(id=>{
     const el=document.getElementById(id);if(el)el.hidden=true;
   });
   setTimeout(()=>{permit();hideByText();applyType();window.FlypigBOXDocumentGate?.setTrialWatermark?.(false)},250);
