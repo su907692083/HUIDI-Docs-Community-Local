@@ -12,8 +12,9 @@ countries.sort((a,b)=>{const pa=popular.indexOf(a.code),pb=popular.indexOf(b.cod
 const make=(value,label)=>({value,label:label||value,search:norm(`${value} ${label||''}`)});
 const currencies=[['USD','美元'],['EUR','欧元'],['GBP','英镑'],['CNY','人民币'],['JPY','日元'],['HKD','港币'],['AUD','澳元'],['CAD','加元'],['SGD','新加坡元'],['AED','阿联酋迪拉姆'],['CHF','瑞士法郎'],['NZD','新西兰元'],['KRW','韩元'],['THB','泰铢'],['INR','印度卢比'],['MYR','马来西亚林吉特']].map(([v,l])=>make(v,`${v} · ${l}`));
 const units=[['PCS','件'],['SET','套'],['PAIR','双 / 对'],['CTN','箱'],['BOX','盒'],['KG','千克'],['MT','吨'],['M','米'],['ROLL','卷'],['DOZ','打']].map(([v,l])=>make(v,`${v} · ${l}`));
-const countryIds=new Set(['hfCountry','fv2Country','ciCountry','hsCompanyCountry','hsIntelCountry','hsTradeCountry','hsTariffDest','hufCountry','csCountry','hsbCountry','hbCustomerCountry','hbAddressCountry','country']);
-const currencyIds=new Set(['fv2BankCurrency','csBankCurrency','hbCurrency']);
+const countryIds=new Set(['hfCountry','fv2Country','ciCountry','hsCompanyCountry','hsIntelCountry','hsTradeCountry','hsTariffDest','hsTariffOrigin','hsShipOrigin','hsShipDest','hufCountry','csCountry','hsbCountry','hbCustomerCountry','hbAddressCountry','country']);
+const currencyIds=new Set(['fv2BankCurrency','csBankCurrency','hbCurrency','hsFxBase','hsFxQuote']);
+const productIds=new Set(['hfKeyword','hsMapKeyword','hsIntelKeyword','hsTradeProduct','hsTariffProduct','wiProductContext','ciKeyword']);
 function kindOf(input) {
  if (!(input instanceof HTMLInputElement) || input.disabled || input.readOnly || !['text','search'].includes(input.type)) return '';
  if (input.dataset.huidiChoice) return input.dataset.huidiChoice;
@@ -22,7 +23,7 @@ function kindOf(input) {
  if (key==='country_code') return 'country-code';
  if (currencyIds.has(input.id)||key==='currency') return 'currency';
  if (['unit','pricing_unit'].includes(key)) return 'unit';
- if (input.id==='hfKeyword'||input.id==='hsMapKeyword') return 'product';
+ if (productIds.has(input.id)) return 'product';
  return '';
 }
 function optionsFor(kind) {
@@ -47,7 +48,7 @@ function style() {
  if (document.getElementById('huidi-quick-choice-style')) return;
  const el=document.createElement('style');el.id='huidi-quick-choice-style';el.textContent=`
  .hqc-input{background-image:linear-gradient(45deg,transparent 50%,#64748b 50%),linear-gradient(135deg,#64748b 50%,transparent 50%)!important;background-position:calc(100% - 16px) 50%,calc(100% - 12px) 50%!important;background-size:4px 4px!important;background-repeat:no-repeat!important;padding-right:30px!important;min-width:0}
- .hqc-menu{position:fixed;inset:auto;margin:0;padding:5px;box-sizing:border-box;z-index:2147482000;max-height:310px;overflow:auto;overscroll-behavior:contain;background:var(--panel,#fff);color:var(--text,#243750);border:1px solid var(--line,#ccd8e5);border-radius:9px;box-shadow:0 10px 30px #142c4f26;font:13px/1.5 system-ui,'Microsoft YaHei',sans-serif}
+ .hqc-menu{position:fixed;inset:auto;margin:0;padding:5px;box-sizing:border-box;z-index:2147482000;max-height:280px;overflow:auto;overscroll-behavior:contain;background:var(--panel,#fff);color:var(--text,#243750);border:1px solid var(--line,#ccd8e5);border-radius:9px;box-shadow:0 10px 30px #142c4f26;font:13px/1.5 system-ui,'Microsoft YaHei',sans-serif}
  .hqc-menu[hidden]{display:none!important}.hqc-menu [role=option]{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px;min-height:35px;box-sizing:border-box;border-radius:5px;cursor:pointer;white-space:normal}
  .hqc-menu [role=option][aria-selected=true],.hqc-menu [role=option]:hover{background:#eaf2ff;color:#155bba}.hqc-menu [role=option] small{font-size:11px;color:#627389;flex-shrink:0}.hqc-help{padding:7px 10px;color:var(--muted,#68788b);font-size:12px;border-top:1px solid var(--line,#e7ecf2)}
  `;document.head.append(el);
@@ -59,10 +60,10 @@ function close() {
 }
 function position() {
  if(!active?.isConnected||!active.getClientRects().length){close();return;}
- const r=active.getBoundingClientRect(),width=Math.min(Math.max(r.width,290),innerWidth-20);
+ const r=active.getBoundingClientRect(),width=Math.min(Math.max(Math.min(r.width,460),290),innerWidth-20);
  menu.style.width=`${width}px`;menu.style.left=`${Math.max(10,Math.min(r.left,innerWidth-width-10))}px`;
- const h=Math.min(menu.scrollHeight,310),below=innerHeight-r.bottom-10,above=r.top-10;
- const up=below<h&&above>below;menu.style.maxHeight=`${Math.max(70,Math.min(310,up?above:below))}px`;
+ const h=Math.min(menu.scrollHeight,280),below=innerHeight-r.bottom-10,above=r.top-10;
+ const up=below<h&&above>below;menu.style.maxHeight=`${Math.max(70,Math.min(280,up?above:below))}px`;
  menu.style.top=`${up?Math.max(10,r.top-Math.min(h,above)-4):r.bottom+4}px`;
 }
 function setIndex(next) {
@@ -108,5 +109,5 @@ window.addEventListener('keydown',e=>{
 window.addEventListener('resize',()=>{if(active)position();});
 document.addEventListener('scroll',e=>{if(active&&!menu?.contains(e.target))position();},true);
 window.addEventListener('HUIDI:community-online-view',close);
-window.HUIDIQuickChoices=Object.freeze({version:'1.0.0',close,optionsFor,filtered});
+window.HUIDIQuickChoices=Object.freeze({version:'1.1.0',close,optionsFor,filtered});
 })();
