@@ -84,3 +84,6 @@ jobs:
 
       - name: Translation owner consistency
         run: npm run check:translation-owner
+
+      - name: Local online translation
+        run: npm run check:local-translation
