@@ -354,5 +354,124 @@ Object.entries(patchKeys).forEach(([key,en])=>{const map=phrases.get(en);if(map)
 const DOC_TITLE_EN={quotation:'QUOTATION',proforma_invoice:'PROFORMA INVOICE',commercial_invoice:'COMMERCIAL INVOICE',sales_contract:'SALES CONTRACT',packing_list:'PACKING LIST'};
 function documentTitle(type,lang=core.language()){const en=DOC_TITLE_EN[type]||DOC_TITLE_EN.proforma_invoice;return (phrases.get(en)||phraseNorm.get(norm(en)))?.[lang]||en;}
 function known(label,lang=core.language()){const raw=String(label||'').trim();if(!raw)return'';const p=splitLabel(raw);if(p.zh&&p.en){const localized=text(p.zh,p.en,lang);return localized!==raw?localized:'';}const map=phraseByAny(raw);if(!map)return'';const localized=map?.[lang]||raw;return localized!==raw?localized:'';}
+
 window.HUIDIDocI18n=Object.freeze({version:'1.2.0-RC16.6.4',languages:LANGUAGES.map(x=>x.slice()),text,localizeLabel,splitLabel,documentTitle,known,phrase:(en,lang=core.language())=>(phrases.get(en)||phraseNorm.get(norm(en)))?.[lang]||en});
+
+// RC16.30 — one translation registry/resolver for editor, PDF and workbook output.
+// This layer does not call any provider. It only defines what may be translated and
+// how stored language variants are resolved without overwriting source business data.
+const TRANSLATION_FIELD_SECTIONS=Object.freeze({
+  sellerAddress:'party',buyerAddress:'party',buyerCountry:'party',
+  originCountry:'products',extraFeeName:'products',
+  shippingMethod:'plannedLogistics',packageType:'packing',shippingMarks:'packing',
+  bankAddress:'payment',paymentTerms:'terms',deliveryTime:'terms',portOfLoading:'plannedLogistics',destinationPort:'plannedLogistics',remarks:'terms',contractClauses:'terms',
+  balanceDueCondition:'paymentSchedule',
+  customsDescription:'customs',finalUse:'customs',customsDeclarationNote:'customs',
+  mixedPackingNote:'packing',
+  qualityStandard:'qualityRisk',warrantyPeriod:'qualityRisk',governingLaw:'qualityRisk',disputeResolution:'qualityRisk',attachmentList:'qualityRisk',partialShipmentPlan:'qualityRisk',
+  consigneeAddress:'delivery',notifyPartyAddress:'delivery',billToAddress:'delivery',shipToAddress:'delivery'
+});
+const TRANSLATION_EXCLUDED_FIELDS=new Set([
+  'sellerName','sellerContact','sellerPhone','sellerEmail','sellerTaxId',
+  'buyerName','buyerContact','buyerPhone','buyerEmail','buyerTaxId','buyerCountryCode','buyerWebsite',
+  'consigneeName','consigneeContact','consigneePhone','consigneeEmail',
+  'notifyPartyName','notifyPartyContact','notifyPartyPhone','notifyPartyEmail',
+  'manufacturerName','finalUser','sellerSignatory','buyerSignatory',
+  'bankBeneficiary','bankName','bankAccount','bankSwift',
+  'inquiryNo','customerOrderNo','internalOrderNo','relatedQuotationNo','relatedPiNo','relatedContractNo','relatedCommercialInvoiceNo','relatedPackingListNo',
+  'exportLicenseNo','regulatoryCertificateNo','sellerRegistrationNo','sellerVatNo','sellerEoriNo','buyerRegistrationNo','buyerVatNo','buyerEoriNo',
+  'trackingNo','blNo','containerNo','sealNo','vesselFlight','tradeTerms','currency'
+]);
+const ITEM_TRANSLATION_FIELDS=Object.freeze({name:'products',spec:'products',packageDescription:'packing',shippingMarks:'packing'});
+const cleanText=v=>String(v??'').trim();
+const translationState=()=>window.FlypigBOXApp?.formState?.(false)||{fields:{},items:[],translationVersions:{}};
+const fieldAllowedNow=(id,section,state)=>{
+  const schema=window.FlypigBOXDocumentSchema,fields=state?.fields||{},type=fields.documentType||document.getElementById('documentType')?.value||'proforma_invoice',mode=fields.docMode||document.getElementById('docMode')?.value||'ecommerce';
+  if(schema?.fieldAllowed&&!schema.fieldAllowed(id,type,mode))return false;
+  if(section&&schema?.sectionAllowed&&['delivery','paymentSchedule','customs','packing','plannedLogistics','actualShipment','qualityRisk'].includes(section)&&!schema.sectionAllowed(section,type,mode))return false;
+  return true;
+};
+function translationPolicy(id){
+  const key=String(id||'');
+  if(TRANSLATION_EXCLUDED_FIELDS.has(key))return{eligible:false,reason:'identifier_or_protected_value'};
+  const section=TRANSLATION_FIELD_SECTIONS[key]||'';
+  return{eligible:Boolean(section),section,reviewRequired:/Address$/.test(key)||['governingLaw','disputeResolution','customsDeclarationNote'].includes(key)};
+}
+function resolveBusinessValue(key,source,language=core.language(),versions){
+  const original=cleanText(source);if(!original)return original;
+  const record=(versions||translationState().translationVersions||{})[key];
+  if(!record||cleanText(record.source)!==original)return original;
+  const lang=String(language||'bilingual');
+  if(lang==='bilingual'){
+    const translated=cleanText(record.variants?.en);
+    return translated&&translated!==original?original+'\n'+translated:original;
+  }
+  const translated=cleanText(record.variants?.[lang]);
+  return translated||original;
+}
+function descriptor(key,source,section,extra={}){
+  const text=cleanText(source);if(!text)return null;
+  return Object.freeze({key,id:extra.id||key,text,section,kind:extra.kind||'field',reviewRequired:Boolean(extra.reviewRequired),...extra});
+}
+function parseRows(raw){
+  try{const rows=Array.isArray(raw)?raw:JSON.parse(raw||'[]');return Array.isArray(rows)?rows:[]}catch(_){return[]}
+}
+function collectTranslationSection(section,state=translationState()){
+  const fields=state.fields||{},out=[];
+  Object.entries(TRANSLATION_FIELD_SECTIONS).forEach(([id,fieldSection])=>{
+    if(fieldSection!==section||TRANSLATION_EXCLUDED_FIELDS.has(id)||!fieldAllowedNow(id,fieldSection,state))return;
+    const policy=translationPolicy(id),row=descriptor(id,fields[id],fieldSection,{id,reviewRequired:policy.reviewRequired});
+    if(row)out.push(row);
+  });
+  if(section==='products'||section==='packing'){
+    (state.items||[]).forEach((item,index)=>{
+      const itemKey=item.itemKey||item.id||String(index);
+      Object.entries(ITEM_TRANSLATION_FIELDS).forEach(([field,itemSection])=>{
+        if(itemSection!==section)return;
+        const row=descriptor(`item:${itemKey}:${field}`,item[field],itemSection,{id:field,kind:'item',itemKey,index});
+        if(row)out.push(row);
+      });
+    });
+  }
+  if(section==='packing'){
+    parseRows(fields.logisticsExtraRowsJson).forEach((row,index)=>{
+      const id=String(row.id||index),label=descriptor(`logisticsExtra:${id}:label`,row.label,'packing',{kind:'custom_label',id:'logisticsExtraLabel',index}),value=descriptor(`logisticsExtra:${id}`,row.value,'packing',{kind:'custom_value',id:'logisticsExtraValue',index});
+      if(label)out.push(label);if(value)out.push(value);
+    });
+  }
+  parseRows(fields.customDocumentFieldsJson).filter(row=>!row?.group||row.group===section).forEach((row,index)=>{
+    const id=String(row.id||index),label=descriptor(`custom:${id}:label`,row.label,section,{kind:'custom_label',id:'customFieldLabel',index}),value=descriptor(`custom:${id}:value`,row.value,section,{kind:'custom_value',id:'customFieldValue',index});
+    if(label)out.push(label);if(value)out.push(value);
+  });
+  return out;
+}
+const TRANSLATION_SECTIONS=Object.freeze(['party','products','delivery','paymentSchedule','customs','packing','plannedLogistics','actualShipment','payment','qualityRisk','terms']);
+function collectTranslationDocument(state=translationState()){
+  const seen=new Set(),out=[];
+  TRANSLATION_SECTIONS.forEach(section=>collectTranslationSection(section,state).forEach(row=>{if(!seen.has(row.key)){seen.add(row.key);out.push(row)}}));
+  return out;
+}
+function collectTranslationField(key,state=translationState()){
+  const wanted=String(key||'');return collectTranslationDocument(state).find(row=>row.key===wanted||row.id===wanted)||null;
+}
+function translationSummary(state=translationState(),language=core.language()){
+  const rows=collectTranslationDocument(state),versions=state.translationVersions||{},lang=language==='bilingual'?'en':language;
+  let translated=0;rows.forEach(row=>{const rec=versions[row.key];if(rec&&cleanText(rec.source)===row.text&&cleanText(rec.variants?.[lang]))translated++;});
+  return{total:rows.length,translated,missing:Math.max(0,rows.length-translated),language,sections:Object.fromEntries(TRANSLATION_SECTIONS.map(section=>[section,collectTranslationSection(section,state).length]))};
+}
+window.HUIDITranslationOwner=Object.freeze({
+  version:'1.2.0-RC16.30',
+  languages:LANGUAGES.map(x=>x[0]),
+  sections:TRANSLATION_SECTIONS.slice(),
+  fieldSections:{...TRANSLATION_FIELD_SECTIONS},
+  itemFields:{...ITEM_TRANSLATION_FIELDS},
+  excludedFields:[...TRANSLATION_EXCLUDED_FIELDS],
+  policy:translationPolicy,
+  collectDocument:collectTranslationDocument,
+  collectSection:collectTranslationSection,
+  collectField:collectTranslationField,
+  resolve:resolveBusinessValue,
+  summary:translationSummary
+});
+try{document.dispatchEvent(new CustomEvent('HUIDI:translation-owner-ready',{detail:{version:'1.2.0-RC16.30'}}));setTimeout(()=>window.FlypigBOXApp?.renderPreview?.(),0);}catch(_){}
 })();
