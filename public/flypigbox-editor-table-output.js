@@ -312,6 +312,7 @@
       customsDescription:tableProductColumnAllowed(snapshot,'customsDescription')&&anyText('customsDescription'),originCountry:tableProductColumnAllowed(snapshot,'originCountry')&&anyText('originCountry'),
       hs:tableProductColumnAllowed(snapshot,'hs')&&fieldSwitchOn(snapshot,'showHsCode')&&anyText('hs'),
       moq:tableProductColumnAllowed(snapshot,'moq')&&['quotation','proforma_invoice'].includes(snapshot.type)&&fieldSwitchOn(snapshot,'showMoq')&&anyNumber('moq'),
+      priceBreaks:snapshot.type==='quotation'&&tableProductColumnAllowed(snapshot,'priceBreaks')&&items.some(item=>Array.isArray(item?.priceBreaks)&&item.priceBreaks.some(x=>num(x?.qty)>0&&num(x?.price)>0)),
       cartonNo:tableProductColumnAllowed(snapshot,'cartonNo')&&anyText('cartonNo'),
       packageDescription:tableProductColumnAllowed(snapshot,'packageDescription')&&fieldSwitchOn(snapshot,'showLogistics')&&anyText('packageDescription'),
       netWeight:tableProductColumnAllowed(snapshot,'netWeight')&&fieldSwitchOn(snapshot,'showLogistics')&&anyNumber('netWeight'),
@@ -345,7 +346,9 @@
     }else{
       if(tableProductColumnAllowed(snapshot,'qty'))columns.push({key:'qty',label:'数量 / Qty',width:10,numeric:true});if(tableProductColumnAllowed(snapshot,'unit'))columns.push({key:'unit',label:'单位 / Unit',width:10});
       if(flags.moq)columns.push({key:'moq',label:'MOQ',width:11,numeric:true});
-      if(flags.hasMoney&&tableProductColumnAllowed(snapshot,'price'))columns.push({key:'price',label:'单价 / Unit Price',width:14,numeric:true});if(flags.hasMoney&&tableProductColumnAllowed(snapshot,'amount'))columns.push({key:'amount',label:'金额 / Amount',width:15,numeric:true,formula:true});
+      if(flags.hasMoney&&tableProductColumnAllowed(snapshot,'price'))columns.push({key:'price',label:'单价 / Unit Price',width:14,numeric:true});
+      if(flags.priceBreaks)columns.push({key:'priceBreaks',label:'阶梯报价 / Price Breaks',width:24});
+      if(flags.hasMoney&&tableProductColumnAllowed(snapshot,'amount'))columns.push({key:'amount',label:'金额 / Amount',width:15,numeric:true,formula:true});
       const optional=[['cartonNo','箱号 / Carton No.',14,false,'cartonNo'],['packageDescription','包装说明 / Packing',19,false,'packageDescription'],['netWeight','净重 / N.W. KG',11,true,'netWeight'],['grossWeight','毛重 / G.W. KG',11,true,'grossWeight'],['cbm','CBM',10,true,'cbm'],['dimensions','单箱尺寸 / Dimensions',18,false,'dimensions'],['shippingMarks','唛头 / Marks',18,false,'shippingMarks']];
       optional.forEach(([key,label,width,numeric,flag])=>{if(snapshot.detailed&&flags[flag])columns.push({key,label,width,numeric});});
     }
@@ -355,7 +358,7 @@
   function dataProductColumns(snapshot) {
     const columns = [
       {key:'no',label:'No.',width:7},{key:'sku',label:'SKU / Item No.',width:16},{key:'customerItemNo',label:'Customer Item No.',width:18},{key:'name',label:'Product Name',width:24},{key:'spec',label:'Specifications',width:30},{key:'customsDescription',label:'Customs Description',width:22},{key:'originCountry',label:'Origin Country',width:14},{key:'hs',label:'HS Code',width:14},
-      {key:'unit',label:'Unit',width:10},{key:'qty',label:'Quantity',width:11,numeric:true},{key:'moq',label:'MOQ',width:11}
+      {key:'unit',label:'Unit',width:10},{key:'qty',label:'Quantity',width:11,numeric:true},{key:'moq',label:'MOQ',width:11},{key:'priceBreaks',label:'Price Breaks',width:24}
     ];
     if (!snapshot.packing) columns.push({key:'price',label:'Unit Price',width:14,numeric:true},{key:'amount',label:'Amount',width:15,numeric:true,formula:true});
     columns.push(
@@ -370,6 +373,7 @@
     if (key === 'no') return rowIndex + 1;
     if (key === 'amount') return num(item.qty) * num(item.price);
     if (key === 'image') return item.image ? 'Product image' : '';
+    if (key === 'priceBreaks') return (Array.isArray(item.priceBreaks)?item.priceBreaks:[]).filter(x=>num(x?.qty)>0&&num(x?.price)>0).map(x=>`${num(x.qty)}+ : ${num(x.price).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:4})}`).join(' · ');
     return item[key] ?? '';
   }
 
