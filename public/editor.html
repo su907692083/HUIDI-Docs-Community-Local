@@ -1005,7 +1005,7 @@
 
   Object.assign(labels, {no:{en:'No.',zh:'序号',es:'N.º',pt:'N.º',de:'Nr.',fr:'N°',it:'N.',ru:'№',ar:'رقم',ja:'番号',ko:'번호',tr:'No.',nl:'Nr.',pl:'Lp.',vi:'STT',id:'No.',th:'ลำดับ'}});
   const langMap = {bilingual:'zh',en:'en',es:'es',pt:'pt',de:'de',fr:'fr',it:'it',ru:'ru',ar:'ar',ja:'ja',ko:'ko',tr:'tr',nl:'nl',pl:'pl',vi:'vi',id:'id',th:'th'};
-  const targetNames = {bilingual:'English',en:'English',es:'Spanish',pt:'Brazilian Portuguese',de:'German',fr:'French',it:'Italian',ru:'Russian',ar:'Arabic',ja:'Japanese',ko:'Korean',tr:'Turkish',nl:'Dutch',pl:'Polish',vi:'Vietnamese',id:'Indonesian',th:'Thai'};
+  const targetNames = {bilingual:'English',zh:'Chinese',en:'English',es:'Spanish',pt:'Brazilian Portuguese',de:'German',fr:'French',it:'Italian',ru:'Russian',ar:'Arabic',ja:'Japanese',ko:'Korean',tr:'Turkish',nl:'Dutch',pl:'Polish',vi:'Vietnamese',id:'Indonesian',th:'Thai'};
   const normalizeTerm = value => String(value || '').toLowerCase().replace(/[®™\s\-_.()\/]/g,'');
   // Explicit bilingual labels are used where a literal slash is part of the native term,
   // so the PDF never produces confusing headings such as “买方 / 收货人 / Buyer / Consignee”.
