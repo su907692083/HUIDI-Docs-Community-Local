@@ -4,11 +4,12 @@ if(window.__HUIDILocalTranslationUIRC1630)return;window.__HUIDILocalTranslationU
 const $=id=>document.getElementById(id),qsa=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const SECTION_ALIAS={parties:'party',products:'products',delivery:'delivery',paymentSchedule:'paymentSchedule',customs:'customs',packing:'packing',plannedLogistics:'plannedLogistics',actualShipment:'actualShipment',payment:'payment',qualityRisk:'qualityRisk',terms:'terms'};
 const ITEM_SELECTORS={name:'.i-name',spec:'.i-spec',packageDescription:'.i-package-desc',shippingMarks:'.i-item-marks'};
+const TABLE_SECTION_SECTIONS={basic:['basic'],parties:['party'],products:['products','packing'],delivery:['delivery'],costs:['costs'],logistics:['logistics','plannedLogistics','actualShipment','packing'],payment:['payment','paymentSchedule'],terms:['terms','qualityRisk','customs'],more:['delivery','costs','logistics','plannedLogistics','actualShipment','packing','payment','paymentSchedule','customs','qualityRisk']};
 const clean=v=>String(v??'').trim();
 function injectStyle(){
  if($('huidiLocalTranslationStyle'))return;
  const style=document.createElement('style');style.id='huidiLocalTranslationStyle';style.textContent=
- '.huidi-community-local #translateAllBtn.huidi-local-translate-ready{display:inline-flex!important}.huidi-translate-section,.huidi-translate-field{border:1px solid #cbdced;background:#f5f9ff;color:#24527a;border-radius:7px;font-weight:800;cursor:pointer}.huidi-translate-section{min-height:28px;padding:0 9px;font-size:11px}.huidi-translate-field{width:auto!important;min-width:34px!important;max-width:54px;height:24px!important;padding:0 8px!important;margin:4px 0 0 auto!important;align-self:flex-end!important;font-size:11px;vertical-align:middle}.huidi-translate-section[disabled],.huidi-translate-field[disabled]{opacity:.55;cursor:wait}.huidi-translation-status{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:4px 8px;border-radius:999px;background:#eef6ff;color:#315d82;font-size:11px;font-weight:750}.huidi-translation-status[data-provider="google_cloud"]{background:#edf8f2;color:#18794e}.huidi-translation-status[data-error="1"]{background:#fff4e5;color:#8a5a00}';
+ '.huidi-community-local #translateAllBtn.huidi-local-translate-ready{display:inline-flex!important}.huidi-translate-section,.huidi-translate-field{border:1px solid #cbdced;background:#f5f9ff;color:#24527a;border-radius:7px;font-weight:800;cursor:pointer}.huidi-translate-section{min-height:28px;padding:0 9px;font-size:11px}.huidi-translate-field{width:auto!important;min-width:34px!important;max-width:54px;height:24px!important;padding:0 8px!important;margin:4px 0 0 auto!important;align-self:flex-end!important;font-size:11px;vertical-align:middle}.huidi-community-local #fpTableEditorWorkspace td>.huidi-translate-field{display:inline-flex!important;float:right;margin-top:5px!important}.huidi-community-local #fpTableEditorWorkspace .fp-sheet-panel-head>.huidi-translate-section{flex:0 0 auto}.huidi-translate-section[disabled],.huidi-translate-field[disabled]{opacity:.55;cursor:wait}.huidi-translation-status{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:4px 8px;border-radius:999px;background:#eef6ff;color:#315d82;font-size:11px;font-weight:750}.huidi-translation-status[data-provider="google_cloud"]{background:#edf8f2;color:#18794e}.huidi-translation-status[data-error="1"]{background:#fff4e5;color:#8a5a00}';
  document.head.appendChild(style);
 }
 function state(){return window.HUIDITranslationRuntime?.state?.()||window.FlypigBOXApp?.formState?.(false)||{fields:{},items:[]}}
@@ -66,8 +67,38 @@ function ensureFieldButtons(){
    appendFieldButton(row.querySelector('[data-logistics-extra-label]'),'logisticsExtra:'+id+':label');
    appendFieldButton(row.querySelector('[data-logistics-extra-value]'),'logisticsExtra:'+id);
  });
+ qsa('#fpTableEditorWorkspace [data-bind-id]').forEach(input=>appendFieldButton(input,input.dataset.bindId));
+ qsa('#fpTableEditorWorkspace [data-item-row][data-item-selector]').forEach(input=>{
+   const index=Number(input.dataset.itemRow),selector=input.dataset.itemSelector;
+   const field=Object.entries(ITEM_SELECTORS).find(([,value])=>value===selector)?.[0];
+   if(!field)return;
+   const item=state().items?.[index]||{},itemKey=item.itemKey||item.id||String(index);
+   appendFieldButton(input,'item:'+itemKey+':'+field);
+ });
+ qsa('#fpTableEditorWorkspace [data-custom-field-id]').forEach(row=>{
+   const id=row.dataset.customFieldId;if(!id)return;
+   appendFieldButton(row.querySelector('[data-custom-field-prop="label"]'),'custom:'+id+':label');
+   appendFieldButton(row.querySelector('[data-custom-field-prop="value"]'),'custom:'+id+':value');
+ });
 }
-function sync(){prepareMainButton();ensureSectionButtons();ensureFieldButtons()}
+function uniqueSectionRows(api,keys){
+ const seen=new Set(),rows=[];
+ keys.forEach(key=>api.collectSection(key,state()).forEach(row=>{const id=row.key||row.id;if(!seen.has(id)){seen.add(id);rows.push(row)}}));
+ return rows;
+}
+function ensureTableSectionButtons(){
+ const api=owner(),rt=runtime();if(!api||!rt)return;
+ qsa('#fpTableEditorWorkspace .fp-sheet-panel[data-section-key]').forEach(panel=>{
+   const keys=TABLE_SECTION_SECTIONS[panel.dataset.sectionKey]||[];
+   let btn=panel.querySelector(':scope > .fp-sheet-panel-head > [data-huidi-translate-sections]');
+   const rows=keys.length?uniqueSectionRows(api,keys):[];
+   if(!keys.length||!rows.length){btn?.remove();return}
+   const head=panel.querySelector(':scope > .fp-sheet-panel-head');if(!head)return;
+   if(!btn){btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-section huidi-table-translate-section';btn.textContent='翻译本分栏';btn.title='翻译当前表格分栏中的可翻译文字';head.appendChild(btn)}
+   btn.dataset.huidiTranslateSections=keys.join(',');
+ });
+}
+function sync(){prepareMainButton();ensureSectionButtons();ensureFieldButtons();ensureTableSectionButtons()}
 function requireRuntime(method){
  const rt=runtime();
  if(!rt||typeof rt[method]!=='function')throw new Error('翻译组件尚未准备好，请刷新页面后重试。');
@@ -84,7 +115,7 @@ async function runButton(btn,work){
  finally{btn.disabled=false;setTimeout(()=>{btn.textContent=old;sync();},1400)}
 }
 document.addEventListener('click',event=>{
- const section=event.target.closest('[data-huidi-translate-section]');if(section){event.preventDefault();event.stopImmediatePropagation();return runButton(section,()=>requireRuntime('translateSection').translateSection(section.dataset.huidiTranslateSection))}
+ const section=event.target.closest('[data-huidi-translate-section],[data-huidi-translate-sections]');if(section){event.preventDefault();event.stopImmediatePropagation();const keys=section.dataset.huidiTranslateSections?section.dataset.huidiTranslateSections.split(',').filter(Boolean):section.dataset.huidiTranslateSection;return runButton(section,()=>requireRuntime('translateSection').translateSection(keys))}
  const field=event.target.closest('[data-huidi-translate-field]');if(field){event.preventDefault();event.stopImmediatePropagation();return runButton(field,()=>requireRuntime('translateField').translateField(field.dataset.huidiTranslateField))}
 },true);
 ['HUIDI:translation-owner-ready','HUIDI:document-type-changed','HUIDI:layout-updated','HUIDI:translation-updated','HUIDI:editor-view-change'].forEach(name=>document.addEventListener(name,()=>setTimeout(sync,40)));
