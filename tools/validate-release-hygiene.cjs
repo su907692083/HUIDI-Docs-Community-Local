@@ -11,7 +11,7 @@ const pass = (message) => console.log('[RELEASE-HYGIENE] PASS:', message);
 const gitignorePath = path.join(root, '.gitignore');
 const gitignore = fs.existsSync(gitignorePath) ? fs.readFileSync(gitignorePath, 'utf8') : '';
 
-for (const required of ['config/feishu.local.json', '.huidi-relay/']) {
+for (const required of ['config/feishu.local.json', 'config/translation.local.json', '.huidi-relay/']) {
   if (!gitignore.split(/\r?\n/).map((line) => line.trim()).includes(required)) {
     fail(`.gitignore missing required rule: ${required}`);
   } else {
@@ -23,6 +23,7 @@ const forbidden = [
   '.huidi-relay',
   path.join('.github', 'workflows', 'huidi-secure-ios-build-relay.yml'),
   path.join('config', 'feishu.local.json'),
+  path.join('config', 'translation.local.json'),
   'online',
   'Dockerfile.online',
   'docker-compose.online.yml',
