@@ -15,7 +15,7 @@ const documentLinkage=read('public/flypigbox-v3-3-6-24-r1-3a-18-document-linkage
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
   'cloudSaveBtn','cloudHistoryBtn','openLaunchPlans','launchPlansBtn',
-  'headerTranslateBtn','translateAllBtn','fp-ai-widget','fp-assistant41-launcher'
+  'fp-ai-widget','fp-assistant41-launcher'
 ];
 
 const checks=[
@@ -23,7 +23,9 @@ const checks=[
   ['production runtime config blanked',mode.includes("window.FLYPIGBOX_SUPABASE={url:'',publishableKey:'',runtimeConfigFunction:''}")],
   ['cross-origin fetch blocked',mode.includes("HUIDI_LOCAL_ONLY_NETWORK_BLOCKED")&&mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
   ['online-only ids hidden by runtime',hiddenIds.every(id=>mode.includes("'"+id+"'"))],
-  ['online-only controls hidden by CSS',css.includes('.huidi-community-local .api-card')&&css.includes('#headerTranslateBtn')&&css.includes('#cloudSaveBtn')],
+  ['online-only controls hidden by CSS',css.includes('.huidi-community-local .api-card')&&css.includes('#cloudSaveBtn')&&!css.includes('.huidi-community-local #translateAllBtn')],
+  ['Local translation controls are not runtime-hidden',!mode.includes("'headerTranslateBtn','translateAllBtn'")&&!mode.includes("'translateAllBtn','fp-ai-widget'")],
+  ['Local browser networking remains same-origin only',mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
   ['generic editor launch copy',editor.includes('id="launchStartBtn" type="button">开始制作</button>')&&!editor.includes('id="launchStartBtn" type="button">开始制作 PI</button>')],
   ['generic document intro copy',editor.includes('把多语言外贸单据、客户资料与交易条款，放进一个可控工作台')],
   ['local save success has no cloud setup warning',editor.includes('建议定期导出完整备份。')&&!editor.includes('已保存到本机：${title}。云端同步尚未配置。')],
