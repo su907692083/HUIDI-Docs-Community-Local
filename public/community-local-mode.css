@@ -5,8 +5,6 @@
 
 /* Community Local 1.1 release polish: online-only controls never enter the visible UI. */
 .huidi-community-local .api-card,
-.huidi-community-local #headerTranslateBtn,
-.huidi-community-local #translateAllBtn,
 .huidi-community-local #emailDraftBtn,
 .huidi-community-local .email-draft-toggle,
 .huidi-community-local #cloudSaveBtn,
