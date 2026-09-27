@@ -38,10 +38,10 @@ const missingSections=requiredSections.filter(x=>!currentScopes.includes(x));
 missingSections.length?fail('canonical translation owner missing sections: '+missingSections.join(', ')):pass('all required translation sections registered');
 
 const structuredLabels=[...schema.matchAll(/label:\s*\[\s*'([^']*)'\s*,\s*'([^']*)'\s*\]/g)].map(m=>({zh:m[1],en:m[2]}));
-const phraseEns=new Set([...i18n.matchAll(/add\('([^']*)'\s*,/g)].map(m=>m[1]));
+const phraseEns=new Set([...i18n.matchAll(/add\((?:'([^']*)'|\"([^\"]*)\")\s*,/g)].map(m=>m[1]||m[2]));
 const directMissing=structuredLabels.filter(x=>!phraseEns.has(x.en));
 console.log('[TRANSLATION-AUDIT] INFO: structured labels='+structuredLabels.length+', direct 18-language phrase misses='+directMissing.length);
-if(directMissing.length)note('structured labels still rely on canonical alias/core fallback: '+directMissing.length);
+directMissing.length?fail('structured labels missing direct 18-language entries: '+directMissing.length):pass('all structured labels have direct 18-language entries');
 
 const expectedBusinessText=[
  'balanceDueCondition','customsDescription','finalUse','customsDeclarationNote','mixedPackingNote',
