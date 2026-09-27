@@ -52,7 +52,7 @@ const checks=[
   ['quotation supports optional non-destructive price breaks',editor.includes('function openTierPricing()')&&editor.includes('正式金额仍按当前单价计算')&&editor.includes("tierPricing.hidden=getDocumentType()!=='quotation'")&&editor.includes('i-price-breaks')],
   ['price breaks do not replace current qty or unit price',editor.includes("row.querySelector('.i-price-breaks').value=JSON.stringify(breaks)")&&!editor.includes("row.querySelector('.i-price').value=breaks")&&!editor.includes("row.querySelector('.i-qty').value=breaks")],
   ['quotation PDF can show price breaks',editor.includes('pdf-product-price-breaks')&&editor.includes("documentType==='quotation'&&Array.isArray(item.priceBreaks)")],
-  ['customer workbook can show price breaks',tableOutput.includes("key:'priceBreaks'")&&tableOutput.includes('阶梯报价 / Price Breaks')&&tableOutput.includes("if (key === 'priceBreaks')")),
+  ['customer workbook can show price breaks',tableOutput.includes("key:'priceBreaks'")&&tableOutput.includes('阶梯报价 / Price Breaks')&&tableOutput.includes("if (key === 'priceBreaks')")],
   ['table mode exposes new trade product columns',tableView.includes("key:'customerItemNo'")&&tableView.includes("key:'customsDescription'")&&tableView.includes("key:'originCountry'")],
   ['Excel output carries new trade product columns',tableOutput.includes("key:'customerItemNo'")&&tableOutput.includes("key:'customsDescription'")&&tableOutput.includes("key:'originCountry'")],
   ['new-document wording uses trade-friendly entity names',documentStart.includes('<label>关联业务</label>')&&documentStart.includes('<label>卖方主体</label>')],
