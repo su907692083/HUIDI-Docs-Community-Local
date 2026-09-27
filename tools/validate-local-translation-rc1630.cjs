@@ -60,7 +60,7 @@ const checks=[
  ['Local translation runtime is exported',editor.includes('window.HUIDITranslationRuntime=Object.freeze({')],
  ['Local translation UI loaded',editor.includes('huidi-local-translation-ui-rc1630.js')],
  ['whole-document button is enabled by Local UI',ui.includes("b.classList.remove('is-hidden')")&&ui.includes("b.textContent='翻译整份单据'")],
- ['section translate control exists',ui.includes('data-huidi-translate-section')&&ui.includes("btn.textContent='翻译本分栏'")],
+ ['section translate control exists',ui.includes('data-huidi-translate-section')&&ui.includes("btn.textContent='翻译本栏'")&&!ui.includes("btn.textContent='翻译本分栏'")],
  ['single-field translate control exists',ui.includes('data-huidi-translate-field')&&ui.includes("btn.textContent='译'")],
  ['provider status is visible',ui.includes("fetch('/api/translation/status'")],
  ['Community Local no longer hides translateAll',!mode.includes("'headerTranslateBtn','translateAllBtn'")&&!mode.includes("'translateAllBtn','fp-ai-widget'")],
