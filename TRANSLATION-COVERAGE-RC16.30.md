@@ -1,5 +1,26 @@
 # HUIDI Docs Community Local · Translation Coverage Audit
 
+## RC16.30 implementation status
+
+Implemented after the initial audit:
+
+- Same-origin Local translation API: `/api/translation/status`, `/api/translation/config`, `/api/translation/test`, `/api/translation/translate`.
+- Default no-key online provider through the local server.
+- Optional Google Cloud Translation provider with the API key stored only in local `config/translation.local.json`.
+- Whole-document translation now uses the canonical Translation Owner and current document/mode visibility.
+- Section translation is available through `translateSection(sectionKey)`.
+- Single-field translation is available through `translateField(fieldKey)`.
+- Protected identifiers and numeric/legal fields are excluded from automatic translation payloads.
+- PDF/editor, structured output, table/workbook, item text, custom fields and custom logistics use one translation resolver.
+- Chinese target mapping is explicit: `zh → Chinese`.
+- Community Local browser remains same-origin-only; third-party translation calls are made by the local Node server.
+
+Still open:
+
+- Direct 18-language phrase coverage for every new structured field label should continue to be expanded; current fallback/alias coverage remains broader than direct phrase coverage.
+- Provider quality/rate limits depend on the selected online provider.
+- Google Cloud is optional and requires a user-supplied API key and billing/quota setup.
+
 Baseline: RC16.30 audit branch  
 Scope: Quotation / PI / Sales Contract / Commercial Invoice / Packing List, all effective modes, editor + PDF + table/workbook output.
 
