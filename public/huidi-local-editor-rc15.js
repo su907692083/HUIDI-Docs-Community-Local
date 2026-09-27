@@ -118,8 +118,38 @@ function saveTemplateEdit(hub,id){const rows=templates(),row=rows.find(r=>r.id==
 function updateTemplateFromCurrent(hub,id){const rows=templates(),row=rows.find(r=>r.id===id),group=GROUPS[row?.category];if(!row||!group)return;const data=capture(group.fields);if(!Object.values(data).some(has)){notify(`当前页面的“${group.label}”没有可更新内容。`,'error');return}row.data=data;row.context=contextSnapshot();row.updatedAt=Date.now();if(saveTemplates(rows)){renderTemplates(hub);openTemplateEditor(hub,id);notify(`已用当前页面更新模板“${row.name}”。`)}}
 function duplicateTemplate(hub,id){const rows=templates(),row=rows.find(r=>r.id===id);if(!row)return;const now=Date.now(),copy=JSON.parse(JSON.stringify(row));copy.id=`tpl_${now}_${Math.random().toString(36).slice(2,7)}`;copy.name=`${row.name} · 副本`;copy.createdAt=now;copy.updatedAt=now;rows.push(copy);if(saveTemplates(rows)){renderTemplates(hub);openTemplateEditor(hub,copy.id);notify('模板副本已创建。')}}
 function deleteTemplate(hub,id){const row=templates().find(r=>r.id===id);if(!row||!confirm(`确定删除模板“${row.name}”吗？`))return;if(saveTemplates(templates().filter(r=>r.id!==id))){const box=$('#huidiRc15TemplateEditor',hub);if(box)box.hidden=true;renderTemplates(hub);notify('个人模板已删除。')}}
+
+function openTierPricing(){
+  const rows=$('.item-row').filter(row=>clean(row.querySelector('.i-name')?.value));
+  const status=(m,t='')=>window.FlypigBOXApp?.setStatus?.(m,t);
+  if(!rows.length){status('请先填写至少一行商品名称。','error');return}
+  const n=v=>Math.max(0,Number.parseFloat(v)||0),cur=clean($('#currency')?.value)||'USD';
+  const parse=raw=>{try{const data=JSON.parse(raw||'[]');return Array.isArray(data)?data.filter(x=>n(x?.qty)>0&&n(x?.price)>0):[]}catch(_){return[]}};
+  let dialog=$('#huidiRc15TierPricingDialog');
+  if(!dialog){dialog=document.createElement('dialog');dialog.id='huidiRc15TierPricingDialog';dialog.className='fp-insert-dialog';document.body.appendChild(dialog)}
+  const body=rows.map((row,index)=>{
+    const name=clean(row.querySelector('.i-name')?.value)||clean(row.querySelector('.i-sku')?.value)||`商品 ${index+1}`,breaks=parse(row.querySelector('.i-price-breaks')?.value);
+    const cells=[0,1,2].map(i=>{const b=breaks[i]||{};return `<div class="tier-pricing-pair"><input data-tier-qty type="number" min="0" step="0.01" value="${b.qty||''}" placeholder="数量"><input data-tier-price type="number" min="0" step="0.0001" value="${b.price||''}" placeholder="${esc(cur)} 单价"></div>`}).join('');
+    return `<div class="tier-pricing-row" data-tier-row="${index}"><strong>${esc(name)}</strong><div class="tier-pricing-grid">${cells}</div></div>`;
+  }).join('');
+  dialog.innerHTML=`<div class="inner"><header><div><p class="eyebrow">报价辅助</p><h2>阶梯报价</h2></div><button class="close" type="button" data-tier-close>×</button></header><p class="hint">不同采购数量可设置不同参考单价。这里只影响报价展示，不改变当前“数量 × 单价”的正式金额；转 PI / CI 后仍以确认单价为准。</p><div class="tier-pricing-list">${body}</div><div class="tier-pricing-actions"><button class="btn secondary" type="button" data-tier-clear>清空阶梯价</button><button class="btn secondary" type="button" data-tier-close>取消</button><button class="btn primary" type="button" data-tier-save>保存阶梯报价</button></div></div>`;
+  dialog.onclick=event=>{
+    if(event.target.closest('[data-tier-close]')){dialog.close();return}
+    if(event.target.closest('[data-tier-clear]')){$('[data-tier-row] input',dialog).forEach(input=>input.value='');return}
+    if(!event.target.closest('[data-tier-save]'))return;
+    let count=0;
+    $('[data-tier-row]',dialog).forEach(box=>{
+      const row=rows[Number(box.dataset.tierRow)];if(!row)return;
+      const qtys=$('[data-tier-qty]',box),prices=$('[data-tier-price]',box),breaks=[];
+      qtys.forEach((input,i)=>{const qty=n(input.value),price=n(prices[i]?.value);if(qty>0&&price>0)breaks.push({qty,price})});
+      breaks.sort((a,b)=>a.qty-b.qty);row.querySelector('.i-price-breaks').value=JSON.stringify(breaks);if(breaks.length)count++;
+    });
+    dialog.close();window.FlypigBOXApp?.renderPreview?.();window.FlypigBOXTableOutput?.refresh?.({force:true});status(count?`已保存 ${count} 个商品的阶梯报价；正式金额仍按当前单价计算。`:'已清空阶梯报价。','ok');
+  };
+  dialog.showModal();
+}
 function runAuxAction(action,trigger){if(action==='check'){window.HUIDIActionOwner?.check?.();return}if(action==='fields'){closeDrawer();setTimeout(()=>document.getElementById('fpV3321FieldsHeader')?.click(),190);return}if(action==='layout'){closeDrawer();setTimeout(()=>document.getElementById('fpV3325LayoutHeader')?.click(),190);return}if(action==='guide'){document.querySelector('[data-v3339-guide]')?.click();setTimeout(syncDrawerTitle,220);return}if(action==='metadata'){window.FlypigBOXSmartSave?.openSettings?.();return}if(action==='signature'){closeDrawer();setTimeout(()=>window.FlypigBOXSharedActions?.invoke?.('signature-section'),190);return}if(action==='internal'){closeDrawer();setTimeout(()=>window.FlypigBOXInternalTools?.open?.('factory',trigger),190);return}if(action==='clear'){document.querySelector('[data-v3315-action="clear"]')?.click();return}}
-function boot(){if(!document.getElementById('piForm'))return;document.body.dataset.huidiLocalUxRelease='rc15';observeDrawerLifecycle();window.addEventListener('click',e=>{if(e.target.closest?.('#fpLiteMoreMenu>summary'))[0,30,90,220].forEach(ms=>setTimeout(()=>{ensureHub();syncDrawerTitle()},ms));if(e.target.closest?.('[data-v3339-guide-back],[data-v3320-fields-back],[data-v3318-fields-close]'))[40,120,260].forEach(ms=>setTimeout(()=>{ensureHub();syncDrawerTitle()},ms));},true);document.addEventListener('HUIDI:document-type-changed',()=>setTimeout(()=>{ensureHub();syncDrawerTitle()},90));[300,700,1200,1700,2600,4200].forEach(ms=>setTimeout(()=>{ensureHub();syncDrawerTitle()},ms));}
+function boot(){if(!document.getElementById('piForm'))return;document.body.dataset.huidiLocalUxRelease='rc15';const tier=$('#tierPricingBtn');if(tier&&tier.dataset.huidiTierBound!=='1'){tier.dataset.huidiTierBound='1';tier.addEventListener('click',openTierPricing)};observeDrawerLifecycle();window.addEventListener('click',e=>{if(e.target.closest?.('#fpLiteMoreMenu>summary'))[0,30,90,220].forEach(ms=>setTimeout(()=>{ensureHub();syncDrawerTitle()},ms));if(e.target.closest?.('[data-v3339-guide-back],[data-v3320-fields-back],[data-v3318-fields-close]'))[40,120,260].forEach(ms=>setTimeout(()=>{ensureHub();syncDrawerTitle()},ms));},true);document.addEventListener('HUIDI:document-type-changed',()=>setTimeout(()=>{ensureHub();syncDrawerTitle()},90));[300,700,1200,1700,2600,4200].forEach(ms=>setTimeout(()=>{ensureHub();syncDrawerTitle()},ms));}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 window.HUIDILocalRC15=Object.freeze({version:'1.2.0-RC15',ensureHub,renderTemplates:()=>{const hub=$('#huidiRc15MoreHub');if(hub)renderTemplates(hub)}});
 })();
