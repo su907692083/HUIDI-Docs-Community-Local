@@ -377,7 +377,7 @@ const TRANSLATION_EXCLUDED_FIELDS=new Set([
   'exportLicenseNo','regulatoryCertificateNo','sellerRegistrationNo','sellerVatNo','sellerEoriNo','buyerRegistrationNo','buyerVatNo','buyerEoriNo',
   'trackingNo','blNo','containerNo','sealNo','vesselFlight','tradeTerms','currency'
 ]);
-const ITEM_TRANSLATION_FIELDS=Object.freeze({name:'products',spec:'products',packageDescription:'packing',shippingMarks:'packing'});
+const ITEM_TRANSLATION_FIELDS=Object.freeze({name:'products',spec:'products',customsDescription:'products',originCountry:'products',packageDescription:'packing',shippingMarks:'packing'});
 const cleanText=v=>String(v??'').trim();
 const containsHan=text=>/[\u3400-\u9fff\uf900-\ufaff]/.test(String(text||''));
 const companionLanguage=text=>containsHan(text)?'en':'zh';
