@@ -17,6 +17,6 @@ need(drawer.includes('常用资料模板')&&drawer.includes('这里不是 PDF �
 need(drawer.includes('data-rc15-action="check"')&&drawer.includes('<span>保存单据</span>'),'drawer assist actions not unified');
 need(ready.includes('可定位补充，也可按当前版本直接导出'),'readiness still sounds blocking');
 need(xm.includes('建议补充')&&!xm.includes("data-fp-open-output ${blockers.length?'disabled':''}"),'cross-module check still blocks output');
-need(editor.includes('huidi-action-owner-rc1621.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.21'),'editor action owner cache identity missing');
+need((editor.match(/huidi-action-owner-rc1621\.js\?v=/g)||[]).length===1&&editor.includes('huidi-action-owner-rc1621.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.10-CN'),'editor action owner cache identity missing');
 if(fail.length){console.error('RC16.21 ACTION OWNER VALIDATION FAILED');fail.forEach(x=>console.error('-',x));process.exit(1)}
 console.log('RC16.21 SINGLE INTERACTION OWNER VALIDATION PASSED');
