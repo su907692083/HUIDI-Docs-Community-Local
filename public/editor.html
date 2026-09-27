@@ -1375,6 +1375,51 @@
   function itemRows(){
     return qsa('.item-row').map(row=>({itemKey:row.dataset.itemKey||'',sku:row.querySelector('.i-sku')?.value.trim()||'',customerItemNo:row.querySelector('.i-customer-item-no')?.value.trim()||'',name:row.querySelector('.i-name').value.trim(),spec:row.querySelector('.i-spec').value.trim(),customsDescription:row.querySelector('.i-customs-desc')?.value.trim()||'',originCountry:row.querySelector('.i-origin-country')?.value.trim()||'',hs:row.querySelector('.i-hs').value.trim(),unit:row.querySelector('.i-unit').value,qty:toNum(row.querySelector('.i-qty').value),moq:row.querySelector('.i-moq')?.value.trim()||'',price:toNum(row.querySelector('.i-price').value),cartonNo:row.querySelector('.i-carton-no')?.value.trim()||'',cartonCount:toNum(row.querySelector('.i-carton-count')?.value),qtyPerCarton:toNum(row.querySelector('.i-qty-per-carton')?.value),packageDescription:row.querySelector('.i-package-desc')?.value.trim()||'',netWeight:toNum(row.querySelector('.i-net-weight')?.value),grossWeight:toNum(row.querySelector('.i-gross-weight')?.value),cbm:toNum(row.querySelector('.i-cbm')?.value),dimensions:row.querySelector('.i-dimensions')?.value.trim()||'',shippingMarks:row.querySelector('.i-item-marks')?.value.trim()||'',image:row.dataset.image||''}));
   }
+  function parsePackingDimensions(text){
+    const nums=String(text||'').replace(/×/g,'x').match(/\d+(?:\.\d+)?/g)?.map(Number)||[];
+    if(nums.length<3)return null;
+    const [l,w,h]=nums;return l>0&&w>0&&h>0?{l,w,h,cbm:(l*w*h)/1000000}:null;
+  }
+  function openPackingAssistant(){
+    const rows=qsa('.item-row').filter(row=>String(row.querySelector('.i-name')?.value||'').trim()||toNum(row.querySelector('.i-qty')?.value)>0);
+    if(!rows.length){setStatus('请先填写至少一行商品。','error');return;}
+    const htmlRows=rows.map((row,index)=>{
+      const name=String(row.querySelector('.i-name')?.value||row.querySelector('.i-sku')?.value||`商品 ${index+1}`).trim();
+      const qty=toNum(row.querySelector('.i-qty')?.value),per=toNum(row.querySelector('.i-qty-per-carton')?.value);
+      return `<div class="packing-assistant-row" data-pack-assistant-row="${index}"><strong>${escapeHTML(name)} · 数量 ${qty||'—'}</strong><div class="packing-assistant-grid"><label>每箱数量<input data-pack-per-carton type="number" min="0" step="0.01" value="${per||''}" placeholder="例如 20"></label><label>单箱尺寸 cm<input data-pack-dimensions value="${escapeHTML(row.querySelector('.i-dimensions')?.value||'')}" placeholder="60×40×35"></label><label>单箱净重 KG<input data-pack-net type="number" min="0" step="0.01" placeholder="例如 12"></label><label>单箱毛重 KG<input data-pack-gross type="number" min="0" step="0.01" placeholder="例如 13"></label><label>包装<input data-pack-type value="${escapeHTML(row.querySelector('.i-package-desc')?.value||'')}" placeholder="Carton / Pallet"></label></div></div>`;
+    }).join('');
+    openModal('装箱助手',`<p class="hint">按每箱数量自动计算箱数与连续箱号；填写尺寸后自动计算 CBM。净重、毛重按“单箱重量 × 箱数”汇总。不会修改商品数量和单价。</p><div class="grid" style="margin-bottom:10px"><label>起始箱号<input id="packingAssistantStart" type="number" min="1" step="1" value="1"></label><label>默认包装类型<input id="packingAssistantType" value="${escapeHTML(get('packageType')||'Carton')}" placeholder="Carton"></label></div><div class="packing-assistant-list">${htmlRows}</div><div class="packing-assistant-actions"><button class="btn secondary" id="cancelPackingAssistantBtn" type="button">取消</button><button class="btn primary" id="applyPackingAssistantBtn" type="button">计算并写入装箱资料</button></div>`);
+    $('cancelPackingAssistantBtn')?.addEventListener('click',closeModal);
+    $('applyPackingAssistantBtn')?.addEventListener('click',()=>{
+      let nextCarton=Math.max(1,Math.floor(toNum($('packingAssistantStart')?.value)||1)),totalCartons=0,totalNet=0,totalGross=0,totalCbm=0,applied=0;
+      const defaultType=String($('packingAssistantType')?.value||'Carton').trim()||'Carton';
+      qsa('[data-pack-assistant-row]',$('modalContent')).forEach(box=>{
+        const idx=Number(box.dataset.packAssistantRow),row=rows[idx];if(!row)return;
+        const qty=toNum(row.querySelector('.i-qty')?.value),per=toNum(box.querySelector('[data-pack-per-carton]')?.value);
+        if(!(qty>0&&per>0))return;
+        const cartons=Math.max(1,Math.ceil(qty/per)),end=nextCarton+cartons-1,range=cartons===1?String(nextCarton):`${nextCarton}-${end}`;
+        const dimensions=String(box.querySelector('[data-pack-dimensions]')?.value||'').trim(),parsed=parsePackingDimensions(dimensions);
+        const netPer=toNum(box.querySelector('[data-pack-net]')?.value),grossPer=toNum(box.querySelector('[data-pack-gross]')?.value),packType=String(box.querySelector('[data-pack-type]')?.value||defaultType).trim()||defaultType;
+        const netTotal=netPer*cartons,grossTotal=grossPer*cartons,cbmTotal=(parsed?.cbm||0)*cartons,unit=String(row.querySelector('.i-unit')?.value||'PCS').trim()||'PCS';
+        row.querySelector('.i-carton-no').value=range;
+        row.querySelector('.i-carton-count').value=String(cartons);
+        row.querySelector('.i-qty-per-carton').value=String(per);
+        row.querySelector('.i-package-desc').value=packType+` · ${per} ${unit}/CTN`;
+        if(dimensions)row.querySelector('.i-dimensions').value=dimensions;
+        if(netTotal>0)row.querySelector('.i-net-weight').value=String(Number(netTotal.toFixed(3)));
+        if(grossTotal>0)row.querySelector('.i-gross-weight').value=String(Number(grossTotal.toFixed(3)));
+        if(cbmTotal>0)row.querySelector('.i-cbm').value=String(Number(cbmTotal.toFixed(4)));
+        totalCartons+=cartons;totalNet+=netTotal;totalGross+=grossTotal;totalCbm+=cbmTotal;nextCarton=end+1;applied++;
+      });
+      if(!applied){setStatus('请至少填写一行“每箱数量”。','error');return;}
+      set('packageCount',String(totalCartons));if(!get('packageType'))set('packageType',defaultType);
+      if(totalNet>0)set('netWeight',String(Number(totalNet.toFixed(3))));
+      if(totalGross>0)set('grossWeight',String(Number(totalGross.toFixed(3))));
+      if(totalCbm>0)set('cbm',String(Number(totalCbm.toFixed(4))));
+      closeModal();syncVisibilityUI();renderPreview();setStatus(`装箱助手已计算 ${applied} 行、共 ${totalCartons} 箱；请核对尾箱数量、重量和尺寸。`,'ok');
+    });
+  }
+
   function parseLogisticsExtraRows(raw=get('logisticsExtraRowsJson')){
     try{
       const rows=Array.isArray(raw)?raw:JSON.parse(raw||'[]');
@@ -4238,6 +4283,7 @@
     if(!window.HUIDI_LOCAL_ONLY?.localOnly)setInterval(autosave,5000);
   }
 
+  $('packingAssistantBtn')?.addEventListener('click',openPackingAssistant);
   $('addItemBtn').addEventListener('click',()=>{
     try{
       const row=addItem();
