@@ -379,6 +379,8 @@ const TRANSLATION_EXCLUDED_FIELDS=new Set([
 ]);
 const ITEM_TRANSLATION_FIELDS=Object.freeze({name:'products',spec:'products',packageDescription:'packing',shippingMarks:'packing'});
 const cleanText=v=>String(v??'').trim();
+const containsHan=text=>/[\u3400-\u9fff\uf900-\ufaff]/.test(String(text||''));
+const companionLanguage=text=>containsHan(text)?'en':'zh';
 const translationState=()=>window.FlypigBOXApp?.formState?.(false)||{fields:{},items:[],translationVersions:{}};
 const fieldAllowedNow=(id,section,state)=>{
   const schema=window.FlypigBOXDocumentSchema,fields=state?.fields||{},type=fields.documentType||document.getElementById('documentType')?.value||'proforma_invoice',mode=fields.docMode||document.getElementById('docMode')?.value||'ecommerce';
@@ -398,7 +400,7 @@ function resolveBusinessValue(key,source,language=core.language(),versions){
   if(!record||cleanText(record.source)!==original)return original;
   const lang=String(language||'bilingual');
   if(lang==='bilingual'){
-    const translated=cleanText(record.variants?.en);
+    const companion=companionLanguage(original),translated=cleanText(record.variants?.[companion]);
     return translated&&translated!==original?original+'\n'+translated:original;
   }
   const translated=cleanText(record.variants?.[lang]);
@@ -450,8 +452,8 @@ function collectTranslationField(key,state=translationState()){
   const wanted=String(key||'');return collectTranslationDocument(state).find(row=>row.key===wanted||row.id===wanted)||null;
 }
 function translationSummary(state=translationState(),language=core.language()){
-  const rows=collectTranslationDocument(state),versions=state.translationVersions||{},lang=language==='bilingual'?'en':language;
-  let translated=0;rows.forEach(row=>{const rec=versions[row.key];if(rec&&cleanText(rec.source)===row.text&&cleanText(rec.variants?.[lang]))translated++;});
+  const rows=collectTranslationDocument(state),versions=state.translationVersions||{};
+  let translated=0;rows.forEach(row=>{const rec=versions[row.key],lang=language==='bilingual'?companionLanguage(row.text):language;if(rec&&cleanText(rec.source)===row.text&&cleanText(rec.variants?.[lang]))translated++;});
   return{total:rows.length,translated,missing:Math.max(0,rows.length-translated),language,sections:Object.fromEntries(TRANSLATION_SECTIONS.map(section=>[section,collectTranslationSection(section,state).length]))};
 }
 window.HUIDITranslationOwner=Object.freeze({
@@ -462,6 +464,7 @@ window.HUIDITranslationOwner=Object.freeze({
   itemFields:{...ITEM_TRANSLATION_FIELDS},
   excludedFields:[...TRANSLATION_EXCLUDED_FIELDS],
   policy:translationPolicy,
+  companionLanguage,
   collectDocument:collectTranslationDocument,
   collectSection:collectTranslationSection,
   collectField:collectTranslationField,
