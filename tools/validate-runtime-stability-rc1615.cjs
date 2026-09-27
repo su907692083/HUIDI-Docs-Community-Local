@@ -13,7 +13,7 @@ need(/^1\.2\.0-RC16\.\d+(?:\.\d+)?$/.test(manifest.version)&&manifest.release===
 need(editor.includes("classList.add('huidi-rc1615-boot')")&&editor.includes('huidi-rc1615-critical'),'critical first-paint gate is installed before editor body paints');
 need(editor.includes('huidi-runtime-stability-rc1615.js'),'runtime stability controller loaded');
 need(runtime.includes("fpPaginationStable==='1'")&&runtime.includes("fpPreviewStatus==='ready'"),'first paint waits for a stable paginated preview');
-need(runtime.includes("setTimeout(()=>release(stable()?'stable-timeout':'bounded-fallback'),2400)"),'runtime gate has bounded fallback');
+need(runtime.includes("bounded-fallback')},8000")&&runtime.includes("if(!released)release"),'runtime gate has bounded fallback without exposing unstable second frame');
 need(!nav.includes("observe(document.body,{childList:true,subtree:true})"),'Issue Navigator never observes entire body subtree');
 need(nav.includes("rootObserver.observe(document.body,{childList:true})"),'Issue Navigator discovery observes body direct children only');
 need(nav.includes("formalDialogObserver.observe(dialog,{childList:true,subtree:true})"),'Issue Navigator observes only the small formal dialog subtree');
