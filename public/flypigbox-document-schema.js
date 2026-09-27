@@ -228,7 +228,9 @@
   function convertState(state={},targetType='proforma_invoice'){const type=normalizeType(targetType),sourceFields=state.fields||{};const fields={...sourceFields,documentType:type,docMode:effectiveMode(type,sourceFields.docMode||'ecommerce')};const allowed=modeProfile(type,fields.docMode).defaults;TOGGLES.forEach(id=>{fields[id]=allowed.includes(id)?(sourceFields[id]===false?'':(sourceFields[id]||'on')):'';});if(type==='packing_list'){fields.showPayment='';fields.showFreight='';fields.showTax='';fields.showDiscount='';fields.showAmountWords='';}return {...state,fields,items:Array.isArray(state.items)?state.items.map(item=>({...item})):[]};}
 
   const html=value=>String(value??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const MIRRORED_CANONICAL_FIELDS=new Set(['quotationValidUntil','proformaValidUntil','packingDate']);
   function inputHTML(id,def){
+    if(MIRRORED_CANONICAL_FIELDS.has(id))return `<input id="${id}" type="hidden" data-fp-mirrored-canonical="1">`;
     const attrs=[`id="${id}"`];
     if(def.min!==undefined)attrs.push(`min="${def.min}"`);if(def.max!==undefined)attrs.push(`max="${def.max}"`);if(def.step!==undefined)attrs.push(`step="${def.step}"`);
     let control='';
@@ -296,7 +298,7 @@
   function structuredOutputRows(type,docMode,fields={},language='bilingual'){
     const t=normalizeType(type),m=normalizeMode(docMode),rows=[];
     Object.entries(FIELD_DEFINITIONS).forEach(([id,def])=>{
-      if(def.internal||!structuredFieldAllowed(id,t,m))return;const value=displayValue(id,fields[id],language);if(!value)return;
+      if(def.internal||MIRRORED_CANONICAL_FIELDS.has(id)||!structuredFieldAllowed(id,t,m))return;const value=displayValue(id,fields[id],language);if(!value)return;
       rows.push({id,section:def.section,group:def.section,label:outputLabel(id,language),value});
     });
     return rows;
