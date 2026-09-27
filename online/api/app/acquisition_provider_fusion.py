@@ -12,6 +12,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 
 from .lead_engine import clean_domain, merge_evidence, score_search_result
+from .global_market_targeting import prospect_query_plan
 from .main import Lead, LeadSearchRequest, SessionLocal, add_activity, lead_to_dict, serper_search
 from .online_app import app
 from .provider_settings import provider_ready, resolve_provider, read_provider_json
@@ -51,7 +52,15 @@ def _host_excluded(domain: str) -> bool:
 
 async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]:
     cfg = resolve_provider("tavily")
-    query = " ".join(x for x in [req.product_keyword, req.buyer_type, req.country, "company importer distributor buyer official website"] if x)
+    query = prospect_query_plan(
+        product_keyword=req.product_keyword,
+        country=req.country,
+        buyer_type=req.buyer_type,
+        industry=req.industry,
+        category=req.category,
+        hs_code=req.hs_code,
+        max_queries=1,
+    )[0]
     try:
         async with httpx.AsyncClient(timeout=25) as client:
             response = await client.post(
@@ -93,6 +102,7 @@ async def _tavily_company_search(req: LeadSearchRequest) -> list[dict[str, Any]]
             "link": url,
             "snippet": str(item.get("content") or "").strip(),
             "search_score": float(item.get("score") or 0),
+            "query_route": query,
         })
     return rows
 
