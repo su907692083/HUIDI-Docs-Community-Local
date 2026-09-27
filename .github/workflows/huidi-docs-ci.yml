@@ -78,3 +78,6 @@ jobs:
 
       - name: Local storage safety
         run: npm run check:storage-safety
+
+      - name: Translation coverage audit
+        run: npm run audit:translation-coverage
