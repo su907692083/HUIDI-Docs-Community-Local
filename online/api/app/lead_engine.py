@@ -197,12 +197,15 @@ def merge_evidence(existing_json: str, rows: list[dict[str, Any]], max_items: in
         if not key or key in seen:
             continue
         seen.add(key)
-        merged.append(
-            {
-                "title": title,
-                "url": url,
-                "snippet": str(row.get("snippet") or "").strip(),
-                "source": str(row.get("source") or "search"),
-            }
-        )
+        item = {
+            "title": title,
+            "url": url,
+            "snippet": str(row.get("snippet") or "").strip(),
+            "source": str(row.get("source") or "search"),
+        }
+        for key in ("provider", "priority", "query_route", "score_breakdown"):
+            value = row.get(key)
+            if value not in (None, "", [], {}):
+                item[key] = value
+        merged.append(item)
     return json.dumps(merged[-max_items:], ensure_ascii=False)
