@@ -133,7 +133,7 @@
   }
 
   function normalizeToolbar(){
-    const saveBtn=$('#fpV3321SaveHeader');if(saveBtn){saveBtn.textContent='保存单据';saveBtn.title='保存当前单据；可在保存前修改名称与内部备注';}
+    const saveBtn=$('#fpV3321SaveHeader');if(saveBtn){saveBtn.textContent='保存';saveBtn.title='保存当前单据';}
     const checkBtn=$('#huidiLocalCheckHeader');if(checkBtn){checkBtn.textContent='检查';checkBtn.title='辅助检查并定位问题；不会限制导出';}
     const template=$('#fpV3321TemplateHeader');if(template){template.textContent='PDF模板/样式';template.title='调整客户文件的 PDF 视觉模板与品牌样式';}
   }
