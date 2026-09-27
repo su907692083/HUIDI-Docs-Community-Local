@@ -44,7 +44,7 @@ function ensureSectionButtons(){
    const rows=key?api.collectSection(key,state()):[];
    if(!key||!rows.length){btn?.remove();return}
    if(!title)return;
-   if(!btn){btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-section';btn.dataset.huidiTranslateSection=key;btn.textContent='翻译本分栏';btn.title='只翻译本分栏中的可翻译文字';title.appendChild(btn)}
+   if(!btn){btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-section';btn.dataset.huidiTranslateSection=key;btn.textContent='翻译本栏';btn.title='只翻译本栏可翻译文字';title.appendChild(btn)}
    btn.dataset.huidiTranslateSection=key;
  });
 }
@@ -114,7 +114,7 @@ function ensureTableSectionButtons(){
    const rows=keys.length?uniqueSectionRows(api,keys):[];
    if(!keys.length||!rows.length){btn?.remove();return}
    const head=panel.querySelector(':scope > .fp-sheet-panel-head');if(!head)return;
-   if(!btn){btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-section huidi-table-translate-section';btn.textContent='翻译本分栏';btn.title='翻译当前表格分栏中的可翻译文字';head.appendChild(btn)}
+   if(!btn){btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-section huidi-table-translate-section';btn.textContent='翻译本栏';btn.title='翻译当前表格栏可翻译文字';head.appendChild(btn)}
    btn.dataset.huidiTranslateSections=keys.join(',');
  });
 }
