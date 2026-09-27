@@ -18,6 +18,8 @@ const syncCore=read('public/flypigbox-v3-3-5-0-sync-core.js');
 const toolbarCss=read('public/huidi-toolbar-owner-rc1617.css');
 const documentStart=read('public/document-start.html');
 const localBridge=read('public/huidi-local-editor-bridge-v120.js');
+const tableView=read('public/flypigbox-editor-table-view.js');
+const tableOutput=read('public/flypigbox-editor-table-output.js');
 
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
@@ -44,6 +46,11 @@ const checks=[
   ['new-document flow can copy a previous document safely',documentStart.includes('id="historyDoc"')&&documentStart.includes("K.histories")&&documentStart.includes("sessionStorage.setItem('huidi_local_chain_state_v1'")&&documentStart.includes("'invoiceNo','revisionNo','quotationVersion'")],
   ['history copy resets old business identifiers',documentStart.includes("'customerOrderNo','internalOrderNo','relatedQuotationNo','relatedPiNo','relatedContractNo','relatedCommercialInvoiceNo','relatedPackingListNo'")&&documentStart.includes('f.issueDate=iso(today)')],
   ['next-step conversion explains automatic carry-over',localBridge.includes('自动沿用客户、商品、数量、价格和条款，只补下一单所需资料')],
+  ['product rows support customer item and per-line customs data',editor.includes('i-customer-item-no')&&editor.includes('i-customs-desc')&&editor.includes('i-origin-country')&&editor.includes('客户货号 / 清关信息（按需）')],
+  ['trade product fields stay optional instead of cluttering quick entry',editor.includes("row.classList.toggle('hide-trade-extra',!showTradeExtra)")&&editor.includes("getDocumentType()==='commercial_invoice'")],
+  ['packing assistant calculates cartons and totals',editor.includes('function openPackingAssistant()')&&editor.includes('Math.ceil(qty/per)')&&editor.includes("set('packageCount',String(totalCartons))")&&editor.includes('parsePackingDimensions')],
+  ['table mode exposes new trade product columns',tableView.includes("key:'customerItemNo'")&&tableView.includes("key:'customsDescription'")&&tableView.includes("key:'originCountry'")],
+  ['Excel output carries new trade product columns',tableOutput.includes("key:'customerItemNo'")&&tableOutput.includes("key:'customsDescription'")&&tableOutput.includes("key:'originCountry'")],
   ['new-document wording uses trade-friendly entity names',documentStart.includes('<label>关联业务</label>')&&documentStart.includes('<label>卖方主体</label>')],
   ['quiet toolbar keeps compact action spacing',css.includes('#fpLiteToolbar .fp-lite-toolbar-actions{gap:4px!important}')],
   ['Local browser networking remains same-origin only',mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
