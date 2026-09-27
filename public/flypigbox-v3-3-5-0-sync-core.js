@@ -355,7 +355,7 @@
     if(!clean($('invoiceNo')?.value))add(blocks,'number','缺少单据编号','basic');
     if(!clean($('issueDate')?.value))add(blocks,'date','缺少出单日期','basic');
     if(!clean($('sellerName')?.value))add(blocks,'seller','缺少卖方/出口方公司','parties');
-    if(!clean($('buyerName')?.value))add(blocks,'buyer','缺少买方/进口方公司','parties');
+    if(!clean($('buyerName')?.value)){if(t==='quotation')add(warnings,'buyer','建议补充买方公司；询价早期可先用联系人、邮箱或平台昵称','parties');else add(blocks,'buyer','缺少买方/进口方公司','parties');}
     if(!items.length)add(blocks,'items','至少填写一项商品','products');
     items.forEach(item=>{
       if(!item.name)add(blocks,`item-name-${item.index}`,`第${item.index}项缺少商品名称`,'products');
