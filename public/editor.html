@@ -197,7 +197,7 @@
   <link rel="stylesheet" href="./flypigbox-v3-3-2-5-editor-shell-cleanup.css?v=20260719-v3-3-2-5">
 <link rel="stylesheet" href="./flypigbox-v3-3-3-9-document-guide.css?v=20260719-v3-3-3-9">
 <link rel="stylesheet" href="./flypigbox-v3-3-4-1-mode-navigation-personal-templates.css?v=20260720-v3-3-4-1">
-  <script src="./flypigbox-document-schema.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.7-UX1"></script>
+  <script src="./flypigbox-document-schema.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.8-TRADE"></script>
 <link rel="stylesheet" href="./flypigbox-v3-3-5-0-sync-core.css?v=20260731-r1-3a-18-23-3-empty-item-readiness">
 <link rel="stylesheet" href="./flypigbox-v3-3-5-2-2-support-unification.css?v=20260720-v33523">
 <link rel="stylesheet" href="./flypigbox-v3-3-5-2-4-membership-export-pagination.css?v=20260720-v3-3-5-2-4">
@@ -4004,6 +4004,7 @@
     qsa('[data-optional-section]').forEach(section=>section.classList.toggle('is-hidden',!docFieldOn(section.dataset.optionalSection)));
     syncBoundEditorFields();
     const hideMoney=getDocumentType()==='packing_list';
+    const packingAssistant=$('packingAssistantBtn');if(packingAssistant)packingAssistant.hidden=!(getDocumentType()==='packing_list'||isDetailedDocMode()||docFieldOn('showLogistics'));
     qsa('.item-row').forEach(row=>{const hasTradeExtra=['.i-customer-item-no','.i-customs-desc','.i-origin-country'].some(sel=>String(row.querySelector(sel)?.value||'').trim());const showTradeExtra=getDocumentType()==='commercial_invoice'||getDocumentType()==='packing_list'||isDetailedDocMode()||hasTradeExtra;row.classList.toggle('packing-mode',getDocumentType()==='packing_list');row.classList.toggle('hide-hs',!docFieldOn('showHsCode'));row.classList.remove('hide-image');row.classList.toggle('hide-money',hideMoney);row.classList.remove('hide-moq');row.classList.toggle('hide-trade-extra',!showTradeExtra);});
   }
   function applyDocumentProfile(type,{silent=false}={}){
@@ -5550,12 +5551,12 @@
 <div class="editor-legal-links" aria-label="法律与数据说明"><a href="./privacy.html">隐私政策</a><a href="./terms.html">用户协议</a><a href="./refund-policy.html">退款政策</a><a href="./data-deletion.html">数据删除</a><a href="./security.html">安全说明</a></div>
 <script src="./flypigbox-v2-4-hardening.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-trade-factory-upgrade.js?v=20260720-v3-3-5-2-4"></script>
-<script src="./huidi-doc-i18n-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.4"></script>
-<script src="./huidi-local-translation-ui-rc1630.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.6"></script>
-<script src="./flypigbox-editor-table-view.js?v=20260719-v3-3-3-0"></script>
+<script src="./huidi-doc-i18n-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.8-TRADE"></script>
+<script src="./huidi-local-translation-ui-rc1630.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.8-TRADE"></script>
+<script src="./flypigbox-editor-table-view.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.8-TRADE"></script>
 <script src="./flypigbox-xlsx-lite.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-smart-sheet-import.js?v=20260719-v3-3-3-0"></script>
-<script src="./flypigbox-editor-table-output.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.6"></script>
+<script src="./flypigbox-editor-table-output.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.8-TRADE"></script>
 <script src="./flypigbox-quick-result.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-RC16.30.7-UX1"></script>
 <script src="./flypigbox-v3-2-5-pdf-compact.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-v3-2-6-internal-tools.js?v=20260720-v3-3-5-2-5"></script>
