@@ -15,7 +15,7 @@
   let scheduled=0;
 
   const LABELS={
-    docLanguage:{label:'右侧单据语言'},
+    docLanguage:{label:'客户文件语言'},
     currency:{label:'币种'},
     originCountry:{label:'原产国或地区',placeholder:'例如：中国 / China'},
     invoiceNo:{label:'单据编号',placeholder:'按编号规则自动生成，也可以手动输入'},
@@ -37,7 +37,7 @@
     showMoq:{label:'显示最低起订量（MOQ）'},
     showSalesperson:{label:'显示业务员'},
     showProductImage:{label:'显示商品图片'},
-    showHsCode:{label:'显示海关编码（HS Code）'},
+    showHsCode:{label:'显示 HS 编码'},
     showDiscount:{label:'显示折扣'},
     showFreight:{label:'显示运费或附加费'},
     showTax:{label:'显示税费（VAT）'},
@@ -63,7 +63,7 @@
     factoryDeliveryNote:{label:'工厂交付补充说明'},
     includeFactoryTermsInExternal:{label:'将工厂交付与质量说明显示在客户表格和表格文件中'},
 
-    translationReviewed:{label:'我已核对：公司名称、联系人、型号、商品编号（SKU）、海关编码（HS Code）、金额、银行账号、SWIFT、品牌及国际贸易术语缩写保持原样；译文仅作辅助，正式导出前仍需人工确认。'},
+    translationReviewed:{label:'我已核对：公司名、货号、金额、账号和贸易术语等关键内容无误。'},
     useOwnApi:{label:'高级设置：使用自己的翻译服务接口'},
     apiProvider:{label:'翻译服务商'},
     apiProfileSelect:{label:'已保存的接口配置'},
@@ -72,27 +72,27 @@
     apiModel:{label:'模型名称'},
     apiKey:{label:'接口密钥'},
 
-    sellerName:{label:'卖方公司'},
-    sellerContact:{label:'卖方联系人'},
-    sellerPhone:{label:'卖方电话'},
-    sellerEmail:{label:'卖方邮箱'},
-    sellerAddress:{label:'卖方公司地址'},
+    sellerName:{label:'我方公司'},
+    sellerContact:{label:'我方联系人'},
+    sellerPhone:{label:'我方电话'},
+    sellerEmail:{label:'我方邮箱'},
+    sellerAddress:{label:'我方公司地址'},
     sellerTaxId:{label:'卖方税务或海关识别号（可选）',placeholder:'可填写公司注册号、税务识别号、增值税号（VAT）或欧盟经营者编号（EORI）',help:'不同编号用途不同，请按客户或目的国要求填写。'},
-    buyerName:{label:'买方公司'},
-    buyerContact:{label:'买方联系人'},
+    buyerName:{label:'客户公司'},
+    buyerContact:{label:'客户联系人'},
     buyerCountry:{label:'客户国家或地区'},
     buyerCountryCode:{label:'国家代码（ISO）'},
     buyerPhone:{label:'客户电话'},
     buyerEmail:{label:'客户邮箱'},
     buyerWebsite:{label:'客户网站'},
-    buyerAddress:{label:'买方公司地址',placeholder:'填写买方公司注册地址或主要营业地址',help:'实际送货地址请填写在“送货地址”或“最终收货人地址”，不要与买方公司地址混用。'},
-    buyerTaxId:{label:'买方税务或海关识别号（可选）',placeholder:'可填写税务识别号、增值税号（VAT）、欧盟经营者编号（EORI）或其他海关登记号',help:'实际清关主体与买方不同时，请在最终收货人资料中补充。'},
+    buyerAddress:{label:'客户公司地址',placeholder:'填写客户公司地址',help:'实际送货地址不同时，再填写“送货地址”或“实际收货方地址”。'},
+    buyerTaxId:{label:'客户税号 / 清关号（可选）',placeholder:'按客户或目的国要求填写',help:'没有要求可以留空。'},
     destinationPort:{label:'目的港或最终目的地'},
-    consigneeName:{label:'最终收货人公司'},
-    consigneeContact:{label:'最终收货人联系人'},
-    consigneePhone:{label:'最终收货人电话'},
-    consigneeEmail:{label:'最终收货人邮箱'},
-    consigneeAddress:{label:'最终收货人地址'},
+    consigneeName:{label:'实际收货方'},
+    consigneeContact:{label:'收货联系人'},
+    consigneePhone:{label:'收货电话'},
+    consigneeEmail:{label:'收货邮箱'},
+    consigneeAddress:{label:'实际收货地址'},
     notifyPartyName:{label:'到货通知方'},
     notifyPartyContact:{label:'到货通知方联系人'},
     notifyPartyPhone:{label:'到货通知方电话'},
@@ -134,8 +134,8 @@
     paymentTerms:{label:'付款条件'},
     syncPaymentTerms:{label:'付款方式与上方收款资料自动同步'},
 
-    tradeTerms:{label:'国际贸易术语（Incoterms® 2020）'},
-    deliveryTime:{label:'备货或生产周期'},
+    tradeTerms:{label:'贸易术语（FOB / CIF 等）'},
+    deliveryTime:{label:'交期 / 生产周期'},
     portOfLoading:{label:'装运港或起运地点'},
     estimatedShipment:{label:'预计发运日期'},
     remarks:{label:'补充备注'},
@@ -168,7 +168,7 @@
 
 
   const TEXT_SELECTORS={
-    '#translateAllBtn':'智能翻译单据',
+    '#translateAllBtn':'翻译客户文件',
     '.fp-language-support-note':'当前可直接输出中英双语、中文和英文；其他语言已建立版本规划，等待语言服务连接后启用。',
     '.fp-trade-factory-header h2':'外贸出单与工厂执行控制台',
     '#applyTradeScenarioBtn':'应用业务场景',
@@ -178,7 +178,7 @@
     '.api-card > details > summary':'语言版本与翻译（可选）',
     '#hostedAiPanel strong':'HUIDI 会员智能翻译',
     '#hostedAiPanel p':'右侧单据语言是唯一输出语言来源。当前仅在真实语言服务可用时生成译文；未连接时只保留语言版本和待确认状态。',
-    '#openMapsBtn':'地图地址检索',
+    '#openMapsBtn':'查地图地址',
     '#apiProtocolChip':'当前服务协议',
     '#fetchGeminiModelsBtn':'读取可用模型',
     '#saveApiProfileBtn':'保存配置（不含密钥）'
@@ -194,22 +194,23 @@
   };
 
   const ITEM_LABELS=[
-    ['.i-sku','商品编号（SKU）','例如：货号、SKU或产品编码'],
-    ['.i-name','商品名称','填写客户可见的商品名称'],
-    ['.i-spec','规格或型号','填写规格、型号、材质、颜色等'],
-    ['.i-hs','海关编码（HS Code）','填写适用的海关编码'],
+    ['.i-sku','货号','本方货号 / SKU'],
+    ['.i-name','商品名称','填写客户看到的商品名称'],
+    ['.i-spec','规格 / 型号','型号、材质、尺寸、颜色等'],
+    ['.i-hs','HS 编码','按清关要求填写'],
     ['.i-qty','数量',''],
     ['.i-unit','单位',''],
-    ['.i-moq','最低起订量（MOQ）',''],
+    ['.i-moq','起订量',''],
     ['.i-price','单价',''],
-    ['.i-carton-no','箱号或箱号范围',''],
+    ['.i-carton-no','箱号',''],
     ['.i-package-desc','包装说明',''],
-    ['.i-net-weight','净重（N.W.）',''],
-    ['.i-gross-weight','毛重（G.W.）',''],
-    ['.i-cbm','体积（CBM）',''],
+    ['.i-net-weight','净重',''],
+    ['.i-gross-weight','毛重',''],
+    ['.i-cbm','体积（m³）',''],
     ['.i-dimensions','外箱尺寸',''],
     ['.i-item-marks','唛头','']
   ];
+  const UNIT_LABELS={PCS:'PCS 件',SET:'SET 套',CTN:'CTN 箱',KG:'KG 千克',PAIR:'PAIR 对',ROLL:'ROLL 卷',LOT:'LOT 批'};
 
   function migrate(){
     try{
@@ -290,6 +291,7 @@
         setDirectText(label,labelText,control);
         if(placeholder&&'placeholder' in control)control.placeholder=placeholder;
       });
+      const unit=row.querySelector('.i-unit');if(unit)qsa('option',unit).forEach(option=>{option.textContent=UNIT_LABELS[option.value]||option.textContent;});
     });
   }
 
@@ -307,7 +309,7 @@
       card=document.createElement('aside');
       card.id='fpR13A9LanguageSeparation';
       card.className='fp-r13a9-language-separation';
-      card.innerHTML=`<div class="fp-r13a9-language-state"><span>编辑区：<b>中文</b></span><span>右侧单据：<b data-fp-output-language></b></span></div><p>切换右侧单据语言，只改变预览、PDF和客户表格的固定标题与已确认语言内容，不改变左侧中文字段名称。</p><details><summary>其他语言版本状态</summary><p>${RESTORED_FIXED_LANGUAGES.join('、')}：固定标题、字段名和表头使用本地历史词典；商品名、备注、条款等业务内容保持原文，除非用户自行提供对应译文。</p></details>`;
+      card.innerHTML=`<div class="fp-r13a9-language-state"><span>操作界面：<b>中文</b></span><span>客户文件：<b data-fp-output-language></b></span></div><p>这里只改变右侧客户文件语言，不改变左侧填写内容。</p>`;
       label.insertAdjacentElement('afterend',card);
     }
     const output=card.querySelector('[data-fp-output-language]');
