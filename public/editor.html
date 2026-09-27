@@ -1397,6 +1397,7 @@
   }
 
   function documentTranslationTarget(){const lang=get('docLanguage');return lang==='bilingual'?'en':lang;}
+  function translationTargetForText(text=''){const lang=get('docLanguage');if(lang!=='bilingual')return lang;return window.HUIDITranslationOwner?.companionLanguage?.(text)||(/[\u3400-\u9fff\uf900-\ufaff]/.test(String(text||''))?'en':'zh');}
   function scopeSetting(){return 'doc';}
   function scopeTargetLanguage(){return documentTranslationTarget();}
   function scopeBilingual(){return get('docLanguage')==='bilingual';}
@@ -3216,26 +3217,39 @@
     return [];
   }
   async function translateRows(fields,{label='当前内容',confirm=true}={}){
-    const target=documentTranslationTarget();
     if(!fields.length){setStatus(label+'没有可翻译的业务描述内容。','error');return{translated:0,total:0};}
-    const outputMode=get('docLanguage')==='bilingual'?'PDF/表格显示原文 + 英文译文':'PDF/表格显示目标语言译文（无译文时安全回退原文）';
+    const docLang=get('docLanguage'),bilingual=docLang==='bilingual';
+    const groups=new Map();
+    fields.forEach(field=>{
+      const target=bilingual?translationTargetForText(field.text):docLang;
+      if(!groups.has(target))groups.set(target,[]);
+      groups.get(target).push(field);
+    });
+    const outputMode=bilingual?'PDF/表格显示原文 + 对向译文（中文→英文；英文→中文）':'PDF/表格显示目标语言译文（无译文时安全回退原文）';
+    const targetLabel=bilingual?'中英双语对向翻译':(targetNames[docLang]||docLang);
     if(confirm){
       const reviewed=isOn('translationReviewed')?'已勾选“我已核对”。':'尚未勾选“我已核对”。';
-      const ok=window.confirm(`${label}将翻译 ${fields.length} 项业务描述为 ${targetNames[target]||target}。\n${outputMode}\n\n${reviewed}\n公司名称、人名、SKU/型号、HS Code、单据编号、金额、银行账号、SWIFT、柜号/封条号等保护字段不会进入自动翻译。`);
+      const ok=window.confirm(`${label}将翻译 ${fields.length} 项业务描述，目标：${targetLabel}。\n${outputMode}\n\n${reviewed}\n公司名称、人名、SKU/型号、HS Code、单据编号、金额、银行账号、SWIFT、柜号/封条号等保护字段不会进入自动翻译。`);
       if(!ok){setStatus('已取消翻译。','');return{translated:0,total:fields.length,cancelled:true};}
     }
     fields.forEach(field=>rememberSource(field.key||field.id,field.text));
-    const result=await requestTranslation(fields,target);
     let translated=0;
-    fields.forEach(field=>{
-      const key=field.key||field.id,value=String(result?.[key]||'').trim();
-      if(value){const record=rememberSource(key,field.text);record.variants[target]=value;translated++;}
-    });
-    if(!translated)throw new Error('联网翻译未返回可用内容；原始填写内容未改变。');
+    const targets=[];
+    for(const [target,rows] of groups){
+      const result=await requestTranslation(rows,target);
+      targets.push(target);
+      rows.forEach(field=>{
+        const key=field.key||field.id,value=String(result?.[key]||'').trim();
+        if(value&&value!==String(field.text||'').trim()){
+          const record=rememberSource(key,field.text);record.variants[target]=value;translated++;
+        }
+      });
+    }
+    if(!translated)throw new Error(bilingual?'当前内容已经接近目标双语状态，未生成新的对向译文。':'联网翻译未返回新的可用内容；原始填写内容未改变。');
     renderPreview();
-    try{document.dispatchEvent(new CustomEvent('HUIDI:translation-updated',{detail:{translated,total:fields.length,target,label}}));}catch(_){}
-    setStatus(`${label}翻译完成：${translated}/${fields.length} 项已收录 ${targetNames[target]||target} 版本；原文保持不变。`,'ok');
-    return{translated,total:fields.length,target};
+    try{document.dispatchEvent(new CustomEvent('HUIDI:translation-updated',{detail:{translated,total:fields.length,targets,label,bilingual}}));}catch(_){}
+    setStatus(`${label}翻译完成：${translated}/${fields.length} 项已生成${bilingual?'中英对向':'目标语言'}译文；原文保持不变。`,'ok');
+    return{translated,total:fields.length,targets,bilingual};
   }
   async function translateAll(){
     const btn=$('translateAllBtn');if(btn){btn.disabled=true;btn.textContent='⏳ 正在翻译…';}
