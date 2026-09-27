@@ -48,6 +48,7 @@ const checks=[
  ['field translate button stays compact',ui.includes('width:auto!important')&&ui.includes('max-width:44px')],
  ['table mode exposes canonical field translate controls',ui.includes("#fpTableEditorWorkspace [data-bind-id]")&&ui.includes('input.dataset.bindId')],
  ['table mode exposes product field translate controls',ui.includes("#fpTableEditorWorkspace [data-item-row][data-item-selector]")&&ui.includes('ITEM_SELECTORS')],
+ ['per-line customs fields use the shared translation owner',ui.includes("customsDescription:'.i-customs-desc'")&&ui.includes("originCountry:'.i-origin-country'")&&tableOutput.includes("'customsDescription','originCountry'")],
  ['table mode exposes custom field translate controls',ui.includes("#fpTableEditorWorkspace [data-custom-field-id]")&&ui.includes("custom:'+id+':value")],
  ['table mode exposes section translate controls',ui.includes('TABLE_SECTION_SECTIONS')&&ui.includes('data-huidi-translate-sections')],
  ['runtime accepts multi-section table translation',editor.includes('const keys=Array.isArray(key)?key:[key]')&&editor.includes('owner.collectSection(section,state)')],
