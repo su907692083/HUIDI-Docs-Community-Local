@@ -1,5 +1,5 @@
 const http=require('http'),https=require('https'),fs=require('fs'),path=require('path'),url=require('url');
-const projectRoot=path.resolve(__dirname,'..'),root=path.resolve(projectRoot,'public'),port=Number(process.env.HUIDI_PORT||8765),host='127.0.0.1';
+const projectRoot=path.resolve(__dirname,'..'),root=path.resolve(projectRoot,'public'),port=Number(process.env.HUIDI_PORT||8765),host=String(process.env.HUIDI_HOST||'127.0.0.1').trim()||'127.0.0.1';
 const configDir=path.join(projectRoot,'config'),feishuConfigPath=path.join(configDir,'feishu.local.json'),translationConfigPath=path.join(configDir,'translation.local.json');
 const mime={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json','.png':'image/png','.jpg':'image/jpeg','.jpeg':'image/jpeg','.webp':'image/webp','.svg':'image/svg+xml','.ico':'image/x-icon','.webmanifest':'application/manifest+json','.xlsx':'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','.pdf':'application/pdf','.csv':'text/csv; charset=utf-8','.txt':'text/plain; charset=utf-8'};
 const clean=v=>String(v??'').trim(),now=()=>new Date().toISOString();
