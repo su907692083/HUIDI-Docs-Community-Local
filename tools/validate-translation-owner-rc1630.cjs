@@ -29,6 +29,8 @@ const checks=[
  ['protected identifiers registry exists',i18n.includes('TRANSLATION_EXCLUDED_FIELDS')],
  ['product translatable fields registered',i18n.includes("name:'products'")&&i18n.includes("spec:'products'")&&i18n.includes("packageDescription:'packing'")&&i18n.includes("shippingMarks:'packing'")],
  ['custom/logistics translation keys registered',i18n.includes('logisticsExtra:')&&i18n.includes('custom:')],
+ ['table custom groups are part of translation sections',i18n.includes("'basic','party','products','delivery','costs'")&&i18n.includes("'logistics','payment','qualityRisk','terms'")],
+ ['table parties custom group aliases to party',i18n.includes("group==='parties'?'party':group")],
  ['PDF/editor resolver delegates to owner',editor.includes("owner.resolve(key,original,get('docLanguage'),translationVersions)")],
  ['structured schema delegates values to owner',schema.includes('owner.resolve(id,text,language)')],
  ['table output field values delegate to owner',table.includes('owner.resolve(id,source,languageMode(snapshot),snapshot.translationVersions)')],
