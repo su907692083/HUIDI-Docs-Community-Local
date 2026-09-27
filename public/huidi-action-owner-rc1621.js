@@ -140,6 +140,8 @@
   function intercept(event){
     const target=event.target;
     if(!target?.closest)return;
+    const tierTarget=target.closest('#tierPricingBtn');
+    if(tierTarget){event.preventDefault();event.stopImmediatePropagation();try{window.HUIDILocalRC15?.openTierPricing?.();}catch(error){console.warn('RC16.21 tier pricing failed',error);status('阶梯价暂时打不开，请刷新后重试。','error');}return;}
     const saveTarget=target.closest('#fpV3321SaveHeader,[data-rc15-action="metadata"],[data-fp-save-document]');
     if(saveTarget){event.preventDefault();event.stopImmediatePropagation();save();return;}
     const checkTarget=target.closest('#huidiLocalCheckHeader,[data-fp-check-document],[data-fp-check],[data-fp-qf-bottom="check"]');
