@@ -136,7 +136,7 @@ async def _company_search_with_failover(req: LeadSearchRequest) -> tuple[str, li
 def _persist_company_results(req: LeadSearchRequest, raw: list[dict[str, Any]], provider: str) -> JSONResponse:
     db = SessionLocal()
     try:
-        created: list[Lead] = []
+        ranked: list[dict[str, Any]] = []
         seen_domains: set[str] = set()
         for item in raw:
             link = str(item.get("link") or "")
@@ -144,18 +144,45 @@ def _persist_company_results(req: LeadSearchRequest, raw: list[dict[str, Any]], 
             if not domain or domain in seen_domains or _host_excluded(domain):
                 continue
             seen_domains.add(domain)
-            existing = db.scalar(select(Lead).where(Lead.domain == domain))
             score, reason, breakdown, level = score_search_result(
                 item,
                 product_keyword=req.product_keyword,
                 buyer_type=req.buyer_type,
                 country=req.country,
             )
+            ranked.append({
+                "item": item,
+                "domain": domain,
+                "score": score,
+                "reason": reason,
+                "breakdown": breakdown,
+                "level": level,
+                "search_score": float(item.get("search_score") or 0),
+            })
+
+        ranked.sort(key=lambda row: (row["score"], row["search_score"]), reverse=True)
+        created: list[Lead] = []
+        considered = ranked[: max(req.limit * 4, req.limit)]
+
+        for row in considered:
+            item = row["item"]
+            domain = row["domain"]
+            score = row["score"]
+            reason = row["reason"]
+            breakdown = row["breakdown"]
+            level = row["level"]
+            link = str(item.get("link") or "")
             evidence = {
-                "title": item.get("title"), "url": link, "snippet": item.get("snippet", ""),
-                "source": "online_company_search", "provider": provider,
-                "score_breakdown": breakdown, "priority": level,
+                "title": item.get("title"),
+                "url": link,
+                "snippet": item.get("snippet", ""),
+                "source": "online_company_search",
+                "provider": provider,
+                "query_route": item.get("query_route", ""),
+                "score_breakdown": breakdown,
+                "priority": level,
             }
+            existing = db.scalar(select(Lead).where(Lead.domain == domain))
             if existing:
                 existing.evidence_json = merge_evidence(existing.evidence_json, [evidence])
                 if score > existing.score:
@@ -166,24 +193,49 @@ def _persist_company_results(req: LeadSearchRequest, raw: list[dict[str, Any]], 
                     existing.country = req.country or existing.country
                     existing.updated_at = datetime.now(timezone.utc)
                 continue
+            if len(created) >= req.limit:
+                continue
             lead = Lead(
                 company_name=(str(item.get("title") or domain).split("|")[0].strip() or domain)[:255],
-                domain=domain, website=link, country=req.country, market_keyword=req.product_keyword,
-                buyer_type=req.buyer_type, score=score, reason=reason,
+                domain=domain,
+                website=link,
+                country=req.country,
+                market_keyword=req.product_keyword,
+                buyer_type=req.buyer_type,
+                score=score,
+                reason=reason,
                 evidence_json=merge_evidence("[]", [evidence]),
             )
-            db.add(lead); db.flush()
+            db.add(lead)
+            db.flush()
             add_activity(
-                db, lead.id, "discovered", "发现潜在客户", f"优先级 {level} · 匹配分 {score}",
-                {"breakdown": breakdown, "source": "online_company_search", "provider": provider},
+                db,
+                lead.id,
+                "discovered",
+                "发现潜在客户",
+                f"优先级 {level} · 匹配分 {score}",
+                {
+                    "breakdown": breakdown,
+                    "source": "online_company_search",
+                    "provider": provider,
+                    "query_route": item.get("query_route", ""),
+                    "industry": req.industry,
+                    "category": req.category,
+                    "hs_code": req.hs_code,
+                },
             )
             created.append(lead)
-            if len(created) >= req.limit:
-                break
+
         db.commit()
         for lead in created:
             db.refresh(lead)
-        return JSONResponse({"mode": "live", "provider": provider, "items": [lead_to_dict(x, db) for x in created]})
+        return JSONResponse({
+            "mode": "live",
+            "provider": provider,
+            "items": [lead_to_dict(x, db) for x in created],
+            "ranked_candidates": len(ranked),
+            "query_fanout": len({str(x["item"].get("query_route") or "") for x in ranked if x["item"].get("query_route")}),
+        })
     except Exception:
         db.rollback()
         return JSONResponse({"detail": "真实客户结果已经返回，但保存时没有成功，请稍后再试"}, status_code=500)
