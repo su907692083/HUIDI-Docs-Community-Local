@@ -5,7 +5,7 @@ const read=p=>fs.readFileSync(path.join(root,p),'utf8');
 const editor=read('public/editor.html');
 const i18n=read('public/huidi-doc-i18n-rc164.js');
 const schema=read('public/flypigbox-document-schema.js');
-const localMode=read('public/community-local-mode.js')+'\n'+read('public/community-local-mode.css');
+const localMode=read('public/community-local-mode.js')+'\n'+read('public/community-local-mode.css');\nconst translationOwner=read('public/huidi-doc-i18n-rc164.js');
 const tableOutput=read('public/flypigbox-editor-table-output.js');
 const localServer=read('tools/local-server.cjs');
 
@@ -33,7 +33,7 @@ hasSection?pass('section translation implementation exists'):note('section trans
 hasSingle?pass('single-field translation implementation exists'):note('single-field translation implementation missing');
 
 const collect=(editor.match(/function collectScopeFields\(scope\)\{[\s\S]*?return fields;\n  \}/)||[''])[0];
-const currentScopes=['party','products','logistics','payment','terms'].filter(x=>collect.includes("scope==='"+x+"'"));
+const currentScopes=['party','products','delivery','paymentSchedule','customs','packing','plannedLogistics','actualShipment','payment','qualityRisk','terms'].filter(x=>collect.includes("'"+x+"'"));
 console.log('[TRANSLATION-AUDIT] INFO: full-document collector scopes = '+currentScopes.join(', '));
 ['delivery','paymentSchedule','customs','packing','actualShipment','qualityRisk'].forEach(x=>{
   if(!collect.includes("scope==='"+x+"'"))note('structured section not explicitly collected for business translation: '+x);
