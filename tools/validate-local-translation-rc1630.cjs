@@ -28,7 +28,7 @@ const checks=[
  ['browser Local translation uses same-origin API',editor.includes("fetch('/api/translation/translate'")],
  ['Local translation payload uses canonical key',editor.includes("id:x.key||x.id")],
  ['whole-document translation uses translation owner',editor.includes("owner.collectDocument(state)")],
- ['section translation uses translation owner',editor.includes("owner.collectSection(key,state)")],
+ ['section translation uses translation owner',editor.includes("owner.collectSection(key,state)")||editor.includes("owner.collectSection(section,state)")],
  ['single-field translation uses translation owner',editor.includes("owner.collectField(key,state)")],
  ['bilingual translation groups by opposite target',editor.includes('function translationTargetForText')&&editor.includes('const groups=new Map()')],
  ['field translation gives visible completion feedback',ui.includes("'已译'")&&ui.includes("'重试'")],
