@@ -178,7 +178,7 @@
     const translationVersions={...(state.translationVersions||{})},language=clean(fields.docLanguage)||'bilingual',owner=window.HUIDITranslationOwner;
     const items = Array.isArray(state.items) ? state.items.map((item,index) => {
       const next={...item},itemKey=item.itemKey||item.id||String(index);
-      ['name','spec','packageDescription','shippingMarks'].forEach(field=>{if(owner?.resolve)next[field]=owner.resolve(`item:${itemKey}:${field}`,item[field],language,translationVersions);});
+      ['name','spec','customsDescription','originCountry','packageDescription','shippingMarks'].forEach(field=>{if(owner?.resolve)next[field]=owner.resolve(`item:${itemKey}:${field}`,item[field],language,translationVersions);});
       return next;
     }) : [];
     const type = fields.documentType || 'proforma_invoice';
@@ -190,7 +190,7 @@
     return owner?.resolve?clean(owner.resolve(id,source,languageMode(snapshot),snapshot.translationVersions)):source;
   }
   function meaningfulItems(snapshot) {
-    return snapshot.items.filter(item => clean(item.sku) || clean(item.name) || clean(item.spec) || item.image || num(item.qty) || num(item.price) || num(item.cbm) || clean(item.cartonNo));
+    return snapshot.items.filter(item => clean(item.sku) || clean(item.customerItemNo) || clean(item.name) || clean(item.spec) || clean(item.customsDescription) || clean(item.originCountry) || item.image || num(item.qty) || num(item.price) || num(item.cbm) || clean(item.cartonNo));
   }
 
   function logisticsExtras(snapshot) {
@@ -308,7 +308,8 @@
     return {
       items,packing,hasMoney,
       image:tableProductColumnAllowed(snapshot,'image')&&fieldSwitchOn(snapshot,'showProductImage')&&items.some(item=>clean(item?.image)),
-      sku:tableProductColumnAllowed(snapshot,'sku')&&anyText('sku'),spec:tableProductColumnAllowed(snapshot,'spec')&&anyText('spec'),
+      sku:tableProductColumnAllowed(snapshot,'sku')&&anyText('sku'),customerItemNo:tableProductColumnAllowed(snapshot,'customerItemNo')&&anyText('customerItemNo'),spec:tableProductColumnAllowed(snapshot,'spec')&&anyText('spec'),
+      customsDescription:tableProductColumnAllowed(snapshot,'customsDescription')&&anyText('customsDescription'),originCountry:tableProductColumnAllowed(snapshot,'originCountry')&&anyText('originCountry'),
       hs:tableProductColumnAllowed(snapshot,'hs')&&fieldSwitchOn(snapshot,'showHsCode')&&anyText('hs'),
       moq:tableProductColumnAllowed(snapshot,'moq')&&['quotation','proforma_invoice'].includes(snapshot.type)&&fieldSwitchOn(snapshot,'showMoq')&&anyNumber('moq'),
       cartonNo:tableProductColumnAllowed(snapshot,'cartonNo')&&anyText('cartonNo'),
@@ -326,8 +327,11 @@
     const columns=[{key:'no',label:'序号 / No.',width:7}];
     if(flags.image)columns.push({key:'image',label:'产品图片 / Image',width:13,image:true});
     if(flags.sku)columns.push({key:'sku',label:'货号 / SKU',width:16});
+    if(flags.customerItemNo)columns.push({key:'customerItemNo',label:'客户货号 / Customer Item No.',width:17});
     if(tableProductColumnAllowed(snapshot,'name'))columns.push({key:'name',label:'商品名称 / Product',width:24});
     if(flags.spec)columns.push({key:'spec',label:'规格 / Specifications',width:30});
+    if(snapshot.type==='commercial_invoice'&&flags.customsDescription)columns.push({key:'customsDescription',label:'清关品名 / Customs Description',width:22});
+    if(snapshot.type==='commercial_invoice'&&flags.originCountry)columns.push({key:'originCountry',label:'原产国 / Origin',width:13});
     if(flags.hs)columns.push({key:'hs',label:'HS Code',width:14});
     if(packing){
       if(flags.cartonNo)columns.push({key:'cartonNo',label:'箱号 / Carton No.',width:14});
@@ -350,7 +354,7 @@
 
   function dataProductColumns(snapshot) {
     const columns = [
-      {key:'no',label:'No.',width:7},{key:'sku',label:'SKU / Item No.',width:16},{key:'name',label:'Product Name',width:24},{key:'spec',label:'Specifications',width:30},{key:'hs',label:'HS Code',width:14},
+      {key:'no',label:'No.',width:7},{key:'sku',label:'SKU / Item No.',width:16},{key:'customerItemNo',label:'Customer Item No.',width:18},{key:'name',label:'Product Name',width:24},{key:'spec',label:'Specifications',width:30},{key:'customsDescription',label:'Customs Description',width:22},{key:'originCountry',label:'Origin Country',width:14},{key:'hs',label:'HS Code',width:14},
       {key:'unit',label:'Unit',width:10},{key:'qty',label:'Quantity',width:11,numeric:true},{key:'moq',label:'MOQ',width:11}
     ];
     if (!snapshot.packing) columns.push({key:'price',label:'Unit Price',width:14,numeric:true},{key:'amount',label:'Amount',width:15,numeric:true,formula:true});
