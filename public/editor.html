@@ -633,16 +633,16 @@
           <div class="paste-actions"><button class="btn primary" id="parseBuyerBtn" type="button">识别并自动填充</button><button class="btn ghost" id="clearBuyerPasteBtn" type="button">清空文本</button></div>
         </details>
         <div class="customer-tools">
-          <button class="btn primary" id="verifyCustomerBtn" type="button">🔎 核验客户与收货信息</button>
-          <button class="btn secondary" id="openMapsBtn" type="button">📍 Google Maps 地址检索</button>
+          <button class="btn primary" id="verifyCustomerBtn" type="button">核对客户资料</button>
+          <button class="btn secondary" id="openMapsBtn" type="button">查地图地址</button>
         </div>
-        <p class="subhint">核验入口仅帮助搜集公开信息，不构成真假客户或信用能力的结论；点击后搜索信息会由相应第三方平台接收。</p>
+        <p class="subhint">用于辅助核对公司与地址；正式合作前仍请人工确认。</p>
       </section>
 
       <section class="card">
-        <div class="section-title"><h2>商品明细</h2><div class="section-actions"><button class="btn secondary" id="tierPricingBtn" type="button">阶梯报价</button><button class="btn secondary" id="packingAssistantBtn" type="button">装箱助手</button><button class="btn secondary" id="addItemBtn" type="button">＋ 添加商品</button></div></div>
-        <p class="hint">海关编码、单位和产品图片可按需显示在 PI 中。商品名称、规格和描述由你自行填写与核对；页首“单据语言”主要控制固定标题与表头输出。</p>
-        <p class="section-translation-note">翻译与 PDF 单语 / 双语输出统一跟随页首“单据语言”。仅翻译商品名称、规格与附加费用名称；型号、SKU、HS Code、单位、数量、单价、金额与品牌保持原样。</p>
+        <div class="section-title"><h2>商品与金额</h2><div class="section-actions"><button class="btn secondary" id="tierPricingBtn" type="button">阶梯价</button><button class="btn secondary" id="packingAssistantBtn" type="button">装箱助手</button><button class="btn secondary" id="addItemBtn" type="button">＋ 添加商品</button></div></div>
+        <p class="hint">先填商品名称、数量和单价；货号、图片、HS、装箱等需要时再补。</p>
+        <p class="section-translation-note">客户文件需要外语时再使用翻译；货号、数量、金额等不会被翻译。</p>
         <div id="itemList" class="items"></div>
         <div class="summary-inputs grid three">
           <label>附加费用名称<input id="extraFeeName" value="运费 / Freight" placeholder="例如：海运费、保险费；未填金额不显示"></label>
@@ -777,16 +777,16 @@
     <aside class="preview-shell" id="previewShell">
       <div class="preview-toolbar">
         <div class="preview-toolbar-row preview-toolbar-primary">
-          <strong>📄 单据预览</strong>
+          <strong>客户文件预览</strong>
           <span class="edit-hint" title="字段与签章实时显示">预览实时同步</span>
           <div class="paper-layout-compact" id="paperLayoutCompact" aria-label="纸张版式">
-            <span>纸张版式</span>
+            <span>纸张</span>
             <div class="paper-segment" role="group" aria-label="选择纸张版式">
-              <button type="button" data-paper-choice="auto" title="跟随当前 PDF 样式模板的默认纸张方向">自动适配</button>
+              <button type="button" data-paper-choice="auto" title="跟随当前 PDF 样式模板的默认纸张方向">自动</button>
               <button type="button" data-paper-choice="portrait" title="A4 竖版，适合少量商品和正式合同">竖版</button>
               <button type="button" data-paper-choice="landscape" title="A4 横版，适合多列商品、物流和装箱数据">横版</button>
             </div>
-            <small id="paperSpecStatus">当前：A4 竖版 · 210 × 297 mm</small>
+            <small id="paperSpecStatus">A4 竖版</small>
           </div>
         </div>
         <div class="preview-toolbar-row preview-toolbar-actions">
@@ -830,12 +830,12 @@
 
 <template id="itemTemplate">
   <div class="item-row">
-    <label class="i-image-field">产品图片<span class="file-input"><span class="file-chip">上传</span><span class="file-name">未选</span><input class="i-file" type="file" accept="image/png,image/jpeg,image/webp"></span></label>
-    <label class="i-sku-field">货号 / SKU<input class="i-sku" placeholder="例如：SKU、货号、产品编码"></label>
+    <label class="i-image-field">商品图片<span class="file-input"><span class="file-chip">上传</span><span class="file-name">未选</span><input class="i-file" type="file" accept="image/png,image/jpeg,image/webp"></span></label>
+    <label class="i-sku-field">货号<input class="i-sku" placeholder="例如：SKU、货号、产品编码"></label>
     <label>商品名称<input class="i-name" placeholder="例如：填写产品名称；可录入中英双语"></label>
-    <label>规格 / 描述<input class="i-spec" placeholder="例如：填写型号、材质、尺寸等规格"></label>
-    <label class="i-hs-field">海关编码（HS Code）<input class="i-hs" placeholder="例如：填写海关编码"></label>
-    <label>单位<select class="i-unit"><option>PCS</option><option>SET</option><option>CTN</option><option>KG</option><option>PAIR</option><option>ROLL</option><option>LOT</option></select></label>
+    <label>规格 / 型号<input class="i-spec" placeholder="例如：填写型号、材质、尺寸等规格"></label>
+    <label class="i-hs-field">HS 编码<input class="i-hs" placeholder="例如：填写海关编码"></label>
+    <label>单位<select class="i-unit"><option value="PCS">PCS 件</option><option value="SET">SET 套</option><option value="CTN">CTN 箱</option><option value="KG">KG 千克</option><option value="PAIR">PAIR 对</option><option value="ROLL">ROLL 卷</option><option value="LOT">LOT 批</option></select></label>
     <label>数量<input class="i-qty" type="number" min="0" step="0.01" value="1"></label>
     <input class="i-moq" type="hidden" value="">
     <label class="i-price-field">单价<input class="i-price" type="number" min="0" step="0.01" value="0"></label>
@@ -4008,7 +4008,7 @@
     qsa('[data-optional-section]').forEach(section=>section.classList.toggle('is-hidden',!docFieldOn(section.dataset.optionalSection)));
     syncBoundEditorFields();
     const hideMoney=getDocumentType()==='packing_list';
-    const tierPricing=$('tierPricingBtn');if(tierPricing)tierPricing.hidden=getDocumentType()!=='quotation';const packingAssistant=$('packingAssistantBtn');if(packingAssistant)packingAssistant.hidden=!(getDocumentType()==='packing_list'||isDetailedDocMode()||docFieldOn('showLogistics'));
+    const tierPricing=$('tierPricingBtn');if(tierPricing)tierPricing.hidden=getDocumentType()!=='quotation';const packingAssistant=$('packingAssistantBtn');if(packingAssistant)packingAssistant.hidden=!(getDocumentType()==='packing_list'||isDetailedDocMode());
     qsa('.item-row').forEach(row=>{const hasTradeExtra=['.i-customer-item-no','.i-customs-desc','.i-origin-country'].some(sel=>String(row.querySelector(sel)?.value||'').trim());const showTradeExtra=getDocumentType()==='commercial_invoice'||getDocumentType()==='packing_list'||isDetailedDocMode()||hasTradeExtra;row.classList.toggle('packing-mode',getDocumentType()==='packing_list');row.classList.toggle('hide-hs',!docFieldOn('showHsCode'));row.classList.remove('hide-image');row.classList.toggle('hide-money',hideMoney);row.classList.remove('hide-moq');row.classList.toggle('hide-trade-extra',!showTradeExtra);});
   }
   function applyDocumentProfile(type,{silent=false}={}){
