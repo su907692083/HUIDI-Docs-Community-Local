@@ -2061,7 +2061,7 @@
       ...(docFieldOn('showPayment')?[[docLabel('paymentTerms'),ctx.paymentTermsValue]]:[]),
       ...(docFieldOn('showTerms')?[[docLabel('deliveryTerms'),translatedDisplay('terms','deliveryTime',get('deliveryTime'))],[docLabel('incoterms'),get('tradeTerms')]]:[]),
       ...(docFieldOn('showRemarks')?[[docLabel('remarks'),translatedDisplay('terms','remarks',get('remarks'))]]:[]),
-      ...(pdfHasValue(get('contractClauses'))?[[docLabel('additionalClauses'),get('contractClauses')]]:[])
+      ...(pdfHasValue(get('contractClauses'))?[[docLabel('additionalClauses'),translatedDisplay('terms','contractClauses',get('contractClauses'))]]:[])
     ];
     const termsSection=pdfSection(docLabel('contractArticles'),pdfInfoTable(contractTerms),'pdf-contract-terms');
     const total=ctx.showMoneyTable?`<table class="money-table pdf-contract-total"><tbody>${ctx.totalRows}</tbody></table>`:'';
@@ -3209,11 +3209,19 @@
     const owner=window.HUIDITranslationOwner,state=formState(false);
     if(owner){
       if(kind==='document')return owner.collectDocument(state);
-      if(kind==='section')return owner.collectSection(key,state);
+      if(kind==='section'){
+        const keys=Array.isArray(key)?key:[key],seen=new Set(),rows=[];
+        keys.filter(Boolean).forEach(section=>owner.collectSection(section,state).forEach(row=>{const id=row.key||row.id;if(!seen.has(id)){seen.add(id);rows.push(row)}}));
+        return rows;
+      }
       if(kind==='field'){const row=owner.collectField(key,state);return row?[row]:[];}
     }
     if(kind==='document')return Object.keys(SCOPE_META).flatMap(scope=>collectScopeFields(scope));
-    if(kind==='section')return collectScopeFields(key);
+    if(kind==='section'){
+      const keys=Array.isArray(key)?key:[key],seen=new Set(),rows=[];
+      keys.filter(Boolean).forEach(section=>collectScopeFields(section).forEach(row=>{const id=row.key||row.id;if(!seen.has(id)){seen.add(id);rows.push(row)}}));
+      return rows;
+    }
     return [];
   }
   async function translateRows(fields,{label='当前内容',confirm=true}={}){
@@ -5474,8 +5482,8 @@
 <div class="editor-legal-links" aria-label="法律与数据说明"><a href="./privacy.html">隐私政策</a><a href="./terms.html">用户协议</a><a href="./refund-policy.html">退款政策</a><a href="./data-deletion.html">数据删除</a><a href="./security.html">安全说明</a></div>
 <script src="./flypigbox-v2-4-hardening.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-trade-factory-upgrade.js?v=20260720-v3-3-5-2-4"></script>
-<script src="./huidi-doc-i18n-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.2"></script>
-<script src="./huidi-local-translation-ui-rc1630.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.3"></script>
+<script src="./huidi-doc-i18n-rc164.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.4"></script>
+<script src="./huidi-local-translation-ui-rc1630.js?v=HUIDI-DOCS-COMMUNITY-LOCAL-1.2.0-RC16.30.4"></script>
 <script src="./flypigbox-editor-table-view.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-xlsx-lite.js?v=20260719-v3-3-3-0"></script>
 <script src="./flypigbox-smart-sheet-import.js?v=20260719-v3-3-3-0"></script>
