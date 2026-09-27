@@ -5,6 +5,8 @@ import re
 from typing import Any
 from urllib.parse import urlparse
 
+from .global_market_targeting import market_alias_terms
+
 
 BUYER_WORDS = {
     "buyer",
@@ -107,7 +109,8 @@ def score_search_result(
         buyer_score = min(22.0, 12.0 + 3.0 * len(set(buyer_hits)))
 
     market_score = 0.0
-    if country and country.lower() in text:
+    market_terms = [x.lower() for x in market_alias_terms(country) if x and len(x.strip()) >= 2]
+    if market_terms and any(term in text for term in market_terms):
         market_score = 10.0
 
     purchase_score = 0.0
