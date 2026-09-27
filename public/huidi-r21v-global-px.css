@@ -1,0 +1,151 @@
+/* R21V — global PX baseline, mail owner closure, context cleanup */
+body.huidi-community-online{
+  --hv-page-x:20px;
+  --hv-page-y:16px;
+  --hv-gap-xs:6px;
+  --hv-gap-sm:8px;
+  --hv-gap-md:12px;
+  --hv-input-h:36px;
+  --hv-btn-h:34px;
+  --hv-btn-main-h:36px;
+  --hv-tab-h:34px;
+  --hv-r-input:8px;
+  --hv-r-card:10px;
+  --hv-border:#dbe4ee;
+  --hv-bg:#fff;
+  --hv-soft:#f8fafc;
+  --hv-text:#2f4966;
+  --hv-muted:#738397;
+  --hv-content:1280px;
+  --hv-form:1080px;
+}
+body.huidi-community-online .main{
+  padding:var(--hv-page-y) var(--hv-page-x) 28px!important;
+}
+body.huidi-community-online .main>.view>.section-head{
+  margin:0 0 var(--hv-gap-sm)!important;
+  min-height:44px!important;
+}
+body.huidi-community-online .main>.view>.section-head h3{
+  font-size:20px!important;line-height:1.2!important;
+}
+body.huidi-community-online .main>.view>.section-head p{
+  margin-top:3px!important;font-size:11px!important;line-height:1.45!important;color:var(--hv-muted)!important;
+}
+body.huidi-community-online .fv2-tabs{
+  gap:var(--hv-gap-xs)!important;margin:0 0 var(--hv-gap-sm)!important;padding-bottom:8px!important;
+}
+body.huidi-community-online .fv2-tab{
+  min-height:var(--hv-tab-h)!important;height:var(--hv-tab-h)!important;
+  padding:0 11px!important;border-radius:7px!important;font-size:11px!important;
+}
+body.huidi-community-online :is(.fv2-input,.fv2-select,.hs-field input,.hs-field select,.hdw-field input,.sq-field input,.sq-field select,.r21-combo-input){
+  min-height:var(--hv-input-h)!important;height:var(--hv-input-h)!important;
+  border-radius:var(--hv-r-input)!important;border-color:var(--hv-border)!important;
+  padding:0 10px!important;font-size:12px!important;box-sizing:border-box!important;
+}
+body.huidi-community-online :is(.fv2-textarea,.hs-field textarea,.hdw-field textarea,.sq-field textarea){
+  min-height:84px!important;border-radius:var(--hv-r-input)!important;border-color:var(--hv-border)!important;
+  padding:8px 10px!important;font-size:12px!important;box-sizing:border-box!important;
+}
+body.huidi-community-online :is(.fv2-btn,.hs-btn,.btn,.hcwr-shortcuts button,.hqc-trigger){
+  min-height:var(--hv-btn-h)!important;border-radius:var(--hv-r-input)!important;padding:0 10px!important;font-size:11px!important;
+}
+body.huidi-community-online :is(.fv2-btn.primary,.hs-btn.primary,.btn.primary){
+  min-height:var(--hv-btn-main-h)!important;
+}
+body.huidi-community-online :is(.fv2-panel,.hs-card,.sq-card,.hdw-card,.hcwr-intro,.hcwr-mail-setup){
+  border-radius:var(--hv-r-card)!important;box-shadow:none!important;
+}
+body.huidi-community-online :is(.fv2-panel,.hs-card,.sq-card,.hdw-card){padding:12px!important}
+body.huidi-community-online :is(.fv2-grid,.hs-grid,.sq-grid,.hdw-grid){gap:var(--hv-gap-sm)!important}
+
+/* context is useful only in acquisition / market work, not mailbox management */
+body.huidi-community-online[data-huidi-view="mail"] .htf-context,
+body.huidi-community-online #view-mail .htf-context{display:none!important}
+body.huidi-community-online .htf-context{
+  min-height:38px!important;margin:0 0 8px!important;padding:6px 9px!important;border-radius:8px!important;box-shadow:none!important;
+}
+body.huidi-community-online .htf-context em{font-size:10.5px!important;padding:3px 7px!important}
+body.huidi-community-online .htf-context button{min-height:28px!important;padding:0 6px!important}
+
+/* customer communication: one stable width and one owner */
+body.huidi-community-online #view-mail>.fv2-panes,
+body.huidi-community-online #view-mail>.fv2-panes>.fv2-pane.active{
+  width:100%!important;max-width:var(--hv-content)!important;margin-left:0!important;margin-right:auto!important;
+}
+body.huidi-community-online #view-mail :is(#huidiServiceBack.hs-page-surface,#huidiServiceMain,.hs-main){
+  width:100%!important;max-width:none!important;min-width:0!important;
+}
+body.huidi-community-online #view-mail #huidiServiceMain>.hs-card{
+  width:100%!important;max-width:none!important;box-sizing:border-box!important;
+}
+body.huidi-community-online #view-mail [data-fv2-pane="inbox"].active .hcwr-mail-setup,
+body.huidi-community-online #view-mail [data-fv2-pane="sent"].active .hcwr-mail-setup,
+body.huidi-community-online #view-mail [data-fv2-pane="base"].active .hcwr-mail-setup,
+body.huidi-community-online #view-mail [data-fv2-pane="queue"].active .hcwr-mail-setup,
+body.huidi-community-online #view-mail [data-fv2-pane="sequences"].active .hcwr-mail-setup{
+  display:none!important;
+}
+body.huidi-community-online #view-mail [data-fv2-pane="mailbox"].active #huidiServiceMain{
+  width:min(100%,980px)!important;
+}
+body.huidi-community-online #view-mail [data-fv2-pane="mailbox"].active .hs-card{
+  width:100%!important;max-width:none!important;
+}
+body.huidi-community-online #view-mail .r21v-mail-zero{
+  min-height:88px!important;max-height:112px!important;
+}
+body.huidi-community-online #view-mail .r21v-mail-zero .hs-empty{
+  min-height:72px!important;padding:18px 10px!important;display:grid!important;place-content:center!important;text-align:center!important;
+}
+body.huidi-community-online #view-mail .r21v-hide-zero-pagination{display:none!important}
+
+/* sequence zero state: compact right side instead of a large vacant panel */
+body.huidi-community-online #view-mail #sqBack.sq-page-surface.r21v-sequence-zero .sq-grid{
+  grid-template-columns:minmax(0,1fr) 280px!important;
+}
+body.huidi-community-online #view-mail #sqBack.sq-page-surface.r21v-sequence-zero .sq-grid>.sq-card:last-child{
+  min-height:118px!important;max-height:150px!important;padding:10px!important;align-self:start!important;
+}
+body.huidi-community-online #view-mail #sqBack.sq-page-surface.r21v-sequence-zero .sq-grid>.sq-card:last-child .sq-empty{
+  min-height:64px!important;padding:10px!important;
+}
+
+/* task dialog: tighter, selected state must be obvious */
+body.huidi-community-online .htf-dialog{
+  width:min(720px,calc(100vw - 32px))!important;border-radius:14px!important;
+}
+body.huidi-community-online .htf-dialog-head{padding:14px 16px!important}
+body.huidi-community-online .htf-block{padding:12px 16px!important}
+body.huidi-community-online .htf-choice-grid{gap:8px!important}
+body.huidi-community-online .htf-choice{padding:9px 10px!important;border-radius:8px!important}
+body.huidi-community-online .htf-choice.active{
+  border-color:#4c8bd8!important;background:#eef6ff!important;box-shadow:inset 3px 0 #2f78d1!important;
+}
+body.huidi-community-online .htf-chips{gap:6px!important}
+body.huidi-community-online .htf-chips button{
+  min-height:32px!important;padding:0 10px!important;border-radius:999px!important;
+}
+body.huidi-community-online .htf-footer{padding:11px 16px!important}
+body.huidi-community-online .htf-footer .primary{min-height:36px!important}
+
+/* semantic field widths */
+body.huidi-community-online :is(#hfCountry,#hsTradeCountry,#hsTariffDest,#hsTariffOrigin,#hsShipOrigin,#hsShipDest,#fv2Country){max-width:460px!important}
+body.huidi-community-online :is(#hsFxBase,#hsFxQuote,#fv2BankCurrency,#hbCurrency){max-width:180px!important}
+body.huidi-community-online :is(#hfHsCode,#hsTariffCode){max-width:260px!important}
+body.huidi-community-online :is(#hsShipDate,#fv2FollowupDate){max-width:220px!important}
+body.huidi-community-online :is(#hsShipContainer){max-width:180px!important}
+body.huidi-community-online :is(#hfBuyerType,#hsMapBuyer){max-width:360px!important}
+
+/* compact option menus */
+body.huidi-community-online .hqc-menu{
+  max-width:min(460px,calc(100vw - 20px))!important;max-height:280px!important;border-radius:9px!important;
+  box-shadow:0 12px 28px rgba(31,54,82,.14)!important;
+}
+body.huidi-community-online .hqc-menu [role="option"]{min-height:34px!important;padding:7px 9px!important;font-size:11.5px!important}
+
+@media(max-width:900px){
+  body.huidi-community-online{--hv-page-x:14px}
+  body.huidi-community-online #view-mail #sqBack.sq-page-surface.r21v-sequence-zero .sq-grid{grid-template-columns:1fr!important}
+}
