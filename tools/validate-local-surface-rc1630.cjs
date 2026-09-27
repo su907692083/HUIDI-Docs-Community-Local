@@ -41,7 +41,7 @@ const checks=[
   ['Local translation controls are not runtime-hidden',!mode.includes("'headerTranslateBtn','translateAllBtn'")&&!mode.includes("'translateAllBtn','fp-ai-widget'")],
   ['low-frequency toolbar controls move to More',css.includes('#huidiLocalCheckHeader')&&css.includes('#fpV3321FieldsHeader')&&css.includes('#fpV3325LayoutHeader')&&localEditor.includes('data-rc15-action="fields"')&&localEditor.includes('data-rc15-action="layout"')],
   ['trade toolbar keeps low-frequency mode template and sync out of sight',toolbarCss.includes('#huidiMasterSyncHeader')&&toolbarCss.includes('#fpV3321TemplateHeader')&&toolbarCss.includes('#fpV3321ModeHeader:not([data-fp-a13-formal])')],
-  ['workspace naming matches user tasks',quickResult.includes('>表单填写</button>')&&quickResult.includes('>表格工作台</button>')&&!quickResult.includes('>PDF 单据</button>')],
+  ['workspace naming matches user tasks',quickResult.includes('>表单填写</button>')&&quickResult.includes('>表格填写</button>')&&!quickResult.includes('>PDF 单据</button>')&&!quickResult.includes('>表格工作台</button>')],
   ['field density choices live in More',quickResult.includes('data-lite-action="mode-common"')&&quickResult.includes('data-lite-action="mode-full"')&&quickResult.includes('常用字段')&&quickResult.includes('完整字段')],
   ['quotation mode copy no longer says quick/full quotation',schema.includes("label:'常用字段'")&&schema.includes("label:'完整字段'")&&!schema.includes("label:'快速报价'")&&!schema.includes("label:'完整报价'")],
   ['quotation buyer company is advisory',syncCore.includes("if(t==='quotation')add(warnings,'buyer'")&&syncCore.includes("else add(blocks,'buyer'")],
