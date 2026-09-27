@@ -49,13 +49,13 @@ function ensureSectionButtons(){
 }
 function appendFieldButton(input,key){
  if(!input||!key||input.disabled||input.readOnly)return;
- const api=owner();if(!api)return;
+ const api=owner(),rt=runtime();if(!api||!rt)return;
  const row=api.collectField(key,state());if(!row)return;
  const label=input.closest('label')||input.parentElement;if(!label||label.querySelector('[data-huidi-translate-field="'+CSS.escape(key)+'"]'))return;
  const btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-field';btn.dataset.huidiTranslateField=key;btn.textContent='译';btn.title='只翻译这个字段';input.insertAdjacentElement('afterend',btn);
 }
 function ensureFieldButtons(){
- const api=owner();if(!api)return;
+ const api=owner(),rt=runtime();if(!api||!rt)return;
  Object.keys(api.fieldSections||{}).forEach(id=>appendFieldButton($(id),id));
  qsa('.item-row').forEach((row,index)=>{
    const itemKey=row.dataset.itemKey||state().items?.[index]?.itemKey||String(index);
@@ -68,15 +68,24 @@ function ensureFieldButtons(){
  });
 }
 function sync(){prepareMainButton();ensureSectionButtons();ensureFieldButtons()}
+function requireRuntime(method){
+ const rt=runtime();
+ if(!rt||typeof rt[method]!=='function')throw new Error('翻译组件尚未准备好，请刷新页面后重试。');
+ return rt;
+}
+function reportTranslationError(error){
+ const message=error?.message||'翻译暂不可用，请稍后重试。';
+ window.FlypigBOXApp?.setStatus?.(message,'error');
+}
 async function runButton(btn,work){
  if(!btn||btn.disabled)return;const old=btn.textContent;btn.disabled=true;btn.textContent='翻译中…';
  try{const result=await work();btn.textContent=result?.translated>0?'已译':(result?.error?'重试':'无变化');}
- catch(_){btn.textContent='重试';}
+ catch(error){btn.textContent='重试';reportTranslationError(error);}
  finally{btn.disabled=false;setTimeout(()=>{btn.textContent=old;sync();},1400)}
 }
 document.addEventListener('click',event=>{
- const section=event.target.closest('[data-huidi-translate-section]');if(section){event.preventDefault();event.stopPropagation();return runButton(section,()=>runtime()?.translateSection?.(section.dataset.huidiTranslateSection))}
- const field=event.target.closest('[data-huidi-translate-field]');if(field){event.preventDefault();event.stopPropagation();return runButton(field,()=>runtime()?.translateField?.(field.dataset.huidiTranslateField))}
+ const section=event.target.closest('[data-huidi-translate-section]');if(section){event.preventDefault();event.stopImmediatePropagation();return runButton(section,()=>requireRuntime('translateSection').translateSection(section.dataset.huidiTranslateSection))}
+ const field=event.target.closest('[data-huidi-translate-field]');if(field){event.preventDefault();event.stopImmediatePropagation();return runButton(field,()=>requireRuntime('translateField').translateField(field.dataset.huidiTranslateField))}
 },true);
 ['HUIDI:translation-owner-ready','HUIDI:document-type-changed','HUIDI:layout-updated','HUIDI:translation-updated','HUIDI:editor-view-change'].forEach(name=>document.addEventListener(name,()=>setTimeout(sync,40)));
 document.addEventListener('change',event=>{if(['documentType','docMode','docLanguage','ciComplianceLevel','packingDetailMode'].includes(event.target?.id))setTimeout(sync,60)},true);
