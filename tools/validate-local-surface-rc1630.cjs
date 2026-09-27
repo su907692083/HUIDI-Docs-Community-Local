@@ -17,6 +17,7 @@ const schema=read('public/flypigbox-document-schema.js');
 const syncCore=read('public/flypigbox-v3-3-5-0-sync-core.js');
 const toolbarCss=read('public/huidi-toolbar-owner-rc1617.css');
 const documentStart=read('public/document-start.html');
+const localBridge=read('public/huidi-local-editor-bridge-v120.js');
 
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
@@ -40,6 +41,9 @@ const checks=[
   ['unfinished seller/payment placeholders removed',!editor.includes('正式卖方电话待配置')&&!editor.includes('正式卖方邮箱待配置')&&!editor.includes('正式收款服务推荐与客服配置待接入')],
   ['mirrored validity dates are hidden business facts',schema.includes("MIRRORED_CANONICAL_FIELDS=new Set(['quotationValidUntil','proformaValidUntil','packingDate'])")&&schema.includes('data-fp-mirrored-canonical="1"')],
   ['new-document flow can search customers and products',documentStart.includes('id="customerSearch"')&&documentStart.includes('id="productSearch"')&&documentStart.includes('function filterStartChoices()')],
+  ['new-document flow can copy a previous document safely',documentStart.includes('id="historyDoc"')&&documentStart.includes("K.histories")&&documentStart.includes("sessionStorage.setItem('huidi_local_chain_state_v1'")&&documentStart.includes("'invoiceNo','revisionNo','quotationVersion'")],
+  ['history copy resets old business identifiers',documentStart.includes("'customerOrderNo','internalOrderNo','relatedQuotationNo','relatedPiNo','relatedContractNo','relatedCommercialInvoiceNo','relatedPackingListNo'")&&documentStart.includes('f.issueDate=iso(today)')],
+  ['next-step conversion explains automatic carry-over',localBridge.includes('自动沿用客户、商品、数量、价格和条款，只补下一单所需资料')],
   ['new-document wording uses trade-friendly entity names',documentStart.includes('<label>关联业务</label>')&&documentStart.includes('<label>卖方主体</label>')],
   ['quiet toolbar keeps compact action spacing',css.includes('#fpLiteToolbar .fp-lite-toolbar-actions{gap:4px!important}')],
   ['Local browser networking remains same-origin only',mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
