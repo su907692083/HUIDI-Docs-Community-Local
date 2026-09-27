@@ -12,6 +12,11 @@ const catalog=read('public/catalog-studio/index.html');
 const engineIntegration=read('public/flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js');
 const documentLinkage=read('public/flypigbox-v3-3-6-24-r1-3a-18-document-linkage.js');
 const localEditor=read('public/huidi-local-editor-rc15.js');
+const quickResult=read('public/flypigbox-quick-result.js');
+const schema=read('public/flypigbox-document-schema.js');
+const syncCore=read('public/flypigbox-v3-3-5-0-sync-core.js');
+const toolbarCss=read('public/huidi-toolbar-owner-rc1617.css');
+const documentStart=read('public/document-start.html');
 
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
@@ -27,6 +32,15 @@ const checks=[
   ['online-only controls hidden by CSS',css.includes('.huidi-community-local .api-card')&&css.includes('#cloudSaveBtn')&&!css.includes('.huidi-community-local #translateAllBtn')],
   ['Local translation controls are not runtime-hidden',!mode.includes("'headerTranslateBtn','translateAllBtn'")&&!mode.includes("'translateAllBtn','fp-ai-widget'")],
   ['low-frequency toolbar controls move to More',css.includes('#huidiLocalCheckHeader')&&css.includes('#fpV3321FieldsHeader')&&css.includes('#fpV3325LayoutHeader')&&localEditor.includes('data-rc15-action="fields"')&&localEditor.includes('data-rc15-action="layout"')],
+  ['trade toolbar keeps low-frequency mode template and sync out of sight',toolbarCss.includes('#huidiMasterSyncHeader')&&toolbarCss.includes('#fpV3321TemplateHeader')&&toolbarCss.includes('#fpV3321ModeHeader:not([data-fp-a13-formal])')],
+  ['workspace naming matches user tasks',quickResult.includes('>表单填写</button>')&&quickResult.includes('>表格工作台</button>')&&!quickResult.includes('>PDF 单据</button>')],
+  ['field density choices live in More',quickResult.includes('data-lite-action="mode-common"')&&quickResult.includes('data-lite-action="mode-full"')&&quickResult.includes('常用字段')&&quickResult.includes('完整字段')],
+  ['quotation mode copy no longer says quick/full quotation',schema.includes("label:'常用字段'")&&schema.includes("label:'完整字段'")&&!schema.includes("label:'快速报价'")&&!schema.includes("label:'完整报价'")],
+  ['quotation buyer company is advisory',syncCore.includes("if(t==='quotation')add(warnings,'buyer'")&&syncCore.includes("else add(blocks,'buyer'")],
+  ['unfinished seller/payment placeholders removed',!editor.includes('正式卖方电话待配置')&&!editor.includes('正式卖方邮箱待配置')&&!editor.includes('正式收款服务推荐与客服配置待接入')],
+  ['mirrored validity dates are hidden business facts',schema.includes("MIRRORED_CANONICAL_FIELDS=new Set(['quotationValidUntil','proformaValidUntil','packingDate'])")&&schema.includes('data-fp-mirrored-canonical="1"')],
+  ['new-document flow can search customers and products',documentStart.includes('id="customerSearch"')&&documentStart.includes('id="productSearch"')&&documentStart.includes('function filterStartChoices()')],
+  ['new-document wording uses trade-friendly entity names',documentStart.includes('<label>关联业务</label>')&&documentStart.includes('<label>卖方主体</label>')],
   ['quiet toolbar keeps compact action spacing',css.includes('#fpLiteToolbar .fp-lite-toolbar-actions{gap:4px!important}')],
   ['Local browser networking remains same-origin only',mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
   ['generic editor launch copy',editor.includes('id="launchStartBtn" type="button">开始制作</button>')&&!editor.includes('id="launchStartBtn" type="button">开始制作 PI</button>')],
