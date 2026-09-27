@@ -436,13 +436,16 @@ function collectTranslationSection(section,state=translationState()){
       if(label)out.push(label);if(value)out.push(value);
     });
   }
-  parseRows(fields.customDocumentFieldsJson).filter(row=>!row?.group||row.group===section).forEach((row,index)=>{
+  parseRows(fields.customDocumentFieldsJson).filter(row=>{
+    const group=cleanText(row?.group),normalized=group==='parties'?'party':group;
+    return !group||normalized===section;
+  }).forEach((row,index)=>{
     const id=String(row.id||index),label=descriptor(`custom:${id}:label`,row.label,section,{kind:'custom_label',id:'customFieldLabel',index}),value=descriptor(`custom:${id}:value`,row.value,section,{kind:'custom_value',id:'customFieldValue',index});
     if(label)out.push(label);if(value)out.push(value);
   });
   return out;
 }
-const TRANSLATION_SECTIONS=Object.freeze(['party','products','delivery','paymentSchedule','customs','packing','plannedLogistics','actualShipment','payment','qualityRisk','terms']);
+const TRANSLATION_SECTIONS=Object.freeze(['basic','party','products','delivery','costs','paymentSchedule','customs','packing','plannedLogistics','actualShipment','logistics','payment','qualityRisk','terms']);
 function collectTranslationDocument(state=translationState()){
   const seen=new Set(),out=[];
   TRANSLATION_SECTIONS.forEach(section=>collectTranslationSection(section,state).forEach(row=>{if(!seen.has(row.key)){seen.add(row.key);out.push(row)}}));
