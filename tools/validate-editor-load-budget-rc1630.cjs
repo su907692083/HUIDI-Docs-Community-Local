@@ -11,7 +11,7 @@ const duplicates=list=>Object.entries(list.reduce((m,x)=>(m[canonical(x)]=(m[can
 const inlineScriptBytes=[...editor.matchAll(/<script\b(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].reduce((n,m)=>n+m[1].length,0);
 const inlineStyleBytes=[...editor.matchAll(/<style\b[^>]*>([\s\S]*?)<\/style>/gi)].reduce((n,m)=>n+m[1].length,0);
 
-scripts.length<=62?pass('external JS budget '+scripts.length+'/62'):fail('external JS budget exceeded: '+scripts.length);
+scripts.length<=63?pass('external JS budget '+scripts.length+'/63'):fail('external JS budget exceeded: '+scripts.length);
 css.length<=52?pass('external CSS budget '+css.length+'/52'):fail('external CSS budget exceeded: '+css.length);
 inlineScriptBytes<=360000?pass('inline JS budget '+inlineScriptBytes+'/360000'):fail('inline JS budget exceeded: '+inlineScriptBytes);
 inlineStyleBytes<=55000?pass('inline CSS budget '+inlineStyleBytes+'/55000'):fail('inline CSS budget exceeded: '+inlineStyleBytes);
@@ -26,6 +26,7 @@ const required=[
  'community-local-mode.js',
  'huidi-local-db-rc165.js',
  'huidi-local-core-rc167.js',
+ 'huidi-local-translation-ui-rc1630.js',
  'flypigbox-editor-unified.js',
  'flypigbox-v3-3-6-24-r1-3a-18-formal-output-gate.js',
  'huidi-toolbar-owner-rc1617.js',
