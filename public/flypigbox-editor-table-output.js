@@ -195,15 +195,27 @@
 
   function logisticsExtras(snapshot) {
     try {
-      const rows = JSON.parse(snapshot.fields.logisticsExtraRowsJson || '[]');
-      return Array.isArray(rows) ? rows.map(row => [clean(row.label), clean(row.value)]).filter(row => row[0] || row[1]) : [];
+      const rows = JSON.parse(snapshot.fields.logisticsExtraRowsJson || '[]'),owner=window.HUIDITranslationOwner,language=languageMode(snapshot);
+      return Array.isArray(rows) ? rows.map((row,index) => {
+        const id=String(row.id||index),label=clean(row.label),value=clean(row.value);
+        return [
+          owner?.resolve?clean(owner.resolve(`logisticsExtra:${id}:label`,label,language,snapshot.translationVersions)):label,
+          owner?.resolve?clean(owner.resolve(`logisticsExtra:${id}`,value,language,snapshot.translationVersions)):value
+        ];
+      }).filter(row => row[0] || row[1]) : [];
     } catch (_) { return []; }
   }
 
   function customFieldPairs(snapshot, group) {
     try {
-      const rows = JSON.parse(snapshot.fields.customDocumentFieldsJson || '[]');
-      return Array.isArray(rows) ? rows.filter(row => row?.group === group && clean(row.value)).map(row => [localizedLabel(clean(row.label) || '补充字段 / Additional Field',snapshot), clean(row.value)]) : [];
+      const rows = JSON.parse(snapshot.fields.customDocumentFieldsJson || '[]'),owner=window.HUIDITranslationOwner,language=languageMode(snapshot);
+      return Array.isArray(rows) ? rows.filter(row => row?.group === group && clean(row.value)).map((row,index) => {
+        const id=String(row.id||index),label=clean(row.label)||'补充字段 / Additional Field',value=clean(row.value);
+        return [
+          owner?.resolve?clean(owner.resolve(`custom:${id}:label`,label,language,snapshot.translationVersions)):localizedLabel(label,snapshot),
+          owner?.resolve?clean(owner.resolve(`custom:${id}:value`,value,language,snapshot.translationVersions)):value
+        ];
+      }) : [];
     } catch (_) { return []; }
   }
 
