@@ -70,7 +70,9 @@ function ensureFieldButtons(){
 function sync(){prepareMainButton();ensureSectionButtons();ensureFieldButtons()}
 async function runButton(btn,work){
  if(!btn||btn.disabled)return;const old=btn.textContent;btn.disabled=true;btn.textContent='翻译中…';
- try{await work()}finally{btn.disabled=false;btn.textContent=old;setTimeout(sync,0)}
+ try{const result=await work();btn.textContent=result?.translated>0?'已译':(result?.error?'重试':'无变化');}
+ catch(_){btn.textContent='重试';}
+ finally{btn.disabled=false;setTimeout(()=>{btn.textContent=old;sync();},1400)}
 }
 document.addEventListener('click',event=>{
  const section=event.target.closest('[data-huidi-translate-section]');if(section){event.preventDefault();event.stopPropagation();return runButton(section,()=>runtime()?.translateSection?.(section.dataset.huidiTranslateSection))}
