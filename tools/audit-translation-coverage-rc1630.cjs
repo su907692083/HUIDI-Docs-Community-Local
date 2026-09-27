@@ -42,6 +42,15 @@ const phraseEns=new Set([...i18n.matchAll(/add\((?:'([^']*)'|\"([^\"]*)\")\s*,/g
 const directMissing=structuredLabels.filter(x=>!phraseEns.has(x.en));
 console.log('[TRANSLATION-AUDIT] INFO: structured labels='+structuredLabels.length+', direct 18-language phrase misses='+directMissing.length);
 directMissing.length?fail('structured labels missing direct 18-language entries: '+directMissing.length):pass('all structured labels have direct 18-language entries');
+const directLines=i18n.split(/\r?\n/).filter(line=>/^add\((?:'|")/.test(line.trim()));
+const directEntryCount=new Map();
+for(const line of directLines){
+  const strings=line.match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g)||[];
+  if(strings.length<2)continue;
+  const en=strings[0].slice(1,-1);directEntryCount.set(en,strings.length);
+}
+const directArityProblems=structuredLabels.map(x=>({en:x.en,count:directEntryCount.get(x.en)||0})).filter(x=>x.count!==17);
+directArityProblems.length?fail('structured labels without complete 17-string direct entry: '+JSON.stringify(directArityProblems)):pass('all structured direct entries contain 17 strings');
 
 const expectedBusinessText=[
  'balanceDueCondition','customsDescription','finalUse','customsDeclarationNote','mixedPackingNote',
