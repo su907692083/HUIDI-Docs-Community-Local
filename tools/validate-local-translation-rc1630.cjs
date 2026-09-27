@@ -20,6 +20,7 @@ const checks=[
  ['same-origin translate route exists',server.includes("p==='/api/translation/translate'")],
  ['translation routes handled by local server',server.includes("p.startsWith('/api/translation/')")],
  ['default no-key provider exists',server.includes("return'mymemory'")&&server.includes('api.mymemory.translated.net')],
+ ['Brazilian Portuguese provider mapping is explicit',server.includes("'pt-BR'")],
  ['Google Cloud provider uses server-side key',server.includes('translation.googleapis.com')&&server.includes("'X-Goog-Api-Key':cfg.google_api_key")],
  ['request text is limited',server.includes('total>16000')&&server.includes('fields.length>96')&&server.includes('text.length>1800')],
  ['browser Local translation uses same-origin API',editor.includes("fetch('/api/translation/translate'")],
