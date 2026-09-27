@@ -18,6 +18,11 @@ const syncCore=read('public/flypigbox-v3-3-5-0-sync-core.js');
 const toolbarCss=read('public/huidi-toolbar-owner-rc1617.css');
 const documentStart=read('public/document-start.html');
 const localBridge=read('public/huidi-local-editor-bridge-v120.js');
+const localStability=read('public/huidi-local-stability-rc165.js');
+const actionOwner=read('public/huidi-action-owner-rc1621.js');
+const chineseFirst=read('public/flypigbox-v3-3-1-9-chinese-first.js');
+const quotationQuickFlow=read('public/flypigbox-quotation-quick-flow.js');
+const localCss=read('public/huidi-local-rc5.css');
 const tableView=read('public/flypigbox-editor-table-view.js');
 const tableOutput=read('public/flypigbox-editor-table-output.js');
 
@@ -56,6 +61,20 @@ const checks=[
   ['table mode exposes new trade product columns',tableView.includes("key:'customerItemNo'")&&tableView.includes("key:'customsDescription'")&&tableView.includes("key:'originCountry'")],
   ['Excel output carries new trade product columns',tableOutput.includes("key:'customerItemNo'")&&tableOutput.includes("key:'customsDescription'")&&tableOutput.includes("key:'originCountry'")],
   ['new-document wording uses trade-friendly entity names',documentStart.includes('<label>关联业务</label>')&&documentStart.includes('<label>卖方主体</label>')],
+  ['visible high-frequency actions have explicit owners',
+    quickResult.includes("if(primary)setMode(primary,true)")&&quickResult.includes("if(event.target.id==='fpLiteImportBtn')openImport()")&&
+    editor.includes("$('packingAssistantBtn')?.addEventListener('click',openPackingAssistant)")&&editor.includes("$('addItemBtn').addEventListener('click'")&&
+    editor.includes("$('verifyCustomerBtn').addEventListener('click',openCustomerVerifier)")&&editor.includes("$('openMapsBtn').addEventListener('click',openMaps)")&&
+    localBridge.includes('bindGlobalExportCapture()')&&localBridge.includes("data-local-next")&&
+    quickResult.includes('id="fpLiteMoreMenu"')&&localEditor.includes('ensureHub()')],
+  ['tier pricing click is single-owned and array-safe',localEditor.includes("const rows=$('.item-row').filter")&&localEditor.includes('openTierPricing')&&actionOwner.includes("target.closest('#tierPricingBtn')")&&actionOwner.includes('window.HUIDILocalRC15?.openTierPricing?.()')],
+  ['quotation supplement button stays directly clickable',quotationQuickFlow.includes("btn.textContent='补充'")&&quotationQuickFlow.includes("btn.addEventListener('click'")&&quotationQuickFlow.includes("findCard('商品与金额')||findCard('商品明细')")],
+  ['Chinese-first editor labels are operator-friendly',chineseFirst.includes("docLanguage:{label:'客户文件语言'}")&&chineseFirst.includes("buyerName:{label:'客户公司'}")&&chineseFirst.includes("tradeTerms:{label:'贸易术语（FOB / CIF 等）'}")&&chineseFirst.includes("['.i-sku','货号'")],
+  ['unit selectors show Chinese meaning without changing codes',chineseFirst.includes("PCS:'PCS 件'")&&chineseFirst.includes("CTN:'CTN 箱'")&&editor.includes('<option value="PCS">PCS 件</option>')],
+  ['standard PI does not expose packing assistant',editor.includes("packingAssistant.hidden=!(getDocumentType()==='packing_list'||isDetailedDocMode())")],
+  ['Local readiness reminder is compact',syncCore.includes('还差 ${result.blocks.length} 项')&&syncCore.includes('>去补充</button>')&&localCss.includes('grid-template-columns:auto minmax(0,1fr) auto!important')],
+  ['Local top chrome hides low-frequency payment shortcut',localCss.includes('#huidiLocalPaymentHeader{display:none!important}')&&localCss.includes('#fpV3325DocSelect>span{display:none!important}')],
+  ['Local save and next-step wording is concise',localBridge.includes("?'待保存':'已保存'")&&localBridge.includes('<summary>生成下一单</summary>')&&actionOwner.includes("saveBtn.textContent='保存'")&&localStability.includes("badge.textContent='待保存'")],
   ['quiet toolbar keeps compact action spacing',css.includes('#fpLiteToolbar .fp-lite-toolbar-actions{gap:4px!important}')],
   ['Local browser networking remains same-origin only',mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
   ['generic editor launch copy',editor.includes('id="launchStartBtn" type="button">开始制作</button>')&&!editor.includes('id="launchStartBtn" type="button">开始制作 PI</button>')],
