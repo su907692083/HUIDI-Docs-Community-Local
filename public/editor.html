@@ -1409,6 +1409,8 @@
   function translatedDisplay(scope,key,value){
     const original=String(value||'').trim();
     if(!original) return original;
+    const owner=window.HUIDITranslationOwner;
+    if(owner?.resolve)return owner.resolve(key,original,get('docLanguage'),translationVersions);
     const target=documentTranslationTarget();
     const record=translationVersions[key];
     const translated=String(record?.source===original ? record?.variants?.[target]||'' : '').trim();
