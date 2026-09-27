@@ -211,6 +211,8 @@ Person names/signatories remain non-translatable by default.
 
 ## Fixed-label dictionary coverage
 
+RC16.30 audit note: the earlier `59 direct phrase misses` finding was caused by the scanner only recognizing single-quoted `add(...)` calls. The existing structured-field dictionary already used double-quoted direct entries. The scanner now recognizes both quote styles and also rejects duplicate definitions.
+
 There are 65 structured-field labels in `flypigbox-document-schema.js`.
 
 RC16.30 now gives every one of those 65 labels its own direct 18-language entry (17 single-language outputs plus Chinese/English bilingual composition). The translation coverage audit treats any future direct-label miss as a hard failure.
