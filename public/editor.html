@@ -1426,11 +1426,13 @@
   }
   function clearTranslationForInput(input){
     if(!input) return;
-    const staticScope={sellerAddress:'party',buyerAddress:'party',buyerCountry:'party',originCountry:'products',extraFeeName:'products',shippingMethod:'logistics',packageType:'logistics',shippingMarks:'logistics',bankAddress:'payment',paymentTerms:'terms',deliveryTime:'terms',portOfLoading:'terms',destinationPort:'terms',remarks:'terms'};
-    const id=input.id||'';
-    if(staticScope[id]) delete translationVersions[id];
+    const id=input.id||'',owner=window.HUIDITranslationOwner;
+    const staticScope={sellerAddress:'party',buyerAddress:'party',buyerCountry:'party',originCountry:'products',extraFeeName:'products',shippingMethod:'plannedLogistics',packageType:'packing',shippingMarks:'packing',bankAddress:'payment',paymentTerms:'terms',deliveryTime:'terms',portOfLoading:'plannedLogistics',destinationPort:'plannedLogistics',remarks:'terms'};
+    if((owner?.policy?.(id)?.eligible)||staticScope[id])delete translationVersions[id];
     const row=input.closest?.('.item-row');
     if(row && input.matches('.i-name,.i-spec,.i-package-desc,.i-item-marks')){const part=input.matches('.i-name')?'name':input.matches('.i-spec')?'spec':input.matches('.i-package-desc')?'packageDescription':'shippingMarks';delete translationVersions[`item:${row.dataset.itemKey}:${part}`];}
+    const logistics=input.closest?.('.logistics-extra-row');
+    if(logistics){const key=logistics.dataset.logisticsId||'';if(key&&input.matches('[data-logistics-extra-label]'))delete translationVersions[`logisticsExtra:${key}:label`];if(key&&input.matches('[data-logistics-extra-value]'))delete translationVersions[`logisticsExtra:${key}`];}
   }
   function collectScopeFields(scope){
     const fields=[];
@@ -3178,11 +3180,17 @@
   }
 
   function translationPayload(fields){
-    return fields.filter(x=>x.text).map(x=>({id:x.id,text:x.text}));
+    return fields.filter(x=>x.text).map(x=>({id:x.key||x.id,text:x.text}));
   }
   async function requestTranslation(fields, targetLanguage){
     const lang=targetLanguage||'en', target=targetNames[lang]||'English';
     const payload=translationPayload(fields);if(!payload.length)return {};
+    if(window.HUIDI_LOCAL_ONLY?.localOnly){
+      const response=await fetch('/api/translation/translate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({targetLanguage:lang,targetName:target,fields:payload})});
+      let data={};try{data=await response.json()}catch(_){}
+      if(!response.ok||data?.ok===false)throw new Error(data?.message||('本地联网翻译失败（HTTP '+response.status+'）'));
+      return data?.translations&&typeof data.translations==='object'?data.translations:{};
+    }
     const mode=get('translationMode')||'hosted';
     if(mode==='hosted'){
       const hosted=window.FlypigBOXMember?.requestHostedTranslation;
@@ -3193,24 +3201,64 @@
     if(typeof relay!=='function') throw new Error('安全中转服务尚未准备完成，请刷新页面后重试。');
     return await relay({targetLanguage:lang,targetName:target,bilingual:false,fields:payload,ownApi:ownApiPayload()});
   }
-  async function translateAll(){
-    const target=documentTranslationTarget();
-    const fields=Object.keys(SCOPE_META).flatMap(scope=>collectScopeFields(scope));
-    if(!fields.length){setStatus('当前单据没有可翻译的业务描述内容。','error');return;}
-    const outputMode=get('docLanguage')==='bilingual'?'PDF 显示原文 + 英文译文':'PDF 显示目标语言译文（无译文时安全回退原文）';
-    const reviewed=isOn('translationReviewed')?'已勾选“我已核对”。':'尚未勾选“我已核对”。';
-    const confirmed=window.confirm(`AI 将把 ${fields.length} 项业务描述统一翻译为 ${targetNames[target]||target}。\n${outputMode}\n\n${reviewed}\n继续即表示您已人工核对公司名称、联系人、型号、SKU、HS Code、金额、银行账号、SWIFT、品牌及 Incoterms® 缩写，并将在导出前复核译文。`);
-    if(!confirmed){setStatus('已取消翻译。','');return;}
-    const btn=$('translateAllBtn');btn.disabled=true;btn.textContent='⏳ 正在翻译…';setStatus('正在翻译，请勿关闭页面…');
-    try{
-      fields.forEach(field=>rememberSource(field.key,field.text));
-      const result=await requestTranslation(fields,target);
-      let translated=0;
-      fields.forEach(field=>{const value=String(result?.[field.id]||'').trim();if(value){const record=rememberSource(field.key,field.text);record.variants[target]=value;translated++;}});
-      if(!translated) throw new Error('AI 未返回可用的翻译内容；本次不会改变 PDF 展示。');
-      renderPreview();setStatus(`翻译已完成：已收录 ${translated} 项 ${targetNames[target]||target} 版本。原始填写内容保持不变，PDF 会按页首单据语言同步输出。`,'ok');
-    }catch(e){setStatus(e.message||'翻译暂未完成，请稍后重试。','error');}finally{btn.disabled=false;btn.textContent='翻译整份单据';}
+  function translationRows(kind,key=''){
+    const owner=window.HUIDITranslationOwner,state=formState(false);
+    if(owner){
+      if(kind==='document')return owner.collectDocument(state);
+      if(kind==='section')return owner.collectSection(key,state);
+      if(kind==='field'){const row=owner.collectField(key,state);return row?[row]:[];}
+    }
+    if(kind==='document')return Object.keys(SCOPE_META).flatMap(scope=>collectScopeFields(scope));
+    if(kind==='section')return collectScopeFields(key);
+    return [];
   }
+  async function translateRows(fields,{label='当前内容',confirm=true}={}){
+    const target=documentTranslationTarget();
+    if(!fields.length){setStatus(label+'没有可翻译的业务描述内容。','error');return{translated:0,total:0};}
+    const outputMode=get('docLanguage')==='bilingual'?'PDF/表格显示原文 + 英文译文':'PDF/表格显示目标语言译文（无译文时安全回退原文）';
+    if(confirm){
+      const reviewed=isOn('translationReviewed')?'已勾选“我已核对”。':'尚未勾选“我已核对”。';
+      const ok=window.confirm(`${label}将翻译 ${fields.length} 项业务描述为 ${targetNames[target]||target}。\n${outputMode}\n\n${reviewed}\n公司名称、人名、SKU/型号、HS Code、单据编号、金额、银行账号、SWIFT、柜号/封条号等保护字段不会进入自动翻译。`);
+      if(!ok){setStatus('已取消翻译。','');return{translated:0,total:fields.length,cancelled:true};}
+    }
+    fields.forEach(field=>rememberSource(field.key||field.id,field.text));
+    const result=await requestTranslation(fields,target);
+    let translated=0;
+    fields.forEach(field=>{
+      const key=field.key||field.id,value=String(result?.[key]||'').trim();
+      if(value){const record=rememberSource(key,field.text);record.variants[target]=value;translated++;}
+    });
+    if(!translated)throw new Error('联网翻译未返回可用内容；原始填写内容未改变。');
+    renderPreview();
+    try{document.dispatchEvent(new CustomEvent('HUIDI:translation-updated',{detail:{translated,total:fields.length,target,label}}));}catch(_){}
+    setStatus(`${label}翻译完成：${translated}/${fields.length} 项已收录 ${targetNames[target]||target} 版本；原文保持不变。`,'ok');
+    return{translated,total:fields.length,target};
+  }
+  async function translateAll(){
+    const btn=$('translateAllBtn');if(btn){btn.disabled=true;btn.textContent='⏳ 正在翻译…';}
+    setStatus('正在联网翻译整份单据，请勿关闭页面…');
+    try{return await translateRows(translationRows('document'),{label:'整份单据'});}
+    catch(e){setStatus(e.message||'翻译暂未完成，请稍后重试。','error');return{translated:0,error:e};}
+    finally{if(btn){btn.disabled=false;btn.textContent='翻译整份单据';}}
+  }
+  async function translateSection(sectionKey){
+    try{return await translateRows(translationRows('section',sectionKey),{label:'当前分栏'});}
+    catch(e){setStatus(e.message||'当前分栏翻译失败。','error');return{translated:0,error:e};}
+  }
+  async function translateField(key){
+    try{return await translateRows(translationRows('field',key),{label:'当前字段',confirm:false});}
+    catch(e){setStatus(e.message||'当前字段翻译失败。','error');return{translated:0,error:e};}
+  }
+  function invalidateTranslationKey(key){if(key&&translationVersions[key]){delete translationVersions[key];return true}return false}
+  window.HUIDITranslationRuntime=Object.freeze({
+    version:'1.2.0-RC16.30',
+    translateDocument:translateAll,
+    translateSection,
+    translateField,
+    invalidate:invalidateTranslationKey,
+    state:()=>formState(false),
+    summary:()=>window.HUIDITranslationOwner?.summary?.(formState(false),get('docLanguage'))||null
+  });
 
   function formState(includeAssets=true){
     syncLogisticsExtraJson();
