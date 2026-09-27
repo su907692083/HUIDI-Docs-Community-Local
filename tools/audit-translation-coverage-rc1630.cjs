@@ -49,6 +49,15 @@ for(const line of directLines){
   if(strings.length<2)continue;
   const en=strings[0].slice(1,-1);directEntryCount.set(en,strings.length);
 }
+const directDefinitionCount=new Map();
+for(const line of directLines){
+  const strings=line.match(/"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'/g)||[];
+  if(strings.length<2)continue;
+  const en=strings[0].slice(1,-1);
+  directDefinitionCount.set(en,(directDefinitionCount.get(en)||0)+1);
+}
+const duplicateDirect=structuredLabels.map(x=>({en:x.en,count:directDefinitionCount.get(x.en)||0})).filter(x=>x.count!==1);
+duplicateDirect.length?fail('structured labels must have exactly one direct definition: '+JSON.stringify(duplicateDirect)):pass('all structured labels have exactly one direct definition');
 const directArityProblems=structuredLabels.map(x=>({en:x.en,count:directEntryCount.get(x.en)||0})).filter(x=>x.count!==17);
 directArityProblems.length?fail('structured labels without complete 17-string direct entry: '+JSON.stringify(directArityProblems)):pass('all structured direct entries contain 17 strings');
 
