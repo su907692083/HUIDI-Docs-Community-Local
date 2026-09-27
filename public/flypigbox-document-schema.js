@@ -286,7 +286,8 @@
     if(['depositPercent','balancePercent'].includes(id)){
       const number=Number(text);return Number.isFinite(number)?`${Number(number.toFixed(2))}%`:`${text}%`;
     }
-    return text;
+    const owner=window.HUIDITranslationOwner;
+    return owner?.resolve?owner.resolve(id,text,language):text;
   }
   function outputLabel(id,language='bilingual'){
     const def=FIELD_DEFINITIONS[id];if(!def)return id;
