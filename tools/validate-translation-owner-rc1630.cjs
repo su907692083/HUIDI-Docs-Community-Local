@@ -33,7 +33,9 @@ const checks=[
  ['table output field values delegate to owner',table.includes('owner.resolve(id,source,languageMode(snapshot),snapshot.translationVersions)')],
  ['table output item values delegate to owner',table.includes("['name','spec','packageDescription','shippingMarks']")&&table.includes('itemKey')&&table.includes('next[field]=owner.resolve')],
  ['table output logistics values delegate to owner',table.includes('logisticsExtra:')&&table.includes('snapshot.translationVersions')],
- ['table output custom values delegate to owner',table.includes('custom:')&&table.includes('customFieldPairs')&&table.includes('snapshot.translationVersions')]
+ ['table output custom values delegate to owner',table.includes('custom:')&&table.includes('customFieldPairs')&&table.includes('snapshot.translationVersions')],
+ ['PDF custom fields delegate labels and values to owner',editor.includes('custom:${id}:label')&&editor.includes('custom:${id}:value')],
+ ['PDF custom logistics label delegates to owner',editor.includes('logisticsExtra:${row.id}:label')]
 ];
 
 for(const [name,ok] of checks)ok?pass(name):fail(name);
