@@ -11,6 +11,7 @@ const css=read('public/community-local-mode.css');
 const catalog=read('public/catalog-studio/index.html');
 const engineIntegration=read('public/flypigbox-v3-3-6-24-r1-3a-17-engine-integration.js');
 const documentLinkage=read('public/flypigbox-v3-3-6-24-r1-3a-18-document-linkage.js');
+const localEditor=read('public/huidi-local-editor-rc15.js');
 
 const hiddenIds=[
   'memberAuthBtn','memberSignOutBtn','membershipPlansBtn',
@@ -25,6 +26,8 @@ const checks=[
   ['online-only ids hidden by runtime',hiddenIds.every(id=>mode.includes("'"+id+"'"))],
   ['online-only controls hidden by CSS',css.includes('.huidi-community-local .api-card')&&css.includes('#cloudSaveBtn')&&!css.includes('.huidi-community-local #translateAllBtn')],
   ['Local translation controls are not runtime-hidden',!mode.includes("'headerTranslateBtn','translateAllBtn'")&&!mode.includes("'translateAllBtn','fp-ai-widget'")],
+  ['low-frequency toolbar controls move to More',css.includes('#huidiLocalCheckHeader')&&css.includes('#fpV3321FieldsHeader')&&css.includes('#fpV3325LayoutHeader')&&localEditor.includes('data-rc15-action="fields"')&&localEditor.includes('data-rc15-action="layout"')],
+  ['quiet toolbar keeps compact action spacing',css.includes('#fpLiteToolbar .fp-lite-toolbar-actions{gap:4px!important}')],
   ['Local browser networking remains same-origin only',mode.includes("window.fetch=(input,init)=>sameOrigin(input)")],
   ['generic editor launch copy',editor.includes('id="launchStartBtn" type="button">开始制作</button>')&&!editor.includes('id="launchStartBtn" type="button">开始制作 PI</button>')],
   ['generic document intro copy',editor.includes('把多语言外贸单据、客户资料与交易条款，放进一个可控工作台')],
