@@ -23,6 +23,7 @@ const checks=[
  ['translation owner has section collector',i18n.includes('collectSection:collectTranslationSection')],
  ['translation owner has field collector',i18n.includes('collectField:collectTranslationField')],
  ['translation owner has one resolver',i18n.includes('resolve:resolveBusinessValue')],
+ ['bilingual companion language resolver exists',i18n.includes('companionLanguage')&&i18n.includes("companionLanguage(original)")],
  ['all required translation sections registered',requiredSections.every(x=>i18n.includes("'"+x+"'"))],
  ['all known dynamic gap fields registered',requiredDynamic.every(x=>i18n.includes(x+':')||i18n.includes("'"+x+"'"))],
  ['protected identifiers registry exists',i18n.includes('TRANSLATION_EXCLUDED_FIELDS')],
