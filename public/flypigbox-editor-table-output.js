@@ -175,12 +175,20 @@
     const state = window.FlypigBOXApp?.formState?.(true) || {fields:{},items:[],assets:{signature:'',stamp:''}};
     const fields = {...(state.fields || {})};
     ['factoryCostCurrency','factoryFxRate','factoryOverheadRate','factoryCommissionRate','factoryTargetMargin','factoryCostRowsJson','fpFeeItemsJson'].forEach(id=>{const input=$(id);if(input)fields[id]=input.value;});
-    const items = Array.isArray(state.items) ? state.items.map(item => ({...item})) : [];
+    const translationVersions={...(state.translationVersions||{})},language=clean(fields.docLanguage)||'bilingual',owner=window.HUIDITranslationOwner;
+    const items = Array.isArray(state.items) ? state.items.map((item,index) => {
+      const next={...item},itemKey=item.itemKey||item.id||String(index);
+      ['name','spec','packageDescription','shippingMarks'].forEach(field=>{if(owner?.resolve)next[field]=owner.resolve(`item:${itemKey}:${field}`,item[field],language,translationVersions);});
+      return next;
+    }) : [];
     const type = fields.documentType || 'proforma_invoice';
-    return {fields, items, assets:{...(state.assets||{})}, translationVersions:{...(state.translationVersions||{})}, type, packing:type === 'packing_list', detailed:fields.docMode === 'b2b'};
+    return {fields, items, assets:{...(state.assets||{})}, translationVersions, type, packing:type === 'packing_list', detailed:fields.docMode === 'b2b'};
   }
 
-  function value(snapshot, id) { return clean(snapshot.fields[id]); }
+  function value(snapshot, id) {
+    const source=clean(snapshot.fields[id]),owner=window.HUIDITranslationOwner;
+    return owner?.resolve?clean(owner.resolve(id,source,languageMode(snapshot),snapshot.translationVersions)):source;
+  }
   function meaningfulItems(snapshot) {
     return snapshot.items.filter(item => clean(item.sku) || clean(item.name) || clean(item.spec) || item.image || num(item.qty) || num(item.price) || num(item.cbm) || clean(item.cartonNo));
   }
