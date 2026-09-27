@@ -573,10 +573,15 @@
     const detailed = isDetailedMode();
     const columns = [
       {key:'image',label:'产品图片 / Image',image:true,width:112},
-      {key:'sku',label:'货号 / SKU',selector:'.i-sku',width:132},
+      {key:'sku',label:'货号 / SKU',selector:'.i-sku',width:132}
+    ];
+    if(detailed||['commercial_invoice','packing_list'].includes(type)||productColumnHasValue('.i-customer-item-no'))columns.push({key:'customerItemNo',label:'客户货号 / Customer Item No.',selector:'.i-customer-item-no',width:150});
+    columns.push(
       {key:'name', label:'商品名称 / Product', selector:'.i-name', width:210},
       {key:'spec', label:'规格 / 描述 / Specifications', selector:'.i-spec', width:220}
-    ];
+    );
+    if(type==='commercial_invoice'||productColumnHasValue('.i-customs-desc'))columns.push({key:'customsDescription',label:'清关品名 / Customs Description',selector:'.i-customs-desc',width:210});
+    if(type==='commercial_invoice'||productColumnHasValue('.i-origin-country'))columns.push({key:'originCountry',label:'原产国 / Origin',selector:'.i-origin-country',width:120});
     if (['commercial_invoice','packing_list'].includes(type) || fieldVisible('showHsCode') || productColumnHasValue('.i-hs')) columns.push({key:'hs',label:'海关编码（HS Code）',selector:'.i-hs',width:126});
     columns.push({key:'unit',label:'单位 / Unit',selector:'.i-unit',width:88},{key:'qty',label:'数量 / Qty',selector:'.i-qty',width:92,type:'number'});
     if (['quotation','proforma_invoice'].includes(type) && (fieldVisible('showMoq') || productColumnHasValue('.i-moq',{numeric:true}))) columns.push({key:'moq',label:'最小起订量（MOQ）',selector:'.i-moq',width:112});
