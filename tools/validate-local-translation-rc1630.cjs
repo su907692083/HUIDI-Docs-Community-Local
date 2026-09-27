@@ -9,6 +9,8 @@ const server=read('tools/local-server.cjs');
 const editor=read('public/editor.html');
 const ui=read('public/huidi-local-translation-ui-rc1630.js');
 const tableView=read('public/flypigbox-editor-table-view.js');
+const tableOutput=read('public/flypigbox-editor-table-output.js');
+const stability=read('public/huidi-runtime-stability-rc1615.js');
 const templateCenter=read('public/flypigbox-v8-template-center.js');
 const mode=read('public/community-local-mode.js');
 const css=read('public/community-local-mode.css');
@@ -32,6 +34,10 @@ const checks=[
  ['single-field translation uses translation owner',editor.includes("owner.collectField(key,state)")],
  ['bilingual translation groups by opposite target',editor.includes('function translationTargetForText')&&editor.includes('const groups=new Map()')],
  ['field translation gives visible completion feedback',ui.includes("'已译'")&&ui.includes("'重试'")],
+ ['field translation shows the translated text beside the source field',ui.includes('function translatedResult(key)')&&ui.includes("note.textContent='译文：'+text")&&ui.includes('syncTranslationResults()')],
+ ['table preview refreshes after translation',tableOutput.includes("addEventListener('HUIDI:translation-updated'")&&tableOutput.includes("renderTablePreview({force:true})")],
+ ['startup preview errors retry before becoming visible',editor.includes("startupRetry<4")&&editor.includes("paper.dataset.fpPreviewStatus='preparing'")&&editor.includes('正在准备预览…')],
+ ['first paint no longer drops the boot gate at 3.2 seconds',!editor.includes("remove('huidi-rc1615-boot')},3200")&&stability.includes("bounded-fallback'),8000")],
  ['field translation waits for runtime readiness',ui.includes('const api=owner(),rt=runtime();if(!api||!rt)return;')],
  ['field translation does not silently optional-chain runtime',ui.includes("requireRuntime('translateField').translateField")&&!ui.includes("runtime()?.translateField?.")],
  ['translation button capture owns its click',ui.includes('stopImmediatePropagation()')],
