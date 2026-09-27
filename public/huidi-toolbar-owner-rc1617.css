@@ -80,3 +80,11 @@ body.huidi-local-editor-rc5 #fpLiteToolbar #huidiMasterSyncHeader>div{
   body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left{min-width:150px!important;}
   body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions{width:100%!important;}
 }
+
+
+/* Trade-user toolbar: keep only the daily actions visible. */
+body.huidi-local-editor-rc5 #fpLiteToolbar #huidiMasterSyncHeader,
+body.huidi-local-editor-rc5 #fpLiteToolbar #fpV3321TemplateHeader,
+body.huidi-local-editor-rc5 #fpLiteToolbar #fpV3321ModeHeader:not([data-fp-a13-formal]){
+  display:none!important;
+}
