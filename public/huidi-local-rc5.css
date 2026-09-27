@@ -124,3 +124,32 @@ body.huidi-local-editor-rc5 .doc .fp-trial-watermark{display:none!important}
 body.huidi-local-editor-rc5 #huidiLocalEditorBar{display:none!important}
 
 @media(max-width:1050px){.app{grid-template-columns:240px minmax(0,1fr)}.sidebar{padding-inline:10px}.brand p,.nav-copy small,.status-dot{display:none}.nav-btn{grid-template-columns:40px minmax(0,1fr)}.main{padding:16px 18px 34px}.title-block h2{font-size:28px}.support-grid,#view-help .support-grid{grid-template-columns:1fr}.filterbar{grid-template-columns:1fr}.workflow{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+
+/* RC16.30.10 — Chinese-first operator shell: less chrome, more working area. */
+body.huidi-local-editor-rc5 #huidiLocalPaymentHeader{display:none!important}
+body.huidi-local-editor-rc5 #fpV3325DocSelect>span{display:none!important}
+body.huidi-local-editor-rc5 #fpV3325DocSelect select{min-width:118px!important;padding-left:9px!important;padding-right:24px!important}
+body.huidi-local-editor-rc5 #fpLiteToolbar{min-height:52px!important}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-left{min-width:174px!important}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions{gap:4px!important}
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions>button,
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-lite-toolbar-actions>details>summary,
+body.huidi-local-editor-rc5 #fpLiteToolbar .fp-primary-workspace-switch button{min-height:32px!important;padding-left:9px!important;padding-right:9px!important}
+body.huidi-local-editor-rc5 .app{padding-top:7px!important}
+body.huidi-local-editor-rc5 .workbench{margin-top:7px!important}
+body.huidi-local-editor-rc5 .preview-toolbar{padding:7px 10px!important;margin-bottom:6px!important}
+body.huidi-local-editor-rc5 .preview-toolbar strong{font-size:15px!important}
+body.huidi-local-editor-rc5 #paperSpecStatus{display:none!important}
+body.huidi-local-editor-rc5 .paper-layout-compact{gap:6px!important}
+body.huidi-local-editor-rc5 .paper-layout-compact>span{font-size:10px!important;color:#7b8796!important}
+body.huidi-local-editor-rc5 .fp-a12-readiness-banner{display:grid!important;grid-template-columns:auto minmax(0,1fr) auto!important;gap:5px 8px!important;align-items:center!important;padding:7px 9px!important;margin-bottom:7px!important;border-radius:9px!important;border-color:#efd6d2!important;background:#fffafa!important}
+body.huidi-local-editor-rc5 .fp-a12-readiness-banner>strong{font-size:11px!important;white-space:nowrap!important}
+body.huidi-local-editor-rc5 .fp-a12-readiness-banner>span{display:flex!important;gap:5px!important;flex-wrap:nowrap!important;overflow:hidden!important}
+body.huidi-local-editor-rc5 .fp-a12-readiness-banner>span button{max-width:220px!important;overflow:hidden!important;text-overflow:ellipsis!important;font-size:9px!important;padding:2px 5px!important}
+body.huidi-local-editor-rc5 .fp-a12-readiness-banner>small{display:none!important}
+body.huidi-local-editor-rc5 .fp-readiness-actions{margin:0!important;gap:5px!important;flex-wrap:nowrap!important}
+body.huidi-local-editor-rc5 .fp-readiness-actions button{padding:3px 6px!important;font-size:9px!important;white-space:nowrap!important}
+body.huidi-local-editor-rc5 .section-translation-note{display:none!important}
+body.huidi-local-editor-rc5 .customer-tools{gap:6px!important;margin-top:9px!important}
+body.huidi-local-editor-rc5 .customer-tools .btn{min-height:34px!important;font-size:12px!important}
