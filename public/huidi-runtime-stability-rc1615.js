@@ -33,8 +33,9 @@
     // Hide readiness intermediate state until the first fully paginated preview is committed.
     const banner=document.getElementById('fpA12PreviewReadiness');if(banner)banner.setAttribute('data-huidi-preview-hidden','1');
     check();
-    // Never strand the UI if a third-party extension/browser delays a readiness marker.
-    setTimeout(()=>release(stable()?'stable-timeout':'bounded-fallback'),2400);
+    // Keep intermediate layout states hidden long enough for the real PDF/table shell to settle.
+    // The head-level safety fallback remains as the final escape hatch if this owner never loads.
+    setTimeout(()=>{if(!released)release(stable()?'stable-timeout':'bounded-fallback')},8000);
   }
   document.addEventListener('HUIDI:preview-rendered',()=>{if(!released)check();});
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
