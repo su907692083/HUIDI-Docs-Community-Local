@@ -17,6 +17,7 @@ from sqlalchemy import DateTime, Float, ForeignKey, Integer, String, Text, creat
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from .lead_engine import clean_domain, merge_evidence, score_search_result
+from .global_market_targeting import prospect_query_plan
 
 BASE_DIR = Path(__file__).resolve().parent
 WEB_DIR = BASE_DIR.parent / "web"
@@ -95,6 +96,9 @@ class LeadSearchRequest(BaseModel):
     product_keyword: str = Field(min_length=2, max_length=200)
     country: str = Field(default="", max_length=120)
     buyer_type: str = Field(default="importer distributor wholesaler", max_length=200)
+    industry: str = Field(default="", max_length=160)
+    category: str = Field(default="", max_length=160)
+    hs_code: str = Field(default="", max_length=24)
     limit: int = Field(default=10, ge=1, le=30)
 
 
@@ -248,8 +252,31 @@ async def serper_query(query: str, num: int = 10) -> list[dict[str, Any]]:
 
 
 async def serper_search(req: LeadSearchRequest) -> list[dict[str, Any]]:
-    query = " ".join(x for x in [req.product_keyword, req.buyer_type, req.country, "company"] if x)
-    return await serper_query(query, min(req.limit * 3, 50))
+    fanout = max(1, min(4, int(os.getenv("HUIDI_ACQ_QUERY_FANOUT", "3") or "3")))
+    queries = prospect_query_plan(
+        product_keyword=req.product_keyword,
+        country=req.country,
+        buyer_type=req.buyer_type,
+        industry=req.industry,
+        category=req.category,
+        hs_code=req.hs_code,
+        max_queries=fanout,
+    )
+    rows: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    per_query = min(max(req.limit * 2, 8), 20)
+    for query in queries:
+        for item in await serper_query(query, per_query):
+            key = clean_domain(str(item.get("link") or "")) or str(item.get("link") or "")
+            if not key or key in seen:
+                continue
+            seen.add(key)
+            enriched = dict(item)
+            enriched["query_route"] = query
+            rows.append(enriched)
+            if len(rows) >= min(max(req.limit * 6, 20), 80):
+                return rows
+    return rows
 
 
 def demo_results(req: LeadSearchRequest) -> list[dict[str, Any]]:

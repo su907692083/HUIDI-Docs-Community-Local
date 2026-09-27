@@ -65,6 +65,9 @@ def _interaction_assets(html: str, *, workspace: bool = False) -> str:
     meta = f'<meta name="huidi-asset-revision" content="{FUSION_ASSET_VERSION}">'
     assets = meta + (_CRITICAL_TABS if workspace else "")
     assets += f'<script defer src="/community/huidi-quick-choices-v1.js?v={FUSION_ASSET_VERSION}"></script>'
+    if workspace:
+        assets += f'<link rel="stylesheet" href="/community/huidi-r21v-global-px.css?v={FUSION_ASSET_VERSION}">'
+        assets += f'<script defer src="/community/huidi-r21v-context-mail.js?v={FUSION_ASSET_VERSION}"></script>'
     return html.replace("</head>", assets + "</head>", 1)
 
 
