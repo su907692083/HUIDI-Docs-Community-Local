@@ -9,7 +9,7 @@ const clean=v=>String(v??'').trim();
 function injectStyle(){
  if($('huidiLocalTranslationStyle'))return;
  const style=document.createElement('style');style.id='huidiLocalTranslationStyle';style.textContent=
- '.huidi-community-local #translateAllBtn.huidi-local-translate-ready{display:inline-flex!important}.huidi-translate-section,.huidi-translate-field{border:1px solid #cbdced;background:#f5f9ff;color:#24527a;border-radius:7px;font-weight:800;cursor:pointer}.huidi-translate-section{min-height:28px;padding:0 9px;font-size:11px}.huidi-translate-field{width:auto!important;min-width:34px!important;max-width:54px;height:24px!important;padding:0 8px!important;margin:4px 0 0 auto!important;align-self:flex-end!important;font-size:11px;vertical-align:middle}.huidi-community-local #fpTableEditorWorkspace td>.huidi-translate-field{display:inline-flex!important;float:right;margin-top:5px!important}.huidi-community-local #fpTableEditorWorkspace .fp-sheet-panel-head>.huidi-translate-section{flex:0 0 auto}.huidi-translate-section[disabled],.huidi-translate-field[disabled]{opacity:.55;cursor:wait}.huidi-translation-status{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:4px 8px;border-radius:999px;background:#eef6ff;color:#315d82;font-size:11px;font-weight:750}.huidi-translation-status[data-provider="google_cloud"]{background:#edf8f2;color:#18794e}.huidi-translation-status[data-error="1"]{background:#fff4e5;color:#8a5a00}';
+ '.huidi-community-local #translateAllBtn.huidi-local-translate-ready{display:inline-flex!important}.huidi-translate-section,.huidi-translate-field{border:1px solid #cbdced;background:#f8fbff;color:#315d82;border-radius:7px;font-weight:750;cursor:pointer;box-shadow:none!important}.huidi-translate-section{min-height:27px;padding:0 8px;font-size:11px}.huidi-translate-field{width:auto!important;min-width:30px!important;max-width:48px;height:23px!important;padding:0 7px!important;margin:3px 0 0 auto!important;align-self:flex-end!important;font-size:10.5px;vertical-align:middle;opacity:.42;transition:opacity .15s ease,border-color .15s ease,background .15s ease}.huidi-translate-field:hover,.huidi-translate-field:focus,.huidi-translate-field[data-huidi-translated="1"],label:hover>.huidi-translate-field,label:focus-within>.huidi-translate-field,.huidi-community-local #fpTableEditorWorkspace td:hover>.huidi-translate-field,.huidi-community-local #fpTableEditorWorkspace td:focus-within>.huidi-translate-field{opacity:1}.huidi-community-local #fpTableEditorWorkspace td>.huidi-translate-field{display:inline-flex!important;float:right;margin-top:4px!important}.huidi-community-local #fpTableEditorWorkspace .fp-sheet-panel-head>.huidi-translate-section{flex:0 0 auto;opacity:.78}.huidi-translate-result{display:block;clear:both;width:100%;max-width:100%;margin:3px 0 0;color:#18794e;font-size:10.5px;font-weight:650;line-height:1.45;white-space:normal;overflow-wrap:anywhere}.huidi-translate-result:empty{display:none}.huidi-translate-section[disabled],.huidi-translate-field[disabled]{opacity:.55;cursor:wait}.huidi-translation-status{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:4px 8px;border-radius:999px;background:#eef6ff;color:#315d82;font-size:11px;font-weight:750}.huidi-translation-status[data-provider="google_cloud"]{background:#edf8f2;color:#18794e}.huidi-translation-status[data-error="1"]{background:#fff4e5;color:#8a5a00}';
  document.head.appendChild(style);
 }
 function state(){return window.HUIDITranslationRuntime?.state?.()||window.FlypigBOXApp?.formState?.(false)||{fields:{},items:[]}}
@@ -48,12 +48,32 @@ function ensureSectionButtons(){
    btn.dataset.huidiTranslateSection=key;
  });
 }
+function translatedResult(key){
+ const api=owner(),st=state(),row=api?.collectField?.(key,st);if(!api||!row)return'';
+ const source=clean(row.text),language=clean(st?.fields?.docLanguage||$('docLanguage')?.value||'bilingual')||'bilingual';
+ const resolved=clean(api.resolve?.(key,row.text,language,st.translationVersions||{}));if(!resolved||resolved===source)return'';
+ if(language==='bilingual'){
+   const parts=resolved.split(/\n+/).map(clean).filter(Boolean),other=parts.find(part=>part!==source);
+   return other||'';
+ }
+ return resolved;
+}
+function syncFieldResult(btn){
+ if(!btn)return;const key=btn.dataset.huidiTranslateField,text=translatedResult(key);
+ let note=btn.parentElement?.querySelector?.('[data-huidi-translate-result="'+CSS.escape(key)+'"]');
+ if(!text){btn.dataset.huidiTranslated='0';note?.remove();return}
+ btn.dataset.huidiTranslated='1';
+ if(!note){note=document.createElement('small');note.className='huidi-translate-result';note.dataset.huidiTranslateResult=key;btn.insertAdjacentElement('afterend',note)}
+ note.textContent='译文：'+text;
+}
+function syncTranslationResults(){qsa('[data-huidi-translate-field]').forEach(syncFieldResult)}
 function appendFieldButton(input,key){
  if(!input||!key||input.disabled||input.readOnly)return;
  const api=owner(),rt=runtime();if(!api||!rt)return;
  const row=api.collectField(key,state());if(!row)return;
- const label=input.closest('label')||input.parentElement;if(!label||label.querySelector('[data-huidi-translate-field="'+CSS.escape(key)+'"]'))return;
- const btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-field';btn.dataset.huidiTranslateField=key;btn.textContent='译';btn.title='只翻译这个字段';input.insertAdjacentElement('afterend',btn);
+ const label=input.closest('label')||input.parentElement;if(!label)return;
+ const existing=label.querySelector('[data-huidi-translate-field="'+CSS.escape(key)+'"]');if(existing){syncFieldResult(existing);return}
+ const btn=document.createElement('button');btn.type='button';btn.className='huidi-translate-field';btn.dataset.huidiTranslateField=key;btn.textContent='译';btn.title='只翻译这个字段';input.insertAdjacentElement('afterend',btn);syncFieldResult(btn);
 }
 function ensureFieldButtons(){
  const api=owner(),rt=runtime();if(!api||!rt)return;
@@ -98,7 +118,7 @@ function ensureTableSectionButtons(){
    btn.dataset.huidiTranslateSections=keys.join(',');
  });
 }
-function sync(){prepareMainButton();ensureSectionButtons();ensureFieldButtons();ensureTableSectionButtons()}
+function sync(){prepareMainButton();ensureSectionButtons();ensureFieldButtons();ensureTableSectionButtons();syncTranslationResults()}
 function requireRuntime(method){
  const rt=runtime();
  if(!rt||typeof rt[method]!=='function')throw new Error('翻译组件尚未准备好，请刷新页面后重试。');
@@ -110,7 +130,7 @@ function reportTranslationError(error){
 }
 async function runButton(btn,work){
  if(!btn||btn.disabled)return;const old=btn.textContent;btn.disabled=true;btn.textContent='翻译中…';
- try{const result=await work();btn.textContent=result?.translated>0?'已译':(result?.error?'重试':'无变化');}
+ try{const result=await work();btn.textContent=result?.translated>0?'已译':(result?.error?'重试':'无变化');syncTranslationResults();}
  catch(error){btn.textContent='重试';reportTranslationError(error);}
  finally{btn.disabled=false;setTimeout(()=>{btn.textContent=old;sync();},1400)}
 }
