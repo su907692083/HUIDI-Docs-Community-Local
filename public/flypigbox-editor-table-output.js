@@ -1284,6 +1284,11 @@ ${item.displayNote}`:'';
       if(event.target?.closest?.('#addItem,#addTenItems,[data-add-item],[data-remove-item],.remove-item,.item-remove'))schedulePreview(220);
     },true);
     ['HUIDI:apply-template','HUIDI:branding-updated','HUIDI:branding-ready','HUIDI:document-type-change','HUIDI:document-mode-change','HUIDI:layout-policy-changed'].forEach(name=>document.addEventListener(name,()=>schedulePreview(120)));
+    document.addEventListener('HUIDI:translation-updated',()=>{
+      lastPreviewSignature='';
+      if(previewMode==='table')renderTablePreview({force:true});
+      else schedulePreview(0);
+    });
     document.addEventListener('HUIDI:editor-view-change',event=>setPreviewMode(event.detail?.mode==='table'?'table':'document',{announce:false,persist:true}));
     document.addEventListener('HUIDI:paper-orientation-change',event=>{
       const preference=event.detail?.preference||currentPaperPreference();
