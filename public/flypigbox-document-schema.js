@@ -137,8 +137,8 @@
       navigation:Object.freeze([...(fields.navigation||[])]),paper:fields.paper||'portrait'
     });
   };
-  const FULL_PRODUCTS=['image','sku','customerItemNo','name','spec','customsDescription','originCountry','hs','qty','unit','moq','price','amount','cartonNo','packageDescription','netWeight','grossWeight','cbm','dimensions','shippingMarks'];
-  const SALES_PRODUCTS=['image','sku','customerItemNo','name','spec','hs','qty','unit','moq','price','amount','dimensions'];
+  const FULL_PRODUCTS=['image','sku','customerItemNo','name','spec','customsDescription','originCountry','hs','qty','unit','moq','price','priceBreaks','amount','cartonNo','packageDescription','netWeight','grossWeight','cbm','dimensions','shippingMarks'];
+  const SALES_PRODUCTS=['image','sku','customerItemNo','name','spec','hs','qty','unit','moq','price','priceBreaks','amount','dimensions'];
   const CUSTOMS_PRODUCTS=['image','sku','customerItemNo','name','spec','customsDescription','originCountry','hs','qty','unit','price','amount','netWeight','grossWeight'];
   const PACKING_PRODUCTS=['image','sku','customerItemNo','name','spec','qty','unit','cartonNo','packageDescription','netWeight','grossWeight','cbm','dimensions','shippingMarks'];
   const SCENARIO_RULES=Object.freeze({
@@ -150,7 +150,7 @@
   });
   const PROFILES=Object.freeze({
     quotation:Object.freeze({label:'报价单',abbr:'QT',purpose:'报价与供货条件确认',next:['proforma_invoice','sales_contract'],permanentExclude:['showPayment'],modeLabels:Object.freeze({ecommerce:Object.freeze({label:'常用字段',description:'只显示报价最常用的价格、数量、有效期和交易条件。'}),b2b:Object.freeze({label:'完整字段',description:'展开清关参考、费用拆分、包装估算和预计物流。'})}),modes:Object.freeze({
-      ecommerce:mode(['showProductImage','showQuote','showMoq','showFreight','showTerms','showRemarks'],{references:true,costs:true,terms:true},{productColumns:['image','sku','customerItemNo','name','spec','qty','unit','moq','price','amount'],navigation:['basic','references','parties','products','costs','terms'],paper:'portrait'}),
+      ecommerce:mode(['showProductImage','showQuote','showMoq','showFreight','showTerms','showRemarks'],{references:true,costs:true,terms:true},{productColumns:['image','sku','customerItemNo','name','spec','qty','unit','moq','price','priceBreaks','amount'],navigation:['basic','references','parties','products','costs','terms'],paper:'portrait'}),
       b2b:mode(['showOrigin','showCustomerPo','showQuote','showMoq','showSalesperson','showProductImage','showHsCode','showDiscount','showFreight','showTax','showAmountWords','showLogistics','showTerms','showRemarks','showSignature'],{references:true,costs:true,customs:true,packing:true,plannedLogistics:true,terms:true,signature:true},{logistics:[...PLANNED_LOGISTICS_FIELDS,...PACKING_FIELDS],productColumns:SALES_PRODUCTS,navigation:['basic','references','parties','products','customs','packing','plannedLogistics','terms'],paper:'portrait'})
     }),notes:Object.freeze({default:'常用字段只保留价格、数量、有效期和交易条件。',detailed:'完整字段增加清关参考、包装估算和预计物流，但不开放发货后追踪字段。'})}),
     proforma_invoice:Object.freeze({label:'形式发票（PI）',abbr:'PI',purpose:'订单确认、收款与生产启动安排',next:['sales_contract','commercial_invoice','packing_list'],permanentExclude:[],modeLabels:Object.freeze({ecommerce:Object.freeze({label:'标准 PI',description:'用于订单确认、付款安排和预计交付。'}),b2b:Object.freeze({label:'订单执行 PI',description:'增加收货通知、包装、清关参考和生产执行资料。'})}),modes:Object.freeze({
