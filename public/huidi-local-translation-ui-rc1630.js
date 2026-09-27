@@ -3,7 +3,7 @@ if(!window.HUIDI_LOCAL_ONLY?.localOnly)return;
 if(window.__HUIDILocalTranslationUIRC1630)return;window.__HUIDILocalTranslationUIRC1630=true;
 const $=id=>document.getElementById(id),qsa=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const SECTION_ALIAS={parties:'party',products:'products',delivery:'delivery',paymentSchedule:'paymentSchedule',customs:'customs',packing:'packing',plannedLogistics:'plannedLogistics',actualShipment:'actualShipment',payment:'payment',qualityRisk:'qualityRisk',terms:'terms'};
-const ITEM_SELECTORS={name:'.i-name',spec:'.i-spec',packageDescription:'.i-package-desc',shippingMarks:'.i-item-marks'};
+const ITEM_SELECTORS={name:'.i-name',spec:'.i-spec',customsDescription:'.i-customs-desc',originCountry:'.i-origin-country',packageDescription:'.i-package-desc',shippingMarks:'.i-item-marks'};
 const TABLE_SECTION_SECTIONS={basic:['basic'],parties:['party'],products:['products','packing'],delivery:['delivery'],costs:['costs'],logistics:['logistics','plannedLogistics','actualShipment','packing'],payment:['payment','paymentSchedule'],terms:['terms','qualityRisk','customs'],more:['delivery','costs','logistics','plannedLogistics','actualShipment','packing','payment','paymentSchedule','customs','qualityRisk']};
 const clean=v=>String(v??'').trim();
 function injectStyle(){
