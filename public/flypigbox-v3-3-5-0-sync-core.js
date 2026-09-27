@@ -412,8 +412,8 @@
     const paper=$('piPaper'),host=paper?.parentElement||template.parentElement;let banner=host?.querySelector(':scope > #fpA12PreviewReadiness');
     if(result.ready){banner?.remove();return;}
     if(!banner){banner=document.createElement('section');banner.id='fpA12PreviewReadiness';banner.className='fp-a12-readiness-banner';host?.insertBefore(banner,paper||host.firstChild);}
-    const issues=result.blocks.slice(0,5).map((item,index)=>`<button type="button" data-fp-readiness-issue="${index}">${esc(item.text)}</button>`).join('');
-    banner.innerHTML=`<strong>这张单据还有内容需要补充</strong><span>${issues}${result.blocks.length>5?`<em>另有 ${result.blocks.length-5} 项</em>`:''}</span><div class="fp-readiness-actions">${result.removableBlankCount?`<button type="button" data-fp-clean-empty>清理 ${result.removableBlankCount} 条空白商品行</button>`:''}${result.blocks.length?'<button type="button" data-fp-first-issue>查看第一个问题</button>':''}</div><small>补充完成后才可以导出正式文件</small>`;
+    const issues=result.blocks.slice(0,2).map((item,index)=>`<button type="button" data-fp-readiness-issue="${index}">${esc(item.text)}</button>`).join('');
+    banner.innerHTML=`<strong>还差 ${result.blocks.length} 项</strong><span>${issues}${result.blocks.length>2?`<em>另有 ${result.blocks.length-2} 项</em>`:''}</span><div class="fp-readiness-actions">${result.removableBlankCount?`<button type="button" data-fp-clean-empty>清理空行</button>`:''}${result.blocks.length?'<button type="button" data-fp-first-issue>去补充</button>':''}</div><small>补齐后可导出</small>`;
   }
   function setExportState(result){
     const note=$('pdfExportNote');if(note)note.textContent=result.ready?(result.warnings.length?`可以导出，但仍有 ${result.warnings.length} 项提醒需要核对。`:'当前核心资料已完成，可以进入正式导出核对。'):`尚缺 ${result.blocks.length} 项关键资料：${result.blocks.slice(0,3).map(i=>i.text).join('、')}。正式导出已阻止。`;
