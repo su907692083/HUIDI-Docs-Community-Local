@@ -31,7 +31,8 @@
     "check:release-docs": "node ./tools/validate-release-docs-rc1630.cjs",
     "check:editor-budget": "node ./tools/validate-editor-load-budget-rc1630.cjs",
     "check:backup-integrity": "node ./tools/validate-backup-integrity-rc1630.cjs",
-    "check:storage-safety": "node ./tools/validate-storage-safety-rc1630.cjs"
+    "check:storage-safety": "node ./tools/validate-storage-safety-rc1630.cjs",
+    "audit:translation-coverage": "node ./tools/audit-translation-coverage-rc1630.cjs"
   },
   "description": "HUIDI Docs Community Local — source-available local-first foreign trade document workspace"
 }
