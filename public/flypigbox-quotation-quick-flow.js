@@ -21,7 +21,7 @@
   let onePage=localStorage.getItem(LAYOUT_KEY)==='one-page';
   let refreshTimer=0;
 
-  const targets={basic:()=>$('.top-workspace>.card:first-child'),customer:()=>findCard('买卖双方'),products:()=>findCard('商品明细'),terms:()=>findCard('交易条款'),preview:()=>$('#previewShell')};
+  const targets={basic:()=>$('.top-workspace>.card:first-child'),customer:()=>findCard('买卖双方'),products:()=>findCard('商品与金额')||findCard('商品明细'),terms:()=>findCard('交易条款'),preview:()=>$('#previewShell')};
   function findCard(title){return $$('.form-column>section.card').find(card=>(card.querySelector('h2')?.textContent||'').includes(title))||null;}
   function scrollTarget(key){const target=targets[key]?.();if(!target)return;target.scrollIntoView({behavior:'smooth',block:'start'});setActiveStep(key);}
   function setActiveStep(key){$$('[data-fp-qf-step]').forEach(btn=>btn.classList.toggle('active',btn.dataset.fpQfStep===key));}
@@ -76,8 +76,8 @@
   function meaningfulRows(){return $$('.item-row').filter(rowIsMeaningful);}
   function enhanceItems(){
     $$('.item-row').forEach(row=>{
-      if(!row.querySelector('.fp-item-more')){const btn=document.createElement('button');btn.type='button';btn.className='fp-item-more';btn.textContent='更多';btn.addEventListener('click',()=>{row.classList.toggle('fp-item-expanded');btn.textContent=row.classList.contains('fp-item-expanded')?'收起':'更多';});row.appendChild(btn);}
-      if(!row.querySelector('.fp-item-amount')){const amount=document.createElement('div');amount.className='fp-item-amount';amount.innerHTML='<small>本行金额</small><b>0.00</b>';row.appendChild(amount);}
+      if(!row.querySelector('.fp-item-more')){const btn=document.createElement('button');btn.type='button';btn.className='fp-item-more';btn.textContent='补充';btn.title='填写图片、HS、包装等补充资料';btn.addEventListener('click',()=>{row.classList.toggle('fp-item-expanded');btn.textContent=row.classList.contains('fp-item-expanded')?'收起':'补充';});row.appendChild(btn);}
+      if(!row.querySelector('.fp-item-amount')){const amount=document.createElement('div');amount.className='fp-item-amount';amount.innerHTML='<small>小计</small><b>0.00</b>';row.appendChild(amount);}
       updateRowAmount(row);
     });
     ensureItemSummary();
