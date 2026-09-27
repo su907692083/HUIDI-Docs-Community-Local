@@ -2,14 +2,15 @@ const fs=require('fs');
 const path=require('path');
 const root=path.resolve(__dirname,'..');
 const read=p=>fs.readFileSync(path.join(root,p),'utf8');
+
 const editor=read('public/editor.html');
 const i18n=read('public/huidi-doc-i18n-rc164.js');
 const schema=read('public/flypigbox-document-schema.js');
-const localMode=read('public/community-local-mode.js')+'\n'+read('public/community-local-mode.css');\nconst translationOwner=read('public/huidi-doc-i18n-rc164.js');
+const localMode=read('public/community-local-mode.js')+'\n'+read('public/community-local-mode.css');
 const tableOutput=read('public/flypigbox-editor-table-output.js');
 const localServer=read('tools/local-server.cjs');
 
-const hard=[];const warn=[];
+const hard=[],warn=[];
 const fail=m=>{hard.push(m);console.error('[TRANSLATION-AUDIT] FAIL:',m)};
 const note=m=>{warn.push(m);console.warn('[TRANSLATION-AUDIT] WARN:',m)};
 const pass=m=>console.log('[TRANSLATION-AUDIT] PASS:',m);
@@ -18,48 +19,45 @@ const langSelect=(editor.match(/<select id="docLanguage"[\s\S]*?<\/select>/)||['
 const languageOptions=[...langSelect.matchAll(/<option value="([^"]+)"/g)].map(m=>m[1]);
 languageOptions.length===18?pass('18 output-language choices present'):fail('expected 18 output-language choices, got '+languageOptions.length);
 languageOptions.includes('zh')&&languageOptions.includes('bilingual')?pass('Chinese and bilingual modes present'):fail('Chinese/bilingual language modes missing');
-
 editor.includes("zh:'Chinese'")?pass('Chinese translation target name is explicit'):fail('Chinese translation target name must be explicit');
 
-const hiddenByLocal=/headerTranslateBtn[\s\S]{0,500}translateAllBtn|translateAllBtn[\s\S]{0,500}headerTranslateBtn/.test(localMode);
-if(hiddenByLocal)note('Community Local currently hides full-document translation entry');
-else pass('Community Local does not hard-hide both translation entries');
+const localHidesTranslate=/\['[^\]]*translateAllBtn[^\]]*\]/.test(localMode)||/\.huidi-community-local\s+#translateAllBtn/.test(localMode);
+localHidesTranslate?note('Community Local still hard-hides full-document translation'):pass('Community Local translation entry is allowed');
 
 const hasFull=/async function translateAll\(\)/.test(editor);
-const hasSection=/function\s+(?:translateSection|translateScope|translateCurrentSection)\s*\(/.test(editor);
-const hasSingle=/function\s+(?:translateField|translateSingleField|translateTargetField)\s*\(/.test(editor);
-hasFull?pass('full-document translation implementation exists'):note('full-document translation implementation missing');
-hasSection?pass('section translation implementation exists'):note('section translation implementation missing');
-hasSingle?pass('single-field translation implementation exists'):note('single-field translation implementation missing');
+const hasSection=/async function translateSection\(sectionKey\)/.test(editor)&&i18n.includes('collectSection:collectTranslationSection');
+const hasSingle=/async function translateField\(key\)/.test(editor)&&i18n.includes('collectField:collectTranslationField');
+hasFull?pass('full-document translation implementation exists'):fail('full-document translation implementation missing');
+hasSection?pass('section translation implementation exists'):fail('section translation implementation missing');
+hasSingle?pass('single-field translation implementation exists'):fail('single-field translation implementation missing');
 
-const collect=(editor.match(/function collectScopeFields\(scope\)\{[\s\S]*?return fields;\n  \}/)||[''])[0];
-const currentScopes=['party','products','delivery','paymentSchedule','customs','packing','plannedLogistics','actualShipment','payment','qualityRisk','terms'].filter(x=>collect.includes("'"+x+"'"));
-console.log('[TRANSLATION-AUDIT] INFO: full-document collector scopes = '+currentScopes.join(', '));
-['delivery','paymentSchedule','customs','packing','actualShipment','qualityRisk'].forEach(x=>{
-  if(!collect.includes("scope==='"+x+"'"))note('structured section not explicitly collected for business translation: '+x);
-});
+const requiredSections=['party','products','delivery','paymentSchedule','customs','packing','plannedLogistics','actualShipment','payment','qualityRisk','terms'];
+const currentScopes=requiredSections.filter(x=>i18n.includes("'"+x+"'"));
+console.log('[TRANSLATION-AUDIT] INFO: canonical translation sections = '+currentScopes.join(', '));
+const missingSections=requiredSections.filter(x=>!currentScopes.includes(x));
+missingSections.length?fail('canonical translation owner missing sections: '+missingSections.join(', ')):pass('all required translation sections registered');
 
 const structuredLabels=[...schema.matchAll(/label:\s*\[\s*'([^']*)'\s*,\s*'([^']*)'\s*\]/g)].map(m=>({zh:m[1],en:m[2]}));
 const phraseEns=new Set([...i18n.matchAll(/add\('([^']*)'\s*,/g)].map(m=>m[1]));
 const directMissing=structuredLabels.filter(x=>!phraseEns.has(x.en));
 console.log('[TRANSLATION-AUDIT] INFO: structured labels='+structuredLabels.length+', direct 18-language phrase misses='+directMissing.length);
-if(directMissing.length)note('many structured labels depend on alias/core fallback instead of direct 18-language entries');
+if(directMissing.length)note('structured labels still rely on canonical alias/core fallback: '+directMissing.length);
 
 const expectedBusinessText=[
  'balanceDueCondition','customsDescription','finalUse','customsDeclarationNote','mixedPackingNote',
  'qualityStandard','warrantyPeriod','governingLaw','disputeResolution','attachmentList','partialShipmentPlan',
  'consigneeAddress','notifyPartyAddress','billToAddress','shipToAddress','contractClauses'
 ];
-const uncovered=expectedBusinessText.filter(id=>!collect.includes("'"+id+"'")&&!collect.includes('"'+id+'"'));
-console.log('[TRANSLATION-AUDIT] INFO: expected dynamic text not in current collector = '+uncovered.join(', '));
-if(uncovered.length)note('dynamic business text fields remain outside translateAll collector');
+const uncovered=expectedBusinessText.filter(id=>!i18n.includes(id+':')&&!i18n.includes("'"+id+"'"));
+console.log('[TRANSLATION-AUDIT] INFO: dynamic text missing from owner = '+uncovered.join(', '));
+uncovered.length?fail('dynamic business text missing from canonical translation owner'):pass('known dynamic business text gaps are registered');
 
-const tableUsesTranslations=(tableOutput.match(/translationVersions/g)||[]).length;
-console.log('[TRANSLATION-AUDIT] INFO: table output translationVersions references = '+tableUsesTranslations);
-if(tableUsesTranslations<4)note('table/workbook output only partially consumes translated business text');
+const tableUsesTranslations=(tableOutput.match(/HUIDITranslationOwner/g)||[]).length;
+console.log('[TRANSLATION-AUDIT] INFO: table/workbook translation owner references = '+tableUsesTranslations);
+tableUsesTranslations>=3?pass('table/workbook uses shared translation owner'):fail('table/workbook does not sufficiently use shared translation owner');
 
-if((localServer.match(/translat/gi)||[]).length===0)note('local server exposes no translation endpoint; Local automated business translation has no same-origin service');
-else pass('local server contains a translation service path');
+localServer.includes("/api/translation/translate")?pass('local server contains same-origin translation service'):fail('local same-origin translation service missing');
+editor.includes("fetch('/api/translation/translate'")?pass('Local editor calls same-origin translation service'):fail('Local editor is not wired to same-origin translation service');
 
 console.log(JSON.stringify({
   languages:languageOptions,
