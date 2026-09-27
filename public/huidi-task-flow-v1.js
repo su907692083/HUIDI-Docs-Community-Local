@@ -44,5 +44,5 @@ function injectStyle(){if($('#huidi-task-flow-style'))return;const style=documen
 document.head.append(style)}
 function boot(){injectStyle();ensureHome();applyContext();window.addEventListener('HUIDI:community-online-view',()=>setTimeout(applyContext,40));window.addEventListener('HUIDI:fusion-pane-rendered',()=>setTimeout(applyContext,30));window.addEventListener('HUIDI:local-data-change',()=>setTimeout(ensureHome,30))}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
-window.HUIDITaskFlow=Object.freeze({version:'1.0.0',openTask,applyContext,navigate,getState:()=>({...state})});
+window.HUIDITaskFlow=Object.freeze({version:'1.0.1',openTask,applyContext,navigate,getState:()=>({...state})});
 })();
