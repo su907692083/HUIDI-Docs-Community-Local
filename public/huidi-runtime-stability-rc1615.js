@@ -8,7 +8,12 @@
     const toolbar=document.getElementById('fpLiteToolbar');
     const paper=document.getElementById('piPaper');
     const pages=paper?.querySelectorAll?.('.pdf-document .pdf-page')?.length||0;
-    return Boolean(toolbar&&paper&&pages>0&&paper.dataset.fpPreviewStatus==='ready'&&paper.dataset.fpPaginationStable==='1');
+    const toolbarReady=toolbar?.getAttribute('data-huidi-toolbar-stable')==='1'&&window.HUIDIToolbarOwner?.isLocked?.();
+    const layoutReady=Boolean(window.HUIDILayoutPolicy&&document.body?.dataset?.huidiStablePagination==='1');
+    const actionReady=document.documentElement.dataset.huidiActionOwner==='rc16.21'&&Boolean(window.HUIDIActionOwner);
+    const tableReady=Boolean(window.FlypigBOXTableOutput);
+    const localUxReady=document.body?.dataset?.huidiLocalUxRelease==='rc15';
+    return Boolean(toolbarReady&&layoutReady&&actionReady&&tableReady&&localUxReady&&paper&&pages>0&&paper.dataset.fpPreviewStatus==='ready'&&paper.dataset.fpPaginationStable==='1');
   }
   function release(reason='stable'){
     if(released)return;released=true;
@@ -25,7 +30,7 @@
     if(released)return;
     if(stable()){
       if(!stableSeenAt)stableSeenAt=performance.now();
-      if(performance.now()-stableSeenAt>=70){release('stable-preview');return;}
+      if(performance.now()-stableSeenAt>=420){release('stable-surface');return;}
     }else stableSeenAt=0;
     checkTimer=setTimeout(check,45);
   }
