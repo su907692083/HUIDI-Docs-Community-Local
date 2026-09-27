@@ -1728,7 +1728,10 @@
     try{
       const rows=JSON.parse(get('customDocumentFieldsJson')||'[]');
       const fallback=outputPhrase('Additional Field','补充字段');
-      return Array.isArray(rows)?rows.filter(row=>String(row?.value||'').trim()).map(row=>[String(row.label||fallback).trim(),String(row.value||'').trim()]):[];
+      return Array.isArray(rows)?rows.filter(row=>String(row?.value||'').trim()).map((row,index)=>{
+        const id=String(row.id||index),label=String(row.label||fallback).trim(),value=String(row.value||'').trim();
+        return [translatedDisplay('custom',`custom:${id}:label`,label),translatedDisplay('custom',`custom:${id}:value`,value)];
+      }):[];
     }catch(_){return [];}
   }
   function pdfSupplementInfoSection(excludedToggles=[]){
@@ -1911,7 +1914,7 @@
       {fieldId:'destinationPort',label:docLabel('destination'),value:translatedDisplay('terms','destinationPort',get('destinationPort'))},
       {fieldId:'estimatedShipment',label:docLabel('estimatedShipment'),value:get('estimatedShipment')},
       {fieldId:'shippingMarks',label:docLabel('shippingMarks'),value:translatedDisplay('logistics','shippingMarks',get('shippingMarks'))},
-      ...logisticsExtraRows().map(row=>({fieldId:'logisticsExtraRowsJson',label:row.label,value:translatedDisplay('logistics',`logisticsExtra:${row.id}`,row.value)}))
+      ...logisticsExtraRows().map(row=>({fieldId:'logisticsExtraRowsJson',label:translatedDisplay('logistics',`logisticsExtra:${row.id}:label`,row.label),value:translatedDisplay('logistics',`logisticsExtra:${row.id}`,row.value)}))
     ].filter(row=>(!window.FlypigBOXModeRules?.fieldAllowed||window.FlypigBOXModeRules.fieldAllowed(row.fieldId,documentType,currentDocMode()))&&pdfHasValue(row.label)&&pdfHasValue(row.value));
     const logisticsTitle=isPacking?docLabel('packingShippingDetails'):isCommercial?docLabel('shipmentDetails'):docLabel('logistics');
     const logisticsEntries=logistics.map(row=>[translatedHTML(row.label),row.value]);
@@ -2085,7 +2088,7 @@
     const products=ctx.pdfItems.length?pdfSection(docLabel('packingContents'),`<table class="products pdf-packing-table"><thead>${packingHead}</thead><tbody>${body}</tbody></table>`,'pdf-packing-goods pdf-split-block'):'';
     const itemNetTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.netWeight)||0),0),itemGrossTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.grossWeight)||0),0),itemCbmTotal=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.cbm)||0),0),totalQty=ctx.pdfItems.reduce((sum,item)=>sum+(Number(item.qty)||0),0);
     const summaryNetWeight=itemNetTotal>0?`${packingMetric(itemNetTotal)} KG`:(packingMetric(get('netWeight'))?`${packingMetric(get('netWeight'))} KG`:''),summaryGrossWeight=itemGrossTotal>0?`${packingMetric(itemGrossTotal)} KG`:(packingMetric(get('grossWeight'))?`${packingMetric(get('grossWeight'))} KG`:''),summaryCbm=itemCbmTotal>0?`${packingMetric(itemCbmTotal)} m³`:(packingMetric(get('cbm'))?`${packingMetric(get('cbm'))} m³`:'');
-    const customLogisticsRows=logisticsExtraRows().map(row=>[translatedHTML(row.label),translatedDisplay('logistics',`logisticsExtra:${row.id}`,row.value)]);
+    const customLogisticsRows=logisticsExtraRows().map(row=>[translatedHTML(translatedDisplay('logistics',`logisticsExtra:${row.id}:label`,row.label)),translatedDisplay('logistics',`logisticsExtra:${row.id}`,row.value)]);
     const summary=pdfInfoTable([...(docFieldOn('showLogistics')?[[docLabel('cartonCount'),get('packageCount')],[docLabel('totalQuantity'),totalQty>0?totalQty:''],[docLabel('shippingMethod'),translatedDisplay('logistics','shippingMethod',get('shippingMethod'))],[docLabel('packageType'),translatedDisplay('logistics','packageType',get('packageType'))],[docLabel('netWeight'),summaryNetWeight],[docLabel('grossWeight'),summaryGrossWeight],[docLabel('cbm'),summaryCbm],[docLabel('packageDimensions'),get('packageDimensions')],[docLabel('logisticsCarrier'),get('logisticsCarrier')],[docLabel('trackingNo'),get('trackingNo')],[docLabel('blNo'),get('blNo')],[docLabel('containerNo'),get('containerNo')],[docLabel('sealNo'),get('sealNo')],[docLabel('vesselFlight'),get('vesselFlight')],[docLabel('etd'),get('etd')],[docLabel('eta'),get('eta')],...customLogisticsRows]:[]),...(docFieldOn('showRemarks')?[[docLabel('shippingMarks'),translatedDisplay('logistics','shippingMarks',get('shippingMarks'))]]:[])]);
     const summarySection=pdfSection(docLabel('cartonWeightVolume'),summary,'pdf-packing-summary');
     return renderPdfTemplateFamily(ctx,{
