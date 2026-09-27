@@ -17,7 +17,7 @@ Implemented after the initial audit:
 
 Still open:
 
-- Direct 18-language phrase coverage for every new structured field label should continue to be expanded; current fallback/alias coverage remains broader than direct phrase coverage.
+- All 65 structured field labels now have direct 18-language entries. CI fails if any future structured label lacks a direct entry.
 - Provider quality/rate limits depend on the selected online provider.
 - Google Cloud is optional and requires a user-supplied API key and billing/quota setup.
 
@@ -209,17 +209,13 @@ Additional missing text:
 
 Person names/signatories remain non-translatable by default.
 
-## Fixed-label dictionary coverage risk
+## Fixed-label dictionary coverage
 
 There are 65 structured-field labels in `flypigbox-document-schema.js`.
 
-A direct exact-phrase cross-check against `huidi-doc-i18n-rc164.js` shows 59 labels without their own direct 18-language phrase entry. Some can still resolve through canonical label aliases or core-key fallback, so this is **not equivalent to 59 visible failures**, but it means full multilingual coverage is not mechanically guaranteed.
+RC16.30 now gives every one of those 65 labels its own direct 18-language entry (17 single-language outputs plus Chinese/English bilingual composition). The translation coverage audit treats any future direct-label miss as a hard failure.
 
-Recommended end state:
-
-- Every structured field has one canonical i18n key.
-- Every canonical key has 17 single-language translations.
-- CI checks that every visible structured field resolves in every supported output language.
+The alias/core fallback path remains only as compatibility protection for older composite labels; it is no longer the required path for structured-field labels.
 
 ## Output consistency gap
 
