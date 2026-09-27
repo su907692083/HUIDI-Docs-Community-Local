@@ -241,39 +241,42 @@
     const type=snapshot.type;
     const quoteReferenceLabel=type==='quotation'?'客户参考号 / Customer Reference':'关联报价单号 / Related Quotation No.';
     const showFactoryTerms = on(f.includeFactoryTermsInExternal) && clean(f.factoryTermsSummary);
-    const externalRemarks = showFactoryTerms ? stripFactoryTermsBlock(f.remarks) : f.remarks;
-    const externalContractClauses = showFactoryTerms ? stripFactoryTermsBlock(f.contractClauses) : f.contractClauses;
+    const translated=id=>value(snapshot,id);
+    const translatedOption=id=>{const raw=clean(f[id]),resolved=translated(id);return resolved&&resolved!==raw?resolved:localizedOption(f[id],snapshot)};
+    const externalRemarks = showFactoryTerms ? stripFactoryTermsBlock(translated('remarks')) : translated('remarks');
+    const externalContractClauses = showFactoryTerms ? stripFactoryTermsBlock(translated('contractClauses')) : translated('contractClauses');
+    const paymentTermsSource=externalTermValue(snapshot,'paymentTerms',f.paymentTerms),deliveryTimeSource=externalTermValue(snapshot,'deliveryTime',f.deliveryTime);
     const row=(label,value,{toggle='',detailed=false,types=null}={})=>({label,value,toggle,detailed,types});
     const groups = {
       basic:[
         row('单据编号 / Document No.',f.invoiceNo),row('修订版本 / Revision',f.revisionNo,{detailed:true}),row('单据状态 / Status',statusLabel(f.documentStatus,snapshot),{detailed:true}),row('业务场景 / Scenario',scenarioLabel(f.tradeScenario,snapshot),{detailed:true}),
         row('出单日期 / Issue Date',f.issueDate),row('有效期 / Valid Until',f.validUntil,{types:['quotation','proforma_invoice','sales_contract']}),row('币种 / Currency',f.currency),row('客户 PO / Customer PO',f.customerPo,{toggle:'showCustomerPo'}),
-        row(quoteReferenceLabel,f.quoteNo,{toggle:'showQuote',types:['quotation','proforma_invoice','sales_contract']}),row('原产国 / Country of Origin',localizedOption(f.originCountry,snapshot),{toggle:'showOrigin',types:['commercial_invoice','proforma_invoice','quotation']}),row('业务员 / Salesperson',f.salesperson,{toggle:'showSalesperson'}),row('制单人 / Prepared by',f.preparedBy,{detailed:true}),row('审核人 / Approved by',f.approvedBy,{detailed:true})
+        row(quoteReferenceLabel,f.quoteNo,{toggle:'showQuote',types:['quotation','proforma_invoice','sales_contract']}),row('原产国 / Country of Origin',translatedOption('originCountry'),{toggle:'showOrigin',types:['commercial_invoice','proforma_invoice','quotation']}),row('业务员 / Salesperson',f.salesperson,{toggle:'showSalesperson'}),row('制单人 / Prepared by',f.preparedBy,{detailed:true}),row('审核人 / Approved by',f.approvedBy,{detailed:true})
       ],
       parties:[
         row('卖方公司 / Seller',f.sellerName),row('买方公司 / Buyer',f.buyerName),row('卖方联系人 / Seller Contact',f.sellerContact),row('买方联系人 / Buyer Contact',f.buyerContact),
         row('卖方电话 / Seller Phone',f.sellerPhone),row('买方电话 / Buyer Phone',f.buyerPhone),row('卖方邮箱 / Seller Email',f.sellerEmail),row('买方邮箱 / Buyer Email',f.buyerEmail),
-        row('卖方地址 / Seller Address',f.sellerAddress),row('买方地址 / Buyer Address',f.buyerAddress),row('卖方税号 / Seller Tax ID',f.sellerTaxId,{detailed:true}),row('买方税号 / Buyer Tax ID',f.buyerTaxId,{detailed:true}),
-        row('买方国家 / Buyer Country',localizedOption(f.buyerCountry,snapshot)),row('ISO 国家代码 / ISO Country Code',f.buyerCountryCode,{detailed:true}),row('买方网站 / Buyer Website',f.buyerWebsite,{detailed:true}),row('目的地 / Destination',f.destinationPort,{types:['quotation']})
+        row('卖方地址 / Seller Address',translated('sellerAddress')),row('买方地址 / Buyer Address',translated('buyerAddress')),row('卖方税号 / Seller Tax ID',f.sellerTaxId,{detailed:true}),row('买方税号 / Buyer Tax ID',f.buyerTaxId,{detailed:true}),
+        row('买方国家 / Buyer Country',translatedOption('buyerCountry')),row('ISO 国家代码 / ISO Country Code',f.buyerCountryCode,{detailed:true}),row('买方网站 / Buyer Website',f.buyerWebsite,{detailed:true}),row('目的地 / Destination',translated('destinationPort'),{types:['quotation']})
       ],
       delivery:[
         row('收货人 / Consignee',f.consigneeName),row('收货人联系人 / Consignee Contact',f.consigneeContact),row('收货人电话 / Consignee Phone',f.consigneePhone),row('收货人邮箱 / Consignee Email',f.consigneeEmail,{detailed:true}),
-        row('收货地址 / Consignee Address',f.consigneeAddress),row('通知方 / Notify Party',f.notifyPartyName,{detailed:true}),row('通知方联系人 / Notify Contact',f.notifyPartyContact,{detailed:true}),row('通知方电话 / Notify Phone',f.notifyPartyPhone,{detailed:true}),
-        row('通知方邮箱 / Notify Email',f.notifyPartyEmail,{detailed:true}),row('通知方地址 / Notify Address',f.notifyPartyAddress,{detailed:true}),row('账单地址 / Bill To',f.billToAddress,{detailed:true}),row('送货地址 / Ship To',f.shipToAddress)
+        row('收货地址 / Consignee Address',translated('consigneeAddress')),row('通知方 / Notify Party',f.notifyPartyName,{detailed:true}),row('通知方联系人 / Notify Contact',f.notifyPartyContact,{detailed:true}),row('通知方电话 / Notify Phone',f.notifyPartyPhone,{detailed:true}),
+        row('通知方邮箱 / Notify Email',f.notifyPartyEmail,{detailed:true}),row('通知方地址 / Notify Address',translated('notifyPartyAddress'),{detailed:true}),row('账单地址 / Bill To',translated('billToAddress'),{detailed:true}),row('送货地址 / Ship To',translated('shipToAddress'))
       ],
       logistics:[
-        row('运输方式 / Shipping Method',localizedOption(f.shippingMethod,snapshot)),row('总箱数 / Packages',f.packageCount),row('包装类型 / Package Type',localizedOption(f.packageType,snapshot)),row('总净重 / N.W.',f.netWeight ? `${f.netWeight} KG` : ''),
+        row('运输方式 / Shipping Method',translatedOption('shippingMethod')),row('总箱数 / Packages',f.packageCount),row('包装类型 / Package Type',translatedOption('packageType')),row('总净重 / N.W.',f.netWeight ? `${f.netWeight} KG` : ''),
         row('总毛重 / G.W.',f.grossWeight ? `${f.grossWeight} KG` : ''),row('总体积 / CBM',f.cbm ? `${f.cbm} m³` : ''),row('承运人 / 货代 / Carrier / Forwarder',f.logisticsCarrier,{detailed:true}),row('追踪号 / 运单号 / Tracking / Waybill No.',f.trackingNo,{detailed:true}),
         row('提单号 / B/L No.',f.blNo,{detailed:true}),row('柜号 / Container No.',f.containerNo,{detailed:true}),row('封条号 / Seal No.',f.sealNo,{detailed:true}),row('船名 / 航班 / 车次 / Vessel / Flight / Truck',f.vesselFlight,{detailed:true}),
-        row('ETD',f.etd,{detailed:true}),row('ETA',f.eta,{detailed:true}),row('单箱尺寸 / Package Dimensions',f.packageDimensions),row('装运港 / Port of Loading',f.portOfLoading),row('目的地 / Destination',f.destinationPort),row('预计发货日期 / Estimated Shipment',f.estimatedShipment),row('运输唛头 / Shipping Marks',f.shippingMarks)
+        row('ETD',f.etd,{detailed:true}),row('ETA',f.eta,{detailed:true}),row('单箱尺寸 / Package Dimensions',f.packageDimensions),row('装运港 / Port of Loading',translated('portOfLoading')),row('目的地 / Destination',translated('destinationPort')),row('预计发货日期 / Estimated Shipment',f.estimatedShipment),row('运输唛头 / Shipping Marks',translated('shippingMarks'))
       ],
       payment:[
         row('收款渠道 / Payment Method',localizedOption(f.paymentTemplate,snapshot)),row('收款人 / Beneficiary',f.bankBeneficiary),row('开户行 / Bank Name',f.bankName),
-        row('银行账号 / Account No.',f.bankAccount),row('SWIFT',f.bankSwift),row('银行地址 / 付款备注 / Bank Address / Payment Note',f.bankAddress,{detailed:true})
+        row('银行账号 / Account No.',f.bankAccount),row('SWIFT',f.bankSwift),row('银行地址 / 付款备注 / Bank Address / Payment Note',translated('bankAddress'),{detailed:true})
       ],
       terms:[
-        row('付款条款 / Payment Terms',externalTermValue(snapshot,'paymentTerms',f.paymentTerms),{toggle:'showTerms'}),row('贸易术语 / Incoterms®',externalTermValue(snapshot,'tradeTerms',f.tradeTerms),{toggle:'showTerms'}),row('交期 / Lead Time',externalTermValue(snapshot,'deliveryTime',f.deliveryTime),{toggle:'showTerms'}),
-        row('装运港 / Port of Loading',f.portOfLoading,{toggle:'showLogistics'}),row('预计发货日期 / Estimated Shipment',f.estimatedShipment,{toggle:'showLogistics'}),row('补充备注 / Remarks',externalRemarks,{toggle:'showRemarks'}),row('合同补充条款 / Additional Contract Clauses',externalContractClauses,{toggle:'showRemarks',types:['sales_contract']}),
+        row('付款条款 / Payment Terms',paymentTermsSource?translated('paymentTerms'):'',{toggle:'showTerms'}),row('贸易术语 / Incoterms®',externalTermValue(snapshot,'tradeTerms',f.tradeTerms),{toggle:'showTerms'}),row('交期 / Lead Time',deliveryTimeSource?translated('deliveryTime'):'',{toggle:'showTerms'}),
+        row('装运港 / Port of Loading',translated('portOfLoading'),{toggle:'showLogistics'}),row('预计发货日期 / Estimated Shipment',f.estimatedShipment,{toggle:'showLogistics'}),row('补充备注 / Remarks',externalRemarks,{toggle:'showRemarks'}),row('合同补充条款 / Additional Contract Clauses',externalContractClauses,{toggle:'showRemarks',types:['sales_contract']}),
         ...(showFactoryTerms?[row('工厂交付与质量说明 / Factory Delivery & Quality',f.factoryTermsSummary,{toggle:'showRemarks'})]:[])
       ]
     };
